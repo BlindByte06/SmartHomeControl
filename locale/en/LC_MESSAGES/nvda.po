@@ -5187,3 +5187,58 @@ msgid ""
 msgstr ""
 "Netatmo servers temporarily unavailable – not a problem with the add-on or "
 "your settings; the next update will try again"
+
+#. Translators: Message when an action is triggered while the previous one is
+#. still running.
+#: device_dialog.py:495
+msgid "Bitte warten - die vorherige Aktion läuft noch"
+msgstr "Please wait - the previous action is still running"
+
+#. Translators: Error message on a Cozytouch connection problem. {error} =
+#. technical error type.
+#: cozytouch_api.py:174
+msgid "Cozytouch Verbindungsfehler: {error}"
+msgstr "Cozytouch connection error: {error}"
+
+#. Translators: Error message when a diffuser does not respond to the mode
+#. command.
+#: meross_api.py:1480
+msgid "Diffuser nicht erreichbar - antwortet nicht auf Befehl"
+msgstr "Diffuser unreachable - does not respond to the command"
+
+#. Translators: Error message when a diffuser does not respond to the on/off
+#. command.
+#: meross_api.py:1407
+msgid "Diffuser nicht erreichbar - antwortet nicht auf Schaltbefehl"
+msgstr "Diffuser unreachable - does not respond to the switch command"
+
+#. Translators: Validation error when email or password is missing.
+#: meross_api.py:471
+msgid "Email und Passwort erforderlich"
+msgstr "Email and password required"
+
+#. Translators: Error message when the Meross event loop does not start.
+#: meross_api.py:495
+msgid "Event Loop konnte nicht gestartet werden"
+msgstr "Event loop could not be started"
+
+#. Translators: Error message for an invalid color temperature value.
+#: meross_api.py:1588
+msgid "Farbtemperatur muss zwischen 0 und 100 liegen"
+msgstr "Color temperature must be between 0 and 100"
+
+#. Translators: Error message when no OAuth refresh token is stored.
+#: netatmo_api.py:820
+msgid "Kein Refresh Token vorhanden – bitte neu autorisieren"
+msgstr "No refresh token available – please authorize again"
+
+#. Translators: Error message when a lamp does not respond to the command.
+#: meross_api.py:1539
+msgid "Lampe nicht erreichbar - antwortet nicht auf Befehl"
+msgstr "Lamp unreachable - does not respond to the command"
+
+#. Translators: Accessible name of a password field when a password is already
+#. stored. {field} = field name.
+#: settings_panel.py:70
+msgid "{field} (gespeichert - leer lassen zum Beibehalten)"
+msgstr "{field} (saved - leave empty to keep it)"

@@ -109,6 +109,7 @@ from .platform_utils import split_by_platform, PLATFORM_LABELS
 from .dialog_helpers import _beep
 from .constants import (
     CONFSPEC, BEEP_ERROR, BEEP_SUCCESS, BEEP_LOADING,
+    NETATMO_REDIRECT_PORT,
 )
 
 
@@ -174,7 +175,7 @@ class GlobalPlugin(_CredentialsMixin, _SchedulerMixin, _ChangeDetectionMixin,
         self.netatmo_token_expiry = 0
         # Port of the local OAuth2 callback server (must match the redirect URI
         # registered at dev.netatmo.com). Configurable per user.
-        self.netatmo_redirect_port = 8474
+        self.netatmo_redirect_port = NETATMO_REDIRECT_PORT
 
         # VeSync credentials
         self.vesync_email = ''
@@ -363,7 +364,7 @@ class GlobalPlugin(_CredentialsMixin, _SchedulerMixin, _ChangeDetectionMixin,
             encrypted_refresh = conf.get("netatmoRefreshToken", "")
             self.netatmo_refresh_token = decrypt_dpapi(encrypted_refresh) if encrypted_refresh else ""
             self.netatmo_token_expiry = conf.get("netatmoTokenExpiry", 0)
-            self.netatmo_redirect_port = conf.get("netatmoRedirectPort", 8474)
+            self.netatmo_redirect_port = conf.get("netatmoRedirectPort", NETATMO_REDIRECT_PORT)
 
             # VeSync credentials (password and token encrypted)
             self.vesync_email = conf.get("vesyncEmail", "")
@@ -417,7 +418,7 @@ class GlobalPlugin(_CredentialsMixin, _SchedulerMixin, _ChangeDetectionMixin,
             self.netatmo_access_token = ""
             self.netatmo_refresh_token = ""
             self.netatmo_token_expiry = 0
-            self.netatmo_redirect_port = 8474
+            self.netatmo_redirect_port = NETATMO_REDIRECT_PORT
             self.vesync_email = ""
             self._encrypted_vesync_password = ""
             self.vesync_country_code = "DE"
@@ -830,12 +831,15 @@ class GlobalPlugin(_CredentialsMixin, _SchedulerMixin, _ChangeDetectionMixin,
             for cd in cozytouch_devices:
                 self._previous_cozytouch_states[cd.uuid] = self._snapshot_cozytouch_state(cd)
 
-            if self.devices:
+            # Über die lokale Liste statt self.devices: die Referenz wurde
+            # gerade unter dem Lock zugewiesen, so entfällt der ungeschützte
+            # Lesezugriff.
+            if new_devices:
                 self.is_logged_in = True
                 self._last_refresh_time = time.time()
                 self._start_background_refresh()
 
-                total = len(self.devices)
+                total = len(new_devices)
                 parts = []
                 # Platform names are brand names -> do not translate.
                 if meross_devices:
@@ -1204,10 +1208,13 @@ class GlobalPlugin(_CredentialsMixin, _SchedulerMixin, _ChangeDetectionMixin,
             return
         
         # OPTIMIZED: with a fresh cache, announce immediately WITHOUT waiting
-        if self.is_cache_fresh() and self.devices:
-            log.debug(f"Cache frisch - sofortige Ansage von {len(self.devices)} Geräten")
+        # (Snapshot unter dem Lock - Konvention aus __init__, Z. 149 ff.)
+        with self._devices_lock:
+            cached_devices = list(self.devices)
+        if self.is_cache_fresh() and cached_devices:
+            log.debug(f"Cache frisch - sofortige Ansage von {len(cached_devices)} Geräten")
             # No beep needed - immediate output
-            self._announce_devices_status(self.devices)
+            self._announce_devices_status(cached_devices)
             return
         
         # Cache not fresh - short update in the background
@@ -1217,12 +1224,14 @@ class GlobalPlugin(_CredentialsMixin, _SchedulerMixin, _ChangeDetectionMixin,
         self._start_status_beep()
         
         def task():
-            import time
             try:
                 log.debug("Starte Statusaktualisierung...")
-                
+
                 # Use the cached devices, only update the status (faster!)
-                if not self.devices:
+                # (Leseschnappschuss unter dem Lock)
+                with self._devices_lock:
+                    have_devices = bool(self.devices)
+                if not have_devices:
                     log.debug("Keine gecachten Geräte - hole neue Geräteliste")
                     wx.CallAfter(ui.message, _("Lade Geräte..."))
                     all_devs = []
@@ -1275,17 +1284,17 @@ class GlobalPlugin(_CredentialsMixin, _SchedulerMixin, _ChangeDetectionMixin,
                         log.warning("Status-Update Timeout - verwende gecachte Daten")
                         # No abort - cached data is better than nothing
                 
-                if not self.devices:
+                with self._devices_lock:
+                    devs_for_status = list(self.devices)
+                if not devs_for_status:
                     log.warning("Keine Geräte gefunden")
                     self._stop_status_beep()
                     wx.CallAfter(ui.message, _("Keine Geräte gefunden"))
                     return
-                
+
                 # Stop the beep and play the success sound
                 self._stop_status_beep()
                 wx.CallAfter(_beep, BEEP_SUCCESS)
-                with self._devices_lock:
-                    devs_for_status = list(self.devices)
                 wx.CallAfter(self._announce_devices_status, devs_for_status)
 
             except Exception as e:
@@ -1440,7 +1449,6 @@ class GlobalPlugin(_CredentialsMixin, _SchedulerMixin, _ChangeDetectionMixin,
         _beep(BEEP_LOADING)
 
         def beep_loop():
-            import time
             while self._status_beep_active:
                 time.sleep(1)
                 if self._status_beep_active:
@@ -1577,9 +1585,11 @@ class GlobalPlugin(_CredentialsMixin, _SchedulerMixin, _ChangeDetectionMixin,
             # Lookup under the lock (the list can be reassigned during a
             # refresh)
             with self._devices_lock:
-                # Check whether it is a channel UUID (format: "uuid_chX")
-                if "_ch" in device_uuid and channel is None:
-                    parts = device_uuid.rsplit("_ch", 1)
+                # Check whether it is a channel UUID (format: "uuid_chX").
+                # Nur als Kanal behandeln, wenn nach "_ch" wirklich eine Zahl
+                # folgt - eine Geräte-UUID kann selbst "_ch" enthalten.
+                parts = device_uuid.rsplit("_ch", 1) if channel is None else None
+                if parts and len(parts) == 2 and parts[1].isdigit():
                     parent_uuid = parts[0]
                     channel = int(parts[1])
                     device = next((d for d in self.devices if d.uuid == parent_uuid), None)
@@ -1626,6 +1636,10 @@ class GlobalPlugin(_CredentialsMixin, _SchedulerMixin, _ChangeDetectionMixin,
                 current_state = device.is_on
 
             new_state = not current_state
+            # self.api kann None sein (Meross deaktiviert, Gerät aber noch in
+            # der Liste) - dann saubere Meldung statt AttributeError.
+            if not self.api:
+                raise RuntimeError(_("Nicht angemeldet"))
             self.api.set_device_state(device.uuid, new_state, channel=channel)
             
             # Update the status

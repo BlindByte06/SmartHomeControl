@@ -1,6 +1,6 @@
 # Changelog – Smart Home Control
 
-## 26.07.2 (unveröffentlicht)
+## 26.7.2 (August 2026)
 
 ### Verlauf – neu aufgebaut
 

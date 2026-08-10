@@ -380,7 +380,13 @@ class MerossAPI:
         
         # Install a thread excepthook: catches the "Event loop is closed" crash
         # from the paho-mqtt thread that occurs when MQTT messages arrive after
-        # the event loop cleanup (known meross_iot issue)
+        # the event loop cleanup (known meross_iot issue).
+        # ACHTUNG: threading.excepthook ist PROZESSWEIT - der Austausch wirkt
+        # auf ganz NVDA und alle Add-ons, solange der Loop läuft. Der Hook
+        # filtert deshalb strikt (nur RuntimeError "Event loop is closed" aus
+        # paho-mqtt-Threads) und reicht alles andere an den Original-Hook
+        # weiter; zurückgetauscht wird nur, wenn unser Hook noch installiert
+        # ist (siehe finally unten).
         original_excepthook = getattr(threading, 'excepthook', None)
         
         def _mqtt_safe_excepthook(args):
@@ -461,7 +467,8 @@ class MerossAPI:
             api_base_url: Meross API base URL (default: EU server)
         """
         if not email or not password:
-            raise ValueError("Email und Passwort erforderlich")
+            # Translators: Validation error when email or password is missing.
+            raise ValueError(_("Email und Passwort erforderlich"))
 
         self.api_base_url = api_base_url
         self.email = email
@@ -471,20 +478,21 @@ class MerossAPI:
         # Set the running flag BEFORE the thread start
         self._running = True
 
-        # Start the event loop thread
-        import threading
+        # Start the event loop thread (threading/time sind Modulimporte;
+        # _i statt _, damit gettext-_ nicht verdeckt wird)
         self.loop_thread = threading.Thread(target=self._start_event_loop, daemon=True)
         self.loop_thread.start()
 
         # Wait until the loop is running
-        import time
-        for _ in range(50):  # 5 seconds max
+        for _i in range(50):  # 5 seconds max
             if self.loop and self.loop.is_running():
                 break
             time.sleep(0.1)
         else:
             self._running = False
-            raise RuntimeError("Event Loop konnte nicht gestartet werden")
+            # Translators: Error message when the Meross event loop does not
+            # start.
+            raise RuntimeError(_("Event Loop konnte nicht gestartet werden"))
 
         try:
             self._run_async(self._login(password))
@@ -1394,7 +1402,9 @@ class MerossAPI:
                         log.info(f"Diffuser {device.name} ausgeschaltet")
                     return  # switched successfully
                 except asyncio.TimeoutError:
-                    raise TimeoutError("Diffuser nicht erreichbar - antwortet nicht auf Schaltbefehl")
+                    # Translators: Error message when a diffuser does not
+                    # respond to the on/off command.
+                    raise TimeoutError(_("Diffuser nicht erreichbar - antwortet nicht auf Schaltbefehl"))
             
             # Default: ToggleMixin (async_turn_on/async_turn_off)
             if not hasattr(device, 'async_turn_on') or not hasattr(device, 'async_turn_off'):
@@ -1465,7 +1475,9 @@ class MerossAPI:
                 )
                 log.info(f"Diffuser {device.name} auf Mode {spray_mode} gesetzt")
             except asyncio.TimeoutError:
-                raise TimeoutError("Diffuser nicht erreichbar - antwortet nicht auf Befehl")
+                # Translators: Error message when a diffuser does not respond
+                # to the mode command.
+                raise TimeoutError(_("Diffuser nicht erreichbar - antwortet nicht auf Befehl"))
         
         try:
             self._run_async(_set_spray())
@@ -1522,7 +1534,9 @@ class MerossAPI:
                 )
                 log.info(f"Lampe {device.name} erfolgreich konfiguriert")
             except asyncio.TimeoutError:
-                raise TimeoutError("Lampe nicht erreichbar - antwortet nicht auf Befehl")
+                # Translators: Error message when a lamp does not respond to
+                # the command.
+                raise TimeoutError(_("Lampe nicht erreichbar - antwortet nicht auf Befehl"))
         
         try:
             self._run_async(_set_light())
@@ -1569,7 +1583,9 @@ class MerossAPI:
             channel: channel (default: 0)
         """
         if not (0 <= temperature <= 100):
-            raise ValueError("Farbtemperatur muss zwischen 0 und 100 liegen")
+            # Translators: Error message for an invalid color temperature
+            # value.
+            raise ValueError(_("Farbtemperatur muss zwischen 0 und 100 liegen"))
         
         self.set_light_color(uuid=uuid, channel=channel, temperature=temperature)
     

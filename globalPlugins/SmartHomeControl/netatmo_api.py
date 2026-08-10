@@ -42,6 +42,7 @@ from .constants import (
     NETATMO_AUTH_URL, NETATMO_TOKEN_URL, NETATMO_API_BASE,
     NETATMO_REDIRECT_HOST, NETATMO_REDIRECT_PORT, netatmo_redirect_uri,
     NETATMO_DEFAULT_SCOPES, NETATMO_MODE_NAMES, HOMESDATA_CACHE_SECONDS,
+    NETATMO_FULL_REFRESH_SECONDS,
 )
 
 # Local aliases for backward compatibility
@@ -360,12 +361,23 @@ class NetatmoDevice:
             try:
                 change_time = time.localtime(next_change['time'])
                 change_str = time.strftime("%H:%M", change_time)
-                # Translators: Status announcement: next schedule change (zone,
-                # temperature, time).
-                nc_text = _("Nächste Änderung: {zone} ({temp:.1f}°C) um {time}").format(
-                    zone=next_change.get('zone_name', ''),
-                    temp=next_change.get('temp', 0),
-                    time=change_str)
+                # temp kann als Key mit Wert None vorhanden sein (Zone ohne
+                # Raum-Treffer) - {temp:.1f} würde dann TypeError werfen und
+                # die Ansage still verschlucken.
+                temp = next_change.get('temp')
+                if temp is not None:
+                    # Translators: Status announcement: next schedule change
+                    # (zone, temperature, time).
+                    nc_text = _("Nächste Änderung: {zone} ({temp:.1f}°C) um {time}").format(
+                        zone=next_change.get('zone_name', ''),
+                        temp=temp,
+                        time=change_str)
+                else:
+                    # Translators: Status announcement: next schedule change
+                    # without a known temperature (zone, time).
+                    nc_text = _("Nächste Änderung: {zone} um {time}").format(
+                        zone=next_change.get('zone_name', ''),
+                        time=change_str)
                 parts.append(nc_text)
             except Exception as e:
                 log.debug(f"Ignorierter Fehler in get_status_summary: {e}")
@@ -522,6 +534,11 @@ class NetatmoAPI:
         # mit dem Cache profitiert der Dialog davon mit.
         self._homesdata_cache = {}       # params-Schlüssel -> (Zeitstempel, Daten)
         self._homesdata_cache_lock = threading.Lock()
+
+        # Zeitstempel des letzten VOLLEN Statuslaufs (get_devices mit
+        # getstationsdata + homesdata). Dazwischen pollt update_device_status
+        # nur /homestatus - siehe dort.
+        self._last_full_status_refresh = 0.0
 
         # Network error deduplication: prevents ERROR log spam during network
         # outages
@@ -799,7 +816,8 @@ class NetatmoAPI:
     def _refresh_access_token_locked(self):
         """Actual refresh logic – call only while holding _token_refresh_lock."""
         if not self.refresh_token:
-            raise RuntimeError("Kein Refresh Token vorhanden – bitte neu autorisieren")
+            # Translators: Error message when no OAuth refresh token is stored.
+            raise RuntimeError(_("Kein Refresh Token vorhanden – bitte neu autorisieren"))
 
         data = {
             'grant_type': 'refresh_token',
@@ -925,7 +943,9 @@ class NetatmoAPI:
 
         resp = self._http_with_retry('GET', url, headers=headers, params=params)
 
-        if resp.status_code == 403:
+        # 403 is Netatmo's usual "token invalid"; some endpoints answer 401
+        # instead - both get exactly one refresh attempt.
+        if resp.status_code in (401, 403):
             # Token possibly invalid - try one refresh
             self.refresh_access_token()
             headers = {"Authorization": f"Bearer {self.access_token}"}
@@ -945,7 +965,8 @@ class NetatmoAPI:
 
         resp = self._http_with_retry('POST', url, headers=headers, data=data)
 
-        if resp.status_code == 403:
+        # 401/403: see _api_get
+        if resp.status_code in (401, 403):
             self.refresh_access_token()
             headers = {"Authorization": f"Bearer {self.access_token}"}
             resp = self._http_with_retry('POST', url, headers=headers, data=data)
@@ -1440,7 +1461,62 @@ class NetatmoAPI:
         return devices
 
     def update_device_status(self, devices):
-        """Updates the status of all Netatmo devices (fetches fresh data)"""
+        """Updates the status of all Netatmo devices.
+
+        Leichter Pfad (Regelfall): ein /homestatus-Aufruf pro Haus
+        aktualisiert die veränderlichen Thermostat-Felder. Der volle Lauf
+        über get_devices() (getstationsdata + homesdata + Zeitplan-Auflösung,
+        >=3 Aufrufe) läuft höchstens alle NETATMO_FULL_REFRESH_SECONDS -
+        Wetterwerte und Zeitpläne ändern sich selten, und mit dem
+        fg-Poll-Intervall von 15 s läge der volle Lauf sonst über Netatmos
+        Nutzerlimit von ~500 Aufrufen/Stunde.
+        """
+        now = time.time()
+        energy_devs = [d for d in devices
+                       if getattr(d, 'is_netatmo', False)
+                       and getattr(d, 'home_id', None)]
+        if (not energy_devs
+                or now - self._last_full_status_refresh >= NETATMO_FULL_REFRESH_SECONDS):
+            self._last_full_status_refresh = now
+            self._update_device_status_full(devices)
+            return
+
+        for home_id in sorted({d.home_id for d in energy_devs}):
+            try:
+                status = self.get_home_status(home_id)
+            except Exception as e:
+                self._log_network_error("Netatmo Homestatus-Fehler", e)
+                continue
+            home = status.get('body', {}).get('home', {})
+            status_rooms = {r.get('id'): r for r in home.get('rooms', [])}
+            status_modules = {m.get('id'): m for m in home.get('modules', [])}
+            self._reset_network_error_state()
+
+            for device in energy_devs:
+                if device.home_id != home_id:
+                    continue
+                mod = status_modules.get(device._id)
+                if mod is not None:
+                    if 'reachable' in mod:
+                        device.is_offline = not mod.get('reachable', True)
+                    boiler_val = mod.get('boiler_status')
+                    if boiler_val is not None:
+                        device._boiler_status = bool(boiler_val)
+                room = status_rooms.get(device.room_id) if device.room_id else None
+                if room:
+                    device._therm_measured = room.get('therm_measured_temperature')
+                    device._therm_setpoint = room.get('therm_setpoint_temperature')
+                    device._therm_setpoint_mode = room.get('therm_setpoint_mode')
+                    device._therm_setpoint_end_time = room.get('therm_setpoint_end_time')
+                    anticipating_val = room.get('anticipating')
+                    if anticipating_val is not None:
+                        device._anticipating = bool(anticipating_val)
+                    open_window_val = room.get('open_window')
+                    if open_window_val is not None:
+                        device._open_window = bool(open_window_val)
+
+    def _update_device_status_full(self, devices):
+        """Voller Statuslauf: komplettes get_devices() und Feld-Übernahme."""
         try:
             fresh_devices = self.get_devices()
             fresh_map = {d.uuid: d for d in fresh_devices}

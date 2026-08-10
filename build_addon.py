@@ -18,7 +18,6 @@ Spikes, Upstream-Quellpakete, .git*, .claude, Berichte, dieses Skript.
 """
 
 import argparse
-import configparser
 import fnmatch
 import glob
 import os

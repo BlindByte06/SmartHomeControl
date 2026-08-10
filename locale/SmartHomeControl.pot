@@ -3948,3 +3948,543 @@ msgstr ""
 #: __init__.py:2063
 msgid "Öffnet die Smart Home Einstellungen"
 msgstr ""
+
+#. Translators: Explanatory text in the Cozytouch tab.
+#: settings_panel.py:530
+msgid ""
+"Cozytouch Account-Zugangsdaten (Atlantic-Gruppe, z. B. Austria Email).\n"
+"Aktuell unterstützt: Warmwasser-Wärmepumpe (getestet: Austria Email Revolution Evo 3).\n"
+"Dieselben Zugangsdaten wie in der Cozytouch-App. Daten werden lokal auf diesem Rechner verschlüsselt gespeichert."
+msgstr ""
+
+#. Translators: Explanatory text in the Meross tab.
+#: settings_panel.py:291
+msgid ""
+"Meross Account Zugangsdaten.\n"
+"Diese werden lokal auf diesem Rechner verschlüsselt gespeichert."
+msgstr ""
+
+#. Translators: Explanatory text in the VeSync tab.
+#: settings_panel.py:452
+msgid ""
+"VeSync Account-Zugangsdaten (z. B. Levoit, Cosori, Etekcity).\n"
+"Aktuell unterstützt: Levoit Core 200S/300S/400S/500S/600S Luftreiniger und Levoit Tower-Ventilatoren.\n"
+"Daten werden lokal auf diesem Rechner verschlüsselt gespeichert."
+msgstr ""
+
+#. Translators: Tree label when the actual heating target differs from the
+#. setpoint. {active} = actual target, {temp} = setpoint.
+#: dialog_cozytouch.py:400
+msgid "{name} ({type}) - Ziel {temp}°C, aktuelles Heizziel {active}°C"
+msgstr ""
+
+#. Translators: Description of the script in the NVDA input gestures dialog.
+#. No default gesture - the user assigns one if needed.
+#: __init__.py:953
+msgid ""
+"Sagt den Energieverbrauch der Messsteckdosen an (heute und letzte 7 Tage)"
+msgstr ""
+
+#. Translators: Description of the script in the NVDA input gestures dialog.
+#. No default gesture - the user assigns one if needed.
+#: __init__.py:1040
+msgid "Verbindungsdiagnose: Status aller Smart Home Plattformen ansagen"
+msgstr ""
+
+#. Translators: Diagnostics: platform is connected.
+#: __init__.py:1059
+msgid "verbunden"
+msgstr ""
+
+#. Translators: Diagnostics: platform is disconnected.
+#: __init__.py:1062
+msgid "getrennt"
+msgstr ""
+
+#. Translators: Diagnostics: platform has not polled yet.
+#: __init__.py:1065
+msgid "noch keine Abfrage"
+msgstr ""
+
+#. Translators: Diagnostics: network considered offline.
+#: __init__.py:1069
+msgid "Netzwerk: offline (Fehlversuche: {count})"
+msgstr ""
+
+#. Translators: Diagnostics: Netatmo token remaining lifetime.
+#: __init__.py:1075
+msgid "Netatmo-Token: noch {minutes} Minuten gültig"
+msgstr ""
+
+#. Translators: Diagnostics: Netatmo token expired (auto-renewal happens on
+#. the next request).
+#: __init__.py:1080
+msgid "Netatmo-Token: abgelaufen, wird bei nächster Abfrage erneuert"
+msgstr ""
+
+#. Translators: Diagnostics: seconds since the last successful Meross refresh.
+#: __init__.py:1086
+msgid "Letzte Meross-Aktualisierung vor {seconds} Sekunden"
+msgstr ""
+
+#. Translators: Diagnostics: no platform is enabled.
+#: __init__.py:1090
+msgid "Keine Plattform aktiviert"
+msgstr ""
+
+#. Translators: Message when the favorite slot is empty.
+#: __init__.py:1128 __init__.py:1160
+msgid "Favorit {number} ist nicht belegt"
+msgstr ""
+
+#. Translators: Message when the favorite's device is not loaded.
+#: __init__.py:1132 __init__.py:1163
+msgid "{name}: Gerät nicht verfügbar"
+msgstr ""
+
+#. Translators: Error message when toggling a favorite fails.
+#: __init__.py:1149
+msgid "Schalten fehlgeschlagen: {error}"
+msgstr ""
+
+#. Translators: Current power draw in the status announcement.
+#: __init__.py:1178
+msgid "{watt} Watt"
+msgstr ""
+
+#. Translators: Target temperature in the status announcement.
+#: __init__.py:1185
+msgid "Ziel {temp} Grad"
+msgstr ""
+
+#. Translators: Description of the numbered favorite toggle script in the NVDA
+#. input gestures dialog. {number} = favorite slot.
+#: __init__.py:1750
+msgid "Favorit {number} umschalten"
+msgstr ""
+
+#. Translators: Description of the numbered favorite status script in the NVDA
+#. input gestures dialog. {number} = favorite slot.
+#: __init__.py:1755
+msgid "Status von Favorit {number} ansagen"
+msgstr ""
+
+#. Translators: Combined info+action label: boost duration in minutes,
+#. changeable with Enter.
+#: dialog_cozytouch.py:511
+msgid "Boost-Laufzeit: {minutes} Minuten - Enter zum Ändern"
+msgstr ""
+
+#. Translators: Input prompt for the boost duration in minutes.
+#: dialog_cozytouch.py:157
+msgid "Boost-Laufzeit in Minuten (z. B. 60):"
+msgstr ""
+
+#. Translators: Title of the boost duration dialog. {name} = device name.
+#: dialog_cozytouch.py:163
+msgid "{name}: Boost-Laufzeit"
+msgstr ""
+
+#. Translators: Message on invalid boost duration input.
+#: dialog_cozytouch.py:182
+msgid "Ungültige Eingabe - bitte Minuten zwischen 1 und 1440 angeben"
+msgstr ""
+
+#. Translators: Confirmation after changing the boost duration.
+#: dialog_cozytouch.py:188
+msgid "{name}: Boost-Laufzeit {minutes} Minuten"
+msgstr ""
+
+#. Translators: History detail for the boost duration.
+#: dialog_cozytouch.py:194
+msgid "{minutes} Minuten"
+msgstr ""
+
+#. Translators: Error when the cloud rejects the boost duration write (the
+#. capability may be read-only on some models).
+#: dialog_cozytouch.py:200
+msgid ""
+"Boost-Laufzeit konnte nicht gesetzt werden - das Gerät akzeptiert diese "
+"Änderung möglicherweise nicht"
+msgstr ""
+
+#. Translators: Device label with type and room name. {name} = device name,
+#. {type} = device type, {room} = room name.
+#: dialog_netatmo.py:305
+msgid "{name} ({type}, Raum {room})"
+msgstr ""
+
+#. Translators: Room category in the device tree. {room} = room name from the
+#. Netatmo app.
+#: device_dialog.py:2044
+msgid "Raum {room}"
+msgstr ""
+
+#. Translators: Combined info+action label: boost has no time limit set,
+#. changeable with Enter.
+#: dialog_cozytouch.py:519
+msgid "Boost-Laufzeit: keine Zeitbegrenzung gesetzt - Enter zum Ändern"
+msgstr ""
+
+#. Translators: Announced while the energy data is being fetched.
+#: __init__.py:966
+msgid "Energiedaten werden abgerufen..."
+msgstr ""
+
+#. Translators: Energy summary from the device's own meter. {name} = device,
+#. {today}/{week} = kWh, {watt} = current watts.
+#: __init__.py:991
+msgid ""
+"{name}: heute {today} Kilowattstunden, letzte 7 Tage {week} Kilowattstunden,"
+" aktuell {watt} Watt"
+msgstr ""
+
+#. Translators: Energy summary from the device's own meter without a current
+#. power value.
+#: __init__.py:1001
+msgid ""
+"{name}: heute {today} Kilowattstunden, letzte 7 Tage {week} Kilowattstunden"
+msgstr ""
+
+#. Translators: Energy summary estimated from background samples (only covers
+#. the time NVDA was running).
+#: __init__.py:1015
+msgid ""
+"{name}: heute {today} Kilowattstunden, letzte 7 Tage {week} Kilowattstunden,"
+" aktuell {watt} Watt (geschätzt, erfasst nur solange NVDA lief)"
+msgstr ""
+
+#. Translators: Message when no energy data is available.
+#: __init__.py:1027
+msgid "Keine Energiedaten verfügbar. Messsteckdosen müssen verbunden sein."
+msgstr ""
+
+#. Translators: Today's consumption from the device meter.
+#: device_dialog.py:1874 device_dialog.py:804
+msgid "Verbrauch heute: {kwh} kWh"
+msgstr ""
+
+#. Translators: Last 7 days' consumption from the device meter.
+#: device_dialog.py:1877 device_dialog.py:806
+msgid "Verbrauch letzte 7 Tage: {kwh} kWh"
+msgstr ""
+
+#. Translators: Placeholder while the consumption data is fetched.
+#: device_dialog.py:1896
+msgid "Verbrauch heute: wird abgerufen..."
+msgstr ""
+
+#. Translators: Placeholder while the consumption data is fetched.
+#: device_dialog.py:1898
+msgid "Verbrauch letzte 7 Tage: wird abgerufen..."
+msgstr ""
+
+#. Consumption lines (today / last 7 days) - replace the placeholder or
+#. refresh values once the background fetch filled the cache.
+#: device_dialog.py:796 device_dialog.py:803
+msgid "Verbrauch heute:"
+msgstr ""
+
+#: device_dialog.py:797
+msgid "Verbrauch letzte 7 Tage:"
+msgstr ""
+
+#. Translators: Compact outlet label with the outlet number.
+#: meross_devices.py:569 meross_devices.py:1403
+msgid "Ausgang {number}"
+msgstr ""
+
+#. Vollständiger Name inkl. Gerät: "Garten: Pumpe" (benannter Ausgang) bzw.
+#. "Garten: Ausgang 1" (ohne Namen) - überall dort verwendet, wo der Kontext
+#. (das Elterngerät) nicht ohnehin klar ist (Ansagen, Favoriten, Toggle-
+#. Aktion). Translators: Full channel name: device name plus outlet label.
+#: meross_devices.py:575 meross_devices.py:1291
+msgid "{device}: {outlet}"
+msgstr ""
+
+#. Translators: Label before the start tab selection.
+#: settings_panel.py:211
+msgid "Beim Öffnen &anzeigen:"
+msgstr ""
+
+#: settings_panel.py:216
+msgid "Favoriten"
+msgstr ""
+
+#. Name
+#: device_dialog.py:1691
+msgid "Sensor"
+msgstr ""
+
+#. Online status (inherits the hub status for untracked types like MS130)
+#: device_dialog.py:1694
+msgid "Online"
+msgstr ""
+
+#: device_dialog.py:1710
+msgid "Batterie: wird ermittelt"
+msgstr ""
+
+#. Translators: One line per hub sensor. {name} = sensor name, {status} =
+#. Online/Offline, {type} = model (e.g. MS130), {battery} = battery text.
+#: device_dialog.py:1715
+msgid "{name}: {status}, {type}, {battery}"
+msgstr ""
+
+#. Translators: Fallback when the model ID is not yet known to the add-on.
+#. Helps users report new models.
+#: dialog_cozytouch.py:556
+msgid "Modell-ID: {model_id} (unbekanntes Modell)"
+msgstr ""
+
+#. Translators: Group heading in the history for the current day.
+#: dialog_history.py:53
+msgid "Heute"
+msgstr ""
+
+#. Translators: Group heading in the history for the previous day.
+#: dialog_history.py:56
+msgid "Gestern"
+msgstr ""
+
+#. Translators: Group heading in the history: weekday and date, e.g. "Freitag,
+#. 24.07.2026".
+#: dialog_history.py:59
+msgid "{weekday}, {date}"
+msgstr ""
+
+#. Translators: Heading of the change point list.
+#: dialog_history.py:457
+msgid "Letzte Änderungen:"
+msgstr ""
+
+#. Translators: Message when no events match the filter.
+#: dialog_history.py:357
+msgid "Keine Ereignisse gefunden"
+msgstr ""
+
+#. Translators: Message when no measurements match the filter.
+#: dialog_history.py:393
+msgid "Keine Messwerte gefunden"
+msgstr ""
+
+#. Translators: Label of the view selector in the history dialog.
+#: dialog_history.py:104
+msgid "&Ansicht:"
+msgstr ""
+
+#: dialog_history.py:108
+msgid "Ereignisse"
+msgstr ""
+
+#: dialog_history.py:108
+msgid "Messwerte"
+msgstr ""
+
+#. Device filter
+#: dialog_history.py:120
+msgid "&Gerät:"
+msgstr ""
+
+#. Platform filter
+#: dialog_history.py:128
+msgid "&Plattform:"
+msgstr ""
+
+#. Time range filter
+#: dialog_history.py:135
+msgid "&Zeitraum:"
+msgstr ""
+
+#: dialog_history.py:200
+msgid "Größe"
+msgstr ""
+
+#: dialog_history.py:200
+msgid "Kleinster"
+msgstr ""
+
+#: dialog_history.py:201
+msgid "Größter"
+msgstr ""
+
+#: dialog_history.py:201
+msgid "Mittelwert"
+msgstr ""
+
+#: dialog_history.py:202
+msgid "Aktuell"
+msgstr ""
+
+#: dialog_history.py:202
+msgid "Punkte"
+msgstr ""
+
+#: dialog_history.py:208
+msgid "Ereignis"
+msgstr ""
+
+#: dialog_history.py:208 history.py:801
+msgid "Herkunft"
+msgstr ""
+
+#: dialog_history.py:348
+msgid "{count} Ereignisse angezeigt (gesamt: {total})"
+msgstr ""
+
+#: dialog_history.py:384
+msgid "{count} Messreihen (aus {total} Änderungspunkten)"
+msgstr ""
+
+#. Translators: Header of the measurement detail dialog.
+#: dialog_history.py:441
+msgid "{name} – {quantity}"
+msgstr ""
+
+#. Translators: Summary lines in the measurement detail dialog.
+#: dialog_history.py:446
+msgid "Kleinster Wert: {value}"
+msgstr ""
+
+#: dialog_history.py:448
+msgid "Größter Wert: {value}"
+msgstr ""
+
+#. Translators: Time-weighted mean of a measurement series.
+#: dialog_history.py:451
+msgid "Mittelwert (zeitgewichtet): {value}"
+msgstr ""
+
+#: dialog_history.py:453
+msgid "Aktuell: {value}"
+msgstr ""
+
+#. Translators: Shown when a measurement series has no change points in the
+#. selected period.
+#: dialog_history.py:469
+msgid "Keine Änderungen im gewählten Zeitraum"
+msgstr ""
+
+#. Translators: Confirmation prompt before deleting the history. {events} =
+#. number of events, {measurements} = number of measurement change points.
+#: dialog_history.py:541
+msgid ""
+"Möchten Sie wirklich den gesamten Verlauf löschen?\n"
+"\n"
+"Es werden {events} Ereignisse und {measurements} Messwerte unwiderruflich gelöscht."
+msgstr ""
+
+#. Translators: Message after loading the event list.
+#: dialog_history.py:354
+msgid "{count} Ereignisse"
+msgstr ""
+
+#. Translators: Message after loading the measurement view.
+#: dialog_history.py:390
+msgid "{count} Messreihen"
+msgstr ""
+
+#. Translators: Success message in the export dialog. {path} = file.
+#: dialog_history.py:515
+msgid ""
+"Verlauf erfolgreich exportiert.\n"
+"\n"
+"Datei: {path}"
+msgstr ""
+
+#: history.py:134
+msgid "Luftfeuchte"
+msgstr ""
+
+#: history.py:135
+msgid "CO₂"
+msgstr ""
+
+#: history.py:136
+msgid "Luftdruck"
+msgstr ""
+
+#. Translators: Origin of a history event - the device was switched outside of
+#. NVDA (manufacturer app, voice assistant, button on the device).
+#. Deliberately not more specific: which of these it was cannot be determined
+#. from the cloud notification.
+#: history.py:954
+msgid "extern"
+msgstr ""
+
+#. Translators: Origin of a history event - triggered automatically.
+#: history.py:957
+msgid "automatisch"
+msgstr ""
+
+#. Translators: Origin of a history event - the user did it themselves.
+#: history.py:960
+msgid "ich"
+msgstr ""
+
+#. Translators: Explanation for a temporary Netatmo API condition.
+#: netatmo_api.py:581
+msgid "Netatmo-Anfragelimit erreicht – die Erweiterung fragt später erneut ab"
+msgstr ""
+
+#. Translators: Explanation for a temporary Netatmo API condition.
+#: netatmo_api.py:586
+msgid ""
+"Netatmo-Server vorübergehend nicht erreichbar – kein Problem der Erweiterung"
+" oder deiner Einstellungen; die nächste Abfrage versucht es erneut"
+msgstr ""
+
+#. Translators: Message when an action is triggered while the previous one is
+#. still running.
+#: device_dialog.py:495
+msgid "Bitte warten - die vorherige Aktion läuft noch"
+msgstr ""
+
+#. Translators: Error message on a Cozytouch connection problem. {error} =
+#. technical error type.
+#: cozytouch_api.py:174
+msgid "Cozytouch Verbindungsfehler: {error}"
+msgstr ""
+
+#. Translators: Error message when a diffuser does not respond to the mode
+#. command.
+#: meross_api.py:1480
+msgid "Diffuser nicht erreichbar - antwortet nicht auf Befehl"
+msgstr ""
+
+#. Translators: Error message when a diffuser does not respond to the on/off
+#. command.
+#: meross_api.py:1407
+msgid "Diffuser nicht erreichbar - antwortet nicht auf Schaltbefehl"
+msgstr ""
+
+#. Translators: Validation error when email or password is missing.
+#: meross_api.py:471
+msgid "Email und Passwort erforderlich"
+msgstr ""
+
+#. Translators: Error message when the Meross event loop does not start.
+#: meross_api.py:495
+msgid "Event Loop konnte nicht gestartet werden"
+msgstr ""
+
+#. Translators: Error message for an invalid color temperature value.
+#: meross_api.py:1588
+msgid "Farbtemperatur muss zwischen 0 und 100 liegen"
+msgstr ""
+
+#. Translators: Error message when no OAuth refresh token is stored.
+#: netatmo_api.py:820
+msgid "Kein Refresh Token vorhanden – bitte neu autorisieren"
+msgstr ""
+
+#. Translators: Error message when a lamp does not respond to the command.
+#: meross_api.py:1539
+msgid "Lampe nicht erreichbar - antwortet nicht auf Befehl"
+msgstr ""
+
+#. Translators: Accessible name of a password field when a password is already
+#. stored. {field} = field name.
+#: settings_panel.py:70
+msgid "{field} (gespeichert - leer lassen zum Beibehalten)"
+msgstr ""

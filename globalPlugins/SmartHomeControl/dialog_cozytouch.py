@@ -63,6 +63,42 @@ class _CozytouchDialogMixin:
         return chosen
 
     # ---------------- Handlers ----------------
+    def _run_cozytouch_cloud_action(self, action_call, on_success, failure_message):
+        """Führt einen Cozytouch-Cloud-Aufruf im Hintergrund aus.
+
+        Die ``device.set_*``-Methoden blockieren durch das
+        Verifikations-Polling in cozytouch_api bis zu ~15 s; im wx-Thread
+        ausgeführt fror dabei der Dialog (und NVDA) ein. Deshalb Thread +
+        _safe_call_after wie bei den Favoriten-Gesten (_favorite_toggle in
+        __init__.py). ``action_call`` (ohne Argumente) liefert True/False;
+        ``on_success`` läuft danach im UI-Thread (Ansage, Verlauf,
+        Baum-Umbau), ``failure_message`` wird bei False angesagt.
+        """
+        if not self._begin_cloud_action():
+            return
+
+        def task():
+            try:
+                ok = action_call()
+            except Exception as e:
+                _beep(BEEP_ERROR)
+                log.error(f"Cozytouch-Fehler: {e}")
+                # Translators: Generic Cozytouch error message with detail
+                # text.
+                self._safe_call_after(
+                    ui.message,
+                    _("Cozytouch-Fehler: {error}").format(error=str(e)[:80]))
+                return
+            finally:
+                self._cloud_action_running = False
+            if ok:
+                self._safe_call_after(on_success)
+            else:
+                _beep(BEEP_ERROR)
+                self._safe_call_after(ui.message, failure_message)
+
+        threading.Thread(target=task, daemon=True).start()
+
     def _handle_cozytouch_temp(self, device, item):
         """Lets the user enter the target temperature."""
         lo = device.target_temp_min
@@ -95,25 +131,21 @@ class _CozytouchDialogMixin:
             # Translators: Message on non-numeric temperature input.
             ui.message(_("Ungültige Eingabe"))
             return
-        try:
-            if device.set_target_temperature(temp):
-                _beep(BEEP_ACTION)
-                # Translators: Confirmation after setting the target
-                # temperature.
-                ui.message(_("{name}: Zieltemperatur {temp} Grad").format(
-                    name=device.name, temp=_fmt_temp(device.target_temperature)))
-                self.plugin._record_local_cozytouch_action(device.uuid)
-                get_history().log_action(device, 'set_target_temp', f"{_fmt_temp(device.target_temperature)}°C")
-                self._rebuild_cozytouch_device_children(item, device)
-            else:
-                _beep(BEEP_ERROR)
-                # Translators: Error message when the API rejects the setting.
-                ui.message(_("Zieltemperatur konnte nicht gesetzt werden"))
-        except Exception as e:
-            _beep(BEEP_ERROR)
-            log.error(f"Cozytouch Zieltemperatur-Fehler: {e}")
-            # Translators: Generic Cozytouch error message with detail text.
-            ui.message(_("Cozytouch-Fehler: {error}").format(error=str(e)[:80]))
+        def on_success():
+            _beep(BEEP_ACTION)
+            # Translators: Confirmation after setting the target
+            # temperature.
+            ui.message(_("{name}: Zieltemperatur {temp} Grad").format(
+                name=device.name, temp=_fmt_temp(device.target_temperature)))
+            self.plugin._record_local_cozytouch_action(device.uuid)
+            get_history().log_action(device, 'set_target_temp', f"{_fmt_temp(device.target_temperature)}°C")
+            self._rebuild_cozytouch_device_children(item, device)
+
+        self._run_cozytouch_cloud_action(
+            lambda: device.set_target_temperature(temp),
+            on_success,
+            # Translators: Error message when the API rejects the setting.
+            _("Zieltemperatur konnte nicht gesetzt werden"))
 
     def _handle_cozytouch_mode(self, device, item):
         """Lets the user choose the operating mode."""
@@ -128,25 +160,21 @@ class _CozytouchDialogMixin:
         )
         if chosen is None:
             return
-        try:
-            if device.set_mode(chosen):
-                mode_de = COZYTOUCH_HEATING_MODE_NAMES.get(chosen, chosen)
-                _beep(BEEP_ACTION)
-                # Translators: Confirmation after a mode change. {mode} = mode
-                # name.
-                ui.message(_("{name}: Modus {mode}").format(name=device.name, mode=mode_de))
-                self.plugin._record_local_cozytouch_action(device.uuid)
-                get_history().log_action(device, 'set_mode', mode_de)
-                self._rebuild_cozytouch_device_children(item, device)
-            else:
-                _beep(BEEP_ERROR)
-                # Translators: Error message when the mode change fails.
-                ui.message(_("Modus konnte nicht gesetzt werden"))
-        except Exception as e:
-            _beep(BEEP_ERROR)
-            log.error(f"Cozytouch Modus-Fehler: {e}")
-            # Translators: Generic Cozytouch error message with detail text.
-            ui.message(_("Cozytouch-Fehler: {error}").format(error=str(e)[:80]))
+        def on_success():
+            mode_de = COZYTOUCH_HEATING_MODE_NAMES.get(chosen, chosen)
+            _beep(BEEP_ACTION)
+            # Translators: Confirmation after a mode change. {mode} = mode
+            # name.
+            ui.message(_("{name}: Modus {mode}").format(name=device.name, mode=mode_de))
+            self.plugin._record_local_cozytouch_action(device.uuid)
+            get_history().log_action(device, 'set_mode', mode_de)
+            self._rebuild_cozytouch_device_children(item, device)
+
+        self._run_cozytouch_cloud_action(
+            lambda: device.set_mode(chosen),
+            on_success,
+            # Translators: Error message when the mode change fails.
+            _("Modus konnte nicht gesetzt werden"))
 
     def _handle_cozytouch_boost_time(self, device, item):
         """Lets the user change the boost duration (minutes). Experimental:
@@ -181,131 +209,120 @@ class _CozytouchDialogMixin:
             # Translators: Message on invalid boost duration input.
             ui.message(_("Ungültige Eingabe - bitte Minuten zwischen 1 und 1440 angeben"))
             return
-        try:
-            if device.set_boost_duration(minutes):
-                _beep(BEEP_ACTION)
-                # Translators: Confirmation after changing the boost duration.
-                ui.message(_("{name}: Boost-Laufzeit {minutes} Minuten").format(
-                    name=device.name, minutes=minutes))
-                self.plugin._record_local_cozytouch_action(device.uuid)
-                get_history().log_action(
-                    device, 'set_boost_duration',
-                    # Translators: History detail for the boost duration.
-                    _("{minutes} Minuten").format(minutes=minutes))
-                self._rebuild_cozytouch_device_children(item, device)
-            else:
-                _beep(BEEP_ERROR)
-                # Translators: Error when the cloud rejects the boost duration
-                # write (the capability may be read-only on some models).
-                ui.message(_("Boost-Laufzeit konnte nicht gesetzt werden - "
-                             "das Gerät akzeptiert diese Änderung möglicherweise nicht"))
-        except Exception as e:
-            _beep(BEEP_ERROR)
-            log.error(f"Cozytouch Boost-Laufzeit-Fehler: {e}")
-            # Translators: Generic Cozytouch error message with detail text.
-            ui.message(_("Cozytouch-Fehler: {error}").format(error=str(e)[:80]))
+        def on_success():
+            _beep(BEEP_ACTION)
+            # Translators: Confirmation after changing the boost duration.
+            ui.message(_("{name}: Boost-Laufzeit {minutes} Minuten").format(
+                name=device.name, minutes=minutes))
+            self.plugin._record_local_cozytouch_action(device.uuid)
+            get_history().log_action(
+                device, 'set_boost_duration',
+                # Translators: History detail for the boost duration.
+                _("{minutes} Minuten").format(minutes=minutes))
+            self._rebuild_cozytouch_device_children(item, device)
+
+        self._run_cozytouch_cloud_action(
+            lambda: device.set_boost_duration(minutes),
+            on_success,
+            # Translators: Error when the cloud rejects the boost duration
+            # write (the capability may be read-only on some models).
+            _("Boost-Laufzeit konnte nicht gesetzt werden - "
+              "das Gerät akzeptiert diese Änderung möglicherweise nicht"))
 
     def _handle_cozytouch_boost(self, device, item):
         """Toggles boost mode."""
-        try:
-            new_state = not device.boost_on
-            if device.set_boost(new_state):
-                _beep(BEEP_ON if new_state else BEEP_OFF)
-                status = _("ein") if new_state else _("aus")
-                # Translators: Confirmation after toggling boost.
-                ui.message(_("{name}: Boost {status}").format(name=device.name, status=status))
-                self.plugin._record_local_cozytouch_action(device.uuid)
-                get_history().log_action(
-                    device, 'boost_on' if new_state else 'boost_off',
-                    # Translators: History detail: boost switched on/off.
-                    _("Boost {status}").format(status=status))
-                self._rebuild_cozytouch_device_children(item, device)
-            else:
-                _beep(BEEP_ERROR)
-                # Translators: Error message when toggling boost fails.
-                ui.message(_("Boost konnte nicht umgeschaltet werden"))
-        except Exception as e:
-            _beep(BEEP_ERROR)
-            log.error(f"Cozytouch Boost-Fehler: {e}")
-            # Translators: Generic Cozytouch error message with detail text.
-            ui.message(_("Cozytouch-Fehler: {error}").format(error=str(e)[:80]))
+        new_state = not device.boost_on
+
+        def on_success():
+            _beep(BEEP_ON if new_state else BEEP_OFF)
+            status = _("ein") if new_state else _("aus")
+            # Translators: Confirmation after toggling boost.
+            ui.message(_("{name}: Boost {status}").format(name=device.name, status=status))
+            self.plugin._record_local_cozytouch_action(device.uuid)
+            get_history().log_action(
+                device, 'boost_on' if new_state else 'boost_off',
+                # Translators: History detail: boost switched on/off.
+                _("Boost {status}").format(status=status))
+            self._rebuild_cozytouch_device_children(item, device)
+
+        self._run_cozytouch_cloud_action(
+            lambda: device.set_boost(new_state),
+            on_success,
+            # Translators: Error message when toggling boost fails.
+            _("Boost konnte nicht umgeschaltet werden"))
 
     def _handle_cozytouch_toggle(self, device, item):
         """Switches hot water production on/off (CAP_DHW_ON)."""
-        try:
-            new_state = not device.is_on
-            if device.set_dhw(new_state):
-                _beep(BEEP_ON if new_state else BEEP_OFF)
-                status = _("ein") if new_state else _("aus")
-                # Translators: Confirmation after switching hot water
-                # production on/off.
-                ui.message(_("{name}: Betrieb {status}").format(name=device.name, status=status))
-                self.plugin._record_local_toggle(device.uuid, new_state)
-                self.plugin._record_local_cozytouch_action(device.uuid)
-                get_history().log_action(
-                    device, 'toggle_on' if new_state else 'toggle_off',
-                    # Translators: History detail: device switched on/off.
-                    _('Ein') if new_state else _('Aus'))
-                self._rebuild_cozytouch_device_children(item, device)
-            else:
-                _beep(BEEP_ERROR)
-                # Translators: Error message when toggling hot water production
-                # fails.
-                ui.message(_("Warmwasser konnte nicht umgeschaltet werden"))
-        except Exception as e:
-            _beep(BEEP_ERROR)
-            log.error(f"Cozytouch Schalt-Fehler: {e}")
-            # Translators: Generic Cozytouch error message with detail text.
-            ui.message(_("Cozytouch-Fehler: {error}").format(error=str(e)[:80]))
+        new_state = not device.is_on
+
+        def on_success():
+            _beep(BEEP_ON if new_state else BEEP_OFF)
+            status = _("ein") if new_state else _("aus")
+            # Translators: Confirmation after switching hot water
+            # production on/off.
+            ui.message(_("{name}: Betrieb {status}").format(name=device.name, status=status))
+            self.plugin._record_local_toggle(device.uuid, new_state)
+            self.plugin._record_local_cozytouch_action(device.uuid)
+            get_history().log_action(
+                device, 'toggle_on' if new_state else 'toggle_off',
+                # Translators: History detail: device switched on/off.
+                _('Ein') if new_state else _('Aus'))
+            self._rebuild_cozytouch_device_children(item, device)
+
+        self._run_cozytouch_cloud_action(
+            lambda: device.set_dhw(new_state),
+            on_success,
+            # Translators: Error message when toggling hot water production
+            # fails.
+            _("Warmwasser konnte nicht umgeschaltet werden"))
 
     def _handle_cozytouch_away(self, device, item):
         """Turns away mode off directly, or opens the scheduling dialog."""
-        try:
-            if device.away_on:
-                # Turn off directly (also works from the "pending" state).
-                if device.set_away(False):
-                    _beep(BEEP_OFF)
-                    # Translators: Confirmation after toggling away mode.
-                    ui.message(_("{name}: Abwesenheit {status}").format(
-                        name=device.name, status=_("aus")))
-                    self.plugin._record_local_cozytouch_action(device.uuid)
-                    # Translators: History detail: away mode switched off.
-                    get_history().log_action(device, 'away_off', _("Abwesenheit aus"))
-                    self._rebuild_cozytouch_device_children(item, device)
-                else:
-                    _beep(BEEP_ERROR)
-                    # Translators: Error message when toggling away mode fails.
-                    ui.message(_("Abwesenheit konnte nicht umgeschaltet werden"))
-                return
-
-            # Turn on: let the user schedule the period first.
-            window = self._prompt_away_schedule(device)
-            if window is None:
-                # Translators: Message when the user cancels an action.
-                ui.message(_("Abgebrochen"))
-                return
-            start_ts, end_ts = window
-            if device.set_away(True, start_ts, end_ts):
-                _beep(BEEP_ON)
-                start_str = time.strftime("%d.%m.%Y %H:%M", time.localtime(start_ts))
-                end_str = time.strftime("%d.%m.%Y %H:%M", time.localtime(end_ts))
-                # Translators: Confirmation after scheduling away mode.
-                # {start}/{end} = date and time.
-                ui.message(_("{name}: Abwesenheit von {start} bis {end}").format(
-                    name=device.name, start=start_str, end=end_str))
+        if device.away_on:
+            # Turn off directly (also works from the "pending" state).
+            def on_success_off():
+                _beep(BEEP_OFF)
+                # Translators: Confirmation after toggling away mode.
+                ui.message(_("{name}: Abwesenheit {status}").format(
+                    name=device.name, status=_("aus")))
                 self.plugin._record_local_cozytouch_action(device.uuid)
-                # Translators: History detail: scheduled away period.
-                get_history().log_action(device, 'away_on', _("von {start} bis {end}").format(
-                    start=start_str, end=end_str))
+                # Translators: History detail: away mode switched off.
+                get_history().log_action(device, 'away_off', _("Abwesenheit aus"))
                 self._rebuild_cozytouch_device_children(item, device)
-            else:
-                _beep(BEEP_ERROR)
-                ui.message(_("Abwesenheit konnte nicht umgeschaltet werden"))
-        except Exception as e:
-            _beep(BEEP_ERROR)
-            log.error(f"Cozytouch Abwesenheit-Fehler: {e}")
-            # Translators: Generic Cozytouch error message with detail text.
-            ui.message(_("Cozytouch-Fehler: {error}").format(error=str(e)[:80]))
+
+            self._run_cozytouch_cloud_action(
+                lambda: device.set_away(False),
+                on_success_off,
+                # Translators: Error message when toggling away mode fails.
+                _("Abwesenheit konnte nicht umgeschaltet werden"))
+            return
+
+        # Turn on: let the user schedule the period first.
+        window = self._prompt_away_schedule(device)
+        if window is None:
+            # Translators: Message when the user cancels an action.
+            ui.message(_("Abgebrochen"))
+            return
+        start_ts, end_ts = window
+
+        def on_success_on():
+            _beep(BEEP_ON)
+            start_str = time.strftime("%d.%m.%Y %H:%M", time.localtime(start_ts))
+            end_str = time.strftime("%d.%m.%Y %H:%M", time.localtime(end_ts))
+            # Translators: Confirmation after scheduling away mode.
+            # {start}/{end} = date and time.
+            ui.message(_("{name}: Abwesenheit von {start} bis {end}").format(
+                name=device.name, start=start_str, end=end_str))
+            self.plugin._record_local_cozytouch_action(device.uuid)
+            # Translators: History detail: scheduled away period.
+            get_history().log_action(device, 'away_on', _("von {start} bis {end}").format(
+                start=start_str, end=end_str))
+            self._rebuild_cozytouch_device_children(item, device)
+
+        self._run_cozytouch_cloud_action(
+            lambda: device.set_away(True, start_ts, end_ts),
+            on_success_on,
+            _("Abwesenheit konnte nicht umgeschaltet werden"))
 
     def _prompt_away_schedule(self, device):
         """Accessible dialog for scheduling the away period.

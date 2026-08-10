@@ -53,6 +53,29 @@ class SmartHomeSettingsDialog(wx.Dialog):
         self._create_ui()
         self.CenterOnScreen()
 
+    # ---- Passwort-Felder: Platzhalter-Logik ----
+    # Gespeicherte Passwörter/Secrets werden beim Öffnen NICHT entschlüsselt
+    # und ins TextCtrl gelegt (TE_PASSWORD maskiert nur die Anzeige, der
+    # Klartext läge sonst für die Lebensdauer des Dialogs im Speicher und wäre
+    # per GetValue auslesbar). Stattdessen bleibt das Feld leer; ein leeres
+    # Feld heißt beim Speichern und Testen "gespeichertes Passwort behalten".
+
+    @staticmethod
+    def _password_field_name(field, has_saved):
+        """Accessible-Name eines Passwortfelds, mit Hinweis auf den
+        gespeicherten Wert."""
+        if has_saved:
+            # Translators: Accessible name of a password field when a password
+            # is already stored. {field} = field name.
+            return _("{field} (gespeichert - leer lassen zum Beibehalten)").format(field=field)
+        return field
+
+    @staticmethod
+    def _effective_secret(ctrl, stored):
+        """Eingegebener Wert; bei leerem Feld der gespeicherte."""
+        value = ctrl.GetValue().strip()
+        return value if value else (stored or "")
+
     def _on_window_destroy(self, event):
         # EVT_WINDOW_DESTROY feuert auch für Kindfenster - nur die Zerstörung
         # des Dialogs selbst zählt.
@@ -309,8 +332,9 @@ class SmartHomeSettingsDialog(wx.Dialog):
         # Translators: Label of the password input field (Meross).
         passwordLabel = wx.StaticText(panel, label=_("&Passwort:"))
         self.merossPasswordCtrl = wx.TextCtrl(
-            panel, value=self.plugin.password, style=wx.TE_PASSWORD)
-        self.merossPasswordCtrl.SetName(_("Meross Passwort"))
+            panel, value="", style=wx.TE_PASSWORD)
+        self.merossPasswordCtrl.SetName(self._password_field_name(
+            _("Meross Passwort"), bool(self.plugin.password)))
         formSizer.Add(passwordLabel, flag=wx.ALIGN_CENTER_VERTICAL)
         formSizer.Add(self.merossPasswordCtrl, flag=wx.EXPAND)
 
@@ -372,10 +396,10 @@ class SmartHomeSettingsDialog(wx.Dialog):
         # Translators: Label of the client secret field for Netatmo OAuth2.
         secretLabel = wx.StaticText(panel, label=_("Client-&Secret:"))
         self.netatmoSecretCtrl = wx.TextCtrl(
-            panel,
-            value=getattr(self.plugin, 'netatmo_client_secret', ''),
-            style=wx.TE_PASSWORD)
-        self.netatmoSecretCtrl.SetName(_("Netatmo Client-Secret"))
+            panel, value="", style=wx.TE_PASSWORD)
+        self.netatmoSecretCtrl.SetName(self._password_field_name(
+            _("Netatmo Client-Secret"),
+            bool(getattr(self.plugin, 'netatmo_client_secret', ''))))
         formSizer.Add(secretLabel, flag=wx.ALIGN_CENTER_VERTICAL)
         formSizer.Add(self.netatmoSecretCtrl, flag=wx.EXPAND)
 
@@ -471,10 +495,10 @@ class SmartHomeSettingsDialog(wx.Dialog):
         # Translators: Label of the password field for VeSync.
         passwordLabel = wx.StaticText(panel, label=_("VeSync Pass&wort:"))
         self.vesyncPasswordCtrl = wx.TextCtrl(
-            panel,
-            value=getattr(self.plugin, 'vesync_password', ''),
-            style=wx.TE_PASSWORD)
-        self.vesyncPasswordCtrl.SetName(_("VeSync Passwort"))
+            panel, value="", style=wx.TE_PASSWORD)
+        self.vesyncPasswordCtrl.SetName(self._password_field_name(
+            _("VeSync Passwort"),
+            bool(getattr(self.plugin, 'vesync_password', ''))))
         formSizer.Add(passwordLabel, flag=wx.ALIGN_CENTER_VERTICAL)
         formSizer.Add(self.vesyncPasswordCtrl, flag=wx.EXPAND)
 
@@ -549,10 +573,10 @@ class SmartHomeSettingsDialog(wx.Dialog):
         # Translators: Label of the password field for Cozytouch.
         passwordLabel = wx.StaticText(panel, label=_("Cozytouch Pass&wort:"))
         self.cozytouchPasswordCtrl = wx.TextCtrl(
-            panel,
-            value=getattr(self.plugin, 'cozytouch_password', ''),
-            style=wx.TE_PASSWORD)
-        self.cozytouchPasswordCtrl.SetName(_("Cozytouch Passwort"))
+            panel, value="", style=wx.TE_PASSWORD)
+        self.cozytouchPasswordCtrl.SetName(self._password_field_name(
+            _("Cozytouch Passwort"),
+            bool(getattr(self.plugin, 'cozytouch_password', ''))))
         formSizer.Add(passwordLabel, flag=wx.ALIGN_CENTER_VERTICAL)
         formSizer.Add(self.cozytouchPasswordCtrl, flag=wx.EXPAND)
 
@@ -747,7 +771,7 @@ class SmartHomeSettingsDialog(wx.Dialog):
     def on_test_meross(self, event):
         """Tests the Meross connection."""
         email = self.merossEmailCtrl.GetValue().strip()
-        password = self.merossPasswordCtrl.GetValue().strip()
+        password = self._effective_secret(self.merossPasswordCtrl, self.plugin.password)
 
         if not email or not password:
             # Translators: Validation error in the Meross tab.
@@ -810,7 +834,8 @@ class SmartHomeSettingsDialog(wx.Dialog):
     def on_connect_netatmo(self, event):
         """Starts the Netatmo OAuth2 flow."""
         client_id = self.netatmoIdCtrl.GetValue().strip()
-        client_secret = self.netatmoSecretCtrl.GetValue().strip()
+        client_secret = self._effective_secret(
+            self.netatmoSecretCtrl, getattr(self.plugin, 'netatmo_client_secret', ''))
         # Read the port on the main thread (wx controls are not thread-safe);
         # pass it on to the OAuth coroutine in the background thread. Store it
         # in the plugin immediately so the token about to be saved belongs to
@@ -905,7 +930,8 @@ class SmartHomeSettingsDialog(wx.Dialog):
             return
 
         client_id = self.netatmoIdCtrl.GetValue().strip()
-        client_secret = self.netatmoSecretCtrl.GetValue().strip()
+        client_secret = self._effective_secret(
+            self.netatmoSecretCtrl, getattr(self.plugin, 'netatmo_client_secret', ''))
 
         def test_task():
             try:
@@ -950,7 +976,8 @@ class SmartHomeSettingsDialog(wx.Dialog):
     def on_test_vesync(self, event):
         """Tests the VeSync connection."""
         email = self.vesyncEmailCtrl.GetValue().strip()
-        password = self.vesyncPasswordCtrl.GetValue().strip()
+        password = self._effective_secret(
+            self.vesyncPasswordCtrl, getattr(self.plugin, 'vesync_password', ''))
         country = (self.vesyncCountryCtrl.GetValue() or "DE").strip().upper()
 
         if not email or not password:
@@ -1023,7 +1050,8 @@ class SmartHomeSettingsDialog(wx.Dialog):
     def on_test_cozytouch(self, event):
         """Tests the Cozytouch connection."""
         email = self.cozytouchEmailCtrl.GetValue().strip()
-        password = self.cozytouchPasswordCtrl.GetValue().strip()
+        password = self._effective_secret(
+            self.cozytouchPasswordCtrl, getattr(self.plugin, 'cozytouch_password', ''))
 
         if not email or not password:
             # Translators: Validation error in the Cozytouch tab.
@@ -1091,7 +1119,9 @@ class SmartHomeSettingsDialog(wx.Dialog):
         """Saves all settings."""
         # Meross validation
         email = self.merossEmailCtrl.GetValue().strip()
-        password = self.merossPasswordCtrl.GetValue().strip()
+        # Leeres Passwortfeld = gespeichertes Passwort behalten (die Felder
+        # werden beim Öffnen nicht mehr mit dem Klartext befüllt).
+        password = self._effective_secret(self.merossPasswordCtrl, self.plugin.password)
         use_meross = self.chkMeross.GetValue()
 
         if use_meross:
@@ -1129,7 +1159,8 @@ class SmartHomeSettingsDialog(wx.Dialog):
         # Netatmo validation
         use_netatmo = self.chkNetatmo.GetValue()
         netatmo_client_id = self.netatmoIdCtrl.GetValue().strip()
-        netatmo_client_secret = self.netatmoSecretCtrl.GetValue().strip()
+        netatmo_client_secret = self._effective_secret(
+            self.netatmoSecretCtrl, getattr(self.plugin, 'netatmo_client_secret', ''))
 
         if use_netatmo and (not netatmo_client_id or not netatmo_client_secret):
             self._set_status(_("Netatmo: Bitte Client-ID und Secret eingeben"), error=True)
@@ -1141,7 +1172,8 @@ class SmartHomeSettingsDialog(wx.Dialog):
         # VeSync validation
         use_vesync = self.chkVesync.GetValue()
         vesync_email = self.vesyncEmailCtrl.GetValue().strip()
-        vesync_password = self.vesyncPasswordCtrl.GetValue().strip()
+        vesync_password = self._effective_secret(
+            self.vesyncPasswordCtrl, getattr(self.plugin, 'vesync_password', ''))
         vesync_country = (self.vesyncCountryCtrl.GetValue() or "DE").strip().upper()
 
         if use_vesync:
@@ -1177,7 +1209,8 @@ class SmartHomeSettingsDialog(wx.Dialog):
         # Cozytouch validation
         use_cozytouch = self.chkCozytouch.GetValue()
         cozytouch_email = self.cozytouchEmailCtrl.GetValue().strip()
-        cozytouch_password = self.cozytouchPasswordCtrl.GetValue().strip()
+        cozytouch_password = self._effective_secret(
+            self.cozytouchPasswordCtrl, getattr(self.plugin, 'cozytouch_password', ''))
 
         if use_cozytouch:
             email_pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'

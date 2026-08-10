@@ -14,6 +14,7 @@ The implementation follows pyvesync but is standalone
 
 import concurrent.futures
 import hashlib
+import itertools
 import platform
 import re
 import threading
@@ -85,10 +86,15 @@ def _hash_password(password):
     return hashlib.md5(password.encode("utf-8")).hexdigest()
 
 
-def _new_trace_id(counter=[0]):
+# itertools.count ist atomar (C-Implementierung) - bis zu 4 parallele
+# bypassV2-Worker holen sich hier IDs; das frühere mutierbare
+# Default-Argument mit `counter[0] += 1` konnte doppelte traceIds liefern.
+_trace_counter = itertools.count(1)
+
+
+def _new_trace_id():
     """Generates a new trace ID for API calls"""
-    counter[0] += 1
-    return f"APP{TERMINAL_ID[-5:-1]}{int(time.time())}-{counter[0]:05d}"
+    return f"APP{TERMINAL_ID[-5:-1]}{int(time.time())}-{next(_trace_counter):05d}"
 
 
 def _country_code_to_region(country_code):

@@ -9,6 +9,11 @@ on:
   pull_request:
   workflow_dispatch:
 
+# Release-Erstellung (softprops/action-gh-release) braucht Schreibrechte auf
+# Contents; je nach Repo-Einstellung ist der GITHUB_TOKEN sonst nur lesend.
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: windows-latest

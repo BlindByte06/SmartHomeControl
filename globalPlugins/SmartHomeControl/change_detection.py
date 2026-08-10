@@ -48,7 +48,7 @@ class _ChangeDetectionMixin:
         """Checks whether a push event directly follows a local action"""
         now = time.time()
         # Remove stale entries
-        stale = [key for key, (_, ts) in self._recent_local_toggles.items() if now - ts > window]
+        stale = [key for key, (_state, ts) in self._recent_local_toggles.items() if now - ts > window]
         for key in stale:
             self._recent_local_toggles.pop(key, None)
         match = self._recent_local_toggles.get(device_uuid)
@@ -118,8 +118,6 @@ class _ChangeDetectionMixin:
             device_uuid: UUID of the device
             channel_name: optional - name of the channel for multi-channel devices
         """
-        import time
-        
         # Do not announce the user's own recent actions twice
         if self._is_recent_local_toggle(device_uuid, new_state):
             log.debug(f"Unterdrücke doppelte Ansage für {device_uuid}")
@@ -183,7 +181,6 @@ class _ChangeDetectionMixin:
     
     def is_cache_fresh(self):
         """Checks whether the device cache is still fresh"""
-        import time
         if not self.devices or self._last_refresh_time == 0:
             return False
         return (time.time() - self._last_refresh_time) < CACHE_VALID_DURATION

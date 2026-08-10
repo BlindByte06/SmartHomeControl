@@ -480,10 +480,26 @@ class SmartHomeControlDialog(_NetatmoDialogMixin, _VeSyncDialogMixin, _MerossDia
             else:
                 wx.CallAfter(lambda: func() if not self._is_destroyed else None)
     
+    def _begin_cloud_action(self):
+        """Guard für Cloud-Aktionen im Hintergrund: nur eine gleichzeitig.
+
+        Die Schalt-/Modus-Aktionen laufen in einem Thread (siehe
+        _execute_action), damit der wx-Thread - und damit NVDA - während der
+        bis zu 10-25 s dauernden Cloud-Aufrufe nicht einfriert. Der Guard
+        verhindert, dass ein zweiter Enter-Druck parallel eine weitere Aktion
+        startet und sich Baum-Umbauten überlagern.
+        """
+        if getattr(self, '_cloud_action_running', False):
+            # Translators: Message when an action is triggered while the
+            # previous one is still running.
+            ui.message(_("Bitte warten - die vorherige Aktion läuft noch"))
+            return False
+        self._cloud_action_running = True
+        return True
+
     def _load_devices_async(self):
         """Loads the devices in the background without freezing the UI"""
-        import threading
-        
+
         def background_load():
             try:
                 # Check whether the dialog was already closed
@@ -2364,7 +2380,7 @@ class SmartHomeControlDialog(_NetatmoDialogMixin, _VeSyncDialogMixin, _MerossDia
                     if device.supports_temperature():
                         temp = device.get_color_temperature()
                         is_in_rgb = device.is_in_rgb_mode() if hasattr(device, 'is_in_rgb_mode') else None
-                        if is_in_rgb == False or is_in_rgb is None:
+                        if not is_in_rgb:
                             if temp is not None and temp > 0:
                                 if temp <= 33:
                                     temp_text = _("Lichtfarbe: Warmweiß (gemütlich) - Enter zum Ändern")
@@ -2385,7 +2401,7 @@ class SmartHomeControlDialog(_NetatmoDialogMixin, _VeSyncDialogMixin, _MerossDia
 
                     if device.supports_rgb():
                         is_in_rgb = device.is_in_rgb_mode() if hasattr(device, 'is_in_rgb_mode') else None
-                        if is_in_rgb == True:
+                        if is_in_rgb:
                             rgb = device.get_rgb_color()
                             if rgb is not None:
                                 color_name = self._get_color_name_from_rgb(rgb)
@@ -2590,6 +2606,41 @@ class SmartHomeControlDialog(_NetatmoDialogMixin, _VeSyncDialogMixin, _MerossDia
         'netatmo_back_to_schedule': '_handle_netatmo_back_to_schedule',
     }
 
+    def _after_toggle_ok(self, item, device, channel, device_name, new_state):
+        """UI-Teil nach erfolgreichem Schalten (läuft im wx-Thread)."""
+        # Optimized speech output
+        is_first = self.last_announced_device != device_name
+        self._announce_device_action(device_name, new_state, is_first)
+
+        # Rebuild the children via the shared builder (info + toggle +
+        # lamp actions + favorite) and re-select the toggle row.
+        parent = self.tree.GetItemParent(item)
+        if not parent.IsOk():
+            return
+        self.tree.DeleteChildren(parent)
+        action_items = self._build_meross_device_children(parent, device, channel)
+        self.tree.Expand(parent)
+        sel = action_items.get('toggle')
+        if sel:
+            self.tree.SelectItem(sel)
+
+    def _after_diffuser_mode_set(self, item, device, action, mode_name):
+        """UI-Teil nach erfolgreichem Diffuser-Moduswechsel (wx-Thread)."""
+        # Translators: Confirmation after a diffuser mode change.
+        ui.message(_("{name}: {mode}").format(name=device.name, mode=mode_name))
+
+        # Rebuild the children via the shared builder (status + spray
+        # actions + favorite) and re-select the executed action.
+        parent = self.tree.GetItemParent(item)
+        if not parent.IsOk():
+            return
+        self.tree.DeleteChildren(parent)
+        action_items = self._build_meross_device_children(parent, device)
+        self.tree.Expand(parent)
+        sel = action_items.get(action) or action_items.get('diffuser_light')
+        if sel:
+            self.tree.SelectItem(sel)
+
     def _execute_action(self, item, data):
         """Executes an action"""
         device = data.get('device')
@@ -2616,149 +2667,165 @@ class SmartHomeControlDialog(_NetatmoDialogMixin, _VeSyncDialogMixin, _MerossDia
             getattr(self, handler)(device, item)
             return
         
-        # Diffuser actions
+        # Diffuser actions. Der Cloud-Aufruf läuft im Thread (Meross-Timeout
+        # bis 10 s), UI-Feedback über _safe_call_after - gleiches Muster wie
+        # _favorite_toggle (__init__.py). Beeps sind threadsicher und bleiben
+        # als Sofort-Feedback im Thread.
         if action in ['diffuser_light', 'diffuser_strong', 'diffuser_off']:
-            try:
-                mode_name = DIFFUSER_MODE_NAMES.get(action, action)
-                
-                # Set the spray mode via meross_api
-                self.plugin.set_diffuser_mode(device.uuid, action)
-                
-                # Update the status
-                device._update_status()
-                
-                # Feedback
-                _beep(BEEP_ON)
-                # Translators: Confirmation after a diffuser mode change.
-                ui.message(_("{name}: {mode}").format(name=device.name, mode=mode_name))
+            if not self._begin_cloud_action():
+                return
+            mode_name = DIFFUSER_MODE_NAMES.get(action, action)
 
+            def diffuser_task():
+                try:
+                    # Set the spray mode via meross_api
+                    self.plugin.set_diffuser_mode(device.uuid, action)
+                    # Update the status
+                    device._update_status()
+                except Exception as e:
+                    _beep(BEEP_ERROR)
+                    log.error(f"Fehler beim Setzen des Diffuser-Modus: {e}")
+                    # Translators: Error message on a diffuser mode change.
+                    self._safe_call_after(
+                        ui.message,
+                        _("{name}: Fehler beim Einstellen").format(name=device.name))
+                    return
+                finally:
+                    self._cloud_action_running = False
                 # Verlaufseintrag: siehe plugin.set_diffuser_mode()
+                _beep(BEEP_ON)
+                self._safe_call_after(
+                    self._after_diffuser_mode_set, item, device, action, mode_name)
 
-                # Rebuild the children via the shared builder (status + spray
-                # actions + favorite) and re-select the executed action.
-                parent = self.tree.GetItemParent(item)
-                self.tree.DeleteChildren(parent)
-                action_items = self._build_meross_device_children(parent, device)
-                self.tree.Expand(parent)
-                sel = action_items.get(action) or action_items.get('diffuser_light')
-                if sel:
-                    self.tree.SelectItem(sel)
-                
-            except Exception as e:
-                _beep(BEEP_ERROR)
-                log.error(f"Fehler beim Setzen des Diffuser-Modus: {e}")
-                # Translators: Error message on a diffuser mode change.
-                ui.message(_("{name}: Fehler beim Einstellen").format(name=device.name))
+            threading.Thread(target=diffuser_task, daemon=True).start()
             return
         
         if action == 'toggle':
-            try:
-                # For a channel: use the channel UUID and channel status
-                if channel:
-                    device_uuid = channel.uuid  # format: "parent_uuid_chX"
-                    device_name = channel.name
-                else:
-                    device_uuid = device.uuid
-                    device_name = device.name
-                
-                # Execute the toggle - the status is only updated AFTER success
-                self.plugin.toggle_device(device_uuid)
-                
-                # Read the new state from the authoritative device object:
-                # toggle_device switched relative to the REAL current status
-                # and already updated the object. The former ``not old_state``
-                # from the tree would be wrong if the state was changed
-                # externally between display and click.
-                new_state = channel.is_on if channel else device.is_on
-                
-                # Now update the local status (AFTER a successful toggle)
-                if channel:
-                    channel._is_on = new_state
-                    # For channels: also call _update_status() for correct
-                    # diffuser support
-                    channel._update_status()
-                else:
-                    device._is_on = new_state
-                    # For devices: call _update_status() to read the spray mode
-                    # correctly
-                    device._update_status()
-                
+            # For a channel: use the channel UUID and channel status
+            if channel:
+                device_uuid = channel.uuid  # format: "parent_uuid_chX"
+                device_name = channel.name
+            else:
+                device_uuid = device.uuid
+                device_name = device.name
+
+            if not self._begin_cloud_action():
+                return
+
+            # Der Cloud-Aufruf läuft im Thread (Meross bis 10 s, VeSync bis
+            # ~25 s inkl. Retry) - im wx-Thread fror sonst der Dialog und
+            # NVDA während des Schaltens ein. Fehlansagen gehen über
+            # _safe_call_after zurück in den UI-Thread; Beeps sind
+            # threadsicher.
+            def toggle_task():
+                try:
+                    # Execute the toggle - the status is only updated AFTER
+                    # success
+                    self.plugin.toggle_device(device_uuid)
+
+                    # Read the new state from the authoritative device object:
+                    # toggle_device switched relative to the REAL current
+                    # status and already updated the object. The former
+                    # ``not old_state`` from the tree would be wrong if the
+                    # state was changed externally between display and click.
+                    new_state = channel.is_on if channel else device.is_on
+
+                    # Now update the local status (AFTER a successful toggle)
+                    if channel:
+                        channel._is_on = new_state
+                        # For channels: also call _update_status() for correct
+                        # diffuser support
+                        channel._update_status()
+                    else:
+                        device._is_on = new_state
+                        # For devices: call _update_status() to read the spray
+                        # mode correctly
+                        device._update_status()
+
+                except TimeoutError as e:
+                    _beep(BEEP_ERROR)
+                    log.warning(f"Timeout beim Schalten von {device_name}: {e}")
+                    # Check whether the device is unreachable (most common
+                    # case on timeout)
+                    error_msg = str(e).lower()
+                    if ("nicht erreichbar" in error_msg
+                            or "unreachable" in error_msg
+                            or "offline" in error_msg):
+                        # Translators: Error message when the device is
+                        # unreachable.
+                        msg = _("{name}: Nicht erreichbar").format(name=device_name)
+                    else:
+                        # Translators: Error message on timeout.
+                        msg = _("{name}: Zeitüberschreitung").format(name=device_name)
+                    self._safe_call_after(ui.message, msg)
+                    # Do NOT change the status on error!
+                    return
+
+                except (ConnectionError, OSError) as e:
+                    _beep(BEEP_ERROR)
+                    log.warning(f"Verbindungsfehler beim Schalten von {device_name}: {e}")
+                    # Check for a general network outage (DNS, no route)
+                    err_str = str(e).lower()
+                    if any(s in err_str for s in ['resolve', 'getaddrinfo', 'dns', 'no route', '10065', '10051']):
+                        # Translators: Error message when there is no internet
+                        # connection.
+                        msg = _("{name}: Keine Internetverbindung").format(name=device_name)
+                    else:
+                        # Translators: Error message on a general connection
+                        # error.
+                        msg = _("{name}: Verbindungsfehler").format(name=device_name)
+                    self._safe_call_after(ui.message, msg)
+                    # Do NOT change the status on error!
+                    return
+
+                except RuntimeError as e:
+                    # Offline devices raise RuntimeError
+                    _beep(BEEP_ERROR)
+                    log.warning(f"RuntimeError beim Schalten von {device_name}: {e}")
+                    error_msg = str(e).lower()
+                    if "event loop" in error_msg:
+                        # Translators: Message when the connection is being
+                        # re-established.
+                        msg = _("{name}: Verbindung wird wiederhergestellt").format(name=device_name)
+                    elif ("offline" in error_msg
+                            or "nicht erreichbar" in error_msg
+                            or "unreachable" in error_msg):
+                        # Translators: Error message when the device is
+                        # unreachable.
+                        msg = _("{name}: Nicht erreichbar").format(name=device_name)
+                    else:
+                        # Translators: Generic error message with detail text.
+                        msg = _("{name}: Fehler - {error}").format(name=device_name, error=str(e)[:40])
+                    self._safe_call_after(ui.message, msg)
+                    # Do NOT change the status on error!
+                    return
+
+                except Exception as e:
+                    _beep(BEEP_ERROR)
+                    # No exc_info: could leak tokens/headers in the stack
+                    # trace.
+                    log.error(f"Fehler beim Schalten von {device_name}: {type(e).__name__}: {e}")
+                    # Translators: Error message when switching a device
+                    # on/off fails (e.g. cloud unreachable, device offline).
+                    self._safe_call_after(
+                        ui.message,
+                        _("{name}: Schaltfehler").format(name=device_name))
+                    # Do NOT change the status on error!
+                    return
+
+                finally:
+                    self._cloud_action_running = False
+
                 # Short message + sound
                 _beep(BEEP_ON if new_state else BEEP_OFF)
 
                 # Der Verlaufseintrag entsteht in plugin.toggle_device() -
                 # dem gemeinsamen Engpass von Dialog UND Favoriten-Gesten.
                 # Hier wäre er doppelt und würde die Gesten weiter auslassen.
+                self._safe_call_after(
+                    self._after_toggle_ok, item, device, channel, device_name, new_state)
 
-                # Optimized speech output
-                is_first = self.last_announced_device != device_name
-                self._announce_device_action(device_name, new_state, is_first)
-                
-                # Rebuild the children via the shared builder (info + toggle +
-                # lamp actions + favorite) and re-select the toggle row.
-                parent = self.tree.GetItemParent(item)
-                self.tree.DeleteChildren(parent)
-                action_items = self._build_meross_device_children(parent, device, channel)
-                self.tree.Expand(parent)
-                sel = action_items.get('toggle')
-                if sel:
-                    self.tree.SelectItem(sel)
-                
-            except TimeoutError as e:
-                _beep(BEEP_ERROR)
-                log.warning(f"Timeout beim Schalten von {device_name}: {e}")
-                # Check whether the device is unreachable (most common case on
-                # timeout)
-                error_msg = str(e).lower()
-                if "nicht erreichbar" in error_msg or "offline" in error_msg:
-                    # Translators: Error message when the device is
-                    # unreachable.
-                    ui.message(_("{name}: Nicht erreichbar").format(name=device_name))
-                else:
-                    # Translators: Error message on timeout.
-                    ui.message(_("{name}: Zeitüberschreitung").format(name=device_name))
-                # Do NOT change the status on error!
-                
-            except (ConnectionError, OSError) as e:
-                _beep(BEEP_ERROR)
-                log.warning(f"Verbindungsfehler beim Schalten von {device_name}: {e}")
-                # Check for a general network outage (DNS, no route)
-                err_str = str(e).lower()
-                if any(s in err_str for s in ['resolve', 'getaddrinfo', 'dns', 'no route', '10065', '10051']):
-                    # Translators: Error message when there is no internet
-                    # connection.
-                    ui.message(_("{name}: Keine Internetverbindung").format(name=device_name))
-                else:
-                    # Translators: Error message on a general connection error.
-                    ui.message(_("{name}: Verbindungsfehler").format(name=device_name))
-                # Do NOT change the status on error!
-                
-            except RuntimeError as e:
-                # Offline devices raise RuntimeError
-                _beep(BEEP_ERROR)
-                log.warning(f"RuntimeError beim Schalten von {device_name}: {e}")
-                error_msg = str(e).lower()
-                if "event loop" in error_msg:
-                    # Translators: Message when the connection is being re-
-                    # established.
-                    ui.message(_("{name}: Verbindung wird wiederhergestellt").format(name=device_name))
-                elif "offline" in error_msg or "nicht erreichbar" in error_msg:
-                    # Translators: Error message when the device is
-                    # unreachable.
-                    ui.message(_("{name}: Nicht erreichbar").format(name=device_name))
-                else:
-                    # Translators: Generic error message with detail text.
-                    ui.message(_("{name}: Fehler - {error}").format(name=device_name, error=str(e)[:40]))
-                # Do NOT change the status on error!
-                
-            except Exception as e:
-                _beep(BEEP_ERROR)
-                # No exc_info: could leak tokens/headers in the stack trace.
-                log.error(f"Fehler beim Schalten von {device_name}: {type(e).__name__}: {e}")
-                # Translators: Error message when switching a device on/off
-                # fails (e.g. cloud unreachable, device offline).
-                ui.message(_("{name}: Schaltfehler").format(name=device_name))
-                # Do NOT change the status on error!
+            threading.Thread(target=toggle_task, daemon=True).start()
         
         # LAMP ACTIONS
         elif action == 'light_temperature':

@@ -328,16 +328,14 @@ def decrypt_dpapi(encrypted):
             return base64.b64decode(encrypted[4:]).decode('utf-8')
 
         else:
-            # Legacy format: old versions stored base64 without a prefix
-            log.warning("Credentials ohne bekanntes Format gelesen – werden beim nächsten Speichern migriert")
-            try:
-                decoded = base64.b64decode(encrypted).decode('utf-8')
-                if decoded.isprintable() and len(decoded) > 0:
-                    return decoded
-                return encrypted
-            except Exception:
-                # Plain text (very old version or unknown format)
-                return encrypted
+            # Kein bekanntes Prefix: Wert stammt aus einer Vor-Release-Version.
+            # Die frühere Heuristik ("sieht wie Base64 aus -> dekodieren") ist
+            # abgekündigt: ein echtes Klartext-Passwort, das zufällig gültiges
+            # Base64 ist, würde still verfälscht. Der Wert wird unverändert
+            # als Klartext übernommen und beim nächsten Speichern
+            # verschlüsselt.
+            log.warning("Credentials ohne bekanntes Format gelesen – werden beim nächsten Speichern verschlüsselt")
+            return encrypted
 
     except Exception as e:
         # No exc_info: could leak sensitive data

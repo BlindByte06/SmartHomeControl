@@ -150,7 +150,8 @@ class CozytouchAPI:
         request (the caller keeps it encrypted, see the plugin).
         """
         if not email or not password:
-            raise ValueError("E-Mail und Passwort erforderlich")
+            # Translators: Validation error when email or password is missing.
+            raise ValueError(_("E-Mail und Passwort erforderlich"))
         url = API_BASE + "/users/token"
         try:
             resp = self._session.post(
@@ -168,7 +169,10 @@ class CozytouchAPI:
                 timeout=API_TIMEOUT,
             )
         except (requests.ConnectionError, requests.Timeout) as e:
-            raise ConnectionError(f"Cozytouch Verbindungsfehler: {type(e).__name__}")
+            # Translators: Error message on a Cozytouch connection problem.
+            # {error} = technical error type.
+            raise ConnectionError(_("Cozytouch Verbindungsfehler: {error}").format(
+                error=type(e).__name__))
 
         try:
             token = resp.json()

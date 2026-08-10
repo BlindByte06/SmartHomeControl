@@ -29,6 +29,7 @@ gespeichert.
 - [Reifegrad und Hinweise](#reifegrad-und-hinweise)
 - [Datenschutz und Sicherheit](#datenschutz-und-sicherheit)
 - [Fehlerbehebung](#fehlerbehebung)
+- [Selbst bauen](#selbst-bauen)
 - [Lizenz und verwendete Komponenten](#lizenz-und-verwendete-komponenten)
 
 ---
@@ -383,6 +384,28 @@ Die Plattformen sind unterschiedlich weit erprobt:
   wieder und sagt an, sobald die Plattform wieder verbunden ist.
 
 ---
+
+## Selbst bauen
+
+Dieses Add-on nutzt **nicht** die SCons-Vorlage (`buildVars.py`/`sconstruct`)
+des offiziellen NVDA-Add-on-Templates, sondern ein eigenes Build-Skript –
+nötig wegen der gebündelten Binärpakete für zwei Python-Architekturen
+(`lib/_arch/cp311-win32` und `cp313-amd64`). Für den NVDA Add-on Store ist
+das zulässig; der Store prüft das fertige `.nvda-addon`-Paket, nicht das
+Build-System.
+
+```bash
+python build_addon.py pack
+```
+
+erzeugt `dist/SmartHomeControl-<version>.nvda-addon`, prüft dabei die
+Übersetzungen (`.po`/`.mo` deckungsgleich) und die Paketintegrität
+(kein `__pycache__`, Manifest vorhanden, `.mo` enthalten) und
+synchronisiert die Versionsnummer in die Dokumentationstitel.
+`python build_addon.py libs` erzeugt `lib/` reproduzierbar aus
+`requirements-bundle.txt` neu. Die GitHub-Actions-Pipeline
+(`.github/workflows/build.yml`) baut bei jedem Push auf `main` und hängt
+bei Tags (`v*`) das Paket an ein GitHub-Release an.
 
 ## Lizenz und verwendete Komponenten
 

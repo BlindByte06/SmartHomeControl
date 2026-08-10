@@ -280,6 +280,12 @@ NETATMO_API_BASE = "https://api.netatmo.com/api"
 # die Erweiterung wird der Speicher ohnehin sofort verworfen
 # (invalidate_homesdata_cache).
 HOMESDATA_CACHE_SECONDS = 300
+# Höchstens alle so viele Sekunden macht update_device_status den VOLLEN
+# Statuslauf (getstationsdata + homesdata + Zeitplan-Auflösung, >=3 Aufrufe);
+# dazwischen wird nur /homestatus gepollt (1 Aufruf pro Haus). Hält die
+# fg-Polling-Last (15-s-Intervall) sicher unter Netatmos Nutzerlimit von
+# ~500 Aufrufen/Stunde: ~240 homestatus/h + 12 volle Läufe/h.
+NETATMO_FULL_REFRESH_SECONDS = 300
 # Note: this redirect URI MUST match the URI registered at dev.netatmo.com
 # exactly (scheme, host, port and path - even localhost vs. 127.0.0.1 matters).
 # The port is configurable per user in the settings (config key
