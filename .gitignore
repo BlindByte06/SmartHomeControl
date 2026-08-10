@@ -17,7 +17,8 @@ lib.old/
 
 # NVDA
 *.nvda-addon
-*.pot
+# Die .pot ist die Vorlage fuer Uebersetzer und liegt im ausgelieferten
+# Paket - sie wird eingecheckt, nicht ignoriert.
 *.mo
 # ACHTUNG: Die kompilierte .mo IST die Datei, die NVDA zur Laufzeit lädt -
 # die .po ist nur die Quelle. Ohne diese Ausnahme baut ein frischer Klon des

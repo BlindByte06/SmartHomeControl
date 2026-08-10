@@ -1,0 +1,3950 @@
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: SmartHomeControl 26.07\n"
+"Report-Msgid-Bugs-To: haselphilipp@gmail.com\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#: dialog_meross.py:369
+msgid ""
+"\n"
+"\n"
+"Aktuelle Werte: Rot={r}, Grün={g}, Blau={b}"
+msgstr ""
+
+#: dialog_netatmo.py:269
+msgid " (bis {end} Uhr)"
+msgstr ""
+
+#: netatmo_api.py:319
+msgid " (bis {time})"
+msgstr ""
+
+#: dialog_cozytouch.py:367
+msgid " (ca. {liters} Liter)"
+msgstr ""
+
+#: dialog_vesync.py:500
+msgid " - Achtung: Filter wechseln {percent}%"
+msgstr ""
+
+#: dialog_netatmo.py:271
+msgid " - Enter zum Ändern"
+msgstr ""
+
+#: device_dialog.py:1189
+msgid " – zuletzt aktualisiert vor {sec} Sekunden"
+msgstr ""
+
+#: dialog_vesync.py:338 dialog_vesync.py:363 settings_panel.py:109
+msgid "&Abbrechen"
+msgstr ""
+
+#: settings_panel.py:60
+msgid "&Allgemein"
+msgstr ""
+
+#: settings_panel.py:161
+msgid "&Automatisch beim NVDA-Start anmelden"
+msgstr ""
+
+#: dialog_cozytouch.py:276
+msgid "&Beginn:"
+msgstr ""
+
+#: settings_panel.py:90
+msgid "&Benachrichtigungen"
+msgstr ""
+
+#: settings_panel.py:84
+msgid "&Cozytouch"
+msgstr ""
+
+#: settings_panel.py:152
+msgid "&Cozytouch verwenden (Atlantic, Austria Email)"
+msgstr ""
+
+#: settings_panel.py:244
+msgid "&E-Mail:"
+msgstr ""
+
+#: device_dialog.py:286
+msgid "&Einstellungen (Alt+E)"
+msgstr ""
+
+#: dialog_cozytouch.py:280
+msgid "&Ende:"
+msgstr ""
+
+#: settings_panel.py:440
+msgid "&Filter-Warnschwelle (%):"
+msgstr ""
+
+#: device_dialog.py:125
+msgid "&Filter:"
+msgstr ""
+
+#: device_dialog.py:3847
+msgid "&Filtern"
+msgstr ""
+
+#: settings_panel.py:783
+msgid "&Fortfahren"
+msgstr ""
+
+#: device_dialog.py:197
+msgid "&Geräte"
+msgstr ""
+
+#: device_dialog.py:174
+msgid "&Geräte:"
+msgstr ""
+
+#: dialog_vesync.py:363
+msgid "&Ja, zurücksetzen"
+msgstr ""
+
+#: settings_panel.py:424
+msgid "&Ländercode (ISO):"
+msgstr ""
+
+#: settings_panel.py:66
+msgid "&Meross"
+msgstr ""
+
+#: settings_panel.py:131
+msgid "&Meross verwenden"
+msgstr ""
+
+#: settings_panel.py:72
+msgid "&Netatmo"
+msgstr ""
+
+#: settings_panel.py:138
+msgid "&Netatmo verwenden"
+msgstr ""
+
+#: settings_panel.py:252
+msgid "&Passwort:"
+msgstr ""
+
+#: device_dialog.py:292
+msgid "&Schließen (Esc)"
+msgstr ""
+
+#: settings_panel.py:103
+msgid "&Speichern"
+msgstr ""
+
+#: dialog_netatmo.py:92
+msgid "&Standard-Dauer verwenden (wie in Netatmo-App eingestellt)"
+msgstr ""
+
+#: dialog_netatmo.py:89
+msgid "&Standard-Dauer verwenden ({minutes} Minuten)"
+msgstr ""
+
+#: device_dialog.py:240
+msgid "&Status:"
+msgstr ""
+
+#: dialog_netatmo.py:101
+msgid "&Stunde:"
+msgstr ""
+
+#: dialog_netatmo.py:58
+msgid "&Temperatur (°C):"
+msgstr ""
+
+#: settings_panel.py:78
+msgid "&VeSync"
+msgstr ""
+
+#: settings_panel.py:145
+msgid "&VeSync verwenden (Levoit, Cosori, Etekcity)"
+msgstr ""
+
+#: device_dialog.py:278
+msgid "&Verlauf (Strg+H)"
+msgstr ""
+
+#: dialog_vesync.py:338
+msgid "&Weiter"
+msgstr ""
+
+#: device_dialog.py:1464
+msgid "'{text}' nicht gefunden"
+msgstr ""
+
+#: dialog_netatmo.py:544
+msgid "(aktiv)"
+msgstr ""
+
+#: __init__.py:2300
+msgid ", {current} Ampere"
+msgstr ""
+
+#: __init__.py:2249
+msgid ", {humidity:.1f}% Luftfeuchtigkeit"
+msgstr ""
+
+#: __init__.py:2294
+msgid ", {power} Watt"
+msgstr ""
+
+#: __init__.py:2297
+msgid ", {voltage} Volt"
+msgstr ""
+
+#: device_dialog.py:271
+msgid "A&ktualisieren (F5)"
+msgstr ""
+
+#: security.py:187 security.py:201
+msgid "AES-Entschlüsselung nicht verfügbar (PyCryptodome fehlt)"
+msgstr ""
+
+#: security.py:174
+msgid "AES-Verschlüsselung nicht verfügbar (PyCryptodome fehlt)"
+msgstr ""
+
+#: dialog_cozytouch.py:223 dialog_vesync.py:348 dialog_vesync.py:370
+msgid "Abgebrochen"
+msgstr ""
+
+#: constants.py:31 netatmo_api.py:398
+msgid "Abwesend"
+msgstr ""
+
+#: dialog_netatmo.py:432
+msgid "Abwesend – reduzierte Temperatur"
+msgstr ""
+
+#: cozytouch_devices.py:407 device_dialog.py:1741
+msgid "Abwesenheit aktiv"
+msgstr ""
+
+#: __init__.py:1421 dialog_cozytouch.py:211
+msgid "Abwesenheit aus"
+msgstr ""
+
+#: history.py:433
+msgid "Abwesenheit ausgeschaltet"
+msgstr ""
+
+#: __init__.py:1421
+msgid "Abwesenheit ein"
+msgstr ""
+
+#: settings_panel.py:676
+msgid "Abwesenheit ein-/ausschalten ansagen"
+msgstr ""
+
+#: history.py:432
+msgid "Abwesenheit eingeschaltet"
+msgstr ""
+
+#: cozytouch_devices.py:404
+msgid "Abwesenheit geplant"
+msgstr ""
+
+#: dialog_cozytouch.py:241 dialog_cozytouch.py:216
+msgid "Abwesenheit konnte nicht umgeschaltet werden"
+msgstr ""
+
+#: dialog_cozytouch.py:264
+msgid "Abwesenheit planen – {name}"
+msgstr ""
+
+#: dialog_cozytouch.py:466 dialog_cozytouch.py:463
+msgid "Abwesenheit: {state} - Enter zum Umschalten"
+msgstr ""
+
+#: dialog_cozytouch.py:459
+msgid "Abwesenheit: {state} bis {end} - Enter zum Ausschalten"
+msgstr ""
+
+#: device_dialog.py:1702
+msgid ""
+"Abwesenheits-Modus planen oder beenden: reduziert die Warmwasser-Erzeugung "
+"während längerer Abwesenheit. Enter öffnet die Zeitraum-Eingabe (Beginn und "
+"Ende); bei aktiver oder geplanter Abwesenheit schaltet Enter sie aus."
+msgstr ""
+
+#: dialog_vesync.py:534
+msgid "Achtung: Filter wechseln, Restlebensdauer {percent}%"
+msgstr ""
+
+#: history.py:301
+msgid "Aktion"
+msgstr ""
+
+#: device_dialog.py:3860
+msgid "Aktion / Messwert"
+msgstr ""
+
+#: device_dialog.py:1704
+msgid "Aktion. Enter oder Leertaste zum Ausführen."
+msgstr ""
+
+#: device_dialog.py:1721
+msgid "Aktion: Ein- oder Ausschalten"
+msgstr ""
+
+#: device_dialog.py:1895
+msgid "Aktion: Ein/Ausschalten"
+msgstr ""
+
+#: device_dialog.py:3839
+msgid "Aktionen"
+msgstr ""
+
+#: device_dialog.py:1893
+msgid "Aktionen: Ein/Aus, Helligkeit, Lichtfarbe"
+msgstr ""
+
+#: device_dialog.py:1769
+msgid "Aktionen: Ein/Aus, Modus, Lüftergeschwindigkeit"
+msgstr ""
+
+#: device_dialog.py:1780
+msgid "Aktionen: Ein/Aus, Modus, Lüftergeschwindigkeit, Oszillation"
+msgstr ""
+
+#: device_dialog.py:1879
+msgid "Aktionen: Schwaches Sprühen, Starkes Sprühen, Aus"
+msgstr ""
+
+#: device_dialog.py:1839
+msgid "Aktionen: Soll-Temperatur, Heizmodus, Heizprogramm"
+msgstr ""
+
+#: device_dialog.py:1742
+msgid "Aktionen: Zieltemperatur, Modus, Boost, Ein/Aus, Abwesenheit"
+msgstr ""
+
+#: settings_panel.py:127
+msgid "Aktive Plattformen"
+msgstr ""
+
+#: device_dialog.py:3646
+msgid "Aktualisiere..."
+msgstr ""
+
+#: device_dialog.py:3703
+msgid "Aktualisiert - {online} Geräte online"
+msgstr ""
+
+#: device_dialog.py:3699
+msgid "Aktualisiert in {seconds}s - {online} Geräte online"
+msgstr ""
+
+#: device_dialog.py:3460
+msgid "Aktuelle Einstellung: Kaltweiß"
+msgstr ""
+
+#: device_dialog.py:3458
+msgid "Aktuelle Einstellung: Tageslicht"
+msgstr ""
+
+#: device_dialog.py:3456
+msgid "Aktuelle Einstellung: Warmweiß"
+msgstr ""
+
+#: dialog_meross.py:306
+msgid "Aktuelle Farbe: RGB({r}, {g}, {b})\n"
+msgstr ""
+
+#: device_dialog.py:3556
+msgid "Aktuelle Helligkeit: {value}%"
+msgstr ""
+
+#: device_dialog.py:1604
+msgid "Aktuelle Luftfeuchtigkeit. Wird automatisch aktualisiert."
+msgstr ""
+
+#: device_dialog.py:1628
+msgid "Aktuelle Netzspannung in Volt."
+msgstr ""
+
+#: device_dialog.py:1602
+msgid "Aktuelle Raumtemperatur des Sensors. Wird automatisch aktualisiert."
+msgstr ""
+
+#: dialog_netatmo.py:49
+msgid "Aktuelle Raumtemperatur: {temp}°C\n"
+msgstr ""
+
+#: dialog_netatmo.py:52
+msgid "Aktuelle Soll-Temperatur: {temp}°C"
+msgstr ""
+
+#: device_dialog.py:1630
+msgid "Aktuelle Stromstärke in Ampere."
+msgstr ""
+
+#: device_dialog.py:1632
+msgid "Aktueller Batteriestand des Geräts."
+msgstr ""
+
+#: device_dialog.py:1636
+msgid "Aktueller Luftdruck in Millibar."
+msgstr ""
+
+#: dialog_netatmo.py:446
+msgid "Aktueller Modus: Manuell"
+msgstr ""
+
+#: dialog_netatmo.py:442
+msgid "Aktueller Modus: {mode}"
+msgstr ""
+
+#: device_dialog.py:1626
+msgid "Aktueller Stromverbrauch in Watt. Wird automatisch aktualisiert."
+msgstr ""
+
+#: dialog_cozytouch.py:431
+msgid "Aktuelles Heizziel: {temp} Grad"
+msgstr ""
+
+#: device_dialog.py:130 device_dialog.py:3822 device_dialog.py:3839
+msgid "Alle"
+msgstr ""
+
+#: device_dialog.py:3909
+msgid "Alle Geräte"
+msgstr ""
+
+#: device_dialog.py:3830
+msgid "Alles"
+msgstr ""
+
+#: device_dialog.py:3872
+msgid "Als &CSV exportieren"
+msgstr ""
+
+#: dialog_cozytouch.py:453 dialog_cozytouch.py:444
+msgid "An"
+msgstr ""
+
+#: dialog_cozytouch.py:453
+msgid "An (geplant)"
+msgstr ""
+
+#: device_dialog.py:2193 device_dialog.py:2243 device_dialog.py:2287
+msgid "Andere Geräte"
+msgstr ""
+
+#: __init__.py:1721
+msgid "Anmeldung bei {platforms}..."
+msgstr ""
+
+#: __init__.py:1941
+msgid "Anmeldung fehlgeschlagen – bisherige Geräte bleiben verfügbar"
+msgstr ""
+
+#: __init__.py:2007
+msgid "Anmeldung läuft..."
+msgstr ""
+
+#: device_dialog.py:114 settings_panel.py:54
+msgid "Ansicht"
+msgstr ""
+
+#: device_dialog.py:3116 device_dialog.py:3370 dialog_meross.py:230
+msgid "Auf Farbmodus wechseln - Enter zum Öffnen"
+msgstr ""
+
+#: device_dialog.py:3097 device_dialog.py:3352 dialog_meross.py:201
+msgid "Auf Weißmodus wechseln - Enter zum Öffnen"
+msgstr ""
+
+#: device_dialog.py:1622
+msgid "Aufsummierter Energieverbrauch des Geräts in Kilowattstunden."
+msgstr ""
+
+#: constants.py:50 constants.py:98 device_dialog.py:1165
+msgid "Aus"
+msgstr ""
+
+#: device_dialog.py:2373 dialog_cozytouch.py:341 dialog_vesync.py:703
+msgid "Aus Favoriten entfernen - Enter"
+msgstr ""
+
+#: history.py:413
+msgid "Ausgeschaltet"
+msgstr ""
+
+#: constants.py:59 constants.py:76 vesync_devices.py:548
+msgid "Auto"
+msgstr ""
+
+#: vesync_devices.py:853
+msgid "Auto-Profil '{value}' wird nicht unterstützt"
+msgstr ""
+
+#: history.py:436
+msgid "Auto-Profil geändert"
+msgstr ""
+
+#: vesync_devices.py:851
+msgid "Auto-Profil wird vom Gerät nicht unterstützt"
+msgstr ""
+
+#: device_dialog.py:1690
+msgid ""
+"Auto-Profil wählen: Standard, Effizient oder Leise. Bestimmt das Verhalten "
+"im Auto-Modus. Enter öffnet eine Auswahlliste."
+msgstr ""
+
+#: __init__.py:1270
+msgid "Auto-Profil {profile}"
+msgstr ""
+
+#: dialog_vesync.py:632
+msgid "Auto-Profil: {profile} - Enter zum Ändern"
+msgstr ""
+
+#: netatmo_api.py:248
+msgid "Außenmodul"
+msgstr ""
+
+#: device_dialog.py:811 device_dialog.py:1631
+msgid "Batterie:"
+msgstr ""
+
+#: device_dialog.py:2036 device_dialog.py:1992 device_dialog.py:1848
+msgid "Batterie: {percent}%"
+msgstr ""
+
+#: device_dialog.py:814 netatmo_api.py:367
+msgid "Batterie: {value}%"
+msgstr ""
+
+#: dialog_meross.py:449 dialog_meross.py:414
+msgid "Benutzerdefiniert"
+msgstr ""
+
+#: dialog_meross.py:293
+msgid "Benutzerdefiniert (aktuell: RGB {r}, {g}, {b})"
+msgstr ""
+
+#: dialog_meross.py:297
+msgid "Benutzerdefiniert - RGB-Werte eingeben"
+msgstr ""
+
+#: dialog_meross.py:376
+msgid "Benutzerdefinierte RGB-Farbe"
+msgstr ""
+
+#: __init__.py:1400 cozytouch_devices.py:395
+msgid "Betrieb aus"
+msgstr ""
+
+#: dialog_cozytouch.py:449
+msgid "Betrieb ausschalten"
+msgstr ""
+
+#: __init__.py:1400 cozytouch_devices.py:395
+msgid "Betrieb ein"
+msgstr ""
+
+#: dialog_cozytouch.py:449
+msgid "Betrieb einschalten"
+msgstr ""
+
+#: dialog_cozytouch.py:371
+msgid "Betrieb: Aus"
+msgstr ""
+
+#: dialog_cozytouch.py:371
+msgid "Betrieb: Ein"
+msgstr ""
+
+#: device_dialog.py:1696
+msgid ""
+"Betriebsmodus der Warmwasser-Wärmepumpe wählen. Enter öffnet eine "
+"Auswahlliste."
+msgstr ""
+
+#: device_dialog.py:1676
+msgid ""
+"Betriebsmodus wählen. Bei Luftreinigern: Auto, Manuell oder Schlaf. Bei "
+"Ventilatoren: Normal, Turbo, Auto oder Schlafmodus. Enter öffnet eine "
+"Auswahlliste."
+msgstr ""
+
+#: dialog_cozytouch.py:438
+msgid "Betriebsmodus: {mode} - Enter zum Ändern"
+msgstr ""
+
+#: settings_panel.py:766
+msgid "Bitte Client-ID und Secret eingeben"
+msgstr ""
+
+#: settings_panel.py:972
+msgid "Bitte Cozytouch E-Mail und Passwort eingeben"
+msgstr ""
+
+#: settings_panel.py:697 settings_panel.py:901 settings_panel.py:973
+msgid "Bitte E-Mail und Passwort eingeben"
+msgstr ""
+
+#: settings_panel.py:696
+msgid "Bitte Meross E-Mail und Passwort eingeben"
+msgstr ""
+
+#: settings_panel.py:765
+msgid "Bitte Netatmo Client-ID und Secret eingeben"
+msgstr ""
+
+#: dialog_netatmo.py:165
+msgid "Bitte Temperatur wählen"
+msgstr ""
+
+#: settings_panel.py:900
+msgid "Bitte VeSync E-Mail und Passwort eingeben"
+msgstr ""
+
+#: dialog_netatmo.py:250
+msgid "Bitte gültige Temperatur wählen"
+msgstr ""
+
+#: settings_panel.py:845
+msgid "Bitte zuerst mit Netatmo verbinden"
+msgstr ""
+
+#: settings_panel.py:846
+msgid "Bitte zuerst mit Netatmo verbinden (OAuth2)"
+msgstr ""
+
+#: dialog_meross.py:47 dialog_meross.py:258
+msgid "Blau"
+msgstr ""
+
+#: dialog_meross.py:406
+msgid "Blau {value} ungültig (0–255)"
+msgstr ""
+
+#: dialog_meross.py:74
+msgid "Bläulich"
+msgstr ""
+
+#: device_dialog.py:1606
+msgid "Boiler-Status: zeigt ob die Heizung gerade aktiv heizt oder aus ist."
+msgstr ""
+
+#: cozytouch_devices.py:399 device_dialog.py:1739
+msgid "Boost aktiv"
+msgstr ""
+
+#: __init__.py:1415
+msgid "Boost aus"
+msgstr ""
+
+#: history.py:431
+msgid "Boost ausgeschaltet"
+msgstr ""
+
+#: __init__.py:1415
+msgid "Boost ein"
+msgstr ""
+
+#: settings_panel.py:672
+msgid "Boost ein-/ausschalten ansagen"
+msgstr ""
+
+#: history.py:430
+msgid "Boost eingeschaltet"
+msgstr ""
+
+#: dialog_cozytouch.py:164
+msgid "Boost konnte nicht umgeschaltet werden"
+msgstr ""
+
+#: dialog_cozytouch.py:159
+msgid "Boost {status}"
+msgstr ""
+
+#: dialog_cozytouch.py:386
+msgid "Boost-Laufzeit: {minutes} Minuten"
+msgstr ""
+
+#: device_dialog.py:1698
+msgid ""
+"Boost-Modus ein- oder ausschalten: heizt das Wasser schnell auf "
+"Maximaltemperatur. Enter oder Leertaste zum Umschalten."
+msgstr ""
+
+#: dialog_cozytouch.py:443
+msgid "Boost: {state} - Enter zum Umschalten"
+msgstr ""
+
+#: settings_panel.py:807
+msgid "Browser wird geöffnet. Bitte bei Netatmo anmelden und autorisieren."
+msgstr ""
+
+#: history.py:303
+msgid "CO₂ (ppm)"
+msgstr ""
+
+#: device_dialog.py:1634
+msgid "CO₂-Konzentration in der Raumluft."
+msgstr ""
+
+#: device_dialog.py:4057
+msgid "CSV-Dateien (*.csv)|*.csv"
+msgstr ""
+
+#: settings_panel.py:307
+msgid "Client-&ID:"
+msgstr ""
+
+#: settings_panel.py:315
+msgid "Client-&Secret:"
+msgstr ""
+
+#: settings_panel.py:484
+msgid "Cozytouch &E-Mail:"
+msgstr ""
+
+#: settings_panel.py:472
+msgid ""
+"Cozytouch Account-Zugangsdaten (Atlantic-Gruppe, z. B. Austria Email).\n"
+"Aktuell unterstützt: Warmwasser-Wärmepumpe (getestet: Austria Email Revolution Evo 3).\n"
+"Dieselben Zugangsdaten wie in der Cozytouch-App. Daten werden sicher in der NVDA-Konfiguration gespeichert (DPAPI)."
+msgstr ""
+
+#: settings_panel.py:487
+msgid "Cozytouch E-Mail-Adresse"
+msgstr ""
+
+#: __init__.py:1924 settings_panel.py:1015 settings_panel.py:1018
+msgid "Cozytouch Fehler: {error}"
+msgstr ""
+
+#: settings_panel.py:492
+msgid "Cozytouch Pass&wort:"
+msgstr ""
+
+#: settings_panel.py:497
+msgid "Cozytouch Passwort"
+msgstr ""
+
+#: settings_panel.py:519
+msgid "Cozytouch Verbindung &prüfen"
+msgstr ""
+
+#: dialog_cozytouch.py:653
+msgid "Cozytouch wird verbunden..."
+msgstr ""
+
+#: device_dialog.py:2586
+msgid "Cozytouch-Favoriten ({count})"
+msgstr ""
+
+#: dialog_cozytouch.py:111 dialog_cozytouch.py:144 dialog_cozytouch.py:169
+msgid "Cozytouch-Fehler: {error}"
+msgstr ""
+
+#: device_dialog.py:2314
+msgid "Cozytouch-Geräte ({count})"
+msgstr ""
+
+#: dialog_cozytouch.py:647
+msgid "Cozytouch-Login fehlgeschlagen: {error}"
+msgstr ""
+
+#: settings_panel.py:520
+msgid "Cozytouch-Verbindung prüfen"
+msgstr ""
+
+#: settings_panel.py:1133 settings_panel.py:1134
+msgid "Cozytouch: Bitte Passwort eingeben"
+msgstr ""
+
+#: cozytouch_api.py:176
+msgid "Cozytouch: E-Mail oder Passwort falsch"
+msgstr ""
+
+#: __init__.py:1909
+msgid "Cozytouch: Lade Geräte..."
+msgstr ""
+
+#: cozytouch_api.py:177
+msgid "Cozytouch: Login fehlgeschlagen (HTTP {code})"
+msgstr ""
+
+#: cozytouch_api.py:171
+msgid "Cozytouch: Ungültige Antwort beim Login"
+msgstr ""
+
+#: settings_panel.py:1127 settings_panel.py:1128
+msgid "Cozytouch: Ungültige E-Mail-Adresse"
+msgstr ""
+
+#: __init__.py:1895
+msgid "Cozytouch: Verbinde..."
+msgstr ""
+
+#: settings_panel.py:1002
+msgid "Cozytouch: Verbunden – {count} Gerät(e)"
+msgstr ""
+
+#: settings_panel.py:1008
+msgid "Cozytouch: {count} Gerät(e) gefunden"
+msgstr ""
+
+#: dialog_cozytouch.py:664
+msgid "Cozytouch: {count} Gerät(e) geladen"
+msgstr ""
+
+#: dialog_meross.py:52 dialog_meross.py:263
+msgid "Cyan"
+msgstr ""
+
+#: dialog_cozytouch.py:306
+msgid "Das Ende muss nach dem Beginn und in der Zukunft liegen"
+msgstr ""
+
+#: dialog_netatmo.py:82
+msgid "Dauer:"
+msgstr ""
+
+#: device_dialog.py:1618
+msgid "Der elektrische Zusatz-Heizstab unterstützt gerade die Wärmepumpe."
+msgstr ""
+
+#: history.py:301
+msgid "Details"
+msgstr ""
+
+#: device_dialog.py:293
+msgid "Dialog schließen"
+msgstr ""
+
+#: device_dialog.py:1620
+msgid "Die heute programmierten Heizzeitfenster der Warmwasser-Wärmepumpe."
+msgstr ""
+
+#: settings_panel.py:340
+msgid "Diese Redirect-URI bei dev.netatmo.com eintragen:"
+msgstr ""
+
+#: device_dialog.py:2189 device_dialog.py:2209
+msgid "Diffuser"
+msgstr ""
+
+#: meross_api.py:1165
+msgid "Diffuser nicht erreichbar - möglicherweise offline"
+msgstr ""
+
+#: device_dialog.py:1658
+msgid "Diffuser-Aktion. Enter oder Leertaste zum Ausführen."
+msgstr ""
+
+#: __init__.py:1234
+msgid "Display aus"
+msgstr ""
+
+#: history.py:443
+msgid "Display ausgeschaltet"
+msgstr ""
+
+#: __init__.py:1233
+msgid "Display ein"
+msgstr ""
+
+#: history.py:442
+msgid "Display eingeschaltet"
+msgstr ""
+
+#: dialog_vesync.py:226
+msgid "Display {status}"
+msgstr ""
+
+#: device_dialog.py:1684
+msgid ""
+"Display-Anzeige am Gerät ein- oder ausschalten. Enter oder Leertaste zum "
+"Umschalten."
+msgstr ""
+
+#: vesync_devices.py:796
+msgid "Display-Steuerung wird vom Gerät nicht unterstützt"
+msgstr ""
+
+#: dialog_vesync.py:672
+msgid "Display: aus - Enter zum Einschalten"
+msgstr ""
+
+#: dialog_vesync.py:671
+msgid "Display: ein - Enter zum Ausschalten"
+msgstr ""
+
+#: dialog_meross.py:261
+msgid "Dunkles Lila"
+msgstr ""
+
+#: vesync_api.py:346
+msgid "E-Mail und Passwort erforderlich"
+msgstr ""
+
+#: netatmo_api.py:397
+msgid "Eco"
+msgstr ""
+
+#: cozytouch_devices.py:75
+msgid "Eco+"
+msgstr ""
+
+#: constants.py:108
+msgid "Effizient"
+msgstr ""
+
+#: constants.py:96 device_dialog.py:1165 device_dialog.py:2974
+msgid "Ein"
+msgstr ""
+
+#: __init__.py:741
+msgid ""
+"Ein Meross-Gerät wird vorübergehend seltener aktualisiert – sein Cloud-Limit"
+" ist erreicht"
+msgstr ""
+
+#: settings_panel.py:631
+msgid "Ein-/Ausschaltungen ansagen"
+msgstr ""
+
+#: settings_panel.py:589
+msgid "Ein-/Ausschaltungen ansagen (Alexa, Meross-App, ...)"
+msgstr ""
+
+#: settings_panel.py:660
+msgid "Ein-/Ausschaltungen ansagen (Warmwasser-Betrieb)"
+msgstr ""
+
+#: history.py:412
+msgid "Eingeschaltet"
+msgstr ""
+
+#: settings_panel.py:1216
+msgid "Einstellungen gespeichert"
+msgstr ""
+
+#: device_dialog.py:287
+msgid "Einstellungen öffnen"
+msgstr ""
+
+#: device_dialog.py:1617
+msgid "Elektro-Heizstab"
+msgstr ""
+
+#: cozytouch_devices.py:411
+msgid "Elektro-Heizstab aktiv"
+msgstr ""
+
+#: dialog_cozytouch.py:380
+msgid "Elektro-Heizstab aktiv (heizt gerade)"
+msgstr ""
+
+#: __init__.py:943
+msgid "Endzeit entfernt"
+msgstr ""
+
+#: device_dialog.py:1621
+msgid "Energieverbrauch"
+msgstr ""
+
+#: dialog_cozytouch.py:400
+msgid "Energieverbrauch gesamt: {kwh} kWh"
+msgstr ""
+
+#: device_dialog.py:2729
+msgid "Enter oder Leertaste: Aktion ausführen, "
+msgstr ""
+
+#: device_dialog.py:1897
+msgid "Enter zum Auf- oder Zuklappen"
+msgstr ""
+
+#: device_dialog.py:218
+msgid ""
+"Enter/Leertaste: Aktion ausführen, Pfeiltasten: Navigation, F1: Hilfe, F5: "
+"Aktualisieren, Strg+B: Favorit entfernen"
+msgstr ""
+
+#: device_dialog.py:187
+msgid ""
+"Enter/Leertaste: Aktion ausführen, Pfeiltasten: Navigation, F1: "
+"Kontexthilfe, F5: Aktualisieren, Strg+F: Suchen, 1-9: Zur Kategorie "
+"springen, Buchstaben: Schnellsuche"
+msgstr ""
+
+#: device_dialog.py:2736
+msgid "Esc: Dialog schließen"
+msgstr ""
+
+#: meross_api.py:377
+msgid "Event Loop nicht verfügbar"
+msgstr ""
+
+#: device_dialog.py:4087
+msgid "Export erfolgreich"
+msgstr ""
+
+#: device_dialog.py:4096
+msgid "Export fehlgeschlagen: {error}"
+msgstr ""
+
+#: settings_panel.py:271
+msgid "Externe Änderungen &ansagen (Alexa, Meross App, etc.)"
+msgstr ""
+
+#: device_dialog.py:2735
+msgid "F1: Kontexthilfe, "
+msgstr ""
+
+#: device_dialog.py:1065
+msgid "F5 drücken zum Wiederholen"
+msgstr ""
+
+#: device_dialog.py:2731
+msgid "F5: Aktualisieren, "
+msgstr ""
+
+#: device_dialog.py:3114 device_dialog.py:3368 dialog_meross.py:226
+msgid "Farbe einstellen - Enter zum Öffnen"
+msgstr ""
+
+#: dialog_meross.py:316
+msgid "Farbe für {name} einstellen"
+msgstr ""
+
+#: history.py:427
+msgid "Farbe geändert"
+msgstr ""
+
+#: device_dialog.py:768
+msgid "Farbe:"
+msgstr ""
+
+#: device_dialog.py:772
+msgid "Farbe: R={r}, G={g}, B={b}"
+msgstr ""
+
+#: device_dialog.py:3112 device_dialog.py:3366 dialog_meross.py:221
+msgid "Farbe: RGB({r}, {g}, {b}) - Enter zum Ändern"
+msgstr ""
+
+#: dialog_meross.py:457
+msgid "Farbe: {color} (RGB {r},{g},{b})"
+msgstr ""
+
+#: device_dialog.py:3110 device_dialog.py:3364 dialog_meross.py:216
+msgid "Farbe: {color} (RGB {r},{g},{b}) - Enter zum Ändern"
+msgstr ""
+
+#: device_dialog.py:3468
+msgid "Farbtemperatur für {name}"
+msgstr ""
+
+#: device_dialog.py:761
+msgid "Farbtemperatur:"
+msgstr ""
+
+#: device_dialog.py:3515
+msgid "Farbtemperatur: {mode}"
+msgstr ""
+
+#: device_dialog.py:765
+msgid "Farbtemperatur: {value}K"
+msgstr ""
+
+#: __init__.py:2310 device_dialog.py:2139
+msgid "Fehler"
+msgstr ""
+
+#: dialog_netatmo.py:526
+msgid "Fehler beim Laden der Heizprogramme"
+msgstr ""
+
+#: device_dialog.py:2138
+msgid "Fehler beim Laden: {error}"
+msgstr ""
+
+#: dialog_netatmo.py:255
+msgid "Fehler beim Setzen der Temperatur: {error}"
+msgstr ""
+
+#: dialog_netatmo.py:488
+msgid "Fehler beim Setzen des Heizmodus: {error}"
+msgstr ""
+
+#: dialog_netatmo.py:579
+msgid "Fehler beim Wechseln des Heizprogramms: {error}"
+msgstr ""
+
+#: __init__.py:2178 dialog_netatmo.py:626
+msgid "Fehler: {error}"
+msgstr ""
+
+#: device_dialog.py:1049
+msgid "Fehler: {msg}"
+msgstr ""
+
+#: device_dialog.py:1642
+msgid ""
+"Feinstaub PM1.0: Konzentration ultrafeiner Partikel in Mikrogramm pro "
+"Kubikmeter."
+msgstr ""
+
+#: device_dialog.py:1644
+msgid ""
+"Feinstaub PM10: Konzentration grober Partikel in Mikrogramm pro Kubikmeter."
+msgstr ""
+
+#: device_dialog.py:1640
+msgid ""
+"Feinstaub PM2.5: Konzentration sehr feiner Partikel in Mikrogramm pro "
+"Kubikmeter."
+msgstr ""
+
+#: __init__.py:990
+msgid "Fenster geschlossen"
+msgstr ""
+
+#: netatmo_api.py:346
+msgid "Fenster offen"
+msgstr ""
+
+#: device_dialog.py:145 device_dialog.py:3808
+msgid "Filter"
+msgstr ""
+
+#: __init__.py:1296
+msgid "Filter bald wechseln, Restlebensdauer {percent} Prozent"
+msgstr ""
+
+#: device_dialog.py:1227
+msgid "Filter wechseln: {list}"
+msgstr ""
+
+#: dialog_vesync.py:381 history.py:446
+msgid "Filter zurückgesetzt"
+msgstr ""
+
+#: device_dialog.py:1692
+msgid ""
+"Filter-Lebensdauer auf 100 Prozent zurücksetzen. Nur ausführen, wenn der "
+"Filter tatsächlich gewechselt wurde. Enter öffnet einen Bestätigungs-Dialog."
+msgstr ""
+
+#: dialog_vesync.py:689
+msgid "Filter-Lebensdauer auf 100% zurücksetzen - Enter zum Ausführen"
+msgstr ""
+
+#: dialog_vesync.py:328
+msgid ""
+"Filter-Lebensdauer von {name} auf 100% zurücksetzen?\n"
+"\n"
+"Diese Aktion ist nur sinnvoll, wenn Sie den HEPA-Filter tatsächlich gerade gegen einen neuen ausgetauscht haben. Ein Zurücksetzen ohne Filterwechsel führt dazu, dass das Gerät keine Filterwechsel-Erinnerung mehr anzeigt."
+msgstr ""
+
+#: dialog_vesync.py:334
+msgid "Filter-Lebensdauer zurücksetzen"
+msgstr ""
+
+#: settings_panel.py:647
+msgid "Filter-Lebensdauer-Warnungen ansagen"
+msgstr ""
+
+#: device_dialog.py:1647
+msgid "Filter-Lebensdauer:"
+msgstr ""
+
+#: dialog_vesync.py:574
+msgid "Filter-Lebensdauer: {percent}%"
+msgstr ""
+
+#: vesync_devices.py:872
+msgid "Filter-Reset wird vom Gerät nicht unterstützt"
+msgstr ""
+
+#: device_dialog.py:1377
+msgid "Filter: {filter}"
+msgstr ""
+
+#: device_dialog.py:1768
+msgid "Filter: {percent}%"
+msgstr ""
+
+#: vesync_devices.py:577
+msgid "Filter: {value}%"
+msgstr ""
+
+#: device_dialog.py:106
+msgid "Filterwarnung"
+msgstr ""
+
+#: dialog_cozytouch.py:476
+msgid "Firmware-Version: {version}"
+msgstr ""
+
+#: device_dialog.py:1646
+msgid "Flüchtige organische Verbindungen in der Raumluft."
+msgstr ""
+
+#: dialog_cozytouch.py:270
+msgid "Format: TT.MM.JJJJ HH:MM (z.B. {example})"
+msgstr ""
+
+#: constants.py:33 netatmo_api.py:399
+msgid "Frostschutz"
+msgstr ""
+
+#: dialog_netatmo.py:433
+msgid "Frostschutz – Minimaltemperatur"
+msgstr ""
+
+#: device_dialog.py:2241 device_dialog.py:2251
+msgid "Gateways"
+msgstr ""
+
+#: dialog_meross.py:360
+msgid ""
+"Geben Sie RGB-Werte ein (Rot, Grün, Blau).\n"
+"Format: R,G,B (Beispiele: 255,0,0 für Rot, 0,255,0 für Grün)\n"
+"Jeder Wert muss zwischen 0 und 255 liegen.\n"
+"0 = keine Farbe, 255 = volle Intensität"
+msgstr ""
+
+#: device_dialog.py:3553
+msgid "Geben Sie die Helligkeit für {name} ein."
+msgstr ""
+
+#: constants.py:100
+msgid "Gedimmt"
+msgstr ""
+
+#: device_dialog.py:1436 device_dialog.py:1452
+msgid "Gefunden: {item}"
+msgstr ""
+
+#: dialog_meross.py:48 dialog_meross.py:259
+msgid "Gelb"
+msgstr ""
+
+#: dialog_meross.py:76
+msgid "Gelblich"
+msgstr ""
+
+#: device_dialog.py:3858 device_dialog.py:997
+msgid "Gerät"
+msgstr ""
+
+#: meross_devices.py:978
+msgid "Gerät '{name}' ist offline oder nicht erreichbar"
+msgstr ""
+
+#: __init__.py:2534
+msgid "Gerät ist kein Diffuser"
+msgstr ""
+
+#: meross_api.py:1139
+msgid "Gerät nicht erreichbar - antwortet nicht auf Schaltbefehl"
+msgstr ""
+
+#: meross_api.py:1083
+msgid ""
+"Gerät nicht erreichbar - möglicherweise offline oder Verbindung unterbrochen"
+msgstr ""
+
+#: __init__.py:2449 __init__.py:2529
+msgid "Gerät nicht gefunden"
+msgstr ""
+
+#: device_dialog.py:1409
+msgid "Gerät suchen"
+msgstr ""
+
+#: meross_api.py:1117
+msgid ""
+"Gerät {name} ({type}) kann nicht geschaltet werden (z.B. Hub oder Sensor)"
+msgstr ""
+
+#: meross_api.py:1172
+msgid "Gerät {name} ist kein Diffuser"
+msgstr ""
+
+#: meross_api.py:1223
+msgid "Gerät {name} ist keine Lampe oder unterstützt keine Farbsteuerung"
+msgstr ""
+
+#: device_dialog.py:3812
+msgid "Gerät:"
+msgstr ""
+
+#: device_dialog.py:352 device_dialog.py:1056 device_dialog.py:2155
+msgid "Geräte"
+msgstr ""
+
+#: device_dialog.py:272
+msgid "Geräte aktualisieren"
+msgstr ""
+
+#: device_dialog.py:266
+msgid "Geräte suchen"
+msgstr ""
+
+#: device_dialog.py:1587
+msgid "Geräte werden geladen, bitte warten."
+msgstr ""
+
+#: device_dialog.py:227
+msgid "Geräte-&Favoriten"
+msgstr ""
+
+#: meross_api.py:855
+msgid ""
+"Geräte-Abfrage dauert zu lange - möglicherweise sind zu viele Geräte offline"
+msgstr ""
+
+#: device_dialog.py:216 device_dialog.py:2490
+msgid "Geräte-Favoriten"
+msgstr ""
+
+#: device_dialog.py:2727
+msgid "Geräte-Favoriten - Tastaturkürzel: "
+msgstr ""
+
+#: device_dialog.py:184
+msgid "Geräteliste"
+msgstr ""
+
+#: device_dialog.py:147
+msgid "Geräteliste nach Typ oder Status filtern"
+msgstr ""
+
+#: history.py:300
+msgid "Gerätename"
+msgstr ""
+
+#: device_dialog.py:1409
+msgid "Gerätename eingeben:"
+msgstr ""
+
+#: device_dialog.py:1624
+msgid "Gerätestatus. Wird automatisch aktualisiert."
+msgstr ""
+
+#: device_dialog.py:3788
+msgid "Geräteverlauf"
+msgstr ""
+
+#: settings_panel.py:508
+msgid ""
+"Gesamt-Nennkapazität des Speichers in Litern (z. B. 300). Wird genutzt, um "
+"aus dem prozentualen Warmwasservorrat eine ungefähre Litermenge zu schätzen."
+" 0 = keine Liter-Anzeige."
+msgstr ""
+
+#: dialog_meross.py:46 dialog_meross.py:257
+msgid "Grün"
+msgstr ""
+
+#: dialog_meross.py:403
+msgid "Grün {value} ungültig (0–255)"
+msgstr ""
+
+#: dialog_meross.py:72
+msgid "Grünlich"
+msgstr ""
+
+#: dialog_netatmo.py:46
+msgid "Gültig: 5 bis 30 Grad in 0,5°C-Schritten.\n"
+msgstr ""
+
+#: vesync_devices.py:552
+msgid "Haustier"
+msgstr ""
+
+#: constants.py:67
+msgid "Haustier-Modus"
+msgstr ""
+
+#: netatmo_api.py:253
+msgid "Heizkörperventil"
+msgstr ""
+
+#: dialog_netatmo.py:439
+msgid "Heizmodus für {name} wählen.\n"
+msgstr ""
+
+#: dialog_netatmo.py:450
+msgid "Heizmodus wählen"
+msgstr ""
+
+#: device_dialog.py:1668
+msgid ""
+"Heizmodus wählen: Zeitplan, Abwesend oder Frostschutz. Enter zum Ändern."
+msgstr ""
+
+#: settings_panel.py:668
+msgid "Heizmodus-Wechsel ansagen (Manuell / Eco+ / Programm)"
+msgstr ""
+
+#: settings_panel.py:602
+msgid "Heizmodus-Wechsel ansagen (Zeitplan / Abwesend / Frostschutz)"
+msgstr ""
+
+#: __init__.py:919
+msgid "Heizmodus: {mode}"
+msgstr ""
+
+#: device_dialog.py:2941 device_dialog.py:695 dialog_netatmo.py:697
+msgid "Heizmodus: {mode} - Enter zum Ändern"
+msgstr ""
+
+#: dialog_netatmo.py:552
+msgid ""
+"Heizprogramm für {name} wählen.\n"
+"{count} Programme verfügbar."
+msgstr ""
+
+#: history.py:422
+msgid "Heizprogramm gewechselt"
+msgstr ""
+
+#: device_dialog.py:2946 dialog_netatmo.py:708 dialog_netatmo.py:932
+msgid "Heizprogramm wechseln"
+msgstr ""
+
+#: device_dialog.py:1670
+msgid ""
+"Heizprogramm wechseln. Enter zum Auswählen eines gespeicherten Heizplans."
+msgstr ""
+
+#: device_dialog.py:2954
+msgid "Heizprogramm: {name} - Enter zum Wechseln"
+msgstr ""
+
+#: dialog_netatmo.py:705 dialog_netatmo.py:936
+msgid "Heizprogramm: {schedule} - Enter zum Wechseln"
+msgstr ""
+
+#: __init__.py:952
+msgid "Heizung aktiv"
+msgstr ""
+
+#: __init__.py:952
+msgid "Heizung aus"
+msgstr ""
+
+#: device_dialog.py:775 device_dialog.py:1605
+msgid "Heizung:"
+msgstr ""
+
+#: device_dialog.py:778 device_dialog.py:2902 dialog_netatmo.py:648
+msgid "Heizung: aktiv"
+msgstr ""
+
+#: device_dialog.py:778 device_dialog.py:2902 dialog_netatmo.py:648
+msgid "Heizung: aus"
+msgstr ""
+
+#: device_dialog.py:2030 device_dialog.py:1816 device_dialog.py:1843
+msgid "Heizung: {status}"
+msgstr ""
+
+#: settings_panel.py:610
+msgid "Heizungsstart und -stopp ansagen (Boiler-Status)"
+msgstr ""
+
+#: device_dialog.py:1619
+msgid "Heizzeiten heute:"
+msgstr ""
+
+#: dialog_cozytouch.py:393
+msgid "Heizzeiten heute: {schedule}"
+msgstr ""
+
+#: dialog_meross.py:259
+msgid "Helles Gelb"
+msgstr ""
+
+#: dialog_meross.py:262
+msgid "Helles Pink"
+msgstr ""
+
+#: dialog_meross.py:263
+msgid "Helles Türkis"
+msgstr ""
+
+#: device_dialog.py:3073 device_dialog.py:3331 dialog_meross.py:171
+msgid "Helligkeit einstellen - Enter zum Öffnen"
+msgstr ""
+
+#: device_dialog.py:1660
+msgid ""
+"Helligkeit einstellen. Enter zum Öffnen des Eingabedialogs. Wert von 0 bis "
+"100 Prozent."
+msgstr ""
+
+#: device_dialog.py:3562
+msgid "Helligkeit für {name}"
+msgstr ""
+
+#: history.py:425
+msgid "Helligkeit geändert"
+msgstr ""
+
+#: meross_api.py:1272
+msgid "Helligkeit muss zwischen 0 und 100 liegen"
+msgstr ""
+
+#: device_dialog.py:754
+msgid "Helligkeit:"
+msgstr ""
+
+#: dialog_meross.py:167
+msgid "Helligkeit: {percent}% - Enter zum Ändern"
+msgstr ""
+
+#: device_dialog.py:758 device_dialog.py:3594
+msgid "Helligkeit: {value}%"
+msgstr ""
+
+#: device_dialog.py:680 device_dialog.py:3071 device_dialog.py:3329
+msgid "Helligkeit: {value}% - Enter zum Ändern"
+msgstr ""
+
+#: settings_panel.py:541
+msgid ""
+"Hier legen Sie fest, über welche externen Änderungen NVDA Sie informieren soll. Die Auswahl gilt für alle Geräte der jeweiligen Plattform.\n"
+"Hinweis: Aktiv sichtbar sind nur Sektionen für Plattformen, die im Tab \"Allgemein\" eingeschaltet sind."
+msgstr ""
+
+#: settings_panel.py:167
+msgid ""
+"Hinweis: Sie können Meross, Netatmo, VeSync und Cozytouch einzeln oder kombiniert verwenden.\n"
+"Deaktivierte Plattformen werden beim Login übersprungen.\n"
+"Ein erfolgreicher Verbindungstest im jeweiligen Tab aktiviert die Plattform automatisch."
+msgstr ""
+
+#: constants.py:131
+msgid "Hoch"
+msgstr ""
+
+#: dialog_netatmo.py:246
+msgid "Home- oder Raum-ID fehlt"
+msgstr ""
+
+#: device_dialog.py:2192 device_dialog.py:2203
+msgid "Hubs"
+msgstr ""
+
+#: device_dialog.py:1042
+msgid "Interner Verbindungsfehler - bitte erneut versuchen"
+msgstr ""
+
+#: device_dialog.py:3486 dialog_meross.py:56
+msgid "Kaltweiß"
+msgstr ""
+
+#: device_dialog.py:3447
+msgid "Kaltweiß - helles, bläuliches Licht für Konzentration (ca. 6500K)"
+msgstr ""
+
+#: device_dialog.py:1715 device_dialog.py:3021
+msgid "Kanal: {name}"
+msgstr ""
+
+#: device_dialog.py:1885
+msgid "Kanäle aufklappen für einzelne Steuerung"
+msgstr ""
+
+#: device_dialog.py:1487
+msgid "Kategorie {number} nicht vorhanden"
+msgstr ""
+
+#: device_dialog.py:1479
+msgid "Kategorie {number}: {name}"
+msgstr ""
+
+#: device_dialog.py:1584
+msgid "Kategorie. Enter zum Auf- oder Zuklappen. Pfeil rechts zum Öffnen."
+msgstr ""
+
+#: device_dialog.py:2390 device_dialog.py:2747
+msgid "Kein Gerät ausgewählt"
+msgstr ""
+
+#: device_dialog.py:2410 device_dialog.py:2765
+msgid "Kein Gerät unter Auswahl"
+msgstr ""
+
+#: device_dialog.py:1194
+msgid "Kein Status verfügbar"
+msgstr ""
+
+#: device_dialog.py:1865
+msgid "Kein Wasser erkannt"
+msgstr ""
+
+#: netatmo_api.py:654
+msgid ""
+"Keine Antwort von Netatmo erhalten. Zeitüberschreitung oder Browser-Fenster "
+"geschlossen."
+msgstr ""
+
+#: dialog_cozytouch.py:39 dialog_vesync.py:61
+msgid "Keine Auswahl verfügbar"
+msgstr ""
+
+#: __init__.py:2208 history.py:400
+msgid "Keine Daten"
+msgstr ""
+
+#: __init__.py:1982 __init__.py:2160 device_dialog.py:2329
+msgid "Keine Geräte gefunden"
+msgstr ""
+
+#: device_dialog.py:1924
+msgid "Keine Geräte geladen"
+msgstr ""
+
+#: dialog_netatmo.py:533
+msgid "Keine Heizprogramme gefunden"
+msgstr ""
+
+#: device_dialog.py:1015
+msgid "Keine Internetverbindung - DNS-Auflösung fehlgeschlagen"
+msgstr ""
+
+#: device_dialog.py:1034
+msgid "Keine Internetverbindung - Server antwortet nicht"
+msgstr ""
+
+#: device_dialog.py:1023
+msgid "Keine Internetverbindung - Server nicht erreichbar"
+msgstr ""
+
+#: dialog_vesync.py:128
+msgid "Keine Lüftergeschwindigkeit verfügbar"
+msgstr ""
+
+#: __init__.py:1852
+msgid "Keine VeSync-Zugangsdaten konfiguriert"
+msgstr ""
+
+#: device_dialog.py:4025
+msgid "Keine Verlaufseinträge gefunden"
+msgstr ""
+
+#: vesync_devices.py:580
+msgid "Kindersicherung aktiv"
+msgstr ""
+
+#: __init__.py:1244
+msgid "Kindersicherung aus"
+msgstr ""
+
+#: history.py:445
+msgid "Kindersicherung ausgeschaltet"
+msgstr ""
+
+#: __init__.py:1243
+msgid "Kindersicherung ein"
+msgstr ""
+
+#: device_dialog.py:1686
+msgid ""
+"Kindersicherung ein- oder ausschalten. Sperrt die Bedienung am Gerät. Enter "
+"oder Leertaste zum Umschalten."
+msgstr ""
+
+#: history.py:444
+msgid "Kindersicherung eingeschaltet"
+msgstr ""
+
+#: vesync_devices.py:815
+msgid "Kindersicherung wird vom Gerät nicht unterstützt"
+msgstr ""
+
+#: dialog_vesync.py:247
+msgid "Kindersicherung {status}"
+msgstr ""
+
+#: dialog_vesync.py:682
+msgid "Kindersicherung: aus - Enter zum Einschalten"
+msgstr ""
+
+#: dialog_vesync.py:681
+msgid "Kindersicherung: ein - Enter zum Ausschalten"
+msgstr ""
+
+#: netatmo_api.py:390 netatmo_api.py:391
+msgid "Komfort"
+msgstr ""
+
+#: netatmo_api.py:392 netatmo_api.py:393 netatmo_api.py:394
+msgid "Komfort+"
+msgstr ""
+
+#: dialog_meross.py:258
+msgid "Kräftiges Blau"
+msgstr ""
+
+#: dialog_meross.py:257
+msgid "Kräftiges Grün"
+msgstr ""
+
+#: dialog_meross.py:256
+msgid "Kräftiges Rot"
+msgstr ""
+
+#: settings_panel.py:990
+msgid "Lade Cozytouch-Geräte..."
+msgstr ""
+
+#: __init__.py:2106 device_dialog.py:354 device_dialog.py:364
+msgid "Lade Geräte..."
+msgstr ""
+
+#: dialog_netatmo.py:510
+msgid "Lade Heizprogramme..."
+msgstr ""
+
+#: settings_panel.py:925
+msgid "Lade VeSync-Geräte..."
+msgstr ""
+
+#: device_dialog.py:1368 device_dialog.py:1386
+msgid "Lade..."
+msgstr ""
+
+#: device_dialog.py:1590
+msgid "Ladefehler – F5 zum Wiederholen."
+msgstr ""
+
+#: meross_api.py:1216
+msgid "Lampe nicht erreichbar - möglicherweise offline"
+msgstr ""
+
+#: device_dialog.py:2188 device_dialog.py:2207
+msgid "Lampen und LED-Strips"
+msgstr ""
+
+#: device_dialog.py:2011
+msgid "Lautstärke: {noise} dB"
+msgstr ""
+
+#: constants.py:110
+msgid "Leise"
+msgstr ""
+
+#: history.py:304
+msgid "Leistung (W)"
+msgstr ""
+
+#: device_dialog.py:733 device_dialog.py:1625
+msgid "Leistung:"
+msgstr ""
+
+#: device_dialog.py:1720 device_dialog.py:2106 device_dialog.py:1891
+msgid "Leistung: {power} W"
+msgstr ""
+
+#: device_dialog.py:737 device_dialog.py:2983 device_dialog.py:3294
+msgid "Leistung: {value} W"
+msgstr ""
+
+#: device_dialog.py:3830
+msgid "Letzte 24 Stunden"
+msgstr ""
+
+#: device_dialog.py:3831
+msgid "Letzte 30 Tage"
+msgstr ""
+
+#: device_dialog.py:3831
+msgid "Letzte 7 Tage"
+msgstr ""
+
+#: device_dialog.py:3830
+msgid "Letzte Stunde"
+msgstr ""
+
+#: device_dialog.py:3093 device_dialog.py:3348 dialog_meross.py:195
+msgid "Lichtfarbe (Weiß) einstellen - Enter zum Öffnen"
+msgstr ""
+
+#: device_dialog.py:1662
+msgid ""
+"Lichtfarbe einstellen. Enter zum Auswählen zwischen Warmweiß, Tageslicht und"
+" Kaltweiß."
+msgstr ""
+
+#: history.py:426
+msgid "Lichtfarbe geändert"
+msgstr ""
+
+#: device_dialog.py:3091 device_dialog.py:3346 dialog_meross.py:191
+msgid "Lichtfarbe: Kaltweiß (hell) - Enter zum Ändern"
+msgstr ""
+
+#: device_dialog.py:3089 device_dialog.py:3344 dialog_meross.py:189
+msgid "Lichtfarbe: Tageslicht (neutral) - Enter zum Ändern"
+msgstr ""
+
+#: device_dialog.py:3087 device_dialog.py:3342 dialog_meross.py:187
+msgid "Lichtfarbe: Warmweiß (gemütlich) - Enter zum Ändern"
+msgstr ""
+
+#: dialog_meross.py:50 dialog_meross.py:261
+msgid "Lila"
+msgstr ""
+
+#: history.py:303
+msgid "Luftdruck (mbar)"
+msgstr ""
+
+#: device_dialog.py:1635
+msgid "Luftdruck:"
+msgstr ""
+
+#: device_dialog.py:2013 device_dialog.py:1800
+msgid "Luftdruck: {pressure} mbar"
+msgstr ""
+
+#: history.py:302
+msgid "Luftfeuchtigkeit (%)"
+msgstr ""
+
+#: device_dialog.py:747 device_dialog.py:1603
+msgid "Luftfeuchtigkeit:"
+msgstr ""
+
+#: device_dialog.py:2007 device_dialog.py:2055 device_dialog.py:1794
+msgid "Luftfeuchtigkeit: {humidity}%"
+msgstr ""
+
+#: device_dialog.py:751
+msgid "Luftfeuchtigkeit: {value:g}%"
+msgstr ""
+
+#: __init__.py:1282
+msgid "Luftqualität {level}"
+msgstr ""
+
+#: device_dialog.py:1637
+msgid "Luftqualität:"
+msgstr ""
+
+#: vesync_devices.py:566
+msgid "Luftqualität: {level}"
+msgstr ""
+
+#: dialog_vesync.py:567
+msgid "Luftqualität: {percent}%"
+msgstr ""
+
+#: device_dialog.py:1764 dialog_vesync.py:558
+msgid "Luftqualität: {value}"
+msgstr ""
+
+#: device_dialog.py:1638
+msgid ""
+"Luftqualitäts-Einstufung des Luftreinigers von ausgezeichnet bis schlecht. "
+"Wird automatisch aktualisiert."
+msgstr ""
+
+#: settings_panel.py:643
+msgid "Luftqualitäts-Änderungen ansagen (Luftreiniger)"
+msgstr ""
+
+#: device_dialog.py:2285 device_dialog.py:2292
+msgid "Luftreiniger"
+msgstr ""
+
+#: device_dialog.py:3641
+msgid "Lädt..."
+msgstr ""
+
+#: settings_panel.py:907
+msgid "Ländercode muss zwei Buchstaben haben (z. B. DE)"
+msgstr ""
+
+#: history.py:435
+msgid "Lüftergeschwindigkeit geändert"
+msgstr ""
+
+#: device_dialog.py:1678
+msgid ""
+"Lüftergeschwindigkeit ändern. Enter öffnet eine Auswahlliste der verfügbaren"
+" Stufen. Wechsel auf eine Stufe schaltet automatisch in den Manuell-Modus."
+msgstr ""
+
+#: settings_panel.py:639
+msgid "Lüftergeschwindigkeit-Änderungen ansagen"
+msgstr ""
+
+#: dialog_vesync.py:608
+msgid "Lüftergeschwindigkeit: automatisch geregelt - Enter zum Manuell-Setzen"
+msgstr ""
+
+#: device_dialog.py:1758
+msgid "Lüftergeschwindigkeit: {level}"
+msgstr ""
+
+#: dialog_vesync.py:619
+msgid "Lüftergeschwindigkeit: {level} - Enter zum Ändern"
+msgstr ""
+
+#: vesync_devices.py:776 vesync_devices.py:1127
+msgid "Lüfterstufe {level} wird nicht unterstützt"
+msgstr ""
+
+#: constants.py:29 constants.py:61 cozytouch_devices.py:73
+msgid "Manuell"
+msgstr ""
+
+#: constants.py:35
+msgid "Maximum"
+msgstr ""
+
+#: settings_panel.py:233
+msgid ""
+"Meross Account Zugangsdaten.\n"
+"Diese werden sicher in der NVDA-Konfiguration gespeichert (DPAPI)."
+msgstr ""
+
+#: settings_panel.py:246
+msgid "Meross E-Mail-Adresse"
+msgstr ""
+
+#: __init__.py:1774 settings_panel.py:739 settings_panel.py:742
+msgid "Meross Fehler: {error}"
+msgstr ""
+
+#: settings_panel.py:255
+msgid "Meross Passwort"
+msgstr ""
+
+#: dialog_meross.py:548
+msgid "Meross wird verbunden..."
+msgstr ""
+
+#: __init__.py:737
+msgid ""
+"Meross {name}: Aktualisierung pausiert – Cloud-Limit dieses Geräts erreicht"
+msgstr ""
+
+#: device_dialog.py:2525
+msgid "Meross-Favoriten ({count})"
+msgstr ""
+
+#: device_dialog.py:2181
+msgid "Meross-Geräte ({count})"
+msgstr ""
+
+#: dialog_meross.py:542
+msgid "Meross-Login fehlgeschlagen: {error}"
+msgstr ""
+
+#: settings_panel.py:264
+msgid "Meross-Verbindung testen"
+msgstr ""
+
+#: settings_panel.py:1042 settings_panel.py:1043
+msgid "Meross: Bitte E-Mail eingeben"
+msgstr ""
+
+#: settings_panel.py:1057 settings_panel.py:1058
+msgid "Meross: Bitte Passwort eingeben"
+msgstr ""
+
+#: __init__.py:1758
+msgid "Meross: Lade Geräte..."
+msgstr ""
+
+#: __init__.py:1737
+msgid "Meross: Verbinde..."
+msgstr ""
+
+#: settings_panel.py:724
+msgid "Meross: Verbunden – {count} Gerät(e)"
+msgstr ""
+
+#: settings_panel.py:730
+msgid "Meross: {count} Gerät(e) gefunden"
+msgstr ""
+
+#: dialog_meross.py:559
+msgid "Meross: {count} Gerät(e) geladen"
+msgstr ""
+
+#: dialog_netatmo.py:119
+msgid "Mi&nute:"
+msgstr ""
+
+#: settings_panel.py:1143
+msgid "Mindestens eine Plattform aktivieren"
+msgstr ""
+
+#: settings_panel.py:1142
+msgid "Mindestens eine Plattform muss aktiv sein"
+msgstr ""
+
+#: dialog_netatmo.py:125
+msgid "Minute"
+msgstr ""
+
+#: dialog_netatmo.py:126
+msgid "Minute bis wann die Temperatur gelten soll (5-Minuten-Schritte)"
+msgstr ""
+
+#: settings_panel.py:352
+msgid "Mit Netatmo &verbinden (OAuth2)"
+msgstr ""
+
+#: settings_panel.py:353
+msgid "Mit Netatmo verbinden"
+msgstr ""
+
+#: dialog_meross.py:309
+msgid ""
+"Mit Pfeiltasten navigieren, Enter zum Bestätigen, Escape zum Abbrechen."
+msgstr ""
+
+#: device_dialog.py:3462
+msgid "Mit Pfeiltasten navigieren, Enter zum Bestätigen."
+msgstr ""
+
+#: constants.py:129
+msgid "Mittel"
+msgstr ""
+
+#: vesync_devices.py:745 vesync_devices.py:1097
+msgid "Modus '{mode}' wird vom Gerät nicht unterstützt"
+msgstr ""
+
+#: history.py:415 history.py:421
+msgid "Modus geändert"
+msgstr ""
+
+#: dialog_cozytouch.py:139
+msgid "Modus konnte nicht gesetzt werden"
+msgstr ""
+
+#: __init__.py:1411
+msgid "Modus {mode}"
+msgstr ""
+
+#: settings_panel.py:635
+msgid "Modus-Wechsel ansagen (Auto / Manuell / Schlaf / ...)"
+msgstr ""
+
+#: netatmo_api.py:328
+msgid "Modus: Manuell"
+msgstr ""
+
+#: __init__.py:1164 cozytouch_devices.py:392 device_dialog.py:1737
+msgid "Modus: {mode}"
+msgstr ""
+
+#: dialog_netatmo.py:473
+msgid "Modus: {mode} ({key})"
+msgstr ""
+
+#: dialog_vesync.py:598
+msgid "Modus: {mode} - Enter zum Ändern"
+msgstr ""
+
+#: device_dialog.py:4108
+msgid ""
+"Möchten Sie wirklich den gesamten Verlauf löschen?\n"
+"\n"
+"Es werden {count} Einträge unwiderruflich gelöscht."
+msgstr ""
+
+#: device_dialog.py:157
+msgid "Nach Name"
+msgstr ""
+
+#: device_dialog.py:161
+msgid "Nach Status"
+msgstr ""
+
+#: device_dialog.py:159
+msgid "Nach Typ"
+msgstr ""
+
+#: netatmo_api.py:396
+msgid "Nacht"
+msgstr ""
+
+#: history.py:437
+msgid "Nachtlicht geändert"
+msgstr ""
+
+#: vesync_devices.py:832
+msgid "Nachtlicht wird vom Gerät nicht unterstützt"
+msgstr ""
+
+#: __init__.py:1256
+msgid "Nachtlicht {mode}"
+msgstr ""
+
+#: vesync_devices.py:834
+msgid "Nachtlicht-Modus '{mode}' wird nicht unterstützt"
+msgstr ""
+
+#: device_dialog.py:1688
+msgid ""
+"Nachtlicht-Modus wählen: Aus, Gedimmt oder Ein. Enter öffnet eine "
+"Auswahlliste."
+msgstr ""
+
+#: vesync_devices.py:583
+msgid "Nachtlicht: {mode}"
+msgstr ""
+
+#: dialog_vesync.py:644
+msgid "Nachtlicht: {mode} - Enter zum Ändern"
+msgstr ""
+
+#: settings_panel.py:503
+msgid "Nenn&kapazität (Liter, 0 = aus):"
+msgstr ""
+
+#: settings_panel.py:506
+msgid "Nennkapazität des Warmwasserspeichers in Liter"
+msgstr ""
+
+#: netatmo_api.py:646
+msgid "Netatmo Autorisierung abgelehnt: {error}"
+msgstr ""
+
+#: settings_panel.py:310
+msgid "Netatmo Client-ID"
+msgstr ""
+
+#: settings_panel.py:320
+msgid "Netatmo Client-Secret"
+msgstr ""
+
+#: __init__.py:1812 settings_panel.py:831 settings_panel.py:883
+msgid "Netatmo Fehler: {error}"
+msgstr ""
+
+#: settings_panel.py:295
+msgid ""
+"Netatmo OAuth2 Zugangsdaten.\n"
+"Erstellen Sie eine App auf https://dev.netatmo.com,\n"
+"geben Sie Client-ID und Secret ein und tragen Sie die unten\n"
+"angezeigte Redirect-URI in Ihrer Netatmo-App ein (exakt gleich)."
+msgstr ""
+
+#: settings_panel.py:329
+msgid "Netatmo Redirect-Port"
+msgstr ""
+
+#: settings_panel.py:347
+msgid "Netatmo Redirect-URI"
+msgstr ""
+
+#: settings_panel.py:824
+msgid "Netatmo verbunden"
+msgstr ""
+
+#: dialog_netatmo.py:242
+msgid "Netatmo-API nicht verfügbar"
+msgstr ""
+
+#: dialog_netatmo.py:424 dialog_netatmo.py:503 dialog_netatmo.py:600
+msgid "Netatmo-API oder Home-ID fehlt"
+msgstr ""
+
+#: netatmo_api.py:726
+msgid ""
+"Netatmo-Anmeldung ist nicht mehr gültig. Bitte in den Einstellungen erneut "
+"verbinden."
+msgstr ""
+
+#: settings_panel.py:778
+msgid "Netatmo-Autorisierung"
+msgstr ""
+
+#: device_dialog.py:2545
+msgid "Netatmo-Favoriten ({count})"
+msgstr ""
+
+#: device_dialog.py:2233
+msgid "Netatmo-Geräte ({count})"
+msgstr ""
+
+#: netatmo_api.py:813
+msgid "Netatmo-Server vorübergehend nicht erreichbar"
+msgstr ""
+
+#: netatmo_api.py:732
+msgid "Netatmo-Server vorübergehend nicht erreichbar (HTTP {code})"
+msgstr ""
+
+#: settings_panel.py:795
+msgid "Netatmo-Verbindung abgebrochen"
+msgstr ""
+
+#: settings_panel.py:370
+msgid "Netatmo-Verbindung testen"
+msgstr ""
+
+#: settings_panel.py:365
+msgid "Netatmo-Verbindungsstatus"
+msgstr ""
+
+#: settings_panel.py:1077 settings_panel.py:1078
+msgid "Netatmo: Bitte Client-ID und Secret eingeben"
+msgstr ""
+
+#: __init__.py:1779
+msgid "Netatmo: Verbinde..."
+msgstr ""
+
+#: settings_panel.py:835
+msgid "Netatmo: Verbindung fehlgeschlagen – {error}"
+msgstr ""
+
+#: settings_panel.py:821
+msgid "Netatmo: Verbunden"
+msgstr ""
+
+#: settings_panel.py:876
+msgid "Netatmo: {count} Gerät(e)"
+msgstr ""
+
+#: settings_panel.py:871
+msgid "Netatmo: {count} Gerät(e) gefunden"
+msgstr ""
+
+#: dialog_meross.py:264
+msgid "Neutrales Weiß"
+msgstr ""
+
+#: __init__.py:2081 meross_api.py:507 meross_api.py:868
+msgid "Nicht angemeldet"
+msgstr ""
+
+#: device_dialog.py:1046
+msgid "Nicht angemeldet - bitte Einstellungen prüfen"
+msgstr ""
+
+#: __init__.py:2012
+msgid "Nicht angemeldet – öffne Einstellungen"
+msgstr ""
+
+#: netatmo_api.py:751
+msgid "Nicht autorisiert – bitte in Einstellungen mit Netatmo verbinden"
+msgstr ""
+
+#: device_dialog.py:1615
+msgid "Niedertarif"
+msgstr ""
+
+#: dialog_cozytouch.py:376
+msgid "Niedertarif aktiv"
+msgstr ""
+
+#: constants.py:127
+msgid "Niedrig"
+msgstr ""
+
+#: device_dialog.py:2502
+msgid "Noch keine Favoriten – im Geräte-Tab mit Strg+B hinzufügen"
+msgstr ""
+
+#: constants.py:72 vesync_devices.py:935
+msgid "Normal"
+msgstr ""
+
+#: device_dialog.py:138
+msgid "Nur Lampen"
+msgstr ""
+
+#: device_dialog.py:134
+msgid "Nur Offline"
+msgstr ""
+
+#: device_dialog.py:132
+msgid "Nur Online"
+msgstr ""
+
+#: device_dialog.py:141
+msgid "Nur Sensoren"
+msgstr ""
+
+#: device_dialog.py:136
+msgid "Nur Steckdosen"
+msgstr ""
+
+#: device_dialog.py:795 device_dialog.py:1611
+msgid "Nächste Planänderung:"
+msgstr ""
+
+#: device_dialog.py:803 device_dialog.py:2926
+msgid "Nächste Planänderung: {zone} ({temp:.1f}°C) um {time}"
+msgstr ""
+
+#: dialog_netatmo.py:675 dialog_netatmo.py:898
+msgid "Nächste Planänderung: {zone} ({temp}°C) um {time}"
+msgstr ""
+
+#: device_dialog.py:805 device_dialog.py:2928 dialog_netatmo.py:679
+msgid "Nächste Planänderung: {zone} um {time}"
+msgstr ""
+
+#: netatmo_api.py:356
+msgid "Nächste Änderung: {zone} ({temp:.1f}°C) um {time}"
+msgstr ""
+
+#: device_dialog.py:1832
+msgid "Nächste Änderung: {zone} ({temp}°C) um {time}"
+msgstr ""
+
+#: device_dialog.py:1835
+msgid "Nächste Änderung: {zone} um {time}"
+msgstr ""
+
+#: __init__.py:986 device_dialog.py:1824
+msgid "Offenes Fenster erkannt"
+msgstr ""
+
+#: settings_panel.py:614
+msgid "Offenes Fenster erkannt ansagen"
+msgstr ""
+
+#: device_dialog.py:1610
+msgid ""
+"Offenes Fenster erkannt: Die Heizung wird automatisch pausiert, um "
+"Energieverschwendung zu vermeiden."
+msgstr ""
+
+#: device_dialog.py:788 device_dialog.py:1609
+msgid "Offenes Fenster:"
+msgstr ""
+
+#: device_dialog.py:791 device_dialog.py:2915 dialog_netatmo.py:662
+msgid "Offenes Fenster: erkannt (Heizung pausiert)"
+msgstr ""
+
+#: device_dialog.py:2972 device_dialog.py:3283 device_dialog.py:3009
+msgid "Offline"
+msgstr ""
+
+#: dialog_meross.py:49 dialog_meross.py:260
+msgid "Orange"
+msgstr ""
+
+#: dialog_meross.py:82
+msgid "Orange-Töne"
+msgstr ""
+
+#: __init__.py:1215
+msgid "Oszillation aus"
+msgstr ""
+
+#: history.py:439
+msgid "Oszillation ausgeschaltet"
+msgstr ""
+
+#: device_dialog.py:1680
+msgid ""
+"Oszillation des Tower-Ventilators ein- oder ausschalten. Enter oder "
+"Leertaste zum Umschalten."
+msgstr ""
+
+#: __init__.py:1214
+msgid "Oszillation ein"
+msgstr ""
+
+#: history.py:438
+msgid "Oszillation eingeschaltet"
+msgstr ""
+
+#: dialog_vesync.py:182
+msgid "Oszillation {status}"
+msgstr ""
+
+#: vesync_devices.py:947
+msgid "Oszillation: aus"
+msgstr ""
+
+#: dialog_vesync.py:653
+msgid "Oszillation: aus - Enter zum Einschalten"
+msgstr ""
+
+#: vesync_devices.py:947
+msgid "Oszillation: ein"
+msgstr ""
+
+#: dialog_vesync.py:652
+msgid "Oszillation: ein - Enter zum Ausschalten"
+msgstr ""
+
+#: device_dialog.py:1772
+msgid "Oszillation: {status}"
+msgstr ""
+
+#: vesync_devices.py:569
+msgid "PM2.5: {value} Mikrogramm pro Kubikmeter"
+msgstr ""
+
+#: settings_panel.py:1066
+msgid "Passwort zu kurz"
+msgstr ""
+
+#: settings_panel.py:1065
+msgid "Passwort zu kurz (min. 6 Zeichen)"
+msgstr ""
+
+#: device_dialog.py:2728
+msgid "Pfeiltasten: Navigation, "
+msgstr ""
+
+#: dialog_meross.py:51 dialog_meross.py:262
+msgid "Pink"
+msgstr ""
+
+#: device_dialog.py:3859 history.py:300
+msgid "Plattform"
+msgstr ""
+
+#: device_dialog.py:3820
+msgid "Plattform:"
+msgstr ""
+
+#: netatmo_api.py:605
+msgid ""
+"Port {port} ist belegt. Bitte wählen Sie in den Einstellungen einen anderen "
+"Netatmo-Port (und tragen Sie ihn auch bei dev.netatmo.com ein) oder "
+"schließen Sie das blockierende Programm. ({error})"
+msgstr ""
+
+#: cozytouch_devices.py:77
+msgid "Programm"
+msgstr ""
+
+#: device_dialog.py:1664
+msgid ""
+"RGB-Farbe einstellen. Enter zum Öffnen der Farbauswahl mit Voreinstellungen "
+"oder benutzerdefinierter Eingabe."
+msgstr ""
+
+#: meross_api.py:1258
+msgid "RGB-Werte müssen zwischen 0 und 255 liegen"
+msgstr ""
+
+#: device_dialog.py:2242 device_dialog.py:2253
+msgid "Raumluft"
+msgstr ""
+
+#: netatmo_api.py:255
+msgid "Raumluftmonitor"
+msgstr ""
+
+#: settings_panel.py:325
+msgid "Redirect-&Port:"
+msgstr ""
+
+#: device_dialog.py:2015 device_dialog.py:1803
+msgid "Regen: {rain} mm"
+msgstr ""
+
+#: netatmo_api.py:250
+msgid "Regenmesser"
+msgstr ""
+
+#: device_dialog.py:167
+msgid "Reihenfolge der Geräte ändern"
+msgstr ""
+
+#: dialog_meross.py:78
+msgid "Rosa"
+msgstr ""
+
+#: dialog_meross.py:45 dialog_meross.py:256
+msgid "Rot"
+msgstr ""
+
+#: dialog_meross.py:400
+msgid "Rot {value} ungültig (0–255)"
+msgstr ""
+
+#: dialog_meross.py:70
+msgid "Rötlich"
+msgstr ""
+
+#: device_dialog.py:152
+msgid "S&ortierung:"
+msgstr ""
+
+#: __init__.py:2072
+msgid "Sagt den Status aller Smart Home Geräte an"
+msgstr ""
+
+#: device_dialog.py:3882
+msgid "Sc&hließen"
+msgstr ""
+
+#: device_dialog.py:1656
+msgid "Schaltaktion. Enter oder Leertaste zum Ein- oder Ausschalten."
+msgstr ""
+
+#: constants.py:63 constants.py:78 vesync_devices.py:550
+msgid "Schlafmodus"
+msgstr ""
+
+#: device_dialog.py:3204 device_dialog.py:3043 dialog_meross.py:132
+msgid "Schwach sprühen"
+msgstr ""
+
+#: constants.py:46 meross_devices.py:557
+msgid "Schwaches Sprühen"
+msgstr ""
+
+#: device_dialog.py:1862 device_dialog.py:1866
+msgid "Sensor - nur Anzeige"
+msgstr ""
+
+#: device_dialog.py:3839 device_dialog.py:4006
+msgid "Sensordaten"
+msgstr ""
+
+#: dialog_vesync.py:359
+msgid "Sicherheitsabfrage"
+msgstr ""
+
+#: netatmo_api.py:661
+msgid "Sicherheitsfehler: State-Parameter stimmt nicht überein (CSRF-Schutz)"
+msgstr ""
+
+#: settings_panel.py:773
+msgid ""
+"Sie werden jetzt zum Netatmo-Login im Browser weitergeleitet.\n"
+"\n"
+"Bitte melden Sie sich dort an und autorisieren Sie die App.\n"
+"Nach der Autorisierung werden Sie automatisch zurückgeleitet.\n"
+"\n"
+"Möchten Sie fortfahren?"
+msgstr ""
+
+#: dialog_vesync.py:355
+msgid ""
+"Sind Sie wirklich sicher, dass Sie die Filter-Lebensdauer von {name} jetzt auf 100% zurücksetzen möchten?\n"
+"\n"
+"Diese Aktion kann nicht rückgängig gemacht werden."
+msgstr ""
+
+#: settings_panel.py:445
+msgid ""
+"Sinkt die Filter-Restlebensdauer eines Luftreinigers auf oder unter diesen "
+"Prozentwert, erscheint im Geräte-Dialog oben eine Filterwarnung und es wird "
+"beim Unterschreiten einmal angesagt. Standard: 15."
+msgstr ""
+
+#: __init__.py:109
+msgid "Smart Home Control"
+msgstr ""
+
+#: settings_panel.py:34
+msgid "Smart Home Control - Einstellungen"
+msgstr ""
+
+#: device_dialog.py:56 device_dialog.py:1905
+msgid "Smart Home Geräte"
+msgstr ""
+
+#: device_dialog.py:1912
+msgid "Smart Home Geräte ({online}/{total} online)"
+msgstr ""
+
+#: device_dialog.py:1561
+msgid ""
+"Smart Home Gerätesteuerung - Tastaturkürzel: Pfeiltasten: Navigation, Enter "
+"oder Leertaste: Aktion ausführen, F5: Aktualisieren, Strg+F: Suchen, Strg+B:"
+" Favorit hinzufügen oder entfernen, Strg+H: Verlauf anzeigen, Strg+T: Status"
+" ansagen, Strg+Tab: Tab wechseln, 1-9: Zur Kategorie springen, Buchstaben: "
+"Schnellsuche, F1: Kontexthilfe, ESC: Schließen"
+msgstr ""
+
+#: device_dialog.py:1868
+msgid "Smart Hub - verwaltet Sensoren"
+msgstr ""
+
+#: dialog_netatmo.py:262
+msgid "Soll-Temperatur einstellen"
+msgstr ""
+
+#: dialog_netatmo.py:44
+msgid "Soll-Temperatur für {name} eingeben.\n"
+msgstr ""
+
+#: dialog_netatmo.py:66
+msgid "Soll-Temperatur in 0,5°C-Schritten wählen"
+msgstr ""
+
+#: device_dialog.py:1666
+msgid ""
+"Soll-Temperatur setzen. Enter zum Eingeben einer Temperatur von 5 bis 30 "
+"Grad in 0,5-Grad-Schritten mit optionaler Dauer."
+msgstr ""
+
+#: settings_panel.py:606
+msgid "Soll-Temperatur-Änderungen ansagen"
+msgstr ""
+
+#: __init__.py:907 __init__.py:909
+msgid "Soll-Temperatur: {temp:.1f}°C"
+msgstr ""
+
+#: device_dialog.py:2024 dialog_netatmo.py:265
+msgid "Soll-Temperatur: {temp}°C"
+msgstr ""
+
+#: device_dialog.py:1811
+msgid "Soll: {temp}°C"
+msgstr ""
+
+#: netatmo_api.py:303
+msgid "Soll: {value:.1f}°C"
+msgstr ""
+
+#: device_dialog.py:1395
+msgid "Sortiert: {sort}"
+msgstr ""
+
+#: device_dialog.py:165
+msgid "Sortierung"
+msgstr ""
+
+#: device_dialog.py:1627
+msgid "Spannung:"
+msgstr ""
+
+#: device_dialog.py:2987 device_dialog.py:3298
+msgid "Spannung: {value} V"
+msgstr ""
+
+#: device_dialog.py:2108
+msgid "Spannung: {voltage} V"
+msgstr ""
+
+#: device_dialog.py:3210 device_dialog.py:3049 dialog_meross.py:140
+msgid "Sprühen aus"
+msgstr ""
+
+#: device_dialog.py:1878
+msgid "Sprühmodus: {mode}"
+msgstr ""
+
+#: constants.py:106
+msgid "Standard"
+msgstr ""
+
+#: device_dialog.py:3207 device_dialog.py:3046 dialog_meross.py:136
+msgid "Stark sprühen"
+msgstr ""
+
+#: constants.py:48 meross_devices.py:560
+msgid "Starkes Sprühen"
+msgstr ""
+
+#: device_dialog.py:255 settings_panel.py:96
+msgid "Status"
+msgstr ""
+
+#: device_dialog.py:722 device_dialog.py:832 device_dialog.py:915
+msgid "Status:"
+msgstr ""
+
+#: device_dialog.py:2096 dialog_vesync.py:542
+msgid "Status: Aus"
+msgstr ""
+
+#: device_dialog.py:2096 dialog_vesync.py:542
+msgid "Status: Ein"
+msgstr ""
+
+#: device_dialog.py:2062
+msgid "Status: Kein Wasser"
+msgstr ""
+
+#: device_dialog.py:2057
+msgid "Status: Keine Daten"
+msgstr ""
+
+#: settings_panel.py:363
+msgid "Status: Nicht verbunden"
+msgstr ""
+
+#: device_dialog.py:2042 device_dialog.py:1989 device_dialog.py:1727
+msgid "Status: Offline"
+msgstr ""
+
+#: device_dialog.py:2079
+msgid "Status: Online"
+msgstr ""
+
+#: device_dialog.py:2090
+msgid "Status: Unbekannt"
+msgstr ""
+
+#: device_dialog.py:2038 settings_panel.py:363 settings_panel.py:822
+msgid "Status: Verbunden"
+msgstr ""
+
+#: device_dialog.py:2062
+msgid "Status: WASSERALARM"
+msgstr ""
+
+#: dialog_meross.py:124
+msgid "Status: {mode}"
+msgstr ""
+
+#: device_dialog.py:730 device_dialog.py:948 device_dialog.py:1716
+msgid "Status: {status}"
+msgstr ""
+
+#: device_dialog.py:1650
+msgid "Statusinformation. Nur zur Anzeige."
+msgstr ""
+
+#: device_dialog.py:2187 device_dialog.py:2205
+msgid "Steckdosen"
+msgstr ""
+
+#: device_dialog.py:205
+msgid "Strg+B auf einem Gerät im Geräte-Tab: Favorit hinzufügen/entfernen"
+msgstr ""
+
+#: device_dialog.py:2730
+msgid "Strg+B: Favorit entfernen, "
+msgstr ""
+
+#: device_dialog.py:2732
+msgid "Strg+H: Verlauf anzeigen, "
+msgstr ""
+
+#: device_dialog.py:2734
+msgid "Strg+T: Status ansagen, "
+msgstr ""
+
+#: device_dialog.py:2733
+msgid "Strg+Tab: Zum Geräte-Tab wechseln, "
+msgstr ""
+
+#: device_dialog.py:1629
+msgid "Stromstärke:"
+msgstr ""
+
+#: device_dialog.py:2110
+msgid "Stromstärke: {current} A"
+msgstr ""
+
+#: device_dialog.py:2991 device_dialog.py:3302
+msgid "Stromstärke: {value} A"
+msgstr ""
+
+#: __init__.py:1194 dialog_vesync.py:142 dialog_vesync.py:161
+msgid "Stufe {level}"
+msgstr ""
+
+#: __init__.py:1202
+msgid "Stufe {level} ({label})"
+msgstr ""
+
+#: dialog_vesync.py:136
+msgid "Stufe {level} – {label}"
+msgstr ""
+
+#: vesync_devices.py:950
+msgid "Stumm"
+msgstr ""
+
+#: history.py:441
+msgid "Stumm ausgeschaltet"
+msgstr ""
+
+#: history.py:440
+msgid "Stumm eingeschaltet"
+msgstr ""
+
+#: device_dialog.py:1682
+msgid ""
+"Stummschaltung des Tower-Ventilators ein- oder ausschalten. Bei aktiver "
+"Stummschaltung gibt das Gerät keine Bestätigungstöne aus. Enter oder "
+"Leertaste zum Umschalten."
+msgstr ""
+
+#: dialog_vesync.py:662
+msgid "Stummschaltung: aus - Enter zum Einschalten"
+msgstr ""
+
+#: dialog_vesync.py:661
+msgid "Stummschaltung: ein - Enter zum Ausschalten"
+msgstr ""
+
+#: dialog_netatmo.py:107
+msgid "Stunde"
+msgstr ""
+
+#: dialog_netatmo.py:108
+msgid "Stunde bis wann die Temperatur gelten soll"
+msgstr ""
+
+#: device_dialog.py:265
+msgid "Su&chen (Strg+F)"
+msgstr ""
+
+#: device_dialog.py:1416
+msgid "Suche abgebrochen"
+msgstr ""
+
+#: device_dialog.py:3486
+msgid "Tageslicht"
+msgstr ""
+
+#: device_dialog.py:3446
+msgid "Tageslicht - neutrales, natürliches Licht zum Arbeiten (ca. 4000K)"
+msgstr ""
+
+#: dialog_netatmo.py:65
+msgid "Temperatur"
+msgstr ""
+
+#: history.py:302
+msgid "Temperatur (°C)"
+msgstr ""
+
+#: history.py:414
+msgid "Temperatur gesetzt"
+msgstr ""
+
+#: device_dialog.py:740 device_dialog.py:1601
+msgid "Temperatur:"
+msgstr ""
+
+#: device_dialog.py:2005 device_dialog.py:2053 device_dialog.py:1791
+msgid "Temperatur: {temp}°C"
+msgstr ""
+
+#: device_dialog.py:744 vesync_devices.py:955
+msgid "Temperatur: {value:.1f}°C"
+msgstr ""
+
+#: device_dialog.py:2190 device_dialog.py:2199
+msgid "Temperatursensoren"
+msgstr ""
+
+#: settings_panel.py:978
+msgid "Teste Cozytouch-Verbindung..."
+msgstr ""
+
+#: settings_panel.py:703
+msgid "Teste Meross Verbindung..."
+msgstr ""
+
+#: settings_panel.py:854
+msgid "Teste Netatmo Verbindung..."
+msgstr ""
+
+#: settings_panel.py:856
+msgid "Teste Netatmo..."
+msgstr ""
+
+#: settings_panel.py:913
+msgid "Teste VeSync-Verbindung..."
+msgstr ""
+
+#: netatmo_api.py:252
+msgid "Thermostat"
+msgstr ""
+
+#: dialog_netatmo.py:38
+msgid "Thermostat einstellen"
+msgstr ""
+
+#: netatmo_api.py:254
+msgid "Thermostat-Relay"
+msgstr ""
+
+#: device_dialog.py:2240 device_dialog.py:2249
+msgid "Thermostate"
+msgstr ""
+
+#: __init__.py:1225 dialog_vesync.py:197
+msgid "Tonsignale ein"
+msgstr ""
+
+#: constants.py:65 constants.py:74 vesync_devices.py:551
+msgid "Turbo"
+msgstr ""
+
+#: history.py:300
+msgid "Typ"
+msgstr ""
+
+#: device_dialog.py:3837
+msgid "Typ:"
+msgstr ""
+
+#: dialog_meross.py:80
+msgid "Türkis"
+msgstr ""
+
+#: device_dialog.py:3981 device_dialog.py:2536 device_dialog.py:2556
+msgid "Unbekannt"
+msgstr ""
+
+#: meross_devices.py:563
+msgid "Unbekannt ({mode})"
+msgstr ""
+
+#: vesync_api.py:384 vesync_api.py:444 vesync_api.py:495
+msgid "Unbekannter Fehler"
+msgstr ""
+
+#: meross_api.py:226 meross_api.py:232
+msgid "Unbekanntes Gerät"
+msgstr ""
+
+#: netatmo_api.py:817
+msgid "Unerwartete Antwort vom Netatmo-Server"
+msgstr ""
+
+#: __init__.py:2546
+msgid "Ungültige Diffuser-Aktion: {action}"
+msgstr ""
+
+#: settings_panel.py:1050 settings_panel.py:1051
+msgid "Ungültige E-Mail-Adresse"
+msgstr ""
+
+#: dialog_cozytouch.py:91
+msgid "Ungültige Eingabe"
+msgstr ""
+
+#: device_dialog.py:3619
+msgid "Ungültige Eingabe. Erlaubt: Zahl von 0 bis 100."
+msgstr ""
+
+#: dialog_meross.py:419
+msgid "Ungültige Eingabe. Nur Zahlen mit Komma getrennt, z.B. 255,128,0"
+msgstr ""
+
+#: vesync_devices.py:774 vesync_devices.py:1125
+msgid "Ungültige Lüfterstufe"
+msgstr ""
+
+#: settings_panel.py:908
+msgid "Ungültiger Ländercode"
+msgstr ""
+
+#: meross_api.py:1322
+msgid "Ungültiger Weißton '{value}'. Gültige Werte: {valid}"
+msgstr ""
+
+#: device_dialog.py:3578
+msgid "Ungültiger Wert: {value}. Erlaubt: 0 bis 100."
+msgstr ""
+
+#: dialog_meross.py:389
+msgid ""
+"Ungültiges Format. Drei Werte mit Komma getrennt eingeben, z.B. 255,128,0"
+msgstr ""
+
+#: dialog_cozytouch.py:299
+msgid "Ungültiges Format. Erwartet: TT.MM.JJJJ HH:MM (z.B. {example})"
+msgstr ""
+
+#: settings_panel.py:406
+msgid "V&eSync E-Mail:"
+msgstr ""
+
+#: vesync_api.py:244
+msgid "VeSync API HTTP {code}"
+msgstr ""
+
+#: vesync_api.py:251
+msgid "VeSync API: Ungültige JSON-Antwort: {error}"
+msgstr ""
+
+#: settings_panel.py:394
+msgid ""
+"VeSync Account-Zugangsdaten (z. B. Levoit, Cosori, Etekcity).\n"
+"Aktuell unterstützt: Levoit Core 200S/300S/400S/500S/600S Luftreiniger und Levoit Tower-Ventilatoren.\n"
+"Daten werden sicher in der NVDA-Konfiguration gespeichert (DPAPI)."
+msgstr ""
+
+#: vesync_api.py:394
+msgid "VeSync Anmeldung fehlgeschlagen: Kein authorizeCode erhalten"
+msgstr ""
+
+#: vesync_api.py:387
+msgid "VeSync Anmeldung fehlgeschlagen: {msg}"
+msgstr ""
+
+#: settings_panel.py:409
+msgid "VeSync E-Mail-Adresse"
+msgstr ""
+
+#: __init__.py:1890 settings_panel.py:953 settings_panel.py:956
+msgid "VeSync Fehler: {error}"
+msgstr ""
+
+#: settings_panel.py:443
+msgid "VeSync Filter-Warnschwelle in Prozent"
+msgstr ""
+
+#: vesync_api.py:497
+msgid "VeSync Geräteliste fehlgeschlagen: {msg}"
+msgstr ""
+
+#: vesync_api.py:446
+msgid "VeSync Login fehlgeschlagen: {msg}"
+msgstr ""
+
+#: settings_panel.py:428
+msgid "VeSync Ländercode"
+msgstr ""
+
+#: settings_panel.py:414
+msgid "VeSync Pass&wort:"
+msgstr ""
+
+#: settings_panel.py:419
+msgid "VeSync Passwort"
+msgstr ""
+
+#: settings_panel.py:456
+msgid "VeSync Verbindung &prüfen"
+msgstr ""
+
+#: dialog_vesync.py:892
+msgid "VeSync wird verbunden..."
+msgstr ""
+
+#: device_dialog.py:2565
+msgid "VeSync-Favoriten ({count})"
+msgstr ""
+
+#: dialog_vesync.py:52 dialog_vesync.py:120 dialog_vesync.py:167
+msgid "VeSync-Fehler: {error}"
+msgstr ""
+
+#: device_dialog.py:1674
+msgid ""
+"VeSync-Gerät ein- oder ausschalten. Enter oder Leertaste zum Ausführen."
+msgstr ""
+
+#: vesync_api.py:816
+msgid "VeSync-Gerät hat den falschen Typ"
+msgstr ""
+
+#: vesync_api.py:812
+msgid "VeSync-Gerät nicht gefunden"
+msgstr ""
+
+#: device_dialog.py:2279
+msgid "VeSync-Geräte ({count})"
+msgstr ""
+
+#: dialog_vesync.py:886
+msgid "VeSync-Login fehlgeschlagen: {error}"
+msgstr ""
+
+#: settings_panel.py:457
+msgid "VeSync-Verbindung prüfen"
+msgstr ""
+
+#: vesync_devices.py:859
+msgid "VeSync: Auto-Profil konnte nicht gesetzt werden"
+msgstr ""
+
+#: settings_panel.py:1091 settings_panel.py:1092
+msgid "VeSync: Bitte E-Mail eingeben"
+msgstr ""
+
+#: settings_panel.py:1106 settings_panel.py:1107
+msgid "VeSync: Bitte Passwort eingeben"
+msgstr ""
+
+#: vesync_devices.py:800 vesync_devices.py:1178
+msgid "VeSync: Display-Schaltbefehl fehlgeschlagen"
+msgstr ""
+
+#: vesync_devices.py:875
+msgid "VeSync: Filter-Reset fehlgeschlagen"
+msgstr ""
+
+#: vesync_devices.py:819
+msgid "VeSync: Kindersicherung konnte nicht geschaltet werden"
+msgstr ""
+
+#: __init__.py:1854
+msgid "VeSync: Lade Geräte..."
+msgstr ""
+
+#: settings_panel.py:1113
+msgid "VeSync: Ländercode muss aus zwei Buchstaben bestehen"
+msgstr ""
+
+#: vesync_devices.py:781 vesync_devices.py:1132
+msgid "VeSync: Lüfterstufe {level} konnte nicht gesetzt werden"
+msgstr ""
+
+#: vesync_devices.py:759 vesync_devices.py:1103
+msgid "VeSync: Modus '{mode}' konnte nicht gesetzt werden"
+msgstr ""
+
+#: vesync_devices.py:838
+msgid "VeSync: Nachtlicht konnte nicht gesetzt werden"
+msgstr ""
+
+#: vesync_devices.py:1148
+msgid "VeSync: Oszillation konnte nicht geschaltet werden"
+msgstr ""
+
+#: vesync_devices.py:731 vesync_devices.py:1084
+msgid "VeSync: Schaltbefehl fehlgeschlagen"
+msgstr ""
+
+#: vesync_devices.py:1163
+msgid "VeSync: Stummschaltung fehlgeschlagen"
+msgstr ""
+
+#: settings_panel.py:1099 settings_panel.py:1100
+msgid "VeSync: Ungültige E-Mail-Adresse"
+msgstr ""
+
+#: settings_panel.py:1114
+msgid "VeSync: Ungültiger Ländercode"
+msgstr ""
+
+#: __init__.py:1817
+msgid "VeSync: Verbinde..."
+msgstr ""
+
+#: settings_panel.py:940
+msgid "VeSync: Verbunden – {count} Gerät(e)"
+msgstr ""
+
+#: settings_panel.py:946
+msgid "VeSync: {count} Gerät(e) gefunden"
+msgstr ""
+
+#: dialog_vesync.py:903
+msgid "VeSync: {count} Gerät(e) geladen"
+msgstr ""
+
+#: device_dialog.py:2286 device_dialog.py:2294
+msgid "Ventilatoren"
+msgstr ""
+
+#: settings_panel.py:980
+msgid "Verbinde mit Cozytouch..."
+msgstr ""
+
+#: settings_panel.py:706
+msgid "Verbinde mit Meross..."
+msgstr ""
+
+#: settings_panel.py:915
+msgid "Verbinde mit VeSync..."
+msgstr ""
+
+#: device_dialog.py:361
+msgid "Verbinde..."
+msgstr ""
+
+#: settings_panel.py:263 settings_panel.py:369
+msgid "Verbindung &testen"
+msgstr ""
+
+#: device_dialog.py:1030
+msgid "Verbindung unterbrochen"
+msgstr ""
+
+#: device_dialog.py:1648
+msgid ""
+"Verbleibende Lebensdauer des HEPA-Filters in Prozent. Bei niedrigen Werten "
+"Filter wechseln und anschließend zurücksetzen."
+msgstr ""
+
+#: device_dialog.py:2086 device_dialog.py:1873
+msgid "Verbundene Sensoren: {count}"
+msgstr ""
+
+#: device_dialog.py:1614
+msgid ""
+"Verfügbarer Warmwasservorrat in Prozent, optional mit Liter-Schätzung. Wird "
+"automatisch aktualisiert."
+msgstr ""
+
+#: device_dialog.py:3877
+msgid "Verlauf &löschen"
+msgstr ""
+
+#: device_dialog.py:3929
+msgid "Verlauf aktualisiert"
+msgstr ""
+
+#: device_dialog.py:4054
+msgid "Verlauf als CSV exportieren"
+msgstr ""
+
+#: device_dialog.py:4084
+msgid ""
+"Verlauf erfolgreich exportiert.\n"
+"\n"
+"Datei: {path}\n"
+"Einträge: {count}"
+msgstr ""
+
+#: device_dialog.py:4077
+msgid "Verlauf exportiert nach {filename}"
+msgstr ""
+
+#: device_dialog.py:4121
+msgid "Verlauf gelöscht"
+msgstr ""
+
+#: device_dialog.py:4111
+msgid "Verlauf löschen"
+msgstr ""
+
+#: device_dialog.py:279
+msgid "Verlauf öffnen"
+msgstr ""
+
+#: device_dialog.py:4043
+msgid "Verlaufseintrag Details"
+msgstr ""
+
+#: device_dialog.py:1821 netatmo_api.py:340
+msgid "Vorausheizen aktiv"
+msgstr ""
+
+#: settings_panel.py:618
+msgid "Vorausheizen ansagen (kann häufig auftreten)"
+msgstr ""
+
+#: __init__.py:977
+msgid "Vorausheizen beendet"
+msgstr ""
+
+#: __init__.py:973
+msgid "Vorausheizen gestartet"
+msgstr ""
+
+#: device_dialog.py:781 device_dialog.py:1607
+msgid "Vorausheizen:"
+msgstr ""
+
+#: device_dialog.py:1608
+msgid ""
+"Vorausheizen: Die Heizung startet frühzeitig, damit die Soll-Temperatur zum "
+"geplanten Zeitpunkt bereits erreicht ist."
+msgstr ""
+
+#: device_dialog.py:784 device_dialog.py:2909 dialog_netatmo.py:655
+msgid "Vorausheizen: aktiv"
+msgstr ""
+
+#: device_dialog.py:1865
+msgid "WASSERALARM!"
+msgstr ""
+
+#: dialog_cozytouch.py:412
+msgid "WLAN-Netz: {ssid}"
+msgstr ""
+
+#: dialog_cozytouch.py:407
+msgid "WLAN-Signal: {dbm} dBm"
+msgstr ""
+
+#: dialog_meross.py:260
+msgid "Warmes Orange"
+msgstr ""
+
+#: __init__.py:2470 dialog_cozytouch.py:192
+msgid "Warmwasser konnte nicht umgeschaltet werden"
+msgstr ""
+
+#: device_dialog.py:1700
+msgid ""
+"Warmwasser-Erzeugung ein- oder ausschalten. Enter oder Leertaste zum "
+"Ausführen."
+msgstr ""
+
+#: cozytouch_devices.py:190 cozytouch_devices.py:141
+msgid "Warmwasser-Wärmepumpe"
+msgstr ""
+
+#: device_dialog.py:2319
+msgid "Warmwasser-Wärmepumpen ({count})"
+msgstr ""
+
+#: device_dialog.py:1613
+msgid "Warmwasservorrat:"
+msgstr ""
+
+#: cozytouch_devices.py:388 dialog_cozytouch.py:360
+msgid "Warmwasservorrat: {percent} Prozent"
+msgstr ""
+
+#: device_dialog.py:1732
+msgid "Warmwasservorrat: {percent}%"
+msgstr ""
+
+#: device_dialog.py:3486 dialog_meross.py:55
+msgid "Warmweiß"
+msgstr ""
+
+#: device_dialog.py:3445
+msgid "Warmweiß - gemütliches, warmes Licht wie Kerzenschein (ca. 2700K)"
+msgstr ""
+
+#: __init__.py:2259
+msgid "Wasseralarm!"
+msgstr ""
+
+#: device_dialog.py:2191 device_dialog.py:2201
+msgid "Wassersensoren"
+msgstr ""
+
+#: dialog_meross.py:53 dialog_meross.py:264
+msgid "Weiß"
+msgstr ""
+
+#: dialog_meross.py:84
+msgid "Weißtöne"
+msgstr ""
+
+#: settings_panel.py:277
+msgid ""
+"Wenn aktiviert, wird NVDA ansagen wenn ein Meross-Gerät über Alexa, die "
+"Meross App oder andere externe Quellen geschaltet wird."
+msgstr ""
+
+#: device_dialog.py:3554
+msgid "Wert zwischen 0 (aus) und 100 (maximale Helligkeit)."
+msgstr ""
+
+#: netatmo_api.py:247
+msgid "Wetterstation (Innen)"
+msgstr ""
+
+#: device_dialog.py:2239 device_dialog.py:2255
+msgid "Wetterstationen"
+msgstr ""
+
+#: device_dialog.py:2017 device_dialog.py:1806
+msgid "Wind: {wind} km/h"
+msgstr ""
+
+#: netatmo_api.py:249
+msgid "Windmesser"
+msgstr ""
+
+#: dialog_vesync.py:294
+msgid "Wählen Sie das Auto-Profil:"
+msgstr ""
+
+#: dialog_cozytouch.py:121 dialog_vesync.py:101
+msgid "Wählen Sie den Betriebsmodus:"
+msgstr ""
+
+#: dialog_vesync.py:264
+msgid "Wählen Sie den Nachtlicht-Modus:"
+msgstr ""
+
+#: dialog_vesync.py:148
+msgid "Wählen Sie die Lüftergeschwindigkeit:"
+msgstr ""
+
+#: dialog_meross.py:302
+msgid "Wählen Sie eine Farbe für {name}.\n"
+msgstr ""
+
+#: device_dialog.py:3452
+msgid "Wählen Sie eine Lichtfarbe für {name}."
+msgstr ""
+
+#: device_dialog.py:1616
+msgid "Zeigt an, dass die Wärmepumpe gerade mit Niedertarif-Strom heizt."
+msgstr ""
+
+#: device_dialog.py:282
+msgid "Zeigt den Verlauf aller Schaltaktionen und Sensorwerte"
+msgstr ""
+
+#: device_dialog.py:1612
+msgid ""
+"Zeigt die nächste geplante Temperaturänderung aus dem Heizprogramm an: Zone,"
+" Zieltemperatur und Uhrzeit."
+msgstr ""
+
+#: constants.py:27
+msgid "Zeitplan"
+msgstr ""
+
+#: dialog_netatmo.py:616
+msgid "Zeitplan wiederhergestellt"
+msgstr ""
+
+#: dialog_netatmo.py:431
+msgid "Zeitplan – automatisch nach Heizprogramm"
+msgstr ""
+
+#: __init__.py:929
+msgid "Zeitplan-Zone: {zone}"
+msgstr ""
+
+#: device_dialog.py:3857 history.py:300
+msgid "Zeitpunkt"
+msgstr ""
+
+#: dialog_cozytouch.py:267
+msgid ""
+"Zeitraum der Abwesenheit festlegen. Während der Abwesenheit wird die "
+"Warmwasser-Erzeugung reduziert."
+msgstr ""
+
+#: device_dialog.py:3827
+msgid "Zeitraum:"
+msgstr ""
+
+#: device_dialog.py:1038
+msgid "Zeitüberschreitung - bitte erneut versuchen"
+msgstr ""
+
+#: device_dialog.py:3667
+msgid "Zeitüberschreitung – bitte erneut versuchen"
+msgstr ""
+
+#: device_dialog.py:1694
+msgid ""
+"Zieltemperatur der Warmwasser-Wärmepumpe setzen. Enter zum Eingeben einer "
+"Temperatur innerhalb des erlaubten Bereichs."
+msgstr ""
+
+#: history.py:429
+msgid "Zieltemperatur gesetzt"
+msgstr ""
+
+#: dialog_cozytouch.py:68
+msgid "Zieltemperatur in Grad ({lo} bis {hi}):"
+msgstr ""
+
+#: dialog_cozytouch.py:106
+msgid "Zieltemperatur konnte nicht gesetzt werden"
+msgstr ""
+
+#: __init__.py:1406
+msgid "Zieltemperatur {temp} Grad"
+msgstr ""
+
+#: settings_panel.py:664
+msgid "Zieltemperatur-Änderungen ansagen"
+msgstr ""
+
+#: cozytouch_devices.py:377
+msgid "Zieltemperatur: {temp} Grad"
+msgstr ""
+
+#: dialog_cozytouch.py:420
+msgid "Zieltemperatur: {temp} Grad - Enter zum Ändern"
+msgstr ""
+
+#: device_dialog.py:1735
+msgid "Zieltemperatur: {temp}°C"
+msgstr ""
+
+#: device_dialog.py:2377 dialog_cozytouch.py:343 dialog_vesync.py:708
+msgid "Zu Favoriten hinzufügen - Enter"
+msgstr ""
+
+#: constants.py:37
+msgid "Zuhause"
+msgstr ""
+
+#: history.py:416
+msgid "Zurück zum Zeitplan"
+msgstr ""
+
+#: device_dialog.py:2963 dialog_netatmo.py:719 dialog_netatmo.py:947
+msgid "Zurück zum Zeitplan - Enter zum Aktivieren"
+msgstr ""
+
+#: device_dialog.py:1672
+msgid "Zurück zum automatischen Zeitplan. Enter zum Ausführen."
+msgstr ""
+
+#: netatmo_api.py:251
+msgid "Zusatz-Innenmodul"
+msgstr ""
+
+#: settings_panel.py:430
+msgid ""
+"Zwei-Buchstaben-Ländercode (ISO 3166-1 Alpha-2). Beispiele: DE, AT, CH, US, "
+"GB, FR. Bestimmt automatisch die VeSync-Server-Region (EU oder US)."
+msgstr ""
+
+#: device_dialog.py:2031 device_dialog.py:1817 device_dialog.py:1844
+msgid "aktiv"
+msgstr ""
+
+#: cozytouch_devices.py:383
+msgid "aktuelles Heizziel: {temp} Grad"
+msgstr ""
+
+#: __init__.py:799 __init__.py:2503 __init__.py:2455
+msgid "aus"
+msgstr ""
+
+#: constants.py:84 vesync_devices.py:562
+msgid "ausgezeichnet"
+msgstr ""
+
+#: __init__.py:939
+msgid "bis {time} Uhr"
+msgstr ""
+
+#: __init__.py:799 __init__.py:2503 __init__.py:2455
+msgid "ein"
+msgstr ""
+
+#: history.py:355
+msgid "gerade eben"
+msgstr ""
+
+#: constants.py:86 vesync_devices.py:562
+msgid "gut"
+msgstr ""
+
+#: __init__.py:2259
+msgid "kein Wasser erkannt"
+msgstr ""
+
+#: __init__.py:2197 cozytouch_devices.py:128
+msgid "keine"
+msgstr ""
+
+#: netatmo_api.py:371
+msgid "keine Daten"
+msgstr ""
+
+#: constants.py:88 vesync_devices.py:562
+msgid "mäßig"
+msgstr ""
+
+#: device_dialog.py:1949
+msgid "noch nicht aktualisiert"
+msgstr ""
+
+#: __init__.py:2210 cozytouch_devices.py:371 netatmo_api.py:371
+msgid "offline"
+msgstr ""
+
+#: __init__.py:2275
+msgid "online"
+msgstr ""
+
+#: constants.py:90 vesync_devices.py:562
+msgid "schlecht"
+msgstr ""
+
+#: __init__.py:1224 dialog_vesync.py:197
+msgid "stumm"
+msgstr ""
+
+#: dialog_vesync.py:547
+msgid "unbekannt"
+msgstr ""
+
+#: dialog_cozytouch.py:236
+msgid "von {start} bis {end}"
+msgstr ""
+
+#: history.py:359
+msgid "vor {count} Minute"
+msgstr ""
+
+#: history.py:360
+msgid "vor {count} Minuten"
+msgstr ""
+
+#: history.py:364
+msgid "vor {count} Stunde"
+msgstr ""
+
+#: history.py:365
+msgid "vor {count} Stunden"
+msgstr ""
+
+#: history.py:369
+msgid "vor {count} Tag"
+msgstr ""
+
+#: history.py:370
+msgid "vor {count} Tagen"
+msgstr ""
+
+#: device_dialog.py:4018
+msgid "{count} Einträge angezeigt (gesamt: {total})"
+msgstr ""
+
+#: __init__.py:2200
+msgid "{count} Geräte ({detail}). "
+msgstr ""
+
+#: device_dialog.py:525
+msgid "{count} Geräte aus Cache geladen"
+msgstr ""
+
+#: device_dialog.py:1084
+msgid "{count} Geräte geladen, {online} online"
+msgstr ""
+
+#: device_dialog.py:4022
+msgid "{count} Verlaufseinträge geladen"
+msgstr ""
+
+#: meross_devices.py:331 meross_devices.py:334
+msgid "{name} (Ausgang {number})"
+msgstr ""
+
+#: device_dialog.py:2536 device_dialog.py:2556 device_dialog.py:2576
+msgid "{name} (nicht verfügbar)"
+msgstr ""
+
+#: dialog_cozytouch.py:332
+msgid "{name} ({type}) - Ziel {temp}°C"
+msgstr ""
+
+#: dialog_cozytouch.py:327 dialog_vesync.py:494
+msgid "{name} ({type}) - offline"
+msgstr ""
+
+#: meross_devices.py:957
+msgid "{name} - Ausgang {number}"
+msgstr ""
+
+#: __init__.py:2497
+msgid "{name} Kanal {number}"
+msgstr ""
+
+#: device_dialog.py:840 device_dialog.py:953 device_dialog.py:998
+msgid "{name} ausschalten"
+msgstr ""
+
+#: device_dialog.py:840 device_dialog.py:953 device_dialog.py:998
+msgid "{name} einschalten"
+msgstr ""
+
+#: settings_panel.py:567
+msgid ""
+"{name} ist nicht aktiviert. Aktivieren Sie die Plattform im Tab "
+"\"Allgemein\", um die zugehörigen Benachrichtigungen einzustellen."
+msgstr ""
+
+#: device_dialog.py:1223
+msgid "{name} {pct}%"
+msgstr ""
+
+#: dialog_cozytouch.py:232
+msgid "{name}: Abwesenheit von {start} bis {end}"
+msgstr ""
+
+#: dialog_cozytouch.py:207
+msgid "{name}: Abwesenheit {status}"
+msgstr ""
+
+#: device_dialog.py:2418 device_dialog.py:2788 device_dialog.py:2451
+msgid "{name}: Aus Favoriten entfernt"
+msgstr ""
+
+#: dialog_vesync.py:292
+msgid "{name}: Auto-Profil"
+msgstr ""
+
+#: dialog_vesync.py:305
+msgid "{name}: Auto-Profil {profile}"
+msgstr ""
+
+#: device_dialog.py:2445
+msgid "{name}: Bereits in Favoriten"
+msgstr ""
+
+#: dialog_cozytouch.py:180
+msgid "{name}: Betrieb {status}"
+msgstr ""
+
+#: dialog_cozytouch.py:154
+msgid "{name}: Boost {status}"
+msgstr ""
+
+#: device_dialog.py:3628
+msgid "{name}: Dialogfehler"
+msgstr ""
+
+#: dialog_vesync.py:221
+msgid "{name}: Display {status}"
+msgstr ""
+
+#: dialog_meross.py:451
+msgid "{name}: Farbe auf RGB({r}, {g}, {b}) eingestellt"
+msgstr ""
+
+#: dialog_meross.py:493
+msgid "{name}: Farbe nicht einstellbar"
+msgstr ""
+
+#: device_dialog.py:3535
+msgid "{name}: Farbtemperatur nicht einstellbar"
+msgstr ""
+
+#: device_dialog.py:3424
+msgid "{name}: Fehler - {error}"
+msgstr ""
+
+#: device_dialog.py:3228
+msgid "{name}: Fehler beim Einstellen"
+msgstr ""
+
+#: device_dialog.py:3543
+msgid "{name}: Fehler beim Öffnen des Dialogs"
+msgstr ""
+
+#: dialog_meross.py:488
+msgid "{name}: Fehler – {error}"
+msgstr ""
+
+#: dialog_vesync.py:378
+msgid "{name}: Filter-Lebensdauer zurückgesetzt"
+msgstr ""
+
+#: dialog_netatmo.py:470
+msgid "{name}: Heizmodus auf {mode} gesetzt"
+msgstr ""
+
+#: dialog_netatmo.py:569
+msgid "{name}: Heizprogramm '{schedule}' aktiviert"
+msgstr ""
+
+#: device_dialog.py:3590
+msgid "{name}: Helligkeit auf {percent}% eingestellt"
+msgstr ""
+
+#: device_dialog.py:3613
+msgid "{name}: Helligkeit nicht einstellbar"
+msgstr ""
+
+#: device_dialog.py:2794
+msgid "{name}: Ist kein Favorit"
+msgstr ""
+
+#: device_dialog.py:3403
+msgid "{name}: Keine Internetverbindung"
+msgstr ""
+
+#: dialog_meross.py:479
+msgid "{name}: Keine Verbindung"
+msgstr ""
+
+#: dialog_vesync.py:242
+msgid "{name}: Kindersicherung {status}"
+msgstr ""
+
+#: dialog_vesync.py:146
+msgid "{name}: Lüftergeschwindigkeit"
+msgstr ""
+
+#: __init__.py:2557
+msgid "{name}: Modus gesetzt"
+msgstr ""
+
+#: dialog_cozytouch.py:119 dialog_vesync.py:99
+msgid "{name}: Modus wählen"
+msgstr ""
+
+#: dialog_cozytouch.py:132 dialog_vesync.py:112
+msgid "{name}: Modus {mode}"
+msgstr ""
+
+#: dialog_vesync.py:262
+msgid "{name}: Nachtlicht"
+msgstr ""
+
+#: dialog_vesync.py:275
+msgid "{name}: Nachtlicht {mode}"
+msgstr ""
+
+#: device_dialog.py:3389 device_dialog.py:3421
+msgid "{name}: Nicht erreichbar"
+msgstr ""
+
+#: device_dialog.py:3162 dialog_meross.py:485
+msgid "{name}: Offline"
+msgstr ""
+
+#: dialog_vesync.py:177
+msgid "{name}: Oszillation {status}"
+msgstr ""
+
+#: device_dialog.py:3433
+msgid "{name}: Schaltfehler"
+msgstr ""
+
+#: dialog_netatmo.py:226
+msgid "{name}: Soll-Temperatur auf {temp}°C gesetzt"
+msgstr ""
+
+#: dialog_netatmo.py:222
+msgid ""
+"{name}: Soll-Temperatur auf {temp}°C gesetzt (Standard-Dauer: {minutes} "
+"Minuten)"
+msgstr ""
+
+#: dialog_netatmo.py:213
+msgid "{name}: Soll-Temperatur auf {temp}°C gesetzt bis {end} Uhr"
+msgstr ""
+
+#: dialog_vesync.py:158
+msgid "{name}: Stufe {level}"
+msgstr ""
+
+#: device_dialog.py:3417
+msgid "{name}: Verbindung wird wiederhergestellt"
+msgstr ""
+
+#: device_dialog.py:3406
+msgid "{name}: Verbindungsfehler"
+msgstr ""
+
+#: device_dialog.py:2454
+msgid "{name}: War nicht in Favoriten"
+msgstr ""
+
+#: device_dialog.py:3392 device_dialog.py:3529 device_dialog.py:3607
+msgid "{name}: Zeitüberschreitung"
+msgstr ""
+
+#: dialog_meross.py:475
+msgid "{name}: Zeitüberschreitung – Lampe erreichbar?"
+msgstr ""
+
+#: dialog_cozytouch.py:74
+msgid "{name}: Zieltemperatur"
+msgstr ""
+
+#: dialog_cozytouch.py:98
+msgid "{name}: Zieltemperatur {temp} Grad"
+msgstr ""
+
+#: device_dialog.py:2423 device_dialog.py:2442
+msgid "{name}: Zu Favoriten hinzugefügt"
+msgstr ""
+
+#: dialog_netatmo.py:614
+msgid "{name}: Zurück zum Zeitplan"
+msgstr ""
+
+#: dialog_meross.py:455
+msgid "{name}: {color} eingestellt"
+msgstr ""
+
+#: device_dialog.py:3187
+msgid "{name}: {mode}"
+msgstr ""
+
+#: device_dialog.py:3512
+msgid "{name}: {mode} eingestellt"
+msgstr ""
+
+#: __init__.py:2505 __init__.py:2461 __init__.py:2474
+msgid "{name}: {status}"
+msgstr ""
+
+#: device_dialog.py:1963
+msgid "{online} Geräte online, {offline} offline"
+msgstr ""
+
+#: device_dialog.py:1953
+msgid "{online} online, {offline} offline | Aktualisiert: {time}"
+msgstr ""
+
+#: device_dialog.py:1883
+msgid "{on} von {total} Kanälen eingeschaltet"
+msgstr ""
+
+#: settings_panel.py:219
+msgid "{platform} aktiviert – beim Speichern wird angemeldet"
+msgstr ""
+
+#: __init__.py:405
+msgid "{platform} vorübergehend nicht erreichbar"
+msgstr ""
+
+#: __init__.py:400
+msgid "{platform} wieder verbunden"
+msgstr ""
+
+#: history.py:404
+msgid "{time} – {name}: Unbekanntes Ereignis"
+msgstr ""
+
+#: __init__.py:1975
+msgid "{total} Geräte bereit ({detail})"
+msgstr ""
+
+#: netatmo_api.py:297
+msgid "{value} km/h Böen"
+msgstr ""
+
+#: netatmo_api.py:292
+msgid "{value} km/h Wind"
+msgstr ""
+
+#: netatmo_api.py:287
+msgid "{value} mm Regen"
+msgstr ""
+
+#: device_dialog.py:3998 history.py:392
+msgid "{value}% Feuchte"
+msgstr ""
+
+#: netatmo_api.py:270
+msgid "{value}% Luftfeuchtigkeit"
+msgstr ""
+
+#: settings_panel.py:804
+msgid "Öffne Browser für Netatmo-Autorisierung..."
+msgstr ""
+
+#: __init__.py:2021
+msgid "Öffne Geräteübersicht..."
+msgstr ""
+
+#: __init__.py:2000
+msgid "Öffnet das Smart Home Control Menü"
+msgstr ""
+
+#: __init__.py:2063
+msgid "Öffnet die Smart Home Einstellungen"
+msgstr ""
