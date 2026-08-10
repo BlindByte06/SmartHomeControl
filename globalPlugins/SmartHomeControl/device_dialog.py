@@ -2133,8 +2133,9 @@ class SmartHomeControlDialog(_NetatmoDialogMixin, _VeSyncDialogMixin, _MerossDia
             # ---- Cozytouch main node (Atlantic / Austria Email) ----
             if cozytouch_devices:
                 # Translators: Platform main node. Brand name, do not
-                # translate.
-                cozytouch_root = self.tree.AppendItem(root, _("Cozytouch-Geräte ({count})").format(count=len(cozytouch_devices)))
+                # translate; the parenthesis marks the platform as
+                # experimental.
+                cozytouch_root = self.tree.AppendItem(root, _("Cozytouch-Geräte, experimentell ({count})").format(count=len(cozytouch_devices)))
                 self.tree.SetItemData(cozytouch_root, None)
                 self._sort_device_list(cozytouch_devices)
                 # Translators: Category name in the device tree.

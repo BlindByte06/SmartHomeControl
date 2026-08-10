@@ -81,14 +81,14 @@ msgstr "&Notifications"
 
 #. Translators: Tab name "Cozytouch". Brand name, do not translate.
 #: settings_panel.py:127
-msgid "&Cozytouch"
-msgstr "&Cozytouch"
+msgid "&Cozytouch (experimentell)"
+msgstr "&Cozytouch (experimental)"
 
 #. Translators: Checkbox label for enabling the Cozytouch platform (Atlantic /
 #. Austria Email hot water heat pumps).
 #: settings_panel.py:195
-msgid "&Cozytouch verwenden (Atlantic, Austria Email)"
-msgstr "Use &Cozytouch (Atlantic, Austria Email)"
+msgid "&Cozytouch verwenden (Atlantic, Austria Email) - experimentell"
+msgstr "Use &Cozytouch (Atlantic, Austria Email) - experimental"
 
 #. Email Translators: Label of the email input field (Meross).
 #: settings_panel.py:302
@@ -854,12 +854,16 @@ msgstr "Cozytouch &email:"
 #. Translators: Explanatory text in the Cozytouch tab.
 #: settings_panel.py:530
 msgid ""
+"EXPERIMENTELL: Die Cozytouch-Anbindung ist nachgebaut und bisher nur mit einer Warmwasser-Wärmepumpe (Austria Email Revolution Evo 3) getestet.\n"
+"Andere Cozytouch-Geräte (Heizkörper, Klimageräte) werden möglicherweise falsch erkannt oder falsch dargestellt; einzelne Funktionen können ohne Vorwarnung ausfallen.\n"
+"\n"
 "Cozytouch Account-Zugangsdaten (Atlantic-Gruppe, z. B. Austria Email).\n"
-"Aktuell unterstützt: Warmwasser-Wärmepumpe (getestet: Austria Email Revolution Evo 3).\n"
 "Dieselben Zugangsdaten wie in der Cozytouch-App. Daten werden lokal auf diesem Rechner verschlüsselt gespeichert."
 msgstr ""
+"EXPERIMENTAL: the Cozytouch integration is reverse-engineered and has so far only been tested with one hot water heat pump (Austria Email Revolution Evo 3).\n"
+"Other Cozytouch devices (radiators, air conditioners) may be detected or presented incorrectly; individual functions can stop working without warning.\n"
+"\n"
 "Cozytouch account credentials (Atlantic group, e.g. Austria Email).\n"
-"Currently supported: hot water heat pump (tested: Austria Email Revolution Evo 3).\n"
 "Same credentials as in the Cozytouch app. Data is stored encrypted locally on this computer."
 
 #: settings_panel.py:545
@@ -903,8 +907,8 @@ msgstr "Cozytouch error: {error}"
 
 #. Translators: Platform main node. Brand name, do not translate.
 #: device_dialog.py:2121
-msgid "Cozytouch-Geräte ({count})"
-msgstr "Cozytouch devices ({count})"
+msgid "Cozytouch-Geräte, experimentell ({count})"
+msgstr "Cozytouch devices, experimental ({count})"
 
 #. Translators: Error message for the deferred Cozytouch login.
 #: dialog_cozytouch.py:742
@@ -1838,11 +1842,13 @@ msgstr ""
 msgid ""
 "Hinweis: Sie können Meross, Netatmo, VeSync und Cozytouch einzeln oder kombiniert verwenden.\n"
 "Deaktivierte Plattformen werden beim Login übersprungen.\n"
-"Ein erfolgreicher Verbindungstest im jeweiligen Tab aktiviert die Plattform automatisch."
+"Ein erfolgreicher Verbindungstest im jeweiligen Tab aktiviert die Plattform automatisch.\n"
+"Cozytouch ist experimentell - bisher ist nur eine Warmwasser-Wärmepumpe getestet."
 msgstr ""
 "Note: you can use Meross, Netatmo, VeSync and Cozytouch individually or in combination.\n"
 "Disabled platforms are skipped during login.\n"
-"A successful connection test in the respective tab enables the platform automatically."
+"A successful connection test in the respective tab enables the platform automatically.\n"
+"Cozytouch is experimental - only one hot water heat pump has been tested so far."
 
 #. Translators: Fan level label (highest level).
 #: constants.py:131
@@ -5242,3 +5248,9 @@ msgstr "Lamp unreachable - does not respond to the command"
 #: settings_panel.py:70
 msgid "{field} (gespeichert - leer lassen zum Beibehalten)"
 msgstr "{field} (saved - leave empty to keep it)"
+
+#. Translators: Group box for the Cozytouch notifications. Brand name plus the
+#. experimental marker.
+#: settings_panel.py:749
+msgid "Cozytouch (experimentell)"
+msgstr "Cozytouch (experimental)"

@@ -1,5 +1,17 @@
 # Changelog – Smart Home Control
 
+## 26.7.3 (unveröffentlicht)
+
+- **Cozytouch/Atlantic ist jetzt überall als experimentell gekennzeichnet.**
+  Bisher stand der Hinweis nur im Abschnitt „Reifegrad" der Dokumentation –
+  wer die Plattform im Einstellungsdialog einschaltete, bekam ihn nie zu
+  sehen. Jetzt tragen der Reiter, das Kontrollkästchen zum Aktivieren, der
+  Benachrichtigungs-Bereich und der Plattform-Knoten im Geräte-Menü die
+  Kennzeichnung, und der Cozytouch-Reiter erklärt einleitend, was
+  „experimentell" konkret bedeutet: getestet ist bisher nur eine
+  Warmwasser-Wärmepumpe, andere Gerätetypen können falsch dargestellt
+  werden. Auch die Add-on-Beschreibung im Store nennt es.
+
 ## 26.7.2 (August 2026)
 
 ### Verlauf – neu aufgebaut

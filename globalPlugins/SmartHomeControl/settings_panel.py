@@ -146,8 +146,9 @@ class SmartHomeSettingsDialog(wx.Dialog):
         # ---- Tab 5: Cozytouch (Atlantic / Austria Email) ----
         self.tab_cozytouch = wx.Panel(self.notebook)
         self._create_cozytouch_tab(self.tab_cozytouch)
-        # Translators: Tab name "Cozytouch". Brand name, do not translate.
-        self.notebook.AddPage(self.tab_cozytouch, _("&Cozytouch"))
+        # Translators: Tab name "Cozytouch". Brand name, do not translate;
+        # the parenthesis marks the platform as experimental.
+        self.notebook.AddPage(self.tab_cozytouch, _("&Cozytouch (experimentell)"))
 
         # ---- Tab 5: Notifications ----
         self.tab_notifications = wx.Panel(self.notebook)
@@ -214,8 +215,10 @@ class SmartHomeSettingsDialog(wx.Dialog):
         platformSizer.Add(self.chkVesync, flag=wx.ALL, border=5)
 
         # Translators: Checkbox label for enabling the Cozytouch platform
-        # (Atlantic / Austria Email hot water heat pumps).
-        self.chkCozytouch = wx.CheckBox(panel, label=_("&Cozytouch verwenden (Atlantic, Austria Email)"))
+        # (Atlantic / Austria Email hot water heat pumps). Marked as
+        # experimental - only one device model has been tested so far.
+        self.chkCozytouch = wx.CheckBox(panel, label=_(
+            "&Cozytouch verwenden (Atlantic, Austria Email) - experimentell"))
         self.chkCozytouch.SetValue(getattr(self.plugin, 'use_cozytouch', False))
         self.chkCozytouch.Bind(wx.EVT_CHECKBOX, self._on_platform_toggle)
         platformSizer.Add(self.chkCozytouch, flag=wx.ALL, border=5)
@@ -249,7 +252,9 @@ class SmartHomeSettingsDialog(wx.Dialog):
             "Hinweis: Sie können Meross, Netatmo, VeSync und Cozytouch einzeln "
             "oder kombiniert verwenden.\nDeaktivierte Plattformen werden beim "
             "Login übersprungen.\nEin erfolgreicher Verbindungstest im jeweiligen "
-            "Tab aktiviert die Plattform automatisch."
+            "Tab aktiviert die Plattform automatisch.\n"
+            "Cozytouch ist experimentell - bisher ist nur eine "
+            "Warmwasser-Wärmepumpe getestet."
         ))
         sizer.Add(hintText, flag=wx.ALL, border=10)
 
@@ -550,10 +555,15 @@ class SmartHomeSettingsDialog(wx.Dialog):
     def _create_cozytouch_tab(self, panel):
         sizer = wx.BoxSizer(wx.VERTICAL)
 
-        # Translators: Explanatory text in the Cozytouch tab.
+        # Translators: Explanatory text in the Cozytouch tab. Leading line
+        # marks the platform as experimental.
         infoText = wx.StaticText(panel, label=_(
+            "EXPERIMENTELL: Die Cozytouch-Anbindung ist nachgebaut und bisher nur "
+            "mit einer Warmwasser-Wärmepumpe (Austria Email Revolution Evo 3) "
+            "getestet.\nAndere Cozytouch-Geräte (Heizkörper, Klimageräte) werden "
+            "möglicherweise falsch erkannt oder falsch dargestellt; einzelne "
+            "Funktionen können ohne Vorwarnung ausfallen.\n\n"
             "Cozytouch Account-Zugangsdaten (Atlantic-Gruppe, z. B. Austria Email).\n"
-            "Aktuell unterstützt: Warmwasser-Wärmepumpe (getestet: Austria Email Revolution Evo 3).\n"
             "Dieselben Zugangsdaten wie in der Cozytouch-App. Daten werden "
             "lokal auf diesem Rechner verschlüsselt gespeichert."
         ))
@@ -734,7 +744,9 @@ class SmartHomeSettingsDialog(wx.Dialog):
 
         # Cozytouch (Atlantic / Austria Email)
         add_section(
-            "Cozytouch",
+            # Translators: Group box for the Cozytouch notifications. Brand
+            # name plus the experimental marker.
+            _("Cozytouch (experimentell)"),
             "Cozytouch",
             [
                 ('notify_cozytouch_power',

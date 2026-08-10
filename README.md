@@ -21,6 +21,7 @@ gespeichert.
 
 - [Tastenkürzel](#tastenkürzel)
 - [Unterstützte Plattformen und Geräte](#unterstützte-plattformen-und-geräte)
+  (Cozytouch/Atlantic ist **experimentell**)
 - [Einrichtung](#einrichtung)
 - [Netatmo: Redirect-URI und Port](#netatmo-redirect-uri-und-port)
 - [Bedienung](#bedienung)
@@ -70,6 +71,8 @@ Bedarf dort mit einem eigenen Kürzel versehen:
 
 Die Erweiterung unterstützt vier Smart-Home-Plattformen. Jede lässt sich
 einzeln aktivieren; es wird nur benötigt, was tatsächlich verwendet wird.
+**Cozytouch/Atlantic ist experimentell** – dort ist bisher nur ein einziges
+Gerätemodell getestet.
 
 ### Meross
 
@@ -178,7 +181,13 @@ Lüfterstufe, Oszillation, Stummschaltung und Display.
 Andere Gerätetypen im VeSync-Konto (z. B. Steckdosen, Lampen oder
 Luftbefeuchter) werden derzeit nicht angezeigt.
 
-### Cozytouch / Atlantic
+### Cozytouch / Atlantic (experimentell)
+
+> **Experimentell.** Von den Cozytouch-Geräten ist bisher nur eine
+> Warmwasser-Wärmepumpe getestet. Andere Gerätetypen werden möglicherweise
+> falsch erkannt oder falsch dargestellt, und einzelne Funktionen können
+> ausfallen, wenn Atlantic die Cloud-Schnittstelle ändert. Details unter
+> [Reifegrad und Hinweise](#reifegrad-und-hinweise).
 
 Die Anmeldung erfolgt mit E-Mail und Passwort des Cozytouch-/
 Atlantic-Kontos.
@@ -246,11 +255,13 @@ der Erweiterung. Einmalig nötig:
 
 E-Mail, Passwort und Länder-Code des VeSync-Kontos eintragen.
 
-### Cozytouch / Atlantic einrichten
+### Cozytouch / Atlantic einrichten (experimentell)
 
 E-Mail und Passwort des Cozytouch-Kontos eintragen (dieselben wie in der
 Cozytouch-App). Optional: die Nennkapazität des Warmwasserspeichers in
-Litern, damit der Vorrat zusätzlich in Litern geschätzt wird.
+Litern, damit der Vorrat zusätzlich in Litern geschätzt wird. Der Reiter
+ist im Einstellungsdialog als „experimentell" gekennzeichnet – siehe
+[Reifegrad und Hinweise](#reifegrad-und-hinweise).
 
 ---
 

@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Smart Home Control 26.7.2</title>
+<title>Smart Home Control 26.7.3</title>
 <style>
 body { font-family: Segoe UI, Arial, sans-serif; line-height: 1.6; max-width: 60em; margin: 1.5em auto; padding: 0 1em; }
 h1, h2, h3, h4 { line-height: 1.25; }
@@ -33,7 +33,7 @@ gespeichert.</p>
 <h2 id="inhalt">Inhalt</h2>
 <ul>
 <li><a href="#tastenkurzel">Tastenkürzel</a></li>
-<li><a href="#unterstutzte-plattformen-und-gerate">Unterstützte Plattformen und Geräte</a></li>
+<li><a href="#unterstutzte-plattformen-und-gerate">Unterstützte Plattformen und Geräte</a> (Cozytouch/Atlantic ist <strong>experimentell</strong>)</li>
 <li><a href="#einrichtung">Einrichtung</a></li>
 <li><a href="#netatmo-redirect-uri-und-port">Netatmo: Redirect-URI und Port</a></li>
 <li><a href="#bedienung">Bedienung</a></li>
@@ -75,7 +75,9 @@ werden bei Bedarf dort mit einem eigenen Kürzel versehen:</p>
 <hr />
 <h2 id="unterstutzte-plattformen-und-gerate">Unterstützte Plattformen und Geräte</h2>
 <p>Die Erweiterung unterstützt vier Smart-Home-Plattformen. Jede lässt sich
-einzeln aktivieren; es wird nur benötigt, was tatsächlich verwendet wird.</p>
+einzeln aktivieren; es wird nur benötigt, was tatsächlich verwendet wird.
+<strong>Cozytouch/Atlantic ist experimentell</strong> – dort ist bisher nur
+ein einziges Gerätemodell getestet.</p>
 <h3 id="meross">Meross</h3>
 <p>Die Anmeldung erfolgt mit E-Mail und Passwort des Meross-Kontos. Auch
 externe Änderungen (z. B. Schalten über die Meross-App, Alexa oder den
@@ -160,7 +162,12 @@ ein steuerbares <strong>Nachtlicht</strong> (Ein/Aus/Gedimmt).</p>
 Lüfterstufe, Oszillation, Stummschaltung und Display.</p>
 <p>Andere Gerätetypen im VeSync-Konto (z. B. Steckdosen, Lampen oder
 Luftbefeuchter) werden derzeit nicht angezeigt.</p>
-<h3 id="cozytouch-atlantic">Cozytouch / Atlantic</h3>
+<h3 id="cozytouch-atlantic">Cozytouch / Atlantic (experimentell)</h3>
+<p><strong>Experimentell.</strong> Von den Cozytouch-Geräten ist bisher nur
+eine Warmwasser-Wärmepumpe getestet. Andere Gerätetypen werden möglicherweise
+falsch erkannt oder falsch dargestellt, und einzelne Funktionen können
+ausfallen, wenn Atlantic die Cloud-Schnittstelle ändert. Details unter
+<a href="#reifegrad-und-hinweise">Reifegrad und Hinweise</a>.</p>
 <p>Die Anmeldung erfolgt mit E-Mail und Passwort des
 Cozytouch-/Atlantic-Kontos.</p>
 <ul>
@@ -218,10 +225,12 @@ der Erweiterung. Einmalig nötig:</p>
 </ol>
 <h3 id="vesync-einrichten">VeSync / Levoit einrichten</h3>
 <p>E-Mail, Passwort und Länder-Code des VeSync-Kontos eintragen.</p>
-<h3 id="cozytouch-einrichten">Cozytouch / Atlantic einrichten</h3>
+<h3 id="cozytouch-einrichten">Cozytouch / Atlantic einrichten (experimentell)</h3>
 <p>E-Mail und Passwort des Cozytouch-Kontos eintragen (dieselben wie in der
 Cozytouch-App). Optional: die Nennkapazität des Warmwasserspeichers in
-Litern, damit der Vorrat zusätzlich in Litern geschätzt wird.</p>
+Litern, damit der Vorrat zusätzlich in Litern geschätzt wird. Der Reiter ist
+im Einstellungsdialog als „experimentell“ gekennzeichnet – siehe
+<a href="#reifegrad-und-hinweise">Reifegrad und Hinweise</a>.</p>
 <hr />
 <h2 id="netatmo-redirect-uri-und-port">Netatmo: Redirect-URI und Port</h2>
 <h3 id="was-ist-die-redirect-uri">Was ist die Redirect-URI?</h3>

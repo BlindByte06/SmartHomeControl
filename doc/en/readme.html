@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Smart Home Control 26.7.2</title>
+<title>Smart Home Control 26.7.3</title>
 <style>
 body { font-family: Segoe UI, Arial, sans-serif; line-height: 1.6; max-width: 60em; margin: 1.5em auto; padding: 0 1em; }
 h1, h2, h3, h4 { line-height: 1.25; }
@@ -31,7 +31,7 @@ encrypted locally on your computer.</p>
 <h2 id="contents">Contents</h2>
 <ul>
 <li><a href="#keyboard-shortcuts">Keyboard shortcuts</a></li>
-<li><a href="#supported-platforms-and-devices">Supported platforms and devices</a></li>
+<li><a href="#supported-platforms-and-devices">Supported platforms and devices</a> (Cozytouch/Atlantic is <strong>experimental</strong>)</li>
 <li><a href="#setup">Setup</a></li>
 <li><a href="#netatmo-redirect-uri-and-port">Netatmo: redirect URI and port</a></li>
 <li><a href="#usage">Usage</a></li>
@@ -75,7 +75,9 @@ and can be assigned there when needed:</p>
 <hr />
 <h2 id="supported-platforms-and-devices">Supported platforms and devices</h2>
 <p>The add-on supports four smart home platforms. Each can be enabled
-individually; you only need the ones you actually use.</p>
+individually; you only need the ones you actually use.
+<strong>Cozytouch/Atlantic is experimental</strong> – only a single device
+model has been tested there so far.</p>
 <h3 id="meross">Meross</h3>
 <p>Sign in with the email address and password of your Meross account.
 External changes (e.g. switching through the Meross app, Alexa or the
@@ -159,7 +161,12 @@ LAP-C201S/C202S) additionally has a controllable <strong>night light</strong>
 oscillation, mute and display.</p>
 <p>Other device types in the VeSync account (e.g. plugs, lights or
 humidifiers) are currently not shown.</p>
-<h3 id="cozytouch-atlantic">Cozytouch / Atlantic</h3>
+<h3 id="cozytouch-atlantic">Cozytouch / Atlantic (experimental)</h3>
+<p><strong>Experimental.</strong> Only one hot water heat pump has been tested
+so far. Other Cozytouch device types may be detected or presented
+incorrectly, and individual functions can stop working if Atlantic changes
+its cloud interface. Details under
+<a href="#maturity-and-notes">Maturity and notes</a>.</p>
 <p>Sign in with the email address and password of your Cozytouch/Atlantic
 account.</p>
 <ul>
@@ -214,11 +221,12 @@ the add-on. Required once:</p>
 <h3 id="set-up-vesync">Set up VeSync / Levoit</h3>
 <p>Enter the email address, password and country code of your VeSync
 account.</p>
-<h3 id="set-up-cozytouch">Set up Cozytouch / Atlantic</h3>
+<h3 id="set-up-cozytouch">Set up Cozytouch / Atlantic (experimental)</h3>
 <p>Enter the email address and password of your Cozytouch account (the same
 as in the Cozytouch app). Optional: the rated capacity of your hot water
 tank in litres, so the available hot water is additionally estimated in
-litres.</p>
+litres. The tab is labelled “experimental” in the settings dialog – see
+<a href="#maturity-and-notes">Maturity and notes</a>.</p>
 <hr />
 <h2 id="netatmo-redirect-uri-and-port">Netatmo: redirect URI and port</h2>
 <h3 id="what-is-the-redirect-uri">What is the redirect URI?</h3>
