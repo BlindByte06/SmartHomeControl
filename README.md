@@ -3,7 +3,7 @@
 - Autor: Philipp Hasel
 - NVDA-Kompatibilität: ab NVDA 2025.1 und neuer
 - Lizenz: GNU General Public License, Version 2
-- [Internetseite und Quellcode](https://github.com/PhilippHasel/nvda-smart-home-control)
+- [Internetseite und Quellcode](https://github.com/BlindByte06/SmartHomeControl)
 
 Mit dieser Erweiterung lassen sich Smart-Home-Geräte direkt aus NVDA
 steuern – über ein einfaches Menü. Es können Geräte ein- und ausgeschaltet
