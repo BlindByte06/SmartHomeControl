@@ -60,6 +60,8 @@ Bedarf dort mit einem eigenen Kürzel versehen:
   gekennzeichnet, da sie nur die NVDA-Laufzeit abdecken).
 - **Verbindungsdiagnose** – sagt pro Plattform den Verbindungsstatus an,
   dazu Netzwerkstatus und die Restlaufzeit des Netatmo-Tokens.
+- **Einstellungen öffnen** – öffnet die Smart-Home-Einstellungen direkt, ohne
+  den Umweg über das Geräte-Menü.
 - **Favorit 1–9 umschalten** und **Status von Favorit 1–9 ansagen** –
   schaltet das jeweilige Favoriten-Gerät bzw. sagt dessen Status an, ohne
   das Menü zu öffnen. Die Nummer entspricht der Reihenfolge im

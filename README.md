@@ -58,6 +58,8 @@ one there when needed:
   NVDA was running).
 - **Connection diagnostics** — announces the connection state per platform,
   plus the network state and the remaining lifetime of the Netatmo token.
+- **Open the settings** — opens the Smart Home settings directly, without the
+  detour through the device menu.
 - **Toggle favourite 1–9** and **announce status of favourite 1–9** — switches
   the respective favourite device, or announces its status, without opening
   the menu. The number matches the order in the favourites tab of the device
