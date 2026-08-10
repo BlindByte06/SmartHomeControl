@@ -1,0 +1,37 @@
+# ============================================================
+# Smart Home Control – gebündelte Bibliotheken (Stand 14.06.2026)
+#
+# Diese Datei ist die Quelle für build_addon.py ("libs"-Kommando):
+# Alle hier gepinnten Versionen werden als Wheels geladen und nach
+# lib/ bzw. lib/_arch/<tag>/ entpackt.
+#
+# Aufteilung:
+#   [pure]  -> lib/            (reine Python-Pakete, arch-unabhängig)
+#   [arch]  -> lib/_arch/cp311-win32/  UND  lib/_arch/cp313-amd64/
+#              (Pakete mit kompilierten C-Extensions; je NVDA-Python)
+#
+# Bei Security-Updates: Version hier anheben, dann
+#   python build_addon.py libs && python build_addon.py pack
+# ============================================================
+
+# ---- [pure] ----
+requests==2.34.2
+urllib3==2.7.0
+certifi==2026.6.17
+idna==3.18
+attrs==26.1.0
+aiohappyeyeballs==2.7.1
+aiosignal==1.4.0
+typing_extensions==4.16.0
+pycparser==3.0
+meross_iot==0.4.10.4
+paho-mqtt==2.1.0
+
+# ---- [arch] ----
+aiohttp==3.14.1
+multidict==6.7.1
+yarl==1.24.2
+frozenlist==1.8.0
+propcache==0.5.2
+charset_normalizer==3.4.9
+pycryptodomex==3.23.0

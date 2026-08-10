@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Smart Home Control 26.07.2</title>
+<style>
+body { font-family: Segoe UI, Arial, sans-serif; line-height: 1.6; max-width: 60em; margin: 1.5em auto; padding: 0 1em; }
+h1, h2, h3, h4 { line-height: 1.25; }
+h1 { border-bottom: 2px solid #ccc; padding-bottom: .2em; }
+h2 { border-bottom: 1px solid #ddd; padding-bottom: .15em; margin-top: 1.6em; }
+code { background: #f2f2f2; padding: .1em .3em; border-radius: 3px; }
+hr { border: none; border-top: 1px solid #ddd; margin: 1.8em 0; }
+</style>
+</head>
+<body>
+<h1 id="smart-home-control">Smart Home Control</h1>
+<ul>
+<li>Autor: Philipp Hasel</li>
+<li>NVDA-Kompatibilität: ab NVDA 2025.1 und neuer</li>
+<li>Lizenz: GNU General Public License, Version 2</li>
+<li><a href="https://github.com/PhilippHasel/nvda-smart-home-control">Internetseite und Quellcode</a></li>
+</ul>
+<p>Mit dieser Erweiterung lassen sich Smart-Home-Geräte direkt aus NVDA
+steuern – über ein einfaches Menü. Es können Geräte ein- und ausgeschaltet
+sowie Helligkeit, Farbe, Heizung und Luftreiniger gesteuert und Sensorwerte
+abgefragt werden, ganz ohne die teils schwer zugänglichen Hersteller-Apps.</p>
+<p>Die Anmeldung erfolgt einmalig mit den Zugangsdaten des jeweiligen
+Hersteller-Kontos – eine zusätzliche Server- oder Hintergrund-Einrichtung
+ist nicht nötig. Die Zugangsdaten werden lokal auf dem Rechner verschlüsselt
+gespeichert.</p>
+<hr />
+<h2 id="inhalt">Inhalt</h2>
+<ul>
+<li><a href="#tastenkurzel">Tastenkürzel</a></li>
+<li><a href="#unterstutzte-plattformen-und-gerate">Unterstützte Plattformen und Geräte</a></li>
+<li><a href="#einrichtung">Einrichtung</a></li>
+<li><a href="#netatmo-redirect-uri-und-port">Netatmo: Redirect-URI und Port</a></li>
+<li><a href="#bedienung">Bedienung</a></li>
+<li><a href="#benachrichtigungen-bei-anderungen">Benachrichtigungen bei Änderungen</a></li>
+<li><a href="#hinweise-zu-cloud-limits">Hinweise zu Cloud-Limits</a></li>
+<li><a href="#reifegrad-und-hinweise">Reifegrad und Hinweise</a></li>
+<li><a href="#datenschutz-und-sicherheit">Datenschutz und Sicherheit</a></li>
+<li><a href="#fehlerbehebung">Fehlerbehebung</a></li>
+<li><a href="#lizenz-und-verwendete-komponenten">Lizenz und verwendete Komponenten</a></li>
+</ul>
+<hr />
+<h2 id="tastenkurzel">Tastenkürzel</h2>
+<ul>
+<li><strong>NVDA + Umschalt + H</strong>: Smart-Home-Menü öffnen (Geräteübersicht)</li>
+<li><strong>NVDA + Strg + Umschalt + P</strong>: Status aller Geräte ansagen</li>
+</ul>
+<p>Der Einstellungs-Dialog ist über die Schaltfläche „Einstellungen (Alt+E)"
+im Geräte-Menü erreichbar.</p>
+<p>Alle Befehle lassen sich mit eigenen Tastenkürzeln belegen; auch die
+Standard-Belegung kann geändert werden: <strong>NVDA-Menü → Optionen →
+Tastenbefehle → Kategorie „Smart Home Control"</strong>.</p>
+<p>Folgende Befehle haben bewusst <strong>keine Standard-Belegung</strong> und
+werden bei Bedarf dort mit einem eigenen Kürzel versehen:</p>
+<ul>
+<li><strong>Energieverbrauch ansagen</strong> – Tages- und 7-Tage-Verbrauch der
+  Messsteckdosen in Kilowattstunden. Die Werte kommen bevorzugt direkt vom
+  Verbrauchszähler im Gerät – der zählt auch weiter, wenn NVDA nicht läuft.
+  Nur wenn ein Gerät diese Abfrage nicht unterstützt, wird auf im
+  Hintergrund gesammelte Stichproben zurückgegriffen (dann als „geschätzt"
+  gekennzeichnet, da sie nur die NVDA-Laufzeit abdecken).</li>
+<li><strong>Verbindungsdiagnose</strong> – sagt pro Plattform den
+  Verbindungsstatus an, dazu Netzwerkstatus und die Restlaufzeit des
+  Netatmo-Tokens.</li>
+<li><strong>Favorit 1–9 umschalten</strong> und <strong>Status von Favorit 1–9
+  ansagen</strong> – schaltet das jeweilige Favoriten-Gerät bzw. sagt dessen
+  Status an, ohne das Menü zu öffnen. Die Nummer entspricht der Reihenfolge
+  im Favoriten-Tab des Geräte-Menüs (Nummer 1 ist der oberste Eintrag).</li>
+</ul>
+<hr />
+<h2 id="unterstutzte-plattformen-und-gerate">Unterstützte Plattformen und Geräte</h2>
+<p>Die Erweiterung unterstützt vier Smart-Home-Plattformen. Jede lässt sich
+einzeln aktivieren; es wird nur benötigt, was tatsächlich verwendet wird.</p>
+<h3 id="meross">Meross</h3>
+<p>Die Anmeldung erfolgt mit E-Mail und Passwort des Meross-Kontos. Auch
+externe Änderungen (z. B. Schalten über die Meross-App, Alexa oder den
+Schalter am Gerät) werden angesagt.</p>
+<h4 id="steckdosen-und-steckdosenleisten">Steckdosen und Steckdosenleisten</h4>
+<ul>
+<li><strong>MSS210</strong> – Schaltbare Steckdose (Ein/Aus)</li>
+<li><strong>MSS310</strong> – Steckdose mit Energiemessung (Leistung, Spannung, Strom)</li>
+<li><strong>MSS315</strong> – Steckdose mit Energiemessung (Leistung, Spannung, Strom)</li>
+<li><strong>MSS425</strong>, <strong>MSS425E</strong>, <strong>MSS425F</strong> – Steckdosenleisten; jede Steckdose ist einzeln schaltbar. Die USB-Anschlüsse dieser Leisten bilden einen gemeinsamen Ausgang und lassen sich daher nur zusammen schalten. Ausgänge, die in der Meross-App einen eigenen Namen haben, erscheinen mit diesem Namen.</li>
+<li><strong>MSS620</strong> – Outdoor-Doppelsteckdose; beide Ausgänge einzeln schaltbar (die Taste am Gerät selbst schaltet immer beide gemeinsam)</li>
+<li><strong>MOP320</strong> – Outdoor-Doppelsteckdose mit Energiemessung; beide Ausgänge einzeln schaltbar</li>
+</ul>
+<h4 id="lampen-und-led-strips">Lampen und LED-Strips</h4>
+<ul>
+<li><strong>MSL320</strong> (LED-Strip), <strong>MSL450</strong>, <strong>MSL610</strong></li>
+<li>Weitere MSL-Modelle werden automatisch erkannt und erhalten dieselben
+  Funktionen, soweit das jeweilige Modell sie unterstützt: Ein/Aus,
+  Helligkeit, RGB-Farbe, Farbtemperatur und Weiß-Voreinstellungen.</li>
+</ul>
+<h4 id="aroma-diffuser">Aroma-Diffuser</h4>
+<ul>
+<li><strong>MOD150</strong> – Sprühsteuerung: aus, schwaches oder starkes Sprühen
+  (die Licht-Funktion des Geräts wird von der Erweiterung nicht gesteuert)</li>
+</ul>
+<h4 id="hubs-und-sensoren">Hubs und Sensoren</h4>
+<p>Die Sensoren verbinden sich über einen Meross-Hub. Beide Hub-Generationen
+(<strong>MSH300</strong> und <strong>MSH450</strong>) werden automatisch erkannt;
+welcher Hub welchen Sensor aufnehmen kann, legt Meross fest und steht in der
+Meross-App.</p>
+<p>Unterstützte Sensoren:</p>
+<ul>
+<li><strong>MS100</strong> und <strong>MS100F</strong> – Temperatur- und Feuchtesensor</li>
+<li><strong>MS130</strong> – Temperatur- und Feuchtesensor mit Display</li>
+<li><strong>MS400</strong>, <strong>MS405</strong> – Wasserleck-Sensoren</li>
+</ul>
+<h3 id="netatmo">Netatmo</h3>
+<p>Heizungssteuerung und Wetterstations-Anzeige über das Netatmo-Konto.</p>
+<h4 id="heizung">Heizung</h4>
+<ul>
+<li><strong>NATherm1</strong> – Raum-Thermostat</li>
+<li><strong>NRV</strong> – Smartes Heizkörperventil</li>
+<li><strong>NAPlug</strong> – Relais/Gateway (Bridge, für NATherm1 erforderlich)</li>
+</ul>
+<p>Thermostate und Heizkörperventile werden nach den in der Netatmo-App
+vergebenen Räumen gruppiert; der Raumname wird auch im Gerätenamen
+angesagt.</p>
+<p>Einstellbar sind: Solltemperatur (manuell, mit wählbarer Dauer), die
+Betriebsmodi <strong>Zeitplan</strong>, <strong>Abwesend</strong> und
+<strong>Frostschutz</strong> sowie der Wechsel des aktiven Heizprogramms.
+Angezeigt werden außerdem: Ist-Temperatur, aktueller Modus (inklusive
+„Maximum", falls über die App gesetzt), Kessel-/Brenner-Status, aktive
+Zeitplan-Zone, Vorheizen (Anticipation), Batteriestand sowie die
+Fenster-offen-Erkennung (diese Funktion hat nur das Heizkörperventil NRV,
+nicht das Raum-Thermostat).</p>
+<h4 id="wetter-und-raumluft">Wetter und Raumluft (nur Anzeige)</h4>
+<ul>
+<li><strong>Wetterstation NAMain</strong> mit Außen-, Wind-, Regen- und Zusatz-Innenmodulen</li>
+<li><strong>Raumluft-Monitor NHC</strong></li>
+</ul>
+<p>Angezeigt werden: Temperatur, Luftfeuchtigkeit, CO₂, Lautstärke, Luftdruck,
+Regen und Wind – reine Anzeige, keine Steuerung.</p>
+<h3 id="vesync-levoit">VeSync / Levoit</h3>
+<p>Die Anmeldung erfolgt mit E-Mail, Passwort und Länder-Code des
+VeSync-Kontos.</p>
+<h4 id="luftreiniger-levoit-core">Luftreiniger (Levoit Core)</h4>
+<ul>
+<li><strong>Core200S</strong>, <strong>Core300S</strong>, <strong>Core400S</strong>, <strong>Core500S</strong>, <strong>Core600S</strong></li>
+<li>ebenso die regionalen Varianten dieser Baureihen, die VeSync als <strong>LAP-C201S</strong>, <strong>LAP-C202S</strong>, <strong>LAP-C301S</strong>, <strong>LAP-C302S</strong>, <strong>LAP-C401S</strong>, <strong>LAP-C501S</strong> und <strong>LAP-C601S</strong> meldet – unabhängig vom Länderkürzel am Ende der Modellbezeichnung (z. B. <code>-WEU</code>, <code>-WUSR</code>, <code>-WJP</code>).</li>
+</ul>
+<p>Verfügbare Funktionen: Ein/Aus, Modus (Manuell und Schlaf; Auto bei allen
+Modellen außer dem Core200S), Lüfterstufe, Display, Kindersicherung,
+Auto-Profil (Standard/Effizient/Leise), Luftqualität sowie
+Filter-Restlebensdauer mit Warnung bei niedrigem Wert. Der
+<strong>Core200S</strong> (und seine Varianten LAP-C201S/C202S) hat zusätzlich
+ein steuerbares <strong>Nachtlicht</strong> (Ein/Aus/Gedimmt).</p>
+<h4 id="tower-ventilatoren-levoit">Tower-Ventilatoren (Levoit)</h4>
+<ul>
+<li><strong>LTF-F422S</strong>-Serie, ebenfalls unabhängig vom Länderkürzel (getestet: KEU, WUSR, WJP, WUS)</li>
+</ul>
+<p>Verfügbare Funktionen: Ein/Aus, Modus (Normal, Auto, Turbo, Schlaf),
+Lüfterstufe, Oszillation, Stummschaltung und Display.</p>
+<p>Andere Gerätetypen im VeSync-Konto (z. B. Steckdosen, Lampen oder
+Luftbefeuchter) werden derzeit nicht angezeigt.</p>
+<h3 id="cozytouch-atlantic">Cozytouch / Atlantic</h3>
+<p>Die Anmeldung erfolgt mit E-Mail und Passwort des
+Cozytouch-/Atlantic-Kontos.</p>
+<ul>
+<li><strong>Warmwasser-Wärmepumpe</strong> (getestet: Austria Email Revolution Evo 3;
+  das genaue Modell wird im Geräte-Menü angezeigt)</li>
+</ul>
+<p>Verfügbare Funktionen: Warmwasser-Erzeugung ein/aus, Zieltemperatur
+(inklusive des tatsächlichen Heizziels bei Eco/Boost; eine gemessene
+Wassertemperatur liefert die Cloud bei diesem Modell nicht), Heizmodus,
+Boost-Funktion (inklusive experimentell einstellbarer Boost-Laufzeit),
+Abwesenheits-Modus mit planbarem Zeitraum, verfügbarer
+Warmwasservorrat in Prozent sowie Anzeige der heute programmierten
+Heizzeiten und des Status von Elektro-Heizstab und Niedertarif. Die
+Nennkapazität (in Litern) lässt sich in den Einstellungen hinterlegen.</p>
+<p>Die drei Heizmodi:</p>
+<ul>
+<li><strong>Manuell</strong> – heizt dauerhaft auf die eingestellte Zieltemperatur.</li>
+<li><strong>Eco+</strong> – heizt energiesparend mit abgesenktem Heizziel; das
+  tatsächliche Heizziel wird im Geräteeintrag angezeigt.</li>
+<li><strong>Programm</strong> – heizt nur innerhalb der Zeitfenster, die in der
+  Cozytouch-App festgelegt wurden (bis zu drei pro Tag, z. B. für
+  Niedertarif-Zeiten). Die Zeitfenster selbst lassen sich nur in der
+  Cozytouch-App bearbeiten; die Erweiterung zeigt die heute programmierten
+  Heizzeiten im Geräteeintrag an.</li>
+</ul>
+<hr />
+<h2 id="einrichtung">Einrichtung</h2>
+<p>Voraussetzung: Die Geräte müssen vorab einmal mit der jeweiligen
+Hersteller-App (Meross, Netatmo, VeSync, Cozytouch) eingerichtet worden
+sein – die Erweiterung übernimmt sie dann aus dem Konto.</p>
+<p>Das Menü wird mit <strong>NVDA + Umschalt + H</strong> geöffnet. Ohne
+bestehende Anmeldung öffnet sich automatisch der Einstellungs-Dialog. Dort
+die gewünschten Plattformen aktivieren und die Zugangsdaten eintragen –
+Details pro Plattform in den folgenden Abschnitten. Zum Schluss: optional
+„Automatische Anmeldung" aktivieren (die Verbindung wird dann bei jedem
+NVDA-Start automatisch aufgebaut) und speichern. Die Geräte werden geladen
+und stehen sofort im Menü zur Verfügung – ein NVDA-Neustart ist nicht
+nötig.</p>
+<h3 id="meross-einrichten">Meross einrichten</h3>
+<p>E-Mail und Passwort des Meross-Kontos eintragen – fertig.</p>
+<h3 id="netatmo-einrichten">Netatmo einrichten</h3>
+<p>Netatmo verwendet eine Browser-Anmeldung (OAuth2) statt E-Mail/Passwort in
+der Erweiterung. Einmalig nötig:</p>
+<ol>
+<li>Eine eigene (kostenlose) App auf <code>dev.netatmo.com</code> anlegen;
+  dort werden eine <strong>Client-ID</strong> und ein
+  <strong>Client-Secret</strong> ausgestellt.</li>
+<li>Beides im Netatmo-Tab der Erweiterung eintragen.</li>
+<li>Die im Tab angezeigte <strong>Redirect-URI</strong> bei der Netatmo-App
+  hinterlegen – Details und was es mit dem Port auf sich hat, erklärt der
+  Abschnitt <a href="#netatmo-redirect-uri-und-port">Netatmo: Redirect-URI und
+  Port</a>.</li>
+<li>Auf „Mit Netatmo verbinden (OAuth2)" gehen, im Browser anmelden und
+  bestätigen.</li>
+</ol>
+<h3 id="vesync-einrichten">VeSync / Levoit einrichten</h3>
+<p>E-Mail, Passwort und Länder-Code des VeSync-Kontos eintragen.</p>
+<h3 id="cozytouch-einrichten">Cozytouch / Atlantic einrichten</h3>
+<p>E-Mail und Passwort des Cozytouch-Kontos eintragen (dieselben wie in der
+Cozytouch-App). Optional: die Nennkapazität des Warmwasserspeichers in
+Litern, damit der Vorrat zusätzlich in Litern geschätzt wird.</p>
+<hr />
+<h2 id="netatmo-redirect-uri-und-port">Netatmo: Redirect-URI und Port</h2>
+<h3 id="was-ist-die-redirect-uri">Was ist die Redirect-URI?</h3>
+<p>Bei der Browser-Anmeldung schickt Netatmo die Freigabe an eine vorher
+festgelegte Adresse zurück – die Redirect-URI. Die Erweiterung zeigt sie im
+Netatmo-Tab an. Standardmäßig lautet sie <strong>exakt</strong>:</p>
+<p><code>http://localhost:8474/callback</code></p>
+<p>Genau diese Adresse muss in der Netatmo-App auf <code>dev.netatmo.com</code>
+im Feld „redirect URI" eingetragen werden – am besten unverändert aus der
+Erweiterung kopieren.</p>
+<h3 id="warum-exakt">Warum muss die Adresse exakt stimmen?</h3>
+<p>Netatmo vergleicht die registrierte Redirect-URI Zeichen für Zeichen mit
+der tatsächlich verwendeten. Schon ein Unterschied bei Schema
+(<code>http</code>), Host (<code>localhost</code> ist nicht dasselbe wie
+<code>127.0.0.1</code>), Port oder Pfad führt zur Fehlermeldung
+<code>redirect_uri mismatch</code>.</p>
+<h3 id="wozu-der-port">Wozu der Port und warum 8474?</h3>
+<p>Während der Anmeldung startet die Erweiterung kurzzeitig einen kleinen
+lokalen Webserver, der die Freigabe von Netatmo entgegennimmt. Der Port
+(Standard <strong>8474</strong>) legt fest, auf welchem „Kanal" dieser Server
+lauscht. Er ist nur lokal und nur für den Moment der Anmeldung aktiv; nach
+außen ist nichts geöffnet. 8474 ist bewusst ein unauffälliger, selten
+belegter Port.</p>
+<p>Ist der Port bereits belegt (die Anmeldung schlägt mit einer Port-Meldung
+fehl), im Netatmo-Tab einfach den <strong>Redirect-Port</strong> auf einen
+freien Wert ändern – und die dann neu angezeigte Redirect-URI wieder bei
+<code>dev.netatmo.com</code> eintragen, damit beide Seiten übereinstimmen.</p>
+<hr />
+<h2 id="bedienung">Bedienung</h2>
+<p>Im Geräte-Menü sind die Geräte nach Plattform und Typ in einer Baumansicht
+gruppiert. Navigiert wird mit den Pfeiltasten; mit Eingabe oder Leertaste
+wird geschaltet oder ein Wert geändert. Häufig genutzte Geräte können als
+Favoriten markiert werden (Eintrag „Zu Favoriten hinzufügen" am Gerät); sie
+erscheinen dann zusätzlich im Favoriten-Tab. In den Einstellungen lässt sich
+festlegen, welcher Tab (alle Geräte oder Favoriten) beim Öffnen des Menüs
+zuerst erscheint.</p>
+<p>Jede Aktion gibt eine sofortige Sprach- und Signalton-Rückmeldung. Bei
+geöffnetem Menü werden die Geräte häufiger aktualisiert, damit die Werte
+stets aktuell sind.</p>
+<hr />
+<h2 id="benachrichtigungen-bei-anderungen">Benachrichtigungen bei Änderungen</h2>
+<p>Auch externe Änderungen werden angesagt – zum Beispiel, wenn ein Gerät über
+die Hersteller-App, Alexa oder den Schalter am Gerät geschaltet wird. Im Tab
+„Benachrichtigungen" lässt sich pro Plattform und Ereignistyp festlegen, was
+angesagt wird (z. B. Schalten, Modus, Lüfterstufe, Luftqualität, Filter,
+Thermostat-Soll, Kessel-Status). Eigene Aktionen im Dialog werden nicht
+doppelt gemeldet.</p>
+<hr />
+<h2 id="hinweise-zu-cloud-limits">Hinweise zu Cloud-Limits</h2>
+<p>Meross begrenzt die Cloud auf <strong>200 Nachrichten pro Stunde und
+Gerät</strong> – laut Auskunft des Meross-Supports eine Schutzmaßnahme gegen
+Server-Überlastung. Wird das Limit dauerhaft überschritten, verschickt Meross
+zunächst eine Warnung („cloud termination notice“). Sendet dasselbe Gerät drei
+Tage nach dieser Warnung weiterhin zu viele Nachrichten, wird <strong>dieses
+Gerät</strong> für 24 Stunden gesperrt. Andere Geräte und das Konto selbst sind
+davon nicht betroffen.</p>
+<p>Die Erweiterung bleibt automatisch darunter: die regelmäßige Abfrage ist
+bewusst zurückhaltend eingestellt, Ein/Aus-Änderungen kommen ohnehin in Echtzeit
+per Push, und zusätzlich begrenzt die Erweiterung die Anfragen pro Gerät selbst.
+Sollte ein einzelnes Gerät die Obergrenze doch einmal erreichen, wird es
+vorübergehend seltener abgefragt; eine Meldung nennt dann das betroffene Gerät.
+Alle anderen Geräte laufen normal weiter.</p>
+<hr />
+<h2 id="reifegrad-und-hinweise">Reifegrad und Hinweise</h2>
+<p>Einzig Netatmo bietet eine offizielle, dokumentierte
+Programmierschnittstelle. Meross, VeSync und Cozytouch sind nachgebaute
+(reverse-engineerte) Cloud-Anbindungen ohne offizielle Schnittstelle – für
+Meross hat der Hersteller-Support auf Anfrage ausdrücklich bestätigt, dass es
+keine offizielle Programmierschnittstelle gibt. Sie funktionieren zuverlässig
+mit den getesteten Geräten, können aber bei Server-Änderungen der Hersteller
+vorübergehend ausfallen.</p>
+<p>Die Plattformen sind unterschiedlich weit erprobt:</p>
+<ul>
+<li><strong>Meross</strong> und <strong>Netatmo</strong> gelten als stabil.</li>
+<li><strong>VeSync/Levoit:</strong> Unterstützt werden ausschließlich
+  Levoit-Luftreiniger der Core-Reihe und Levoit-Tower-Ventilatoren. Andere
+  VeSync-Geräte (Steckdosen, Lampen, Luftbefeuchter, Küchengeräte) werden
+  nicht angezeigt.</li>
+<li><strong>Cozytouch/Atlantic (experimentell):</strong> Getestet wurde bisher
+  nur die Warmwasser-Wärmepumpe Austria Email Revolution Evo 3. Andere
+  Cozytouch-Geräte (z. B. Heizkörper, Klimageräte) werden derzeit fälschlich
+  ebenfalls als Warmwasser-Wärmepumpe dargestellt und sind nicht nutzbar.</li>
+</ul>
+<hr />
+<h2 id="datenschutz-und-sicherheit">Datenschutz und Sicherheit</h2>
+<ul>
+<li>Die Zugangsdaten werden ausschließlich <strong>lokal auf dem
+  Rechner</strong> und <strong>verschlüsselt</strong> gespeichert. Passwörter
+  liegen nie im Klartext in der Konfiguration.</li>
+<li>Die Kommunikation läuft direkt mit den jeweiligen Hersteller-Clouds – es
+  werden keine Daten an Dritte gesendet.</li>
+</ul>
+<hr />
+<h2 id="fehlerbehebung">Fehlerbehebung</h2>
+<ul>
+<li><strong>Keine Geräte sichtbar:</strong> Zugangsdaten und aktivierte
+  Plattform im Einstellungs-Dialog prüfen; danach speichern (die Anmeldung
+  läuft im Hintergrund).</li>
+<li><strong>Gerät offline:</strong> Prüfen, ob das Gerät in der Hersteller-App
+  erreichbar ist.</li>
+<li><strong>Eine Plattform meldet „nicht erreichbar":</strong> meist eine
+  vorübergehende Cloud-/Netzwerkstörung – die Erweiterung verbindet sich
+  automatisch wieder und sagt an, sobald die Plattform wieder verbunden
+  ist.</li>
+</ul>
+<h2 id="lizenz-und-verwendete-komponenten">Lizenz und verwendete Komponenten</h2>
+<p>Smart Home Control steht unter der <strong>GNU General Public License,
+Version 2</strong> (siehe Datei <code>LICENSE</code>).</p>
+<p>Die Erweiterung bringt die benötigten Python-Bibliotheken mit, damit keine
+Zusatzinstallation nötig ist. Alle Pakete werden unverändert von PyPI übernommen;
+ihre vollständigen Lizenztexte liegen im Add-on-Paket unter <code>lib/</code>.</p>
+<ul>
+<li><strong>meross-iot</strong> – Meross-Cloud und MQTT (MIT)</li>
+<li><strong>paho-mqtt</strong> – MQTT-Protokoll (EPL-2.0 / EDL-1.0)</li>
+<li><strong>requests, urllib3, idna, certifi, charset-normalizer</strong> – HTTPS-Aufrufe (Apache-2.0, MIT, MPL-2.0)</li>
+<li><strong>aiohttp, yarl, multidict, frozenlist, propcache, aiosignal, aiohappyeyeballs, attrs</strong> – asynchrone HTTP-Aufrufe (Apache-2.0, MIT)</li>
+<li><strong>pycryptodomex</strong> – AES-Fallback der Zugangsdaten-Verschlüsselung (BSD-2 / Public Domain)</li>
+<li><strong>typing-extensions, pycparser</strong> – Hilfsbibliotheken (PSF, BSD)</li>
+</ul>
+<p>Hinweis zu <code>paho-mqtt</code>: Das Paket steht wahlweise unter der Eclipse
+Public License 2.0 oder der Eclipse Distribution License 1.0. Für die Verwendung in
+dieser Erweiterung gilt die <strong>EDL-1.0</strong> (eine BSD-3-artige Lizenz), die
+mit der GPL-2.0 vereinbar ist.</p>
+<hr />
+<p><em>Smart Home Control ist eine Community-Erweiterung und steht in keiner
+Verbindung zu Meross, Netatmo, VeSync/Levoit oder Atlantic/Cozytouch. Alle
+genannten Marken- und Produktnamen gehören den jeweiligen Eigentümern.</em></p>
+</body>
+</html>

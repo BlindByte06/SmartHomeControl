@@ -1,0 +1,13 @@
+# Textdateien im Repo mit LF speichern, in der Arbeitskopie nach
+# core.autocrlf (unter Windows also CRLF).
+* text=auto
+
+# Gebündelte Fremdbibliotheken NIE anfassen: die *.dist-info/RECORD-Dateien
+# enthalten SHA256-Prüfsummen der entpackten Wheel-Dateien - jede
+# Zeilenenden-Konvertierung würde sie ungültig machen.
+lib/** -text
+
+# Binärformate explizit, damit keine Heuristik danebengreift.
+*.pyd binary
+*.mo  binary
+*.nvda-addon binary

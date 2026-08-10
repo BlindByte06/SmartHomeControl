@@ -1,0 +1,66 @@
+# .gitignore für NVDA Add-on
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+# ACHTUNG: KEINE *.py[cod]-Regel - das "d" schlösse auch die *.pyd aus,
+# also die kompilierten C-Extensions in lib/_arch/. Ohne sie ist ein
+# frischer Klon nicht lauffähig (aiohttp, yarl, pycryptodomex ...).
+*$py.class
+*.so
+*.egg-info/
+dist/
+build/
+# Backup, das "build_addon.py libs" vor dem Ersetzen anlegt
+lib.old/
+
+# NVDA
+*.nvda-addon
+*.pot
+*.mo
+# ACHTUNG: Die kompilierte .mo IST die Datei, die NVDA zur Laufzeit lädt -
+# die .po ist nur die Quelle. Ohne diese Ausnahme baut ein frischer Klon des
+# Repos ein Add-on OHNE englische Oberfläche, und build_addon.py merkt es
+# nicht. Die Ausnahme muss nach der *.mo-Regel stehen (letzte Regel gewinnt).
+!locale/**/*.mo
+
+# Logs
+*.log
+log_tail.txt
+NVDA_LOG.log
+
+# Entwicklung
+.vscode/
+.idea/
+*.swp
+*~
+.claude/
+
+# Temporäre Dateien
+.DS_Store
+Thumbs.db
+
+# Persönliche Daten (WICHTIG!)
+config.ini
+settings.json
+# Laufzeitdaten des Add-ons (liegen normalerweise im addons-Ordner,
+# beim Entwickeln aber gelegentlich hier)
+SmartHomeControl_history.json*
+SmartHomeControl_energy.json*
+SmartHomeControl_favorites.json*
+smarthomecontrol_salt.bin
+
+# Interne Arbeitsdokumente (nicht fürs öffentliche Repo)
+VEROEFFENTLICHUNG.md
+README_FAKTENPRUEFUNG.md
+VOR_EINREICHUNG_CHECKLISTE.md
+
+# Aus dem Upstream entpackte Bibliotheks-Quellen (werden über
+# requirements-bundle.txt reproduziert, nicht eingecheckt)
+MerossIot-*/
+pyvesync/
+
+# SCons
+.sconsign.dblite
+.sconf_temp/

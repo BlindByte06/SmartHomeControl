@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Smart Home Control 26.07.2</title>
+<style>
+body { font-family: Segoe UI, Arial, sans-serif; line-height: 1.6; max-width: 60em; margin: 1.5em auto; padding: 0 1em; }
+h1, h2, h3, h4 { line-height: 1.25; }
+h1 { border-bottom: 2px solid #ccc; padding-bottom: .2em; }
+h2 { border-bottom: 1px solid #ddd; padding-bottom: .15em; margin-top: 1.6em; }
+code { background: #f2f2f2; padding: .1em .3em; border-radius: 3px; }
+hr { border: none; border-top: 1px solid #ddd; margin: 1.8em 0; }
+</style>
+</head>
+<body>
+<h1 id="smart-home-control-for-nvda">Smart Home Control</h1>
+<ul>
+<li>Author: Philipp Hasel</li>
+<li>NVDA compatibility: NVDA 2025.1 and newer</li>
+<li>License: GNU General Public License, version 2</li>
+<li><a href="https://github.com/PhilippHasel/nvda-smart-home-control">Website and source code</a></li>
+</ul>
+<p>Control your smart home devices directly from NVDA – through a simple menu.
+On/off, brightness, colour, heating, air purifiers, sensors and more, without
+the sometimes hard-to-use manufacturer apps.</p>
+<p>You sign in once with the credentials of your manufacturer account – no
+additional server or background setup required. Your credentials are stored
+encrypted locally on your computer.</p>
+<hr />
+<h2 id="contents">Contents</h2>
+<ul>
+<li><a href="#keyboard-shortcuts">Keyboard shortcuts</a></li>
+<li><a href="#supported-platforms-and-devices">Supported platforms and devices</a></li>
+<li><a href="#setup">Setup</a></li>
+<li><a href="#netatmo-redirect-uri-and-port">Netatmo: redirect URI and port</a></li>
+<li><a href="#usage">Usage</a></li>
+<li><a href="#change-announcements">Change announcements</a></li>
+<li><a href="#cloud-limits">Notes on cloud limits</a></li>
+<li><a href="#maturity-and-notes">Maturity and notes</a></li>
+<li><a href="#privacy-and-security">Privacy and security</a></li>
+<li><a href="#troubleshooting">Troubleshooting</a></li>
+<li><a href="#license-and-bundled-components">License and bundled components</a></li>
+</ul>
+<hr />
+<h2 id="keyboard-shortcuts">Keyboard shortcuts</h2>
+<ul>
+<li><strong>NVDA + Shift + H</strong>: open the smart home menu (device overview)</li>
+<li><strong>NVDA + Ctrl + Shift + P</strong>: announce the status of all devices</li>
+</ul>
+<p>The settings dialog is available through the "Settings (Alt+E)" button in
+the device menu.</p>
+<p>You can assign your own shortcuts to all commands or change the default
+ones: <strong>NVDA menu → Options → Input gestures → category "Smart Home
+Control"</strong>.</p>
+<p>The following commands deliberately have <strong>no default gesture</strong>
+and can be assigned there when needed:</p>
+<ul>
+<li><strong>Announce energy consumption</strong> – today's and last 7 days'
+  consumption of the metering plugs in kilowatt hours. The values are
+  preferably read directly from the meter inside the device – which keeps
+  counting even while NVDA is not running. Only if a device does not
+  support this query, background samples are used instead (then marked as
+  "estimated", since they only cover the time NVDA was running).</li>
+<li><strong>Connection diagnostics</strong> – announces the connection state
+  per platform, plus network state and the remaining Netatmo token
+  lifetime.</li>
+<li><strong>Toggle favorite 1–9</strong> and <strong>announce status of
+  favorite 1–9</strong> – switches the respective favorite device or
+  announces its status without opening the menu. The number corresponds to
+  the order in the favorites tab of the device menu (number 1 is the top
+  entry). Add favorites in the device menu via "Add to favorites" on a
+  device.</li>
+</ul>
+<hr />
+<h2 id="supported-platforms-and-devices">Supported platforms and devices</h2>
+<p>The add-on supports four smart home platforms. Each can be enabled
+individually; you only need the ones you actually use.</p>
+<h3 id="meross">Meross</h3>
+<p>Sign in with the email address and password of your Meross account.
+External changes (e.g. switching through the Meross app, Alexa or the
+physical button on the device) are announced as well.</p>
+<h4 id="plugs-and-power-strips">Plugs and power strips</h4>
+<ul>
+<li><strong>MSS210</strong> – switchable plug (on/off)</li>
+<li><strong>MSS310</strong> – plug with energy monitoring (power, voltage, current)</li>
+<li><strong>MSS315</strong> – plug with energy monitoring (power, voltage, current)</li>
+<li><strong>MSS425</strong>, <strong>MSS425E</strong>, <strong>MSS425F</strong> – power strips; each mains outlet can be switched individually. The USB ports of these strips form a single shared outlet and can therefore only be switched together. Outlets that have their own name in the Meross app appear under that name.</li>
+<li><strong>MSS620</strong> – outdoor dual plug; both outlets switchable individually (the button on the device itself always switches both together)</li>
+<li><strong>MOP320</strong> – outdoor dual plug with energy monitoring; both outlets switchable individually</li>
+</ul>
+<h4 id="lights-and-led-strips">Lights and LED strips</h4>
+<ul>
+<li><strong>MSL320</strong> (LED strip), <strong>MSL450</strong>, <strong>MSL610</strong></li>
+<li>Other MSL models are detected automatically and get the same functions
+  as far as the respective model supports them: on/off, brightness, RGB
+  colour, colour temperature and white presets.</li>
+</ul>
+<h4 id="aroma-diffusers">Aroma diffusers</h4>
+<ul>
+<li><strong>MOD150</strong> – spray control: off, light or strong spray
+  (the light function of the device is not controlled by the add-on)</li>
+</ul>
+<h4 id="hubs-and-sensors">Hubs and sensors</h4>
+<p>The sensors connect through a Meross hub. Both hub generations
+(<strong>MSH300</strong> and <strong>MSH450</strong>) are detected automatically;
+which hub accepts which sensor is defined by Meross and shown in the Meross app.</p>
+<p>Supported sensors:</p>
+<ul>
+<li><strong>MS100</strong> and <strong>MS100F</strong> – temperature and humidity sensor</li>
+<li><strong>MS130</strong> – temperature and humidity sensor with display</li>
+<li><strong>MS400</strong>, <strong>MS405</strong> – water leak sensors</li>
+</ul>
+<h3 id="netatmo">Netatmo</h3>
+<p>Heating control and weather station display through your Netatmo account.</p>
+<h4 id="heating">Heating</h4>
+<ul>
+<li><strong>NATherm1</strong> – room thermostat</li>
+<li><strong>NRV</strong> – smart radiator valve</li>
+<li><strong>NAPlug</strong> – relay/gateway (bridge, required for NATherm1)</li>
+</ul>
+<p>Thermostats and radiator valves are grouped by the rooms assigned in
+the Netatmo app; the room name is also announced as part of the device
+name.</p>
+<p>Adjustable: target temperature (manual, with selectable duration), the
+operating modes <strong>schedule</strong>, <strong>away</strong> and <strong>frost
+guard</strong>, and switching the active heating schedule. Also displayed:
+measured temperature, current mode (including "maximum" if set through the
+app), boiler/burner status, active schedule zone, pre-heating (anticipation),
+battery level, and open window detection (this feature is only available on
+the NRV smart radiator valve, not on the room thermostat).</p>
+<h4 id="weather-and-air-quality">Weather and indoor air (display only)</h4>
+<ul>
+<li><strong>NAMain weather station</strong> with outdoor, wind, rain and
+  additional indoor modules</li>
+<li><strong>NHC indoor air quality monitor</strong></li>
+</ul>
+<p>Displayed: temperature, humidity, CO₂, noise, air pressure, rain and wind –
+display only, no control.</p>
+<h3 id="vesync-levoit">VeSync / Levoit</h3>
+<p>Sign in with the email address, password and country code of your VeSync
+account.</p>
+<h4 id="air-purifiers-levoit-core">Air purifiers (Levoit Core)</h4>
+<ul>
+<li><strong>Core200S</strong>, <strong>Core300S</strong>, <strong>Core400S</strong>, <strong>Core500S</strong>, <strong>Core600S</strong></li>
+<li>as well as the regional variants of these series that VeSync reports as <strong>LAP-C201S</strong>, <strong>LAP-C202S</strong>, <strong>LAP-C301S</strong>, <strong>LAP-C302S</strong>, <strong>LAP-C401S</strong>, <strong>LAP-C501S</strong> and <strong>LAP-C601S</strong> – regardless of the country code at the end of the model name (e.g. <code>-WEU</code>, <code>-WUSR</code>, <code>-WJP</code>).</li>
+</ul>
+<p>Available functions: on/off, mode (manual and sleep; auto on all models
+except the Core200S), fan level, display, child lock, auto profile
+(default/efficient/quiet), air quality, and remaining filter life with a
+warning at low values. The <strong>Core200S</strong> (and its variants
+LAP-C201S/C202S) additionally has a controllable <strong>night light</strong>
+(on/off/dim).</p>
+<h4 id="tower-fans-levoit">Tower fans (Levoit)</h4>
+<ul>
+<li><strong>LTF-F422S</strong> series, likewise regardless of the country code (tested: KEU, WUSR, WJP, WUS)</li>
+</ul>
+<p>Functions: on/off, mode (normal, auto, turbo, sleep), fan level,
+oscillation, mute and display.</p>
+<p>Other device types in the VeSync account (e.g. plugs, lights or
+humidifiers) are currently not shown.</p>
+<h3 id="cozytouch-atlantic">Cozytouch / Atlantic</h3>
+<p>Sign in with the email address and password of your Cozytouch/Atlantic
+account.</p>
+<ul>
+<li><strong>Hot water heat pump</strong> (tested: Austria Email Revolution Evo 3;
+  the exact model is shown in the device menu)</li>
+</ul>
+<p>Functions: hot water production on/off, target temperature (including the
+actual heating target with Eco/boost; the cloud does not provide a measured
+water temperature for this model), heating mode, boost (including an
+experimentally adjustable boost duration), away mode with a
+plannable period, available hot water in percent, and display of today's
+programmed heating windows and the status of the electric heating element
+and off-peak tariff. The rated capacity (in litres) can be configured in
+the settings.</p>
+<p>The three heating modes:</p>
+<ul>
+<li><strong>Manual</strong> – heats continuously to the configured target
+  temperature.</li>
+<li><strong>Eco+</strong> – heats economically with a lowered heating target;
+  the actual heating target is shown in the device entry.</li>
+<li><strong>Program</strong> – heats only within the time windows configured
+  in the Cozytouch app (up to three per day, e.g. for off-peak hours). The
+  time windows themselves can only be edited in the Cozytouch app; the
+  add-on shows today's programmed heating windows in the device entry.</li>
+</ul>
+<hr />
+<h2 id="setup">Setup</h2>
+<p>Prerequisite: the devices must have been set up once with the respective
+manufacturer app (Meross, Netatmo, VeSync, Cozytouch) – the add-on then
+picks them up from your account.</p>
+<p>Open the menu with <strong>NVDA + Shift + H</strong>. If you are not signed in
+yet, the settings dialog opens automatically. Enable the platforms you use
+and enter the credentials – details per platform in the following sections.
+Finally: optionally enable "Automatic login" (the connection is then
+established at every NVDA start) and save. The devices are loaded and
+immediately available in the menu – no NVDA restart required.</p>
+<h3 id="set-up-meross">Set up Meross</h3>
+<p>Enter the email address and password of your Meross account – done.</p>
+<h3 id="set-up-netatmo">Set up Netatmo</h3>
+<p>Netatmo uses a browser sign-in (OAuth2) instead of email/password inside
+the add-on. Required once:</p>
+<ol>
+<li>Create your own (free) app on <code>dev.netatmo.com</code>; you receive a
+  <strong>client ID</strong> and a <strong>client secret</strong>.</li>
+<li>Enter both in the Netatmo tab of the add-on.</li>
+<li>Register the <strong>redirect URI</strong> shown in the tab with your Netatmo
+  app – details, and what the port is about, are explained in the section
+  <a href="#netatmo-redirect-uri-and-port">Netatmo: redirect URI and port</a>.</li>
+<li>Choose "Connect with Netatmo (OAuth2)", sign in in the browser and
+  confirm.</li>
+</ol>
+<h3 id="set-up-vesync">Set up VeSync / Levoit</h3>
+<p>Enter the email address, password and country code of your VeSync
+account.</p>
+<h3 id="set-up-cozytouch">Set up Cozytouch / Atlantic</h3>
+<p>Enter the email address and password of your Cozytouch account (the same
+as in the Cozytouch app). Optional: the rated capacity of your hot water
+tank in litres, so the available hot water is additionally estimated in
+litres.</p>
+<hr />
+<h2 id="netatmo-redirect-uri-and-port">Netatmo: redirect URI and port</h2>
+<h3 id="what-is-the-redirect-uri">What is the redirect URI?</h3>
+<p>During the browser sign-in, Netatmo sends the authorisation back to a
+previously registered address – the redirect URI. The add-on shows it in the
+Netatmo tab. By default it is <strong>exactly</strong>:</p>
+<p><code>http://localhost:8474/callback</code></p>
+<p>You must enter exactly this address in the "redirect URI" field of your
+Netatmo app on <code>dev.netatmo.com</code> – best copied unchanged from the
+add-on.</p>
+<h3 id="why-exact">Why does the address have to match exactly?</h3>
+<p>Netatmo compares the registered redirect URI character by character with
+the one actually used. Even a difference in scheme (<code>http</code>), host
+(<code>localhost</code> is not the same as <code>127.0.0.1</code>), port or path
+leads to the error <code>redirect_uri mismatch</code>.</p>
+<h3 id="why-the-port">What is the port for, and why 8474?</h3>
+<p>During sign-in, the add-on briefly starts a small local web server on your
+own computer that receives the authorisation from Netatmo. The port (default
+<strong>8474</strong>) determines the "channel" this local server listens on. It
+is only used locally and only for the moment of signing in; nothing is
+opened to the outside. 8474 was chosen as an inconspicuous, rarely used
+port.</p>
+<p>If the port is already taken on your computer (the sign-in fails with a
+port message), simply change the <strong>redirect port</strong> in the Netatmo
+tab to a free value – and register the newly shown redirect URI with
+<code>dev.netatmo.com</code> again so both sides match.</p>
+<hr />
+<h2 id="usage">Usage</h2>
+<p>In the device menu the devices are grouped by platform and type in a tree
+view. Navigate with the arrow keys; switch or change values with Enter or
+Space. Frequently used devices can be marked as favourites (via "Add to
+favorites" on a device); they then also appear in the favorites tab. In the
+settings you can choose which tab (all devices or favorites) is shown first
+when the menu opens.</p>
+<p>Every action gives immediate speech and tone feedback. While the menu is
+open the devices are refreshed more frequently so the values stay
+up to date.</p>
+<hr />
+<h2 id="change-announcements">Change announcements</h2>
+<p>External changes are announced as well – for example when a device is
+switched through the manufacturer app, Alexa or the button on the device. In
+the "Notifications" tab you configure per platform and event type what is
+announced (e.g. switching, mode, fan level, air quality, filter, thermostat
+setpoint, boiler status). Your own actions in the dialog are not reported
+twice.</p>
+<hr />
+<h2 id="cloud-limits">Notes on cloud limits</h2>
+<p>Meross limits its cloud to <strong>200 messages per hour and device</strong> –
+according to Meross support, a safety measure to prevent server flooding. If the
+limit is exceeded persistently, Meross first sends a warning (a “cloud termination
+notice”). If the same device still sends too many messages three days after that
+warning, <strong>that device</strong> is blocked for 24 hours. Other devices and the
+account itself are not affected.</p>
+<p>The add-on automatically stays below the limit: the periodic polling is
+deliberately conservative, on/off changes arrive in real time via push anyway, and
+the add-on additionally caps the requests per device. Should a single device reach
+the ceiling nonetheless, it is temporarily polled less often; a message names the
+affected device. All other devices continue normally.</p>
+<hr />
+<h2 id="maturity-and-notes">Maturity and notes</h2>
+<p>Only Netatmo offers an official, documented API. Meross, VeSync and
+Cozytouch are reverse-engineered cloud integrations without an official API –
+for Meross, the manufacturer's support has explicitly confirmed on request that
+no official API is offered. They work reliably with the tested devices but can
+temporarily fail when the manufacturers change their servers.</p>
+<p>The platforms differ in how well they are field-tested:</p>
+<ul>
+<li><strong>Meross</strong> and <strong>Netatmo</strong> are considered stable.</li>
+<li><strong>VeSync/Levoit:</strong> only Levoit Core series air purifiers and
+  Levoit tower fans are supported. Other VeSync devices (plugs, lights,
+  humidifiers, kitchen appliances) are not shown.</li>
+<li><strong>Cozytouch/Atlantic (experimental):</strong> the protocol is
+  unofficial and reverse engineered; Atlantic can change it at any time.
+  Only the Austria Email Revolution Evo 3 hot water heat pump has been
+  tested so far. Other Cozytouch devices (e.g. radiators, air conditioners)
+  are currently incorrectly shown as hot water heat pumps as well and are
+  not usable.</li>
+</ul>
+<hr />
+<h2 id="privacy-and-security">Privacy and security</h2>
+<ul>
+<li>Your credentials are stored exclusively <strong>locally on your
+  computer</strong> and <strong>encrypted</strong>. Passwords are never stored in
+  plain text in the configuration.</li>
+<li>Communication goes directly to the respective manufacturer clouds – no
+  data is sent to third parties.</li>
+</ul>
+<hr />
+<h2 id="troubleshooting">Troubleshooting</h2>
+<ul>
+<li><strong>No devices visible:</strong> check the credentials and the enabled
+  platform in the settings dialog, then save (the sign-in runs in the
+  background).</li>
+<li><strong>Device offline:</strong> check whether the device is reachable in the
+  manufacturer app.</li>
+<li><strong>A platform reports "unreachable":</strong> usually a temporary
+  cloud/network issue – the add-on reconnects automatically and announces
+  when the platform is connected again.</li>
+</ul>
+<h2 id="license-and-bundled-components">License and bundled components</h2>
+<p>Smart Home Control is licensed under the <strong>GNU General Public License,
+version 2</strong> (see the <code>LICENSE</code> file).</p>
+<p>The add-on ships the Python libraries it needs so that no extra installation
+is required. All packages are taken unmodified from PyPI; their full license
+texts are included in the add-on package under <code>lib/</code>.</p>
+<ul>
+<li><strong>meross-iot</strong> – Meross cloud and MQTT (MIT)</li>
+<li><strong>paho-mqtt</strong> – MQTT protocol (EPL-2.0 / EDL-1.0)</li>
+<li><strong>requests, urllib3, idna, certifi, charset-normalizer</strong> – HTTPS requests (Apache-2.0, MIT, MPL-2.0)</li>
+<li><strong>aiohttp, yarl, multidict, frozenlist, propcache, aiosignal, aiohappyeyeballs, attrs</strong> – asynchronous HTTP requests (Apache-2.0, MIT)</li>
+<li><strong>pycryptodomex</strong> – AES fallback for credential encryption (BSD-2 / Public Domain)</li>
+<li><strong>typing-extensions, pycparser</strong> – helper libraries (PSF, BSD)</li>
+</ul>
+<p>A note on <code>paho-mqtt</code>: the package is dual-licensed under the Eclipse
+Public License 2.0 and the Eclipse Distribution License 1.0. This add-on uses it
+under the <strong>EDL-1.0</strong> (a BSD-3-style license), which is compatible
+with the GPL-2.0.</p>
+<hr />
+<p><em>Smart Home Control is a community add-on and is not affiliated with
+Meross, Netatmo, VeSync/Levoit or Atlantic/Cozytouch. All brand and product
+names belong to their respective owners.</em></p>
+</body>
+</html>

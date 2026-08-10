@@ -1,0 +1,5189 @@
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: SmartHomeControl 26.07\n"
+"Report-Msgid-Bugs-To: haselphilipp@gmail.com\n"
+"Language: en\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#. Translators: Display of the current RGB values in the input dialog.
+#: dialog_meross.py:256
+msgid ""
+"\n"
+"\n"
+"Aktuelle Werte: Rot={r}, Grün={g}, Blau={b}"
+msgstr ""
+"\n"
+"\n"
+"Current values: red={r}, green={g}, blue={b}"
+
+#. Translators: End time suffix after the target temperature.
+#: dialog_netatmo.py:274
+msgid " (bis {end} Uhr)"
+msgstr " (until {end})"
+
+#. Translators: Suffix after the heating mode: until when the manual
+#. temperature applies (HH:MM).
+#: netatmo_api.py:328
+msgid " (bis {time})"
+msgstr " (until {time})"
+
+#. Translators: Liter estimate after the percentage.
+#: dialog_cozytouch.py:441
+msgid " (ca. {liters} Liter)"
+msgstr " (approx. {liters} liters)"
+
+#. Translators: Filter warning in the device label. {percent} = remaining
+#. life.
+#: dialog_vesync.py:505
+msgid " - Achtung: Filter wechseln {percent}%"
+msgstr " - Warning: replace filter {percent}%"
+
+#. Translators: Usage hint after the target temperature.
+#: dialog_netatmo.py:276
+msgid " - Enter zum Ändern"
+msgstr " - press Enter to change"
+
+#. Translators: Relative age of the last refresh (Ctrl+T). {sec} = seconds
+#. since the last update.
+#: device_dialog.py:1218
+msgid " – zuletzt aktualisiert vor {sec} Sekunden"
+msgstr " – last updated {sec} seconds ago"
+
+#. Translators: Button labels of the first safety prompt.
+#: dialog_vesync.py:343 dialog_vesync.py:368 settings_panel.py:152
+#: settings_panel.py:841
+msgid "&Abbrechen"
+msgstr "&Cancel"
+
+#. Translators: Tab name "General" (& marks the accelerator).
+#: settings_panel.py:103
+msgid "&Allgemein"
+msgstr "&General"
+
+#. Auto login checkbox Translators: Checkbox for enabling automatic login at
+#. NVDA start.
+#: settings_panel.py:204
+msgid "&Automatisch beim NVDA-Start anmelden"
+msgstr "&Log in automatically when NVDA starts"
+
+#. Translators: Label of the start field in the away scheduling dialog.
+#: dialog_cozytouch.py:338
+msgid "&Beginn:"
+msgstr "&Start:"
+
+#. Translators: Tab name "Notifications".
+#: settings_panel.py:133
+msgid "&Benachrichtigungen"
+msgstr "&Notifications"
+
+#. Translators: Tab name "Cozytouch". Brand name, do not translate.
+#: settings_panel.py:127
+msgid "&Cozytouch"
+msgstr "&Cozytouch"
+
+#. Translators: Checkbox label for enabling the Cozytouch platform (Atlantic /
+#. Austria Email hot water heat pumps).
+#: settings_panel.py:195
+msgid "&Cozytouch verwenden (Atlantic, Austria Email)"
+msgstr "Use &Cozytouch (Atlantic, Austria Email)"
+
+#. Email Translators: Label of the email input field (Meross).
+#: settings_panel.py:302
+msgid "&E-Mail:"
+msgstr "&Email:"
+
+#. Translators: Button opens the settings dialog (Smart Home).
+#: device_dialog.py:295
+msgid "&Einstellungen (Alt+E)"
+msgstr "S&ettings (Alt+E)"
+
+#. Translators: Label of the end field in the away scheduling dialog.
+#: dialog_cozytouch.py:342
+msgid "&Ende:"
+msgstr "&End:"
+
+#. Translators: Label of the input field for the filter warning threshold in
+#. percent.
+#: settings_panel.py:498
+msgid "&Filter-Warnschwelle (%):"
+msgstr "&Filter warning threshold (%):"
+
+#. Filter with accessible name and help text Translators: Label for the filter
+#. selection in the device overview.
+#: device_dialog.py:131
+msgid "&Filter:"
+msgstr "&Filter:"
+
+#. Filter button Translators: Button for applying the filters.
+#: dialog_history.py:148
+msgid "&Filtern"
+msgstr "&Filter"
+
+#. Translators: "Continue" button in the OAuth2 confirmation dialog.
+#. Translators: "Cancel" button in the OAuth2 confirmation dialog.
+#: settings_panel.py:841
+msgid "&Fortfahren"
+msgstr "&Continue"
+
+#. Tree view with accessible name Translators: Label above the device tree.
+#: device_dialog.py:180
+msgid "&Geräte:"
+msgstr "&Devices:"
+
+#. Translators: Button labels of the second safety prompt.
+#: dialog_vesync.py:368
+msgid "&Ja, zurücksetzen"
+msgstr "&Yes, reset"
+
+#. Translators: Label of the country code field (ISO 3166-1 alpha-2).
+#: settings_panel.py:482
+msgid "&Ländercode (ISO):"
+msgstr "&Country code (ISO):"
+
+#. Translators: Tab name "Meross" (brand name, & marks the accelerator).
+#: settings_panel.py:109
+msgid "&Meross"
+msgstr "&Meross"
+
+#. Translators: Checkbox label for enabling the Meross platform.
+#: settings_panel.py:174
+msgid "&Meross verwenden"
+msgstr "Use &Meross"
+
+#. Translators: Tab name "Netatmo".
+#: settings_panel.py:115
+msgid "&Netatmo"
+msgstr "&Netatmo"
+
+#. Translators: Checkbox label for enabling the Netatmo platform.
+#: settings_panel.py:181
+msgid "&Netatmo verwenden"
+msgstr "Use &Netatmo"
+
+#. Password Translators: Label of the password input field (Meross).
+#: settings_panel.py:310
+msgid "&Passwort:"
+msgstr "&Password:"
+
+#. Translators: Button for closing the device dialog.
+#: device_dialog.py:301
+msgid "&Schließen (Esc)"
+msgstr "&Close (Esc)"
+
+#. Translators: "Save" button in the settings dialog.
+#: settings_panel.py:146
+msgid "&Speichern"
+msgstr "&Save"
+
+#. Translators: Checkbox label without a known default duration.
+#: dialog_netatmo.py:97
+msgid "&Standard-Dauer verwenden (wie in Netatmo-App eingestellt)"
+msgstr "Use &default duration (as configured in the Netatmo app)"
+
+#. Translators: Checkbox label with a known default duration.
+#: dialog_netatmo.py:94
+msgid "&Standard-Dauer verwenden ({minutes} Minuten)"
+msgstr "Use &default duration ({minutes} minutes)"
+
+#. Translators: Label before the status display at the bottom of the dialog.
+#: device_dialog.py:249
+msgid "&Status:"
+msgstr "&Status:"
+
+#. Translators: Label of the hour selection.
+#: dialog_netatmo.py:106
+msgid "&Stunde:"
+msgstr "&Hour:"
+
+#. Temperature selection (0.5°C steps) Translators: Label of the temperature
+#. selection list.
+#: dialog_netatmo.py:63
+msgid "&Temperatur (°C):"
+msgstr "&Temperature (°C):"
+
+#. Translators: Tab name "VeSync".
+#: settings_panel.py:121
+msgid "&VeSync"
+msgstr "&VeSync"
+
+#. Translators: Checkbox label for enabling the VeSync platform (covers
+#. Levoit, Cosori, Etekcity).
+#: settings_panel.py:188
+msgid "&VeSync verwenden (Levoit, Cosori, Etekcity)"
+msgstr "Use &VeSync (Levoit, Cosori, Etekcity)"
+
+#. Translators: Button opens the history of all switch actions and sensor
+#. values.
+#: device_dialog.py:287
+msgid "&Verlauf (Strg+H)"
+msgstr "&History (Ctrl+H)"
+
+#. Translators: Button labels of the first safety prompt.
+#: dialog_vesync.py:343
+msgid "&Weiter"
+msgstr "&Next"
+
+#. Translators: Message when the search found no match.
+#: device_dialog.py:1493
+msgid "'{text}' nicht gefunden"
+msgstr "'{text}' not found"
+
+#. Translators: Marker on the active heating schedule in the selection list.
+#: dialog_netatmo.py:557
+msgid "(aktiv)"
+msgstr "(active)"
+
+#. Translators: Current amperage in amps.
+#: __init__.py:1421
+msgid ", {current} Ampere"
+msgstr ", {current} amps"
+
+#. Translators: Relative humidity in percent.
+#: __init__.py:1370
+msgid ", {humidity:.1f}% Luftfeuchtigkeit"
+msgstr ", {humidity:.1f}% humidity"
+
+#. Translators: Current power consumption in watts.
+#: __init__.py:1415
+msgid ", {power} Watt"
+msgstr ", {power} watts"
+
+#. Translators: Current voltage in volts.
+#: __init__.py:1418
+msgid ", {voltage} Volt"
+msgstr ", {voltage} volts"
+
+#. Translators: Button for reloading the device status.
+#: device_dialog.py:280
+msgid "A&ktualisieren (F5)"
+msgstr "&Refresh (F5)"
+
+#: security.py:193 security.py:207
+msgid "AES-Entschlüsselung nicht verfügbar (PyCryptodome fehlt)"
+msgstr "AES decryption not available (PyCryptodome missing)"
+
+#: security.py:180
+msgid "AES-Verschlüsselung nicht verfügbar (PyCryptodome fehlt)"
+msgstr "AES encryption not available (PyCryptodome missing)"
+
+#. Translators: Message when the user cancels an action.
+#: dialog_cozytouch.py:285 dialog_vesync.py:353 dialog_vesync.py:375
+msgid "Abgebrochen"
+msgstr "Cancelled"
+
+#. Translators: Netatmo heating mode (away, reduced temperature).
+#: constants.py:31 netatmo_api.py:407
+msgid "Abwesend"
+msgstr "Away"
+
+#: dialog_netatmo.py:445
+msgid "Abwesend – reduzierte Temperatur"
+msgstr "Away – reduced temperature"
+
+#. Translators: Cozytouch status announcement: away mode active.
+#: cozytouch_devices.py:427 dialog_help.py:224
+msgid "Abwesenheit aktiv"
+msgstr "Away mode active"
+
+#. Translators: Cozytouch announcement: away mode switched on/off.
+#: change_detection.py:793 dialog_cozytouch.py:273
+msgid "Abwesenheit aus"
+msgstr "Away mode off"
+
+#: history.py:989
+msgid "Abwesenheit ausgeschaltet"
+msgstr "Away mode switched off"
+
+#. Translators: Cozytouch announcement: away mode switched on/off.
+#: change_detection.py:793
+msgid "Abwesenheit ein"
+msgstr "Away mode on"
+
+#. Translators: Announce the Cozytouch away mode.
+#: settings_panel.py:734
+msgid "Abwesenheit ein-/ausschalten ansagen"
+msgstr "Announce away mode on/off"
+
+#: history.py:988
+msgid "Abwesenheit eingeschaltet"
+msgstr "Away mode switched on"
+
+#. Translators: Cozytouch status announcement: away mode is scheduled but its
+#. start time has not been reached yet.
+#: cozytouch_devices.py:424
+msgid "Abwesenheit geplant"
+msgstr "Away mode scheduled"
+
+#. Translators: Error message when toggling away mode fails.
+#: dialog_cozytouch.py:303 dialog_cozytouch.py:278
+msgid "Abwesenheit konnte nicht umgeschaltet werden"
+msgstr "Away mode could not be toggled"
+
+#. Translators: Title of the away scheduling dialog. {name} = device name.
+#: dialog_cozytouch.py:326
+msgid "Abwesenheit planen – {name}"
+msgstr "Schedule absence – {name}"
+
+#. Translators: Combined info+action label in the device tree.
+#: dialog_cozytouch.py:541 dialog_cozytouch.py:538
+msgid "Abwesenheit: {state} - Enter zum Umschalten"
+msgstr "Away mode: {state} - press Enter to toggle"
+
+#. Translators: Combined info+action label in the device tree: away mode is
+#. active/scheduled until the given date and time.
+#: dialog_cozytouch.py:534
+msgid "Abwesenheit: {state} bis {end} - Enter zum Ausschalten"
+msgstr "Away mode: {state} until {end} - press Enter to turn off"
+
+#: dialog_help.py:185
+msgid ""
+"Abwesenheits-Modus planen oder beenden: reduziert die Warmwasser-Erzeugung "
+"während längerer Abwesenheit. Enter öffnet die Zeitraum-Eingabe (Beginn und "
+"Ende); bei aktiver oder geplanter Abwesenheit schaltet Enter sie aus."
+msgstr ""
+"Schedule or end away mode: reduces hot water production during longer "
+"absences. Enter opens the period input (start and end); when away mode is "
+"active or scheduled, Enter turns it off."
+
+#. Translators: Filter warning as the first tree entry. {percent} = remaining
+#. life.
+#: dialog_vesync.py:539
+msgid "Achtung: Filter wechseln, Restlebensdauer {percent}%"
+msgstr "Warning: replace filter, remaining life {percent}%"
+
+#: history.py:801
+msgid "Aktion"
+msgstr "Action"
+
+#: dialog_help.py:187
+msgid "Aktion. Enter oder Leertaste zum Ausführen."
+msgstr "Action. Press Enter or Space to execute."
+
+#: dialog_help.py:204
+msgid "Aktion: Ein- oder Ausschalten"
+msgstr "Action: turn on or off"
+
+#: dialog_help.py:378
+msgid "Aktion: Ein/Ausschalten"
+msgstr "Action: turn on/off"
+
+#: dialog_help.py:376
+msgid "Aktionen: Ein/Aus, Helligkeit, Lichtfarbe"
+msgstr "Actions: on/off, brightness, light color"
+
+#: dialog_help.py:252
+msgid "Aktionen: Ein/Aus, Modus, Lüftergeschwindigkeit"
+msgstr "Actions: on/off, mode, fan speed"
+
+#: dialog_help.py:263
+msgid "Aktionen: Ein/Aus, Modus, Lüftergeschwindigkeit, Oszillation"
+msgstr "Actions: on/off, mode, fan speed, oscillation"
+
+#: dialog_help.py:362
+msgid "Aktionen: Schwaches Sprühen, Starkes Sprühen, Aus"
+msgstr "Actions: light spray, strong spray, off"
+
+#: dialog_help.py:322
+msgid "Aktionen: Soll-Temperatur, Heizmodus, Heizprogramm"
+msgstr "Actions: target temperature, heating mode, heating schedule"
+
+#: dialog_help.py:225
+msgid "Aktionen: Zieltemperatur, Modus, Boost, Ein/Aus, Abwesenheit"
+msgstr "Actions: target temperature, mode, boost, on/off, away mode"
+
+#. Platform selection Translators: Group label for selecting the active
+#. platforms.
+#: settings_panel.py:170
+msgid "Aktive Plattformen"
+msgstr "Active platforms"
+
+#. OPTIMIZED: set the status line + speak in one step. Translators: Status
+#. while a manual refresh is running.
+#: device_dialog.py:2928
+msgid "Aktualisiere..."
+msgstr "Refreshing..."
+
+#. Translators: Message after a manual refresh.
+#: device_dialog.py:2985
+msgid "Aktualisiert - {online} Geräte online"
+msgstr "Refreshed - {online} devices online"
+
+#. Translators: Message after a manual refresh with duration.
+#: device_dialog.py:2981
+msgid "Aktualisiert in {seconds}s - {online} Geräte online"
+msgstr "Refreshed in {seconds}s - {online} devices online"
+
+#: device_dialog.py:2742
+msgid "Aktuelle Einstellung: Kaltweiß"
+msgstr "Current setting: cool white"
+
+#: device_dialog.py:2740
+msgid "Aktuelle Einstellung: Tageslicht"
+msgstr "Current setting: daylight"
+
+#. Translators: Current light color in the help text.
+#: device_dialog.py:2738
+msgid "Aktuelle Einstellung: Warmweiß"
+msgstr "Current setting: warm white"
+
+#. Translators: Display of the current color in the color picker dialog.
+#: dialog_meross.py:193
+msgid "Aktuelle Farbe: RGB({r}, {g}, {b})\n"
+msgstr "Current color: RGB({r}, {g}, {b})\n"
+
+#: device_dialog.py:2838
+msgid "Aktuelle Helligkeit: {value}%"
+msgstr "Current brightness: {value}%"
+
+#: dialog_help.py:87
+msgid "Aktuelle Luftfeuchtigkeit. Wird automatisch aktualisiert."
+msgstr "Current humidity. Updates automatically."
+
+#: dialog_help.py:111
+msgid "Aktuelle Netzspannung in Volt."
+msgstr "Current mains voltage in volts."
+
+#: dialog_help.py:85
+msgid "Aktuelle Raumtemperatur des Sensors. Wird automatisch aktualisiert."
+msgstr "Current room temperature from the sensor. Updates automatically."
+
+#. Translators: Display of the measured room temperature.
+#: dialog_netatmo.py:54
+msgid "Aktuelle Raumtemperatur: {temp}°C\n"
+msgstr "Current room temperature: {temp}°C\n"
+
+#. Translators: Display of the current target temperature.
+#: dialog_netatmo.py:57
+msgid "Aktuelle Soll-Temperatur: {temp}°C"
+msgstr "Current target temperature: {temp}°C"
+
+#: dialog_help.py:113
+msgid "Aktuelle Stromstärke in Ampere."
+msgstr "Current amperage in amps."
+
+#: dialog_help.py:115
+msgid "Aktueller Batteriestand des Geräts."
+msgstr "Current battery level of the device."
+
+#: dialog_help.py:119
+msgid "Aktueller Luftdruck in Millibar."
+msgstr "Current air pressure in millibars."
+
+#. Translators: Display when the heating mode is manual.
+#: dialog_netatmo.py:459
+msgid "Aktueller Modus: Manuell"
+msgstr "Current mode: manual"
+
+#. Translators: Display of the current heating mode.
+#: dialog_netatmo.py:455
+msgid "Aktueller Modus: {mode}"
+msgstr "Current mode: {mode}"
+
+#: dialog_help.py:109
+msgid "Aktueller Stromverbrauch in Watt. Wird automatisch aktualisiert."
+msgstr "Current power consumption in watts. Updates automatically."
+
+#. Translators: Actual heating target when it differs from the setpoint.
+#: dialog_cozytouch.py:486
+msgid "Aktuelles Heizziel: {temp} Grad"
+msgstr "Current heating target: {temp} degrees"
+
+#. Translators: Filter option: show all devices.
+#: device_dialog.py:136 dialog_history.py:130
+msgid "Alle"
+msgstr "All"
+
+#. Translators: Name of the first tab in the device dialog (& marks the
+#. accelerator).
+#: device_dialog.py:203 dialog_history.py:227 settings_panel.py:216
+msgid "Alle Geräte"
+msgstr "All devices"
+
+#: dialog_history.py:138
+msgid "Alles"
+msgstr "All"
+
+#. Translators: Button for the CSV export of the history.
+#: dialog_history.py:168
+msgid "Als &CSV exportieren"
+msgstr "Export as &CSV"
+
+#: dialog_cozytouch.py:528 dialog_cozytouch.py:499
+msgid "An"
+msgstr "On"
+
+#: dialog_cozytouch.py:528
+msgid "An (geplant)"
+msgstr "On (scheduled)"
+
+#: device_dialog.py:1980 device_dialog.py:2030 device_dialog.py:2094
+#: device_dialog.py:2103 device_dialog.py:2055 device_dialog.py:1998
+msgid "Andere Geräte"
+msgstr "Other devices"
+
+#: __init__.py:600
+msgid "Anmeldung bei {platforms}..."
+msgstr "Logging in to {platforms}..."
+
+#. Translators: Announcement when a renewed login fails but the previous
+#. device list remains in use.
+#: __init__.py:820
+msgid "Anmeldung fehlgeschlagen – bisherige Geräte bleiben verfügbar"
+msgstr "Login failed – existing devices remain available"
+
+#: __init__.py:886
+msgid "Anmeldung läuft..."
+msgstr "Login in progress..."
+
+#. Translators: Accessible name for the tab switching control in the device
+#. dialog.
+#: device_dialog.py:120 settings_panel.py:97
+msgid "Ansicht"
+msgstr "View"
+
+#: device_dialog.py:2399
+msgid "Auf Farbmodus wechseln - Enter zum Öffnen"
+msgstr "Switch to color mode - press Enter to open"
+
+#: device_dialog.py:2381
+msgid "Auf Weißmodus wechseln - Enter zum Öffnen"
+msgstr "Switch to white mode - press Enter to open"
+
+#: dialog_help.py:105
+msgid "Aufsummierter Energieverbrauch des Geräts in Kilowattstunden."
+msgstr "Accumulated energy consumption of the device in kilowatt hours."
+
+#. Translators: Detail column of a switch action in the history.
+#: __init__.py:1561 change_detection.py:104 constants.py:50 constants.py:98
+#: device_dialog.py:2260 device_dialog.py:1194 device_dialog.py:785
+#: device_dialog.py:1019 device_dialog.py:905 device_dialog.py:1046
+#: device_dialog.py:2300 device_dialog.py:781 device_dialog.py:990
+#: dialog_cozytouch.py:541 dialog_cozytouch.py:248 dialog_cozytouch.py:499
+#: dialog_help.py:199 dialog_help.py:212 dialog_help.py:233 dialog_help.py:370
+#: dialog_meross.py:59 dialog_vesync.py:50 meross_devices.py:900
+msgid "Aus"
+msgstr "Off"
+
+#. Translators: Action entry in the device tree.
+#: dialog_cozytouch.py:415 dialog_favorites.py:45 dialog_vesync.py:708
+msgid "Aus Favoriten entfernen - Enter"
+msgstr "Remove from favorites - Enter"
+
+#: history.py:969
+msgid "Ausgeschaltet"
+msgstr "Switched off"
+
+#. Translators: Operating mode of a VeSync air purifier.
+#: constants.py:59 constants.py:76 vesync_devices.py:608 vesync_devices.py:997
+msgid "Auto"
+msgstr "Auto"
+
+#: vesync_devices.py:913
+msgid "Auto-Profil '{value}' wird nicht unterstützt"
+msgstr "Auto profile '{value}' is not supported"
+
+#: history.py:992
+msgid "Auto-Profil geändert"
+msgstr "Auto profile changed"
+
+#: vesync_devices.py:911
+msgid "Auto-Profil wird vom Gerät nicht unterstützt"
+msgstr "Auto profile is not supported by this device"
+
+#: dialog_help.py:173
+msgid ""
+"Auto-Profil wählen: Standard, Effizient oder Leise. Bestimmt das Verhalten "
+"im Auto-Modus. Enter öffnet eine Auswahlliste."
+msgstr ""
+"Choose auto profile: default, efficient or quiet. Determines behavior in "
+"auto mode. Enter opens a selection list."
+
+#. Translators: VeSync announcement: the auto profile
+#. (default/efficient/quiet) determines the control behavior in auto mode.
+#: change_detection.py:642
+msgid "Auto-Profil {profile}"
+msgstr "Auto profile {profile}"
+
+#. Translators: Combined info+action label in the device tree.
+#: dialog_vesync.py:637
+msgid "Auto-Profil: {profile} - Enter zum Ändern"
+msgstr "Auto profile: {profile} - press Enter to change"
+
+#: netatmo_api.py:257
+msgid "Außenmodul"
+msgstr "Outdoor module"
+
+#. Netatmo: battery
+#: device_dialog.py:882 dialog_help.py:114
+msgid "Batterie:"
+msgstr "Battery:"
+
+#: device_dialog.py:1774 device_dialog.py:1730 dialog_help.py:331
+msgid "Batterie: {percent}%"
+msgstr "Battery: {percent}%"
+
+#. Translators: Battery level of a hub sensor. {value} = percentage. 'wird
+#. ermittelt' is shown until the first background battery poll has completed
+#. (battery is fetched separately and cached).
+#: device_dialog.py:1709 device_dialog.py:885 netatmo_api.py:376
+msgid "Batterie: {value}%"
+msgstr "Battery: {value}%"
+
+#. Apply the color
+#: dialog_meross.py:336 dialog_meross.py:301
+msgid "Benutzerdefiniert"
+msgstr "Custom"
+
+#. Translators: List entry for a custom color with the current RGB value.
+#: dialog_meross.py:180
+msgid "Benutzerdefiniert (aktuell: RGB {r}, {g}, {b})"
+msgstr "Custom (current: RGB {r}, {g}, {b})"
+
+#. Translators: List entry for entering custom RGB values.
+#: dialog_meross.py:184
+msgid "Benutzerdefiniert - RGB-Werte eingeben"
+msgstr "Custom - enter RGB values"
+
+#. Translators: Title of the custom RGB values dialog.
+#: dialog_meross.py:263
+msgid "Benutzerdefinierte RGB-Farbe"
+msgstr "Custom RGB color"
+
+#. Translators: Cozytouch announcement: hot water operation switched on/off.
+#: change_detection.py:772 cozytouch_devices.py:415
+msgid "Betrieb aus"
+msgstr "Operation off"
+
+#. Translators: Action entry for switching operation on/off.
+#: dialog_cozytouch.py:524
+msgid "Betrieb ausschalten"
+msgstr "Turn operation off"
+
+#. Translators: Cozytouch announcement: hot water operation switched on/off.
+#: change_detection.py:772 cozytouch_devices.py:415
+msgid "Betrieb ein"
+msgstr "Operation on"
+
+#. Translators: Action entry for switching operation on/off.
+#: dialog_cozytouch.py:524
+msgid "Betrieb einschalten"
+msgstr "Turn operation on"
+
+#. Translators: Operating state in the device tree.
+#: dialog_cozytouch.py:445
+msgid "Betrieb: Aus"
+msgstr "Operation: off"
+
+#. Translators: Operating state in the device tree.
+#: dialog_cozytouch.py:445
+msgid "Betrieb: Ein"
+msgstr "Operation: on"
+
+#: dialog_help.py:179
+msgid ""
+"Betriebsmodus der Warmwasser-Wärmepumpe wählen. Enter öffnet eine "
+"Auswahlliste."
+msgstr ""
+"Choose the operating mode of the hot water heat pump. Enter opens a "
+"selection list."
+
+#: dialog_help.py:159
+msgid ""
+"Betriebsmodus wählen. Bei Luftreinigern: Auto, Manuell oder Schlaf. Bei "
+"Ventilatoren: Normal, Turbo, Auto oder Schlafmodus. Enter öffnet eine "
+"Auswahlliste."
+msgstr ""
+"Choose operating mode. Air purifiers: auto, manual or sleep. Fans: normal, "
+"turbo, auto or sleep mode. Enter opens a selection list."
+
+#. Translators: Combined info+action label in the device tree.
+#: dialog_cozytouch.py:493
+msgid "Betriebsmodus: {mode} - Enter zum Ändern"
+msgstr "Operating mode: {mode} - press Enter to change"
+
+#: settings_panel.py:824
+msgid "Bitte Client-ID und Secret eingeben"
+msgstr "Please enter client ID and secret"
+
+#. Translators: Validation error in the Cozytouch tab.
+#: settings_panel.py:1030
+msgid "Bitte Cozytouch E-Mail und Passwort eingeben"
+msgstr "Please enter Cozytouch email and password"
+
+#: settings_panel.py:755 settings_panel.py:959 settings_panel.py:1031
+msgid "Bitte E-Mail und Passwort eingeben"
+msgstr "Please enter email and password"
+
+#. Translators: Validation error in the Meross tab.
+#: settings_panel.py:754
+msgid "Bitte Meross E-Mail und Passwort eingeben"
+msgstr "Please enter Meross email and password"
+
+#. Translators: Validation error in the Netatmo OAuth2 tab.
+#: settings_panel.py:823
+msgid "Bitte Netatmo Client-ID und Secret eingeben"
+msgstr "Please enter Netatmo client ID and secret"
+
+#. Translators: Message when no temperature was selected.
+#: dialog_netatmo.py:170
+msgid "Bitte Temperatur wählen"
+msgstr "Please choose a temperature"
+
+#. Translators: Validation error in the VeSync tab.
+#: settings_panel.py:958
+msgid "Bitte VeSync E-Mail und Passwort eingeben"
+msgstr "Please enter VeSync email and password"
+
+#. Translators: Message on invalid temperature selection.
+#: dialog_netatmo.py:255
+msgid "Bitte gültige Temperatur wählen"
+msgstr "Please choose a valid temperature"
+
+#. Translators: Validation hint: not yet connected via OAuth2.
+#: settings_panel.py:903
+msgid "Bitte zuerst mit Netatmo verbinden"
+msgstr "Please connect to Netatmo first"
+
+#: settings_panel.py:904
+msgid "Bitte zuerst mit Netatmo verbinden (OAuth2)"
+msgstr "Please connect to Netatmo first (OAuth2)"
+
+#: dialog_meross.py:52 dialog_meross.py:145
+msgid "Blau"
+msgstr "Blue"
+
+#. Translators: Validation error for the blue value.
+#: dialog_meross.py:293
+msgid "Blau {value} ungültig (0–255)"
+msgstr "Blue {value} invalid (0–255)"
+
+#: dialog_meross.py:79
+msgid "Bläulich"
+msgstr "Bluish"
+
+#: dialog_help.py:89
+msgid "Boiler-Status: zeigt ob die Heizung gerade aktiv heizt oder aus ist."
+msgstr "Boiler status: shows whether the heating is currently active or off."
+
+#. Translators: Cozytouch status announcement: boost mode is running.
+#: cozytouch_devices.py:419 dialog_help.py:222
+msgid "Boost aktiv"
+msgstr "Boost active"
+
+#. Translators: Cozytouch announcement: boost mode switched on or off.
+#: change_detection.py:787
+msgid "Boost aus"
+msgstr "Boost off"
+
+#: history.py:987
+msgid "Boost ausgeschaltet"
+msgstr "Boost switched off"
+
+#. Translators: Cozytouch announcement: boost mode switched on or off.
+#: change_detection.py:787
+msgid "Boost ein"
+msgstr "Boost on"
+
+#. Translators: Announce Cozytouch boost switching.
+#: settings_panel.py:730
+msgid "Boost ein-/ausschalten ansagen"
+msgstr "Announce boost on/off"
+
+#: history.py:986
+msgid "Boost eingeschaltet"
+msgstr "Boost switched on"
+
+#. Translators: Error message when toggling boost fails.
+#: dialog_cozytouch.py:226
+msgid "Boost konnte nicht umgeschaltet werden"
+msgstr "Boost could not be toggled"
+
+#. Translators: History detail: boost switched on/off.
+#: dialog_cozytouch.py:221
+msgid "Boost {status}"
+msgstr "Boost {status}"
+
+#: dialog_help.py:181
+msgid ""
+"Boost-Modus ein- oder ausschalten: heizt das Wasser schnell auf "
+"Maximaltemperatur. Enter oder Leertaste zum Umschalten."
+msgstr ""
+"Turn boost mode on or off: quickly heats the water to maximum temperature. "
+"Press Enter or Space to toggle."
+
+#. Translators: Combined info+action label in the device tree.
+#: dialog_cozytouch.py:498
+msgid "Boost: {state} - Enter zum Umschalten"
+msgstr "Boost: {state} - press Enter to toggle"
+
+#: settings_panel.py:865
+msgid "Browser wird geöffnet. Bitte bei Netatmo anmelden und autorisieren."
+msgstr "Opening browser. Please sign in to Netatmo and authorize."
+
+#: history.py:803
+msgid "CO₂ (ppm)"
+msgstr "CO₂ (ppm)"
+
+#: dialog_help.py:117
+msgid "CO₂-Konzentration in der Raumluft."
+msgstr "CO₂ concentration in the room air."
+
+#. Translators: File type filter in the file dialog.
+#: dialog_history.py:483
+msgid "CSV-Dateien (*.csv)|*.csv"
+msgstr "CSV files (*.csv)|*.csv"
+
+#. Translators: Label of the client ID field for Netatmo OAuth2.
+#: settings_panel.py:365
+msgid "Client-&ID:"
+msgstr "Client &ID:"
+
+#. Translators: Label of the client secret field for Netatmo OAuth2.
+#: settings_panel.py:373
+msgid "Client-&Secret:"
+msgstr "Client &secret:"
+
+#. Translators: Label of the email field for Cozytouch.
+#: settings_panel.py:542
+msgid "Cozytouch &E-Mail:"
+msgstr "Cozytouch &email:"
+
+#. Translators: Explanatory text in the Cozytouch tab.
+#: settings_panel.py:530
+msgid ""
+"Cozytouch Account-Zugangsdaten (Atlantic-Gruppe, z. B. Austria Email).\n"
+"Aktuell unterstützt: Warmwasser-Wärmepumpe (getestet: Austria Email Revolution Evo 3).\n"
+"Dieselben Zugangsdaten wie in der Cozytouch-App. Daten werden lokal auf diesem Rechner verschlüsselt gespeichert."
+msgstr ""
+"Cozytouch account credentials (Atlantic group, e.g. Austria Email).\n"
+"Currently supported: hot water heat pump (tested: Austria Email Revolution Evo 3).\n"
+"Same credentials as in the Cozytouch app. Data is stored encrypted locally on this computer."
+
+#: settings_panel.py:545
+msgid "Cozytouch E-Mail-Adresse"
+msgstr "Cozytouch email address"
+
+#. Translators: Error message for a failed Cozytouch login.
+#: __init__.py:803 settings_panel.py:1073 settings_panel.py:1076
+msgid "Cozytouch Fehler: {error}"
+msgstr "Cozytouch error: {error}"
+
+#. Translators: Label of the password field for Cozytouch.
+#: settings_panel.py:550
+msgid "Cozytouch Pass&wort:"
+msgstr "Cozytouch pass&word:"
+
+#: settings_panel.py:555
+msgid "Cozytouch Passwort"
+msgstr "Cozytouch password"
+
+#. Translators: "Test Cozytouch connection" button.
+#: settings_panel.py:577
+msgid "Cozytouch Verbindung &prüfen"
+msgstr "Test Cozytouch &connection"
+
+#. Translators: Note that the Cozytouch connection is being established in the
+#. background.
+#: dialog_cozytouch.py:748
+msgid "Cozytouch wird verbunden..."
+msgstr "Connecting to Cozytouch..."
+
+#: dialog_favorites.py:262
+msgid "Cozytouch-Favoriten ({count})"
+msgstr "Cozytouch favorites ({count})"
+
+#. Translators: Generic Cozytouch error message with detail text.
+#: dialog_cozytouch.py:116 dialog_cozytouch.py:149 dialog_cozytouch.py:206
+#: dialog_cozytouch.py:231 dialog_cozytouch.py:259 dialog_cozytouch.py:308
+msgid "Cozytouch-Fehler: {error}"
+msgstr "Cozytouch error: {error}"
+
+#. Translators: Platform main node. Brand name, do not translate.
+#: device_dialog.py:2121
+msgid "Cozytouch-Geräte ({count})"
+msgstr "Cozytouch devices ({count})"
+
+#. Translators: Error message for the deferred Cozytouch login.
+#: dialog_cozytouch.py:742
+msgid "Cozytouch-Login fehlgeschlagen: {error}"
+msgstr "Cozytouch login failed: {error}"
+
+#: settings_panel.py:578
+msgid "Cozytouch-Verbindung prüfen"
+msgstr "Test Cozytouch connection"
+
+#: settings_panel.py:1191 settings_panel.py:1192
+msgid "Cozytouch: Bitte Passwort eingeben"
+msgstr "Cozytouch: please enter a password"
+
+#: cozytouch_api.py:181
+msgid "Cozytouch: E-Mail oder Passwort falsch"
+msgstr "Cozytouch: incorrect email or password"
+
+#: __init__.py:788
+msgid "Cozytouch: Lade Geräte..."
+msgstr "Cozytouch: loading devices..."
+
+#: cozytouch_api.py:182
+msgid "Cozytouch: Login fehlgeschlagen (HTTP {code})"
+msgstr "Cozytouch: login failed (HTTP {code})"
+
+#: cozytouch_api.py:176
+msgid "Cozytouch: Ungültige Antwort beim Login"
+msgstr "Cozytouch: invalid response during login"
+
+#: settings_panel.py:1185 settings_panel.py:1186
+msgid "Cozytouch: Ungültige E-Mail-Adresse"
+msgstr "Cozytouch: invalid email address"
+
+#: __init__.py:774
+msgid "Cozytouch: Verbinde..."
+msgstr "Cozytouch: connecting..."
+
+#: settings_panel.py:1060
+msgid "Cozytouch: Verbunden – {count} Gerät(e)"
+msgstr "Cozytouch: connected – {count} device(s)"
+
+#: settings_panel.py:1066
+msgid "Cozytouch: {count} Gerät(e) gefunden"
+msgstr "Cozytouch: {count} device(s) found"
+
+#. Translators: Confirmation after loading the Cozytouch devices afterwards.
+#: dialog_cozytouch.py:759
+msgid "Cozytouch: {count} Gerät(e) geladen"
+msgstr "Cozytouch: {count} device(s) loaded"
+
+#: dialog_meross.py:57 dialog_meross.py:150
+msgid "Cyan"
+msgstr "Cyan"
+
+#. Translators: Validation error in the away scheduling dialog.
+#: dialog_cozytouch.py:368
+msgid "Das Ende muss nach dem Beginn und in der Zukunft liegen"
+msgstr "The end must be after the start and in the future"
+
+#. Duration option: default duration or until a given time Translators: Label
+#. of the duration section in the thermostat dialog.
+#: dialog_netatmo.py:87
+msgid "Dauer:"
+msgstr "Duration:"
+
+#: dialog_help.py:101
+msgid "Der elektrische Zusatz-Heizstab unterstützt gerade die Wärmepumpe."
+msgstr ""
+"The electric backup heating element is currently assisting the heat pump."
+
+#: history.py:801
+msgid "Details"
+msgstr "Details"
+
+#: device_dialog.py:302
+msgid "Dialog schließen"
+msgstr "Close dialog"
+
+#: dialog_help.py:103
+msgid "Die heute programmierten Heizzeitfenster der Warmwasser-Wärmepumpe."
+msgstr "Today's programmed heating time windows of the hot water heat pump."
+
+#. Display of the redirect URI to register exactly (read-only, focusable via
+#. TE_READONLY so the screen reader can read/copy it). Translators: Label
+#. before the displayed redirect URI.
+#: settings_panel.py:398
+msgid "Diese Redirect-URI bei dev.netatmo.com eintragen:"
+msgstr "Register this redirect URI at dev.netatmo.com:"
+
+#: device_dialog.py:1976 device_dialog.py:1996
+msgid "Diffuser"
+msgstr "Diffuser"
+
+#. Translators: Error message: diffuser unreachable.
+#: meross_api.py:1452
+msgid "Diffuser nicht erreichbar - möglicherweise offline"
+msgstr "Diffuser not reachable - possibly offline"
+
+#: dialog_help.py:141
+msgid "Diffuser-Aktion. Enter oder Leertaste zum Ausführen."
+msgstr "Diffuser action. Press Enter or Space to execute."
+
+#: change_detection.py:606
+msgid "Display aus"
+msgstr "Display off"
+
+#: history.py:999
+msgid "Display ausgeschaltet"
+msgstr "Display switched off"
+
+#. Translators: VeSync announcement: LED display on the device.
+#: change_detection.py:605
+msgid "Display ein"
+msgstr "Display on"
+
+#: history.py:998
+msgid "Display eingeschaltet"
+msgstr "Display switched on"
+
+#. Translators: History detail: display switched on/off.
+#: dialog_vesync.py:231
+msgid "Display {status}"
+msgstr "Display {status}"
+
+#: dialog_help.py:167
+msgid ""
+"Display-Anzeige am Gerät ein- oder ausschalten. Enter oder Leertaste zum "
+"Umschalten."
+msgstr "Turn the device's display on or off. Press Enter or Space to toggle."
+
+#: vesync_devices.py:856
+msgid "Display-Steuerung wird vom Gerät nicht unterstützt"
+msgstr "Display control is not supported by this device"
+
+#: dialog_vesync.py:677
+msgid "Display: aus - Enter zum Einschalten"
+msgstr "Display: off - press Enter to turn on"
+
+#. Translators: Combined info+action label in the device tree.
+#: dialog_vesync.py:676
+msgid "Display: ein - Enter zum Ausschalten"
+msgstr "Display: on - press Enter to turn off"
+
+#: dialog_meross.py:148
+msgid "Dunkles Lila"
+msgstr "Dark purple"
+
+#. Translators: Validation error during VeSync login.
+#: vesync_api.py:365
+msgid "E-Mail und Passwort erforderlich"
+msgstr "Email and password required"
+
+#: netatmo_api.py:406
+msgid "Eco"
+msgstr "Eco"
+
+#. Translators: Cozytouch operating mode (Eco+).
+#: cozytouch_devices.py:75
+msgid "Eco+"
+msgstr "Eco+"
+
+#. Translators: Auto mode profile of a VeSync air purifier.
+#: constants.py:108
+msgid "Effizient"
+msgstr "Efficient"
+
+#. Translators: Detail column of a switch action in the history.
+#: __init__.py:1561 change_detection.py:104 constants.py:96
+#: device_dialog.py:2260 device_dialog.py:1194 device_dialog.py:785
+#: device_dialog.py:1019 device_dialog.py:905 device_dialog.py:1046
+#: device_dialog.py:2300 device_dialog.py:781 device_dialog.py:990
+#: dialog_cozytouch.py:248 dialog_help.py:199 dialog_help.py:212
+#: dialog_help.py:233 dialog_help.py:370 dialog_vesync.py:50
+msgid "Ein"
+msgstr "On"
+
+#. Translators: As above, in case the device name is unavailable.
+#: change_detection.py:82
+msgid ""
+"Ein Meross-Gerät wird vorübergehend seltener aktualisiert – sein Cloud-Limit"
+" ist erreicht"
+msgstr ""
+"A Meross device is temporarily being updated less often – its cloud limit "
+"has been reached"
+
+#. Translators: Announce VeSync on/off switching.
+#: settings_panel.py:689
+msgid "Ein-/Ausschaltungen ansagen"
+msgstr "Announce on/off switching"
+
+#. Translators: Notification option: announce Meross on/off switching.
+#: settings_panel.py:647
+msgid "Ein-/Ausschaltungen ansagen (Alexa, Meross-App, ...)"
+msgstr "Announce on/off switching (Alexa, Meross app, ...)"
+
+#. Translators: Announce Cozytouch hot water operation on/off.
+#: settings_panel.py:718
+msgid "Ein-/Ausschaltungen ansagen (Warmwasser-Betrieb)"
+msgstr "Announce on/off switching (hot water operation)"
+
+#: history.py:968
+msgid "Eingeschaltet"
+msgstr "Switched on"
+
+#. Translators: Success message after saving the settings.
+#: settings_panel.py:1278
+msgid "Einstellungen gespeichert"
+msgstr "Settings saved"
+
+#: device_dialog.py:296
+msgid "Einstellungen öffnen"
+msgstr "Open settings"
+
+#: dialog_help.py:100
+msgid "Elektro-Heizstab"
+msgstr "Electric heating element"
+
+#. Translators: Cozytouch status announcement: electric backup heating element
+#. active.
+#: cozytouch_devices.py:431
+msgid "Elektro-Heizstab aktiv"
+msgstr "Electric heating element active"
+
+#. Translators: Note that the electric heating element is currently heating.
+#: dialog_cozytouch.py:454
+msgid "Elektro-Heizstab aktiv (heizt gerade)"
+msgstr "Electric heating element active (currently heating)"
+
+#. Translators: Netatmo thermostat announcement: the time limit of a manual
+#. setting was removed.
+#: change_detection.py:315
+msgid "Endzeit entfernt"
+msgstr "End time removed"
+
+#: dialog_help.py:104
+msgid "Energieverbrauch"
+msgstr "Energy consumption"
+
+#. Translators: Total energy consumption. {kwh} = kilowatt hours.
+#: dialog_cozytouch.py:466
+msgid "Energieverbrauch gesamt: {kwh} kWh"
+msgstr "Energy consumption, total: {kwh} kWh"
+
+#: dialog_favorites.py:405
+msgid "Enter oder Leertaste: Aktion ausführen, "
+msgstr "Enter or Space: execute action, "
+
+#: dialog_help.py:380
+msgid "Enter zum Auf- oder Zuklappen"
+msgstr "Press Enter to expand or collapse"
+
+#. Translators: Tooltip of the favorites list with keyboard shortcuts.
+#: device_dialog.py:224
+msgid ""
+"Enter/Leertaste: Aktion ausführen, Pfeiltasten: Navigation, F1: Hilfe, F5: "
+"Aktualisieren, Strg+B: Favorit entfernen"
+msgstr ""
+"Enter/Space: execute action, arrow keys: navigate, F1: help, F5: refresh, "
+"Ctrl+B: remove favorite"
+
+#. Translators: Tooltip with the most important shortcuts for the device list.
+#: device_dialog.py:193
+msgid ""
+"Enter/Leertaste: Aktion ausführen, Pfeiltasten: Navigation, F1: "
+"Kontexthilfe, F5: Aktualisieren, Strg+F: Suchen, 1-9: Zur Kategorie "
+"springen, Buchstaben: Schnellsuche"
+msgstr ""
+"Enter/Space: execute action, arrow keys: navigate, F1: context help, F5: "
+"refresh, Ctrl+F: search, 1-9: jump to category, letters: quick search"
+
+#: dialog_favorites.py:412
+msgid "Esc: Dialog schließen"
+msgstr "Esc: close dialog"
+
+#: meross_api.py:439
+msgid "Event Loop nicht verfügbar"
+msgstr "Event loop not available"
+
+#. Translators: Title of the export success dialog.
+#: dialog_history.py:518
+msgid "Export erfolgreich"
+msgstr "Export successful"
+
+#. Translators: Error message on CSV export.
+#: dialog_history.py:527
+msgid "Export fehlgeschlagen: {error}"
+msgstr "Export failed: {error}"
+
+#. Announce external changes (Meross-relevant only) Translators: Checkbox:
+#. NVDA should announce external switching (Alexa, app).
+#: settings_panel.py:329
+msgid "Externe Änderungen &ansagen (Alexa, Meross App, etc.)"
+msgstr "&Announce external changes (Alexa, Meross app, etc.)"
+
+#: dialog_favorites.py:411
+msgid "F1: Kontexthilfe, "
+msgstr "F1: context help, "
+
+#. Translators: Hint in the device tree how the user can retry after an error.
+#: device_dialog.py:1136
+msgid "F5 drücken zum Wiederholen"
+msgstr "Press F5 to retry"
+
+#: dialog_favorites.py:407
+msgid "F5: Aktualisieren, "
+msgstr "F5: refresh, "
+
+#: device_dialog.py:2397
+msgid "Farbe einstellen - Enter zum Öffnen"
+msgstr "Set color - press Enter to open"
+
+#. Translators: Title of the color picker dialog. {name} = device name.
+#: dialog_meross.py:203
+msgid "Farbe für {name} einstellen"
+msgstr "Set color for {name}"
+
+#: history.py:983
+msgid "Farbe geändert"
+msgstr "Color changed"
+
+#. RGB color line
+#: device_dialog.py:839
+msgid "Farbe:"
+msgstr "Color:"
+
+#: device_dialog.py:843
+msgid "Farbe: R={r}, G={g}, B={b}"
+msgstr "Color: R={r}, G={g}, B={b}"
+
+#: device_dialog.py:2395
+msgid "Farbe: RGB({r}, {g}, {b}) - Enter zum Ändern"
+msgstr "Color: RGB({r}, {g}, {b}) - press Enter to change"
+
+#. Translators: History detail: lamp color that was set.
+#: dialog_meross.py:344
+msgid "Farbe: {color} (RGB {r},{g},{b})"
+msgstr "Color: {color} (RGB {r},{g},{b})"
+
+#: device_dialog.py:2393
+msgid "Farbe: {color} (RGB {r},{g},{b}) - Enter zum Ändern"
+msgstr "Color: {color} (RGB {r},{g},{b}) - press Enter to change"
+
+#. Translators: Title of the light color dialog.
+#: device_dialog.py:2750
+msgid "Farbtemperatur für {name}"
+msgstr "Color temperature for {name}"
+
+#. Color temperature line
+#: device_dialog.py:832
+msgid "Farbtemperatur:"
+msgstr "Color temperature:"
+
+#. Translators: History detail: light color that was set.
+#: device_dialog.py:2797
+msgid "Farbtemperatur: {mode}"
+msgstr "Color temperature: {mode}"
+
+#: device_dialog.py:836
+msgid "Farbtemperatur: {value}K"
+msgstr "Color temperature: {value}K"
+
+#. Translators: Generic fallback when the status query for a single device
+#. fails.
+#: __init__.py:1431 device_dialog.py:1926
+msgid "Fehler"
+msgstr "Error"
+
+#: dialog_netatmo.py:539
+msgid "Fehler beim Laden der Heizprogramme"
+msgstr "Error loading heating schedules"
+
+#: device_dialog.py:1925
+msgid "Fehler beim Laden: {error}"
+msgstr "Error while loading: {error}"
+
+#. Translators: Error message with detail text.
+#: dialog_netatmo.py:260
+msgid "Fehler beim Setzen der Temperatur: {error}"
+msgstr "Error setting temperature: {error}"
+
+#. Translators: Error message with detail text.
+#: dialog_netatmo.py:501
+msgid "Fehler beim Setzen des Heizmodus: {error}"
+msgstr "Error setting heating mode: {error}"
+
+#. Translators: Error text when switching the heating schedule.
+#: dialog_netatmo.py:592
+msgid "Fehler beim Wechseln des Heizprogramms: {error}"
+msgstr "Error switching heating schedule: {error}"
+
+#. Translators: Generic error message with detail text.
+#: __init__.py:1299 dialog_netatmo.py:639
+msgid "Fehler: {error}"
+msgstr "Error: {error}"
+
+#. Fallback: shorten the original message
+#: device_dialog.py:1120
+msgid "Fehler: {msg}"
+msgstr "Error: {msg}"
+
+#: dialog_help.py:125
+msgid ""
+"Feinstaub PM1.0: Konzentration ultrafeiner Partikel in Mikrogramm pro "
+"Kubikmeter."
+msgstr ""
+"Particulate matter PM1.0: concentration of ultra-fine particles in "
+"micrograms per cubic meter."
+
+#: dialog_help.py:127
+msgid ""
+"Feinstaub PM10: Konzentration grober Partikel in Mikrogramm pro Kubikmeter."
+msgstr ""
+"Particulate matter PM10: concentration of coarse particles in micrograms per"
+" cubic meter."
+
+#: dialog_help.py:123
+msgid ""
+"Feinstaub PM2.5: Konzentration sehr feiner Partikel in Mikrogramm pro "
+"Kubikmeter."
+msgstr ""
+"Particulate matter PM2.5: concentration of very fine particles in micrograms"
+" per cubic meter."
+
+#. Translators: Netatmo announcement: the open window was closed.
+#: change_detection.py:362
+msgid "Fenster geschlossen"
+msgstr "Window closed"
+
+#. Translators: Status announcement: open window detected.
+#: netatmo_api.py:355
+msgid "Fenster offen"
+msgstr "Window open"
+
+#. === Filter area === Translators: Label of the filter area in the history
+#. dialog.
+#: device_dialog.py:151 dialog_history.py:116
+msgid "Filter"
+msgstr "Filter"
+
+#. Translators: VeSync purifier warning: remaining filter life low (in
+#. percent). Replace the filter soon.
+#: change_detection.py:668
+msgid "Filter bald wechseln, Restlebensdauer {percent} Prozent"
+msgstr "Replace filter soon, remaining life {percent} percent"
+
+#. Translators: Warning banner at the top of the dialog: affected purifiers
+#. and remaining filter life. Prompt to replace the filter.
+#: device_dialog.py:1256
+msgid "Filter wechseln: {list}"
+msgstr "Replace filter: {list}"
+
+#. Translators: History detail: filter life reset.
+#: dialog_vesync.py:386 history.py:1002
+msgid "Filter zurückgesetzt"
+msgstr "Filter reset"
+
+#: dialog_help.py:175
+msgid ""
+"Filter-Lebensdauer auf 100 Prozent zurücksetzen. Nur ausführen, wenn der "
+"Filter tatsächlich gewechselt wurde. Enter öffnet einen Bestätigungs-Dialog."
+msgstr ""
+"Reset filter life to 100 percent. Only do this if the filter has actually "
+"been replaced. Enter opens a confirmation dialog."
+
+#. Translators: Action entry for the filter reset.
+#: dialog_vesync.py:694
+msgid "Filter-Lebensdauer auf 100% zurücksetzen - Enter zum Ausführen"
+msgstr "Reset filter life to 100% - press Enter to execute"
+
+#. Translators: First safety prompt before the filter reset. {name} = device
+#. name.
+#: dialog_vesync.py:333
+msgid ""
+"Filter-Lebensdauer von {name} auf 100% zurücksetzen?\n"
+"\n"
+"Diese Aktion ist nur sinnvoll, wenn Sie den HEPA-Filter tatsächlich gerade gegen einen neuen ausgetauscht haben. Ein Zurücksetzen ohne Filterwechsel führt dazu, dass das Gerät keine Filterwechsel-Erinnerung mehr anzeigt."
+msgstr ""
+"Reset filter life of {name} to 100%?\n"
+"\n"
+"This action only makes sense if you have actually just replaced the HEPA filter with a new one. Resetting without replacing the filter means the device will no longer show a filter replacement reminder."
+
+#. Translators: Title of the filter reset dialog.
+#: dialog_vesync.py:339
+msgid "Filter-Lebensdauer zurücksetzen"
+msgstr "Reset filter life"
+
+#. Translators: Announce the VeSync filter life warning.
+#: settings_panel.py:705
+msgid "Filter-Lebensdauer-Warnungen ansagen"
+msgstr "Announce filter life warnings"
+
+#: dialog_help.py:130
+msgid "Filter-Lebensdauer:"
+msgstr "Filter life:"
+
+#. Translators: Remaining filter life in the device tree.
+#: dialog_vesync.py:579
+msgid "Filter-Lebensdauer: {percent}%"
+msgstr "Filter life: {percent}%"
+
+#: vesync_devices.py:932
+msgid "Filter-Reset wird vom Gerät nicht unterstützt"
+msgstr "Filter reset is not supported by this device"
+
+#. Translators: Announcement of the selected filter.
+#: device_dialog.py:1406
+msgid "Filter: {filter}"
+msgstr "Filter: {filter}"
+
+#: dialog_help.py:251
+msgid "Filter: {percent}%"
+msgstr "Filter: {percent}%"
+
+#. Translators: Status announcement: remaining filter life.
+#: vesync_devices.py:637
+msgid "Filter: {value}%"
+msgstr "Filter: {value}%"
+
+#. Translators: Accessible name of the filter warning field at the top of the
+#. dialog.
+#: device_dialog.py:112
+msgid "Filterwarnung"
+msgstr "Filter warning"
+
+#. Translators: Firmware version of the device.
+#: dialog_cozytouch.py:571
+msgid "Firmware-Version: {version}"
+msgstr "Firmware version: {version}"
+
+#: dialog_help.py:129
+msgid "Flüchtige organische Verbindungen in der Raumluft."
+msgstr "Volatile organic compounds in the room air."
+
+#. Translators: Date format hint in the away scheduling dialog.
+#: dialog_cozytouch.py:332
+msgid "Format: TT.MM.JJJJ HH:MM (z.B. {example})"
+msgstr "Format: DD.MM.YYYY HH:MM (e.g. {example})"
+
+#. Translators: Netatmo heating mode (frost guard).
+#: constants.py:33 netatmo_api.py:408
+msgid "Frostschutz"
+msgstr "Frost guard"
+
+#: dialog_netatmo.py:446
+msgid "Frostschutz – Minimaltemperatur"
+msgstr "Frost guard – minimum temperature"
+
+#: device_dialog.py:2028 device_dialog.py:2049
+msgid "Gateways"
+msgstr "Gateways"
+
+#. Detailed help text for screen readers Translators: Help text in the custom
+#. RGB values dialog.
+#: dialog_meross.py:247
+msgid ""
+"Geben Sie RGB-Werte ein (Rot, Grün, Blau).\n"
+"Format: R,G,B (Beispiele: 255,0,0 für Rot, 0,255,0 für Grün)\n"
+"Jeder Wert muss zwischen 0 und 255 liegen.\n"
+"0 = keine Farbe, 255 = volle Intensität"
+msgstr ""
+"Enter RGB values (red, green, blue).\n"
+"Format: R,G,B (examples: 255,0,0 for red, 0,255,0 for green)\n"
+"Each value must be between 0 and 255.\n"
+"0 = no color, 255 = full intensity"
+
+#. Detailed help text for screen readers Translators: Help texts in the
+#. brightness dialog.
+#: device_dialog.py:2835
+msgid "Geben Sie die Helligkeit für {name} ein."
+msgstr "Enter the brightness for {name}."
+
+#. Translators: Night light state (dimmed).
+#: constants.py:100
+msgid "Gedimmt"
+msgstr "Dimmed"
+
+#. Translators: Announcement of a search hit.
+#: device_dialog.py:1465 device_dialog.py:1481
+msgid "Gefunden: {item}"
+msgstr "Found: {item}"
+
+#: dialog_meross.py:53 dialog_meross.py:146
+msgid "Gelb"
+msgstr "Yellow"
+
+#: dialog_meross.py:81
+msgid "Gelblich"
+msgstr "Yellowish"
+
+#: device_dialog.py:1068 dialog_history.py:200 dialog_history.py:207
+msgid "Gerät"
+msgstr "Device"
+
+#. Translators: Error message: action on an offline device.
+#: meross_devices.py:1413
+msgid "Gerät '{name}' ist offline oder nicht erreichbar"
+msgstr "Device '{name}' is offline or unreachable"
+
+#. Translators: Error message when a diffuser action is accidentally executed
+#. on another device type.
+#: __init__.py:1685
+msgid "Gerät ist kein Diffuser"
+msgstr "Device is not a diffuser"
+
+#. Translators: Error message: device does not respond to the switch command.
+#: meross_api.py:1426
+msgid "Gerät nicht erreichbar - antwortet nicht auf Schaltbefehl"
+msgstr "Device unreachable - not responding to switch command"
+
+#. The device was not found - probably offline or no longer connected
+#. Translators: Error message: Meross device unreachable.
+#: meross_api.py:1370
+msgid ""
+"Gerät nicht erreichbar - möglicherweise offline oder Verbindung unterbrochen"
+msgstr "Device unreachable - possibly offline or connection lost"
+
+#. Translators: Error message when a device can no longer be found in the
+#. device list via its UUID (e.g. after a reload).
+#: __init__.py:1592 __init__.py:1680
+msgid "Gerät nicht gefunden"
+msgstr "Device not found"
+
+#. Translators: Prompt and title of the device search dialog.
+#: device_dialog.py:1438
+msgid "Gerät suchen"
+msgstr "Find device"
+
+#. Translators: Error message: device type is not switchable.
+#: meross_api.py:1404
+msgid ""
+"Gerät {name} ({type}) kann nicht geschaltet werden (z.B. Hub oder Sensor)"
+msgstr "Device {name} ({type}) cannot be switched (e.g. hub or sensor)"
+
+#. Translators: Error message: device does not support diffuser functions.
+#: meross_api.py:1459
+msgid "Gerät {name} ist kein Diffuser"
+msgstr "Device {name} is not a diffuser"
+
+#. Translators: Error message: device is not a (color-capable) lamp.
+#: meross_api.py:1510
+msgid "Gerät {name} ist keine Lampe oder unterstützt keine Farbsteuerung"
+msgstr "Device {name} is not a lamp or does not support color control"
+
+#. Translators: Root node label of the device tree.
+#: device_dialog.py:361 device_dialog.py:1127 device_dialog.py:1942
+msgid "Geräte"
+msgstr "Devices"
+
+#: device_dialog.py:281
+msgid "Geräte aktualisieren"
+msgstr "Refresh devices"
+
+#: device_dialog.py:275
+msgid "Geräte suchen"
+msgstr "Find devices"
+
+#. Translators: F1 help while loading.
+#: dialog_help.py:70
+msgid "Geräte werden geladen, bitte warten."
+msgstr "Loading devices, please wait."
+
+#. Translators: Error message on timeout of the Meross device query.
+#: meross_api.py:962
+msgid ""
+"Geräte-Abfrage dauert zu lange - möglicherweise sind zu viele Geräte offline"
+msgstr ""
+"Device query is taking too long - possibly too many devices are offline"
+
+#. Translators: Name of the second tab in the device dialog.
+#: device_dialog.py:222 device_dialog.py:232 dialog_favorites.py:162
+msgid "Geräte-Favoriten"
+msgstr "Device favorites"
+
+#: dialog_favorites.py:403
+msgid "Geräte-Favoriten - Tastaturkürzel: "
+msgstr "Device favorites - keyboard shortcuts: "
+
+#: device_dialog.py:190
+msgid "Geräteliste"
+msgstr "Device list"
+
+#. Translators: Tooltip for the filter control.
+#: device_dialog.py:153
+msgid "Geräteliste nach Typ oder Status filtern"
+msgstr "Filter device list by type or status"
+
+#: history.py:800
+msgid "Gerätename"
+msgstr "Device name"
+
+#. Translators: Prompt and title of the device search dialog.
+#: device_dialog.py:1438
+msgid "Gerätename eingeben:"
+msgstr "Enter device name:"
+
+#: dialog_help.py:107
+msgid "Gerätestatus. Wird automatisch aktualisiert."
+msgstr "Device status. Updates automatically."
+
+#. Translators: Window title of the history dialog.
+#: dialog_history.py:74
+msgid "Geräteverlauf"
+msgstr "Device history"
+
+#. Translators: Tooltip for the rated capacity field.
+#: settings_panel.py:566
+msgid ""
+"Gesamt-Nennkapazität des Speichers in Litern (z. B. 300). Wird genutzt, um "
+"aus dem prozentualen Warmwasservorrat eine ungefähre Litermenge zu schätzen."
+" 0 = keine Liter-Anzeige."
+msgstr ""
+"Total rated tank capacity in liters (e.g. 300). Used to estimate an "
+"approximate liter amount from the hot water percentage. 0 = no liter "
+"display."
+
+#: dialog_meross.py:51 dialog_meross.py:144
+msgid "Grün"
+msgstr "Green"
+
+#. Translators: Validation error for the green value.
+#: dialog_meross.py:290
+msgid "Grün {value} ungültig (0–255)"
+msgstr "Green {value} invalid (0–255)"
+
+#: dialog_meross.py:77
+msgid "Grünlich"
+msgstr "Greenish"
+
+#. Translators: Valid range of the temperature input.
+#: dialog_netatmo.py:51
+msgid "Gültig: 5 bis 30 Grad in 0,5°C-Schritten.\n"
+msgstr "Valid: 5 to 30 degrees in 0.5°C steps.\n"
+
+#: vesync_devices.py:612
+msgid "Haustier"
+msgstr "Pet"
+
+#. Translators: Operating mode of a VeSync air purifier (for pets).
+#: constants.py:67
+msgid "Haustier-Modus"
+msgstr "Pet mode"
+
+#: netatmo_api.py:262
+msgid "Heizkörperventil"
+msgstr "Radiator valve"
+
+#. Translators: Help text in the heating mode dialog. {name} = device name.
+#: dialog_netatmo.py:452
+msgid "Heizmodus für {name} wählen.\n"
+msgstr "Choose heating mode for {name}.\n"
+
+#. Translators: Title of the heating mode dialog.
+#: dialog_netatmo.py:463
+msgid "Heizmodus wählen"
+msgstr "Choose heating mode"
+
+#: dialog_help.py:151
+msgid ""
+"Heizmodus wählen: Zeitplan, Abwesend oder Frostschutz. Enter zum Ändern."
+msgstr ""
+"Choose heating mode: schedule, away or frost guard. Press Enter to change."
+
+#. Translators: Announce Cozytouch heating mode changes.
+#: settings_panel.py:726
+msgid "Heizmodus-Wechsel ansagen (Manuell / Eco+ / Programm)"
+msgstr "Announce heating mode changes (manual / Eco+ / program)"
+
+#. Translators: Announce Netatmo heating mode changes.
+#: settings_panel.py:660
+msgid "Heizmodus-Wechsel ansagen (Zeitplan / Abwesend / Frostschutz)"
+msgstr "Announce heating mode changes (schedule / away / frost guard)"
+
+#. Translators: Netatmo thermostat announcement: new heating mode (e.g.
+#. schedule, manual, away).
+#: change_detection.py:291
+msgid "Heizmodus: {mode}"
+msgstr "Heating mode: {mode}"
+
+#. Translators: Combined info+action label in the device tree.
+#: device_dialog.py:2487 device_dialog.py:713 dialog_netatmo.py:710
+#: dialog_netatmo.py:936 dialog_netatmo.py:490
+msgid "Heizmodus: {mode} - Enter zum Ändern"
+msgstr "Heating mode: {mode} - press Enter to change"
+
+#. Translators: Hint text above the heating schedule selection. {name}=device
+#. name, {count}=number of available schedules.
+#: dialog_netatmo.py:565
+msgid ""
+"Heizprogramm für {name} wählen.\n"
+"{count} Programme verfügbar."
+msgstr ""
+"Choose heating schedule for {name}.\n"
+"{count} schedules available."
+
+#: history.py:978
+msgid "Heizprogramm gewechselt"
+msgstr "Heating schedule switched"
+
+#. Switch the heating schedule (with the active schedule name)
+#: device_dialog.py:2492 dialog_netatmo.py:721 dialog_netatmo.py:945
+#: dialog_netatmo.py:569
+msgid "Heizprogramm wechseln"
+msgstr "Switch heating schedule"
+
+#: dialog_help.py:153
+msgid ""
+"Heizprogramm wechseln. Enter zum Auswählen eines gespeicherten Heizplans."
+msgstr "Switch heating schedule. Press Enter to select a saved heating plan."
+
+#: device_dialog.py:2500
+msgid "Heizprogramm: {name} - Enter zum Wechseln"
+msgstr "Heating schedule: {name} - press Enter to switch"
+
+#. Translators: Combined info+action label in the device tree.
+#: dialog_netatmo.py:718 dialog_netatmo.py:949
+msgid "Heizprogramm: {schedule} - Enter zum Wechseln"
+msgstr "Heating schedule: {schedule} - press Enter to switch"
+
+#. Translators: Netatmo thermostat announcement: the boiler is currently
+#. heating.
+#: change_detection.py:324
+msgid "Heizung aktiv"
+msgstr "Heating active"
+
+#. Translators: Netatmo thermostat announcement: the boiler is currently
+#. heating.
+#: change_detection.py:324
+msgid "Heizung aus"
+msgstr "Heating off"
+
+#. Netatmo: heating status (boiler)
+#: device_dialog.py:846 dialog_help.py:88
+msgid "Heizung:"
+msgstr "Heating:"
+
+#. Translators: Boiler status in the device tree.
+#: device_dialog.py:849 device_dialog.py:2448 dialog_netatmo.py:661
+#: dialog_netatmo.py:884 netatmo_api.py:343
+msgid "Heizung: aktiv"
+msgstr "Heating: active"
+
+#. Translators: Boiler status in the device tree.
+#: device_dialog.py:849 device_dialog.py:2448 dialog_netatmo.py:661
+#: dialog_netatmo.py:884 netatmo_api.py:343
+msgid "Heizung: aus"
+msgstr "Heating: off"
+
+#: device_dialog.py:1768 dialog_help.py:299 dialog_help.py:326
+msgid "Heizung: {status}"
+msgstr "Heating: {status}"
+
+#. Translators: Announce Netatmo heating start/stop.
+#: settings_panel.py:668
+msgid "Heizungsstart und -stopp ansagen (Boiler-Status)"
+msgstr "Announce heating start and stop (boiler status)"
+
+#: dialog_help.py:102
+msgid "Heizzeiten heute:"
+msgstr "Today's heating times:"
+
+#. Translators: Today's heating time windows. {schedule} = window text.
+#: dialog_cozytouch.py:459
+msgid "Heizzeiten heute: {schedule}"
+msgstr "Today's heating times: {schedule}"
+
+#: dialog_meross.py:146
+msgid "Helles Gelb"
+msgstr "Bright yellow"
+
+#: dialog_meross.py:149
+msgid "Helles Pink"
+msgstr "Bright pink"
+
+#: dialog_meross.py:150
+msgid "Helles Türkis"
+msgstr "Bright turquoise"
+
+#: device_dialog.py:2359
+msgid "Helligkeit einstellen - Enter zum Öffnen"
+msgstr "Set brightness - press Enter to open"
+
+#: dialog_help.py:143
+msgid ""
+"Helligkeit einstellen. Enter zum Öffnen des Eingabedialogs. Wert von 0 bis "
+"100 Prozent."
+msgstr ""
+"Set brightness. Press Enter to open the input dialog. Value from 0 to 100 "
+"percent."
+
+#. Translators: Title of the brightness dialog.
+#: device_dialog.py:2844
+msgid "Helligkeit für {name}"
+msgstr "Brightness for {name}"
+
+#. Meross light actions (keys as logged in dialog_meross.py/device_dialog.py)
+#: history.py:981
+msgid "Helligkeit geändert"
+msgstr "Brightness changed"
+
+#. Translators: Error message for an invalid brightness value.
+#: meross_api.py:1559
+msgid "Helligkeit muss zwischen 0 und 100 liegen"
+msgstr "Brightness must be between 0 and 100"
+
+#. Brightness line (as info, not as an action)
+#: device_dialog.py:825
+msgid "Helligkeit:"
+msgstr "Brightness:"
+
+#. Translators: History detail: brightness that was set.
+#: device_dialog.py:829 device_dialog.py:2876
+msgid "Helligkeit: {value}%"
+msgstr "Brightness: {value}%"
+
+#: device_dialog.py:2357 device_dialog.py:698
+msgid "Helligkeit: {value}% - Enter zum Ändern"
+msgstr "Brightness: {value}% - press Enter to change"
+
+#. Translators: Explanatory text at the top of the notifications tab.
+#: settings_panel.py:599
+msgid ""
+"Hier legen Sie fest, über welche externen Änderungen NVDA Sie informieren soll. Die Auswahl gilt für alle Geräte der jeweiligen Plattform.\n"
+"Hinweis: Aktiv sichtbar sind nur Sektionen für Plattformen, die im Tab \"Allgemein\" eingeschaltet sind."
+msgstr ""
+"Here you define which external changes NVDA should inform you about. The selection applies to all devices of the respective platform.\n"
+"Note: only sections for platforms enabled in the \"General\" tab are visible."
+
+#. Note Translators: Hint text in the General tab.
+#: settings_panel.py:225
+msgid ""
+"Hinweis: Sie können Meross, Netatmo, VeSync und Cozytouch einzeln oder kombiniert verwenden.\n"
+"Deaktivierte Plattformen werden beim Login übersprungen.\n"
+"Ein erfolgreicher Verbindungstest im jeweiligen Tab aktiviert die Plattform automatisch."
+msgstr ""
+"Note: you can use Meross, Netatmo, VeSync and Cozytouch individually or in combination.\n"
+"Disabled platforms are skipped during login.\n"
+"A successful connection test in the respective tab enables the platform automatically."
+
+#. Translators: Fan level label (highest level).
+#: constants.py:131
+msgid "Hoch"
+msgstr "High"
+
+#. Translators: Error message for missing Netatmo IDs.
+#: dialog_netatmo.py:251
+msgid "Home- oder Raum-ID fehlt"
+msgstr "Home or room ID missing"
+
+#: device_dialog.py:1979 device_dialog.py:1990
+msgid "Hubs"
+msgstr "Hubs"
+
+#: device_dialog.py:1113
+msgid "Interner Verbindungsfehler - bitte erneut versuchen"
+msgstr "Internal connection error - please try again"
+
+#. Translators: Short names of the light colors (for announcement/history).
+#: device_dialog.py:2768 dialog_meross.py:61
+msgid "Kaltweiß"
+msgstr "Cool white"
+
+#: device_dialog.py:2729
+msgid "Kaltweiß - helles, bläuliches Licht für Konzentration (ca. 6500K)"
+msgstr "Cool white - bright, bluish light for concentration (approx. 6500K)"
+
+#: dialog_help.py:198
+msgid "Kanal: {name}"
+msgstr "Channel: {name}"
+
+#: dialog_help.py:368
+msgid "Kanäle aufklappen für einzelne Steuerung"
+msgstr "Expand channels for individual control"
+
+#. Translators: Message when the chosen category number does not exist.
+#: device_dialog.py:1516
+msgid "Kategorie {number} nicht vorhanden"
+msgstr "Category {number} does not exist"
+
+#. Translators: Announcement when jumping to a category via a number key.
+#: device_dialog.py:1508
+msgid "Kategorie {number}: {name}"
+msgstr "Category {number}: {name}"
+
+#. Category Translators: F1 help for a category node.
+#: dialog_help.py:67
+msgid "Kategorie. Enter zum Auf- oder Zuklappen. Pfeil rechts zum Öffnen."
+msgstr "Category. Press Enter to expand or collapse. Right arrow to open."
+
+#. Translators: Message when no tree entry is selected.
+#: dialog_favorites.py:62 dialog_favorites.py:423
+msgid "Kein Gerät ausgewählt"
+msgstr "No device selected"
+
+#. Translators: Message when the entry belongs to no device.
+#: dialog_favorites.py:82 dialog_favorites.py:441
+msgid "Kein Gerät unter Auswahl"
+msgstr "No device under selection"
+
+#. Translators: Announced when the status line is empty.
+#: device_dialog.py:1223
+msgid "Kein Status verfügbar"
+msgstr "No status available"
+
+#: dialog_help.py:348
+msgid "Kein Wasser erkannt"
+msgstr "No water detected"
+
+#. Translators: Error message when the browser callback does not return within
+#. the timeout (e.g. browser window closed by the user).
+#: netatmo_api.py:671
+msgid ""
+"Keine Antwort von Netatmo erhalten. Zeitüberschreitung oder Browser-Fenster "
+"geschlossen."
+msgstr "No response received from Netatmo. Timeout or browser window closed."
+
+#. Translators: Message when a selection list has no options.
+#: dialog_cozytouch.py:44 dialog_vesync.py:66
+msgid "Keine Auswahl verfügbar"
+msgstr "No selection available"
+
+#. Translators: Announced when a device currently provides no sensor/status
+#. data.
+#: __init__.py:1329 history.py:944
+msgid "Keine Daten"
+msgstr "No data"
+
+#. Translators: Announced when the login succeeded but there are no devices in
+#. the account.
+#: __init__.py:861 __init__.py:1281 device_dialog.py:2136
+msgid "Keine Geräte gefunden"
+msgstr "No devices found"
+
+#. Translators: Status line text when no devices have been loaded yet.
+#: device_dialog.py:1602
+msgid "Keine Geräte geladen"
+msgstr "No devices loaded"
+
+#. Translators: When the Netatmo cloud returns no heating schedules.
+#: dialog_netatmo.py:546
+msgid "Keine Heizprogramme gefunden"
+msgstr "No heating schedules found"
+
+#: device_dialog.py:1086
+msgid "Keine Internetverbindung - DNS-Auflösung fehlgeschlagen"
+msgstr "No internet connection - DNS resolution failed"
+
+#: device_dialog.py:1105
+msgid "Keine Internetverbindung - Server antwortet nicht"
+msgstr "No internet connection - server not responding"
+
+#: device_dialog.py:1094
+msgid "Keine Internetverbindung - Server nicht erreichbar"
+msgstr "No internet connection - server unreachable"
+
+#. Translators: Message when the device has no selectable fan levels.
+#: dialog_vesync.py:133
+msgid "Keine Lüftergeschwindigkeit verfügbar"
+msgstr "No fan speed available"
+
+#. Translators: Error message when VeSync was enabled but neither a token nor
+#. email/password are configured.
+#: __init__.py:731
+msgid "Keine VeSync-Zugangsdaten konfiguriert"
+msgstr "No VeSync credentials configured"
+
+#. Translators: Status announcement: child lock is active.
+#: vesync_devices.py:640
+msgid "Kindersicherung aktiv"
+msgstr "Child lock active"
+
+#: change_detection.py:616
+msgid "Kindersicherung aus"
+msgstr "Child lock off"
+
+#: history.py:1001
+msgid "Kindersicherung ausgeschaltet"
+msgstr "Child lock switched off"
+
+#. Translators: VeSync announcement: the child lock locks the buttons.
+#: change_detection.py:615
+msgid "Kindersicherung ein"
+msgstr "Child lock on"
+
+#: dialog_help.py:169
+msgid ""
+"Kindersicherung ein- oder ausschalten. Sperrt die Bedienung am Gerät. Enter "
+"oder Leertaste zum Umschalten."
+msgstr ""
+"Turn child lock on or off. Locks the controls on the device. Press Enter or "
+"Space to toggle."
+
+#: history.py:1000
+msgid "Kindersicherung eingeschaltet"
+msgstr "Child lock switched on"
+
+#: vesync_devices.py:875
+msgid "Kindersicherung wird vom Gerät nicht unterstützt"
+msgstr "Child lock is not supported by this device"
+
+#. Translators: History detail: child lock switched on/off.
+#: dialog_vesync.py:252
+msgid "Kindersicherung {status}"
+msgstr "Child lock {status}"
+
+#: dialog_vesync.py:687
+msgid "Kindersicherung: aus - Enter zum Einschalten"
+msgstr "Child lock: off - press Enter to turn on"
+
+#. Translators: Combined info+action label in the device tree.
+#: dialog_vesync.py:686
+msgid "Kindersicherung: ein - Enter zum Ausschalten"
+msgstr "Child lock: on - press Enter to turn off"
+
+#: netatmo_api.py:399 netatmo_api.py:400
+msgid "Komfort"
+msgstr "Comfort"
+
+#: netatmo_api.py:401 netatmo_api.py:402 netatmo_api.py:403 netatmo_api.py:404
+msgid "Komfort+"
+msgstr "Comfort+"
+
+#: dialog_meross.py:145
+msgid "Kräftiges Blau"
+msgstr "Strong blue"
+
+#: dialog_meross.py:144
+msgid "Kräftiges Grün"
+msgstr "Strong green"
+
+#: dialog_meross.py:143
+msgid "Kräftiges Rot"
+msgstr "Strong red"
+
+#: settings_panel.py:1048
+msgid "Lade Cozytouch-Geräte..."
+msgstr "Loading Cozytouch devices..."
+
+#. Translators: Placeholder entry while the device list is loading.
+#: __init__.py:1227 device_dialog.py:363 device_dialog.py:373
+#: device_dialog.py:255 device_dialog.py:508 settings_panel.py:774
+msgid "Lade Geräte..."
+msgstr "Loading devices..."
+
+#. Load the available heating schedules asynchronously (UI stays responsive).
+#. Translators: Announcement while the heating schedules are loaded from the
+#. cloud.
+#: dialog_netatmo.py:523
+msgid "Lade Heizprogramme..."
+msgstr "Loading heating schedules..."
+
+#: settings_panel.py:983
+msgid "Lade VeSync-Geräte..."
+msgstr "Loading VeSync devices..."
+
+#. Translators: Short loading announcement on a filter/sort change.
+#: device_dialog.py:1397 device_dialog.py:1415
+msgid "Lade..."
+msgstr "Loading..."
+
+#. Translators: F1 help on a loading error.
+#: dialog_help.py:73
+msgid "Ladefehler – F5 zum Wiederholen."
+msgstr "Loading error – press F5 to retry."
+
+#. Translators: Error message: lamp unreachable.
+#: meross_api.py:1503
+msgid "Lampe nicht erreichbar - möglicherweise offline"
+msgstr "Lamp unreachable - possibly offline"
+
+#: device_dialog.py:1975 device_dialog.py:1994
+msgid "Lampen und LED-Strips"
+msgstr "Lamps and LED strips"
+
+#: device_dialog.py:1749
+msgid "Lautstärke: {noise} dB"
+msgstr "Noise level: {noise} dB"
+
+#. Translators: Auto mode profile of a VeSync air purifier.
+#: constants.py:110
+msgid "Leise"
+msgstr "Quiet"
+
+#. Power line
+#: device_dialog.py:788 dialog_help.py:108
+msgid "Leistung:"
+msgstr "Power:"
+
+#: device_dialog.py:1847 dialog_help.py:203 dialog_help.py:374
+msgid "Leistung: {power} W"
+msgstr "Power: {power} W"
+
+#: device_dialog.py:792 device_dialog.py:2268
+msgid "Leistung: {value} W"
+msgstr "Power: {value} W"
+
+#: dialog_history.py:138
+msgid "Letzte 24 Stunden"
+msgstr "Last 24 hours"
+
+#: dialog_history.py:139
+msgid "Letzte 30 Tage"
+msgstr "Last 30 days"
+
+#: dialog_history.py:139
+msgid "Letzte 7 Tage"
+msgstr "Last 7 days"
+
+#: dialog_history.py:138
+msgid "Letzte Stunde"
+msgstr "Last hour"
+
+#: device_dialog.py:2376
+msgid "Lichtfarbe (Weiß) einstellen - Enter zum Öffnen"
+msgstr "Set light color (white) - press Enter to open"
+
+#: dialog_help.py:145
+msgid ""
+"Lichtfarbe einstellen. Enter zum Auswählen zwischen Warmweiß, Tageslicht und"
+" Kaltweiß."
+msgstr ""
+"Set light color. Press Enter to choose between warm white, daylight and cool"
+" white."
+
+#: history.py:982
+msgid "Lichtfarbe geändert"
+msgstr "Light color changed"
+
+#: device_dialog.py:2374
+msgid "Lichtfarbe: Kaltweiß (hell) - Enter zum Ändern"
+msgstr "Light color: cool white (bright) - press Enter to change"
+
+#: device_dialog.py:2372
+msgid "Lichtfarbe: Tageslicht (neutral) - Enter zum Ändern"
+msgstr "Light color: daylight (neutral) - press Enter to change"
+
+#: device_dialog.py:2370
+msgid "Lichtfarbe: Warmweiß (gemütlich) - Enter zum Ändern"
+msgstr "Light color: warm white (cozy) - press Enter to change"
+
+#: dialog_meross.py:55 dialog_meross.py:148
+msgid "Lila"
+msgstr "Purple"
+
+#: history.py:803
+msgid "Luftdruck (mbar)"
+msgstr "Air pressure (mbar)"
+
+#: dialog_help.py:118
+msgid "Luftdruck:"
+msgstr "Air pressure:"
+
+#: device_dialog.py:1751 dialog_help.py:283
+msgid "Luftdruck: {pressure} mbar"
+msgstr "Air pressure: {pressure} mbar"
+
+#: history.py:802
+msgid "Luftfeuchtigkeit (%)"
+msgstr "Humidity (%)"
+
+#. Humidity line
+#: device_dialog.py:818 dialog_help.py:86
+msgid "Luftfeuchtigkeit:"
+msgstr "Humidity:"
+
+#: device_dialog.py:1745 device_dialog.py:1793 dialog_help.py:277
+#: dialog_help.py:344
+msgid "Luftfeuchtigkeit: {humidity}%"
+msgstr "Humidity: {humidity}%"
+
+#: device_dialog.py:822
+msgid "Luftfeuchtigkeit: {value:g}%"
+msgstr "Humidity: {value:g}%"
+
+#. Translators: VeSync purifier announcement: new air quality level
+#. (excellent/good/moderate/poor).
+#: change_detection.py:654
+msgid "Luftqualität {level}"
+msgstr "Air quality {level}"
+
+#: dialog_help.py:120
+msgid "Luftqualität:"
+msgstr "Air quality:"
+
+#. Translators: Status announcement: air quality level.
+#: vesync_devices.py:626
+msgid "Luftqualität: {level}"
+msgstr "Air quality: {level}"
+
+#. Translators: Air quality in percent in the device tree.
+#: dialog_vesync.py:572
+msgid "Luftqualität: {percent}%"
+msgstr "Air quality: {percent}%"
+
+#. Translators: Air quality rating in the device tree.
+#: dialog_help.py:247 dialog_vesync.py:563
+msgid "Luftqualität: {value}"
+msgstr "Air quality: {value}"
+
+#: dialog_help.py:121
+msgid ""
+"Luftqualitäts-Einstufung des Luftreinigers von ausgezeichnet bis schlecht. "
+"Wird automatisch aktualisiert."
+msgstr ""
+"Air quality rating of the purifier from excellent to poor. Updates "
+"automatically."
+
+#. Translators: Announce VeSync air quality changes.
+#: settings_panel.py:701
+msgid "Luftqualitäts-Änderungen ansagen (Luftreiniger)"
+msgstr "Announce air quality changes (air purifiers)"
+
+#: device_dialog.py:2092 device_dialog.py:2099
+msgid "Luftreiniger"
+msgstr "Air purifiers"
+
+#. Disable the button and change its text Translators: Temporary label of the
+#. refresh button while loading.
+#: device_dialog.py:2923
+msgid "Lädt..."
+msgstr "Loading..."
+
+#. Translators: Validation error for the country code (must be 2 letters).
+#: settings_panel.py:965
+msgid "Ländercode muss zwei Buchstaben haben (z. B. DE)"
+msgstr "Country code must be two letters (e.g. DE)"
+
+#. VeSync-specific actions
+#: history.py:991
+msgid "Lüftergeschwindigkeit geändert"
+msgstr "Fan speed changed"
+
+#: dialog_help.py:161
+msgid ""
+"Lüftergeschwindigkeit ändern. Enter öffnet eine Auswahlliste der verfügbaren"
+" Stufen. Wechsel auf eine Stufe schaltet automatisch in den Manuell-Modus."
+msgstr ""
+"Change fan speed. Enter opens a list of available levels. Selecting a level "
+"automatically switches to manual mode."
+
+#. Translators: Announce VeSync fan level changes.
+#: settings_panel.py:697
+msgid "Lüftergeschwindigkeit-Änderungen ansagen"
+msgstr "Announce fan speed changes"
+
+#. Translators: Note that the fan level is currently controlled automatically.
+#: dialog_vesync.py:613
+msgid "Lüftergeschwindigkeit: automatisch geregelt - Enter zum Manuell-Setzen"
+msgstr "Fan speed: automatically controlled - press Enter to set manually"
+
+#: dialog_help.py:241
+msgid "Lüftergeschwindigkeit: {level}"
+msgstr "Fan speed: {level}"
+
+#. Translators: Combined info+action label in the device tree.
+#: dialog_vesync.py:624
+msgid "Lüftergeschwindigkeit: {level} - Enter zum Ändern"
+msgstr "Fan speed: {level} - press Enter to change"
+
+#: vesync_devices.py:836 vesync_devices.py:1187
+msgid "Lüfterstufe {level} wird nicht unterstützt"
+msgstr "Fan level {level} is not supported"
+
+#. Translators: Netatmo heating mode (manually set temperature).
+#: constants.py:29 constants.py:61 cozytouch_devices.py:73
+#: dialog_netatmo.py:293 vesync_devices.py:609
+msgid "Manuell"
+msgstr "Manual"
+
+#. Translators: Netatmo heating mode (maximum heating power).
+#: constants.py:35
+msgid "Maximum"
+msgstr "Maximum"
+
+#. Translators: Explanatory text in the Meross tab.
+#: settings_panel.py:291
+msgid ""
+"Meross Account Zugangsdaten.\n"
+"Diese werden lokal auf diesem Rechner verschlüsselt gespeichert."
+msgstr ""
+"Meross account credentials.\n"
+"These are stored encrypted locally on this computer."
+
+#: settings_panel.py:304
+msgid "Meross E-Mail-Adresse"
+msgstr "Meross email address"
+
+#. Translators: Error message for a failed Meross login.
+#: __init__.py:653 settings_panel.py:797 settings_panel.py:800
+msgid "Meross Fehler: {error}"
+msgstr "Meross error: {error}"
+
+#: settings_panel.py:313
+msgid "Meross Passwort"
+msgstr "Meross password"
+
+#. Translators: Note that the Meross connection is being established in the
+#. background.
+#: dialog_meross.py:435
+msgid "Meross wird verbunden..."
+msgstr "Connecting to Meross..."
+
+#. Translators: Announcement that ONLY the named Meross device is temporarily
+#. updated less often because its (per-device) cloud limit is reached.
+#: change_detection.py:78
+msgid ""
+"Meross {name}: Aktualisierung pausiert – Cloud-Limit dieses Geräts erreicht"
+msgstr "Meross {name}: updates paused – cloud limit of this device reached"
+
+#. Translators: Favorites group. Brand name, do not translate.
+#: dialog_favorites.py:201
+msgid "Meross-Favoriten ({count})"
+msgstr "Meross favorites ({count})"
+
+#. Translators: Platform main node. Brand name, do not translate.
+#: device_dialog.py:1968
+msgid "Meross-Geräte ({count})"
+msgstr "Meross devices ({count})"
+
+#. Translators: Error message for the deferred Meross login.
+#: dialog_meross.py:429
+msgid "Meross-Login fehlgeschlagen: {error}"
+msgstr "Meross login failed: {error}"
+
+#: settings_panel.py:322
+msgid "Meross-Verbindung testen"
+msgstr "Test Meross connection"
+
+#: settings_panel.py:1100 settings_panel.py:1101
+msgid "Meross: Bitte E-Mail eingeben"
+msgstr "Meross: please enter an email address"
+
+#: settings_panel.py:1115 settings_panel.py:1116
+msgid "Meross: Bitte Passwort eingeben"
+msgstr "Meross: please enter a password"
+
+#: __init__.py:637
+msgid "Meross: Lade Geräte..."
+msgstr "Meross: loading devices..."
+
+#: __init__.py:616
+msgid "Meross: Verbinde..."
+msgstr "Meross: connecting..."
+
+#. Translators: Success message of the Meross connection test. {count}=count.
+#: settings_panel.py:782
+msgid "Meross: Verbunden – {count} Gerät(e)"
+msgstr "Meross: connected – {count} device(s)"
+
+#: settings_panel.py:788
+msgid "Meross: {count} Gerät(e) gefunden"
+msgstr "Meross: {count} device(s) found"
+
+#. Translators: Confirmation after loading the Meross devices afterwards.
+#: dialog_meross.py:446
+msgid "Meross: {count} Gerät(e) geladen"
+msgstr "Meross: {count} device(s) loaded"
+
+#. Translators: Label of the minute selection.
+#: dialog_netatmo.py:124
+msgid "Mi&nute:"
+msgstr "Mi&nute:"
+
+#: settings_panel.py:1201
+msgid "Mindestens eine Plattform aktivieren"
+msgstr "Enable at least one platform"
+
+#. Translators: Validation error: no platform selected.
+#: settings_panel.py:1200
+msgid "Mindestens eine Plattform muss aktiv sein"
+msgstr "At least one platform must be enabled"
+
+#. Translators: Name/tooltip of the minute selection.
+#: dialog_netatmo.py:130
+msgid "Minute"
+msgstr "Minute"
+
+#: dialog_netatmo.py:131
+msgid "Minute bis wann die Temperatur gelten soll (5-Minuten-Schritte)"
+msgstr "Minute until which the temperature should apply (5-minute steps)"
+
+#. OAuth connect button Translators: Button starts the OAuth2 flow in the
+#. browser.
+#: settings_panel.py:410
+msgid "Mit Netatmo &verbinden (OAuth2)"
+msgstr "Connect to &Netatmo (OAuth2)"
+
+#: settings_panel.py:411
+msgid "Mit Netatmo verbinden"
+msgstr "Connect to Netatmo"
+
+#. Translators: Usage hint in the color picker dialog.
+#: dialog_meross.py:196
+msgid ""
+"Mit Pfeiltasten navigieren, Enter zum Bestätigen, Escape zum Abbrechen."
+msgstr "Navigate with arrow keys, Enter to confirm, Escape to cancel."
+
+#. Translators: Usage hint in the light color dialog.
+#: device_dialog.py:2744
+msgid "Mit Pfeiltasten navigieren, Enter zum Bestätigen."
+msgstr "Navigate with arrow keys, Enter to confirm."
+
+#. Translators: Fan level label (middle level).
+#: constants.py:129
+msgid "Mittel"
+msgstr "Medium"
+
+#: vesync_devices.py:805 vesync_devices.py:1157
+msgid "Modus '{mode}' wird vom Gerät nicht unterstützt"
+msgstr "Mode '{mode}' is not supported by this device"
+
+#. Netatmo-specific actions (keys as logged in dialog_netatmo.py)
+#: history.py:971 history.py:977
+msgid "Modus geändert"
+msgstr "Mode changed"
+
+#. Translators: Error message when the mode change fails.
+#: dialog_cozytouch.py:144
+msgid "Modus konnte nicht gesetzt werden"
+msgstr "Mode could not be set"
+
+#. Translators: Cozytouch announcement: new heating mode.
+#: change_detection.py:783
+msgid "Modus {mode}"
+msgstr "Mode {mode}"
+
+#. Translators: Announce VeSync mode changes.
+#: settings_panel.py:693
+msgid "Modus-Wechsel ansagen (Auto / Manuell / Schlaf / ...)"
+msgstr "Announce mode changes (auto / manual / sleep / ...)"
+
+#. If a setpoint exists but no mode, it was probably set manually Translators:
+#. Status announcement: heating mode manual (no mode reported).
+#: netatmo_api.py:337
+msgid "Modus: Manuell"
+msgstr "Mode: manual"
+
+#. Translators: VeSync announcement: new mode (auto/manual/sleep/turbo).
+#: change_detection.py:536 cozytouch_devices.py:412 dialog_help.py:220
+#: dialog_help.py:239 dialog_help.py:296 netatmo_api.py:332
+#: vesync_devices.py:615 vesync_devices.py:1001
+msgid "Modus: {mode}"
+msgstr "Mode: {mode}"
+
+#. Translators: History detail: heating mode that was set.
+#: dialog_netatmo.py:486
+msgid "Modus: {mode} ({key})"
+msgstr "Mode: {mode} ({key})"
+
+#. Translators: Combined info+action label in the device tree.
+#: dialog_vesync.py:603
+msgid "Modus: {mode} - Enter zum Ändern"
+msgstr "Mode: {mode} - press Enter to change"
+
+#. Translators: Sort option: alphabetically by device name.
+#: device_dialog.py:163
+msgid "Nach Name"
+msgstr "By name"
+
+#. Translators: Sort option: by on/off or online status.
+#: device_dialog.py:167
+msgid "Nach Status"
+msgstr "By status"
+
+#. Translators: Sort option: grouped by device type.
+#: device_dialog.py:165
+msgid "Nach Typ"
+msgstr "By type"
+
+#: netatmo_api.py:405
+msgid "Nacht"
+msgstr "Night"
+
+#: history.py:993
+msgid "Nachtlicht geändert"
+msgstr "Night light changed"
+
+#: vesync_devices.py:892
+msgid "Nachtlicht wird vom Gerät nicht unterstützt"
+msgstr "Night light is not supported by this device"
+
+#. Translators: VeSync Core 200S announcement: night light mode
+#. (on/off/dimmed).
+#: change_detection.py:628
+msgid "Nachtlicht {mode}"
+msgstr "Night light {mode}"
+
+#: vesync_devices.py:894
+msgid "Nachtlicht-Modus '{mode}' wird nicht unterstützt"
+msgstr "Night light mode '{mode}' is not supported"
+
+#: dialog_help.py:171
+msgid ""
+"Nachtlicht-Modus wählen: Aus, Gedimmt oder Ein. Enter öffnet eine "
+"Auswahlliste."
+msgstr ""
+"Choose night light mode: off, dimmed or on. Enter opens a selection list."
+
+#. Translators: Status announcement: night light state.
+#: vesync_devices.py:643
+msgid "Nachtlicht: {mode}"
+msgstr "Night light: {mode}"
+
+#. Translators: Combined info+action label in the device tree.
+#: dialog_vesync.py:649
+msgid "Nachtlicht: {mode} - Enter zum Ändern"
+msgstr "Night light: {mode} - press Enter to change"
+
+#. Translators: Label for the optional rated capacity of the hot water tank.
+#: settings_panel.py:561
+msgid "Nenn&kapazität (Liter, 0 = aus):"
+msgstr "Rated &capacity (liters, 0 = off):"
+
+#: settings_panel.py:564
+msgid "Nennkapazität des Warmwasserspeichers in Liter"
+msgstr "Rated capacity of the hot water tank in liters"
+
+#. Translators: Error message when the user declines the Netatmo authorization
+#. in the browser or Netatmo returns an error.
+#: netatmo_api.py:663
+msgid "Netatmo Autorisierung abgelehnt: {error}"
+msgstr "Netatmo authorization denied: {error}"
+
+#: settings_panel.py:368
+msgid "Netatmo Client-ID"
+msgstr "Netatmo client ID"
+
+#: settings_panel.py:378
+msgid "Netatmo Client-Secret"
+msgstr "Netatmo client secret"
+
+#. Translators: Error message for a failed Netatmo login.
+#: __init__.py:691 settings_panel.py:889 settings_panel.py:941
+#: settings_panel.py:944
+msgid "Netatmo Fehler: {error}"
+msgstr "Netatmo error: {error}"
+
+#. Translators: Explanatory text in the Netatmo tab. Mentions dev.netatmo.com.
+#: settings_panel.py:353
+msgid ""
+"Netatmo OAuth2 Zugangsdaten.\n"
+"Erstellen Sie eine App auf https://dev.netatmo.com,\n"
+"geben Sie Client-ID und Secret ein und tragen Sie die unten\n"
+"angezeigte Redirect-URI in Ihrer Netatmo-App ein (exakt gleich)."
+msgstr ""
+"Netatmo OAuth2 credentials.\n"
+"Create an app at https://dev.netatmo.com,\n"
+"enter client ID and secret, and register the redirect URI\n"
+"shown below in your Netatmo app (exactly as shown)."
+
+#: settings_panel.py:387
+msgid "Netatmo Redirect-Port"
+msgstr "Netatmo redirect port"
+
+#: settings_panel.py:405
+msgid "Netatmo Redirect-URI"
+msgstr "Netatmo redirect URI"
+
+#: settings_panel.py:882
+msgid "Netatmo verbunden"
+msgstr "Netatmo connected"
+
+#. Translators: Error message when the Netatmo API is not initialized.
+#: dialog_netatmo.py:247
+msgid "Netatmo-API nicht verfügbar"
+msgstr "Netatmo API not available"
+
+#. Translators: Error message for a missing Netatmo API or home ID.
+#: dialog_netatmo.py:437 dialog_netatmo.py:516 dialog_netatmo.py:613
+msgid "Netatmo-API oder Home-ID fehlt"
+msgstr "Netatmo API or home ID missing"
+
+#. Translators: Error message: Netatmo authorization expired.
+#: netatmo_api.py:761
+msgid ""
+"Netatmo-Anmeldung ist nicht mehr gültig. Bitte in den Einstellungen erneut "
+"verbinden."
+msgstr "Netatmo login is no longer valid. Please reconnect in the settings."
+
+#. Translators: Title of the OAuth2 confirmation dialog.
+#: settings_panel.py:836
+msgid "Netatmo-Autorisierung"
+msgstr "Netatmo authorization"
+
+#. Translators: Favorites group. Brand name, do not translate.
+#: dialog_favorites.py:221
+msgid "Netatmo-Favoriten ({count})"
+msgstr "Netatmo favorites ({count})"
+
+#. Translators: Platform main node. Brand name, do not translate.
+#: device_dialog.py:2020
+msgid "Netatmo-Geräte ({count})"
+msgstr "Netatmo devices ({count})"
+
+#. Translators: Short hint for HTTP 5xx errors of the Netatmo API.
+#: netatmo_api.py:848
+msgid "Netatmo-Server vorübergehend nicht erreichbar"
+msgstr "Netatmo server temporarily unreachable"
+
+#. Transient - the tokens stay valid Translators: Error message: Netatmo
+#. server unreachable.
+#: netatmo_api.py:767
+msgid "Netatmo-Server vorübergehend nicht erreichbar (HTTP {code})"
+msgstr "Netatmo server temporarily unreachable (HTTP {code})"
+
+#. Translators: Announcement when the user cancels the OAuth2 flow.
+#: settings_panel.py:853
+msgid "Netatmo-Verbindung abgebrochen"
+msgstr "Netatmo connection cancelled"
+
+#: settings_panel.py:428
+msgid "Netatmo-Verbindung testen"
+msgstr "Test Netatmo connection"
+
+#: settings_panel.py:423
+msgid "Netatmo-Verbindungsstatus"
+msgstr "Netatmo connection status"
+
+#: settings_panel.py:1135 settings_panel.py:1136
+msgid "Netatmo: Bitte Client-ID und Secret eingeben"
+msgstr "Netatmo: please enter client ID and secret"
+
+#: __init__.py:658
+msgid "Netatmo: Verbinde..."
+msgstr "Netatmo: connecting..."
+
+#. Translators: Speech output on OAuth2 error.
+#: settings_panel.py:893
+msgid "Netatmo: Verbindung fehlgeschlagen – {error}"
+msgstr "Netatmo: connection failed – {error}"
+
+#: settings_panel.py:879
+msgid "Netatmo: Verbunden"
+msgstr "Netatmo: connected"
+
+#: settings_panel.py:934
+msgid "Netatmo: {count} Gerät(e)"
+msgstr "Netatmo: {count} device(s)"
+
+#: settings_panel.py:929
+msgid "Netatmo: {count} Gerät(e) gefunden"
+msgstr "Netatmo: {count} device(s) found"
+
+#: dialog_meross.py:151
+msgid "Neutrales Weiß"
+msgstr "Neutral white"
+
+#. Translators: Diagnostics: not logged in at all.
+#: __init__.py:1047 __init__.py:1123 __init__.py:1156 __init__.py:1202
+#: meross_api.py:614 meross_api.py:1068 meross_api.py:1358 meross_api.py:1443
+#: meross_api.py:1494 vesync_api.py:486 vesync_api.py:577 vesync_api.py:652
+msgid "Nicht angemeldet"
+msgstr "Not logged in"
+
+#: device_dialog.py:1117
+msgid "Nicht angemeldet - bitte Einstellungen prüfen"
+msgstr "Not logged in - please check settings"
+
+#. Not logged in yet - open the settings
+#: __init__.py:891
+msgid "Nicht angemeldet – öffne Einstellungen"
+msgstr "Not logged in – opening settings"
+
+#. Translators: Error message: no valid Netatmo access configured.
+#: netatmo_api.py:786
+msgid "Nicht autorisiert – bitte in Einstellungen mit Netatmo verbinden"
+msgstr "Not authorized – please connect to Netatmo in the settings"
+
+#: dialog_help.py:98
+msgid "Niedertarif"
+msgstr "Off-peak tariff"
+
+#. Translators: Note that off-peak electricity is currently used.
+#: dialog_cozytouch.py:450
+msgid "Niedertarif aktiv"
+msgstr "Off-peak tariff active"
+
+#. Translators: Fan level label (lowest level).
+#: constants.py:127
+msgid "Niedrig"
+msgstr "Low"
+
+#. Translators: Hint in the empty favorites tab.
+#: dialog_favorites.py:178
+msgid "Noch keine Favoriten – im Geräte-Tab mit Strg+B hinzufügen"
+msgstr "No favorites yet – add them in the devices tab with Ctrl+B"
+
+#. Translators: Operating mode of a VeSync fan.
+#: constants.py:72 vesync_devices.py:995
+msgid "Normal"
+msgstr "Normal"
+
+#. Translators: Filter option: only smart lamps.
+#: device_dialog.py:144
+msgid "Nur Lampen"
+msgstr "Lamps only"
+
+#. Translators: Filter option: show only offline devices.
+#: device_dialog.py:140
+msgid "Nur Offline"
+msgstr "Offline only"
+
+#. Translators: Filter option: show only online devices.
+#: device_dialog.py:138
+msgid "Nur Online"
+msgstr "Online only"
+
+#. Translators: Filter option: only sensors (temperature, water, etc.).
+#: device_dialog.py:147
+msgid "Nur Sensoren"
+msgstr "Sensors only"
+
+#. Translators: Filter option: only smart plugs.
+#: device_dialog.py:142
+msgid "Nur Steckdosen"
+msgstr "Plugs only"
+
+#. Netatmo: next schedule change
+#: device_dialog.py:866 dialog_help.py:94
+msgid "Nächste Planänderung:"
+msgstr "Next schedule change:"
+
+#: device_dialog.py:874 device_dialog.py:2472
+msgid "Nächste Planänderung: {zone} ({temp:.1f}°C) um {time}"
+msgstr "Next schedule change: {zone} ({temp:.1f}°C) at {time}"
+
+#. Translators: Next schedule change with temperature.
+#: dialog_netatmo.py:688 dialog_netatmo.py:911
+msgid "Nächste Planänderung: {zone} ({temp}°C) um {time}"
+msgstr "Next schedule change: {zone} ({temp}°C) at {time}"
+
+#. Translators: Next schedule change without temperature.
+#: device_dialog.py:876 device_dialog.py:2474 dialog_netatmo.py:692
+#: dialog_netatmo.py:916
+msgid "Nächste Planänderung: {zone} um {time}"
+msgstr "Next schedule change: {zone} at {time}"
+
+#. Translators: Status announcement: next schedule change (zone, temperature,
+#. time).
+#: netatmo_api.py:365
+msgid "Nächste Änderung: {zone} ({temp:.1f}°C) um {time}"
+msgstr "Next change: {zone} ({temp:.1f}°C) at {time}"
+
+#: dialog_help.py:315
+msgid "Nächste Änderung: {zone} ({temp}°C) um {time}"
+msgstr "Next change: {zone} ({temp}°C) at {time}"
+
+#: dialog_help.py:318
+msgid "Nächste Änderung: {zone} um {time}"
+msgstr "Next change: {zone} at {time}"
+
+#. Translators: Netatmo announcement: the thermostat detected an open window
+#. (sudden temperature drop).
+#: change_detection.py:358 dialog_help.py:307
+msgid "Offenes Fenster erkannt"
+msgstr "Open window detected"
+
+#. Translators: Announce Netatmo "open window" detection.
+#: settings_panel.py:672
+msgid "Offenes Fenster erkannt ansagen"
+msgstr "Announce open window detection"
+
+#: dialog_help.py:93
+msgid ""
+"Offenes Fenster erkannt: Die Heizung wird automatisch pausiert, um "
+"Energieverschwendung zu vermeiden."
+msgstr ""
+"Open window detected: heating is paused automatically to avoid wasting "
+"energy."
+
+#. Netatmo: open window
+#: device_dialog.py:859 dialog_help.py:92
+msgid "Offenes Fenster:"
+msgstr "Open window:"
+
+#. Translators: Note about a detected open window.
+#: device_dialog.py:862 device_dialog.py:2461 dialog_netatmo.py:675
+#: dialog_netatmo.py:899
+msgid "Offenes Fenster: erkannt (Heizung pausiert)"
+msgstr "Open window: detected (heating paused)"
+
+#. Online status (inherits the hub status for untracked types like MS130)
+#: device_dialog.py:1694 device_dialog.py:2260 device_dialog.py:2298
+#: meross_devices.py:1426
+msgid "Offline"
+msgstr "Offline"
+
+#: dialog_meross.py:54 dialog_meross.py:147
+msgid "Orange"
+msgstr "Orange"
+
+#: dialog_meross.py:87
+msgid "Orange-Töne"
+msgstr "Orange tones"
+
+#: change_detection.py:587
+msgid "Oszillation aus"
+msgstr "Oscillation off"
+
+#: history.py:995
+msgid "Oszillation ausgeschaltet"
+msgstr "Oscillation switched off"
+
+#: dialog_help.py:163
+msgid ""
+"Oszillation des Tower-Ventilators ein- oder ausschalten. Enter oder "
+"Leertaste zum Umschalten."
+msgstr "Turn tower fan oscillation on or off. Press Enter or Space to toggle."
+
+#. Translators: VeSync tower fan announcement: oscillation.
+#: change_detection.py:586
+msgid "Oszillation ein"
+msgstr "Oscillation on"
+
+#: history.py:994
+msgid "Oszillation eingeschaltet"
+msgstr "Oscillation switched on"
+
+#. Translators: History detail: oscillation switched on/off.
+#: dialog_vesync.py:187
+msgid "Oszillation {status}"
+msgstr "Oscillation {status}"
+
+#. Translators: Status announcement: oscillation on/off.
+#: vesync_devices.py:1007
+msgid "Oszillation: aus"
+msgstr "Oscillation: off"
+
+#: dialog_vesync.py:658
+msgid "Oszillation: aus - Enter zum Einschalten"
+msgstr "Oscillation: off - press Enter to turn on"
+
+#. Translators: Status announcement: oscillation on/off.
+#: vesync_devices.py:1007
+msgid "Oszillation: ein"
+msgstr "Oscillation: on"
+
+#. Translators: Combined info+action label in the device tree.
+#: dialog_vesync.py:657
+msgid "Oszillation: ein - Enter zum Ausschalten"
+msgstr "Oscillation: on - press Enter to turn off"
+
+#: dialog_help.py:255
+msgid "Oszillation: {status}"
+msgstr "Oscillation: {status}"
+
+#. Translators: Status announcement: particulate matter PM2.5.
+#: vesync_devices.py:629
+msgid "PM2.5: {value} Mikrogramm pro Kubikmeter"
+msgstr "PM2.5: {value} micrograms per cubic meter"
+
+#: settings_panel.py:1124
+msgid "Passwort zu kurz"
+msgstr "Password too short"
+
+#. Translators: Validation error for a too short password.
+#: settings_panel.py:1123
+msgid "Passwort zu kurz (min. 6 Zeichen)"
+msgstr "Password too short (min. 6 characters)"
+
+#: dialog_favorites.py:404
+msgid "Pfeiltasten: Navigation, "
+msgstr "Arrow keys: navigate, "
+
+#: dialog_meross.py:56 dialog_meross.py:149
+msgid "Pink"
+msgstr "Pink"
+
+#: dialog_history.py:207 history.py:800
+msgid "Plattform"
+msgstr "Platform"
+
+#. Translators: Error when starting the local OAuth callback server because
+#. the port is in use by another program. {port} = port number.
+#: netatmo_api.py:622
+msgid ""
+"Port {port} ist belegt. Bitte wählen Sie in den Einstellungen einen anderen "
+"Netatmo-Port (und tragen Sie ihn auch bei dev.netatmo.com ein) oder "
+"schließen Sie das blockierende Programm. ({error})"
+msgstr ""
+"Port {port} is in use. Please choose a different Netatmo port in the "
+"settings (and also register it at dev.netatmo.com) or close the blocking "
+"program. ({error})"
+
+#. Translators: Cozytouch operating mode (time program).
+#: cozytouch_devices.py:77
+msgid "Programm"
+msgstr "Program"
+
+#: dialog_help.py:147
+msgid ""
+"RGB-Farbe einstellen. Enter zum Öffnen der Farbauswahl mit Voreinstellungen "
+"oder benutzerdefinierter Eingabe."
+msgstr ""
+"Set RGB color. Press Enter to open the color picker with presets or custom "
+"input."
+
+#. Translators: Error message for invalid RGB values.
+#: meross_api.py:1545
+msgid "RGB-Werte müssen zwischen 0 und 255 liegen"
+msgstr "RGB values must be between 0 and 255"
+
+#: device_dialog.py:2029 device_dialog.py:2051
+msgid "Raumluft"
+msgstr "Indoor air"
+
+#: netatmo_api.py:264
+msgid "Raumluftmonitor"
+msgstr "Indoor air quality monitor"
+
+#. Translators: Label of the port field for the local OAuth2 callback.
+#: settings_panel.py:383
+msgid "Redirect-&Port:"
+msgstr "Redirect &port:"
+
+#: device_dialog.py:1753 dialog_help.py:286
+msgid "Regen: {rain} mm"
+msgstr "Rain: {rain} mm"
+
+#: netatmo_api.py:259
+msgid "Regenmesser"
+msgstr "Rain gauge"
+
+#. Translators: Tooltip for the sort control.
+#: device_dialog.py:173
+msgid "Reihenfolge der Geräte ändern"
+msgstr "Change device order"
+
+#: dialog_meross.py:83
+msgid "Rosa"
+msgstr "Rose"
+
+#: dialog_meross.py:50 dialog_meross.py:143
+msgid "Rot"
+msgstr "Red"
+
+#. Translators: Validation error for the red value.
+#: dialog_meross.py:287
+msgid "Rot {value} ungültig (0–255)"
+msgstr "Red {value} invalid (0–255)"
+
+#: dialog_meross.py:75
+msgid "Rötlich"
+msgstr "Reddish"
+
+#. Sort order with accessible name and help text Translators: Label for the
+#. sort selection in the device overview.
+#: device_dialog.py:158
+msgid "S&ortierung:"
+msgstr "S&ort order:"
+
+#. Translators: Description of the script in the NVDA input gestures dialog.
+#: __init__.py:1193
+msgid "Sagt den Status aller Smart Home Geräte an"
+msgstr "Announces the status of all smart home devices"
+
+#. Translators: Button for closing the dialog.
+#: dialog_history.py:178
+msgid "Sc&hließen"
+msgstr "C&lose"
+
+#: dialog_help.py:139
+msgid "Schaltaktion. Enter oder Leertaste zum Ein- oder Ausschalten."
+msgstr "Switch action. Press Enter or Space to turn on or off."
+
+#. Translators: Operating mode of a VeSync air purifier.
+#: constants.py:63 constants.py:78 vesync_devices.py:610 vesync_devices.py:998
+msgid "Schlafmodus"
+msgstr "Sleep mode"
+
+#: device_dialog.py:2327 history.py:973
+msgid "Schwach sprühen"
+msgstr "Light spray"
+
+#. Translators: Spray mode of a Meross diffuser (light).
+#: constants.py:46 meross_devices.py:903
+msgid "Schwaches Sprühen"
+msgstr "Light spray"
+
+#: dialog_help.py:345 dialog_help.py:349
+msgid "Sensor - nur Anzeige"
+msgstr "Sensor - display only"
+
+#. Translators: Title of the second safety prompt.
+#: dialog_vesync.py:364
+msgid "Sicherheitsabfrage"
+msgstr "Confirmation"
+
+#. Translators: Security error message when the OAuth2 CSRF state parameter
+#. does not match. Should only happen on attack attempts.
+#: netatmo_api.py:678
+msgid "Sicherheitsfehler: State-Parameter stimmt nicht überein (CSRF-Schutz)"
+msgstr "Security error: state parameter does not match (CSRF protection)"
+
+#. Translators: Confirmation dialog before the OAuth2 browser flow.
+#: settings_panel.py:831
+msgid ""
+"Sie werden jetzt zum Netatmo-Login im Browser weitergeleitet.\n"
+"\n"
+"Bitte melden Sie sich dort an und autorisieren Sie die App.\n"
+"Nach der Autorisierung werden Sie automatisch zurückgeleitet.\n"
+"\n"
+"Möchten Sie fortfahren?"
+msgstr ""
+"You will now be redirected to the Netatmo login in your browser.\n"
+"\n"
+"Please sign in there and authorize the app.\n"
+"After authorization you will be redirected back automatically.\n"
+"\n"
+"Do you want to continue?"
+
+#. Translators: Second safety prompt before the filter reset. {name} = device
+#. name.
+#: dialog_vesync.py:360
+msgid ""
+"Sind Sie wirklich sicher, dass Sie die Filter-Lebensdauer von {name} jetzt auf 100% zurücksetzen möchten?\n"
+"\n"
+"Diese Aktion kann nicht rückgängig gemacht werden."
+msgstr ""
+"Are you really sure you want to reset the filter life of {name} to 100% now?\n"
+"\n"
+"This action cannot be undone."
+
+#. Translators: Tooltip for the filter warning threshold field.
+#: settings_panel.py:503
+msgid ""
+"Sinkt die Filter-Restlebensdauer eines Luftreinigers auf oder unter diesen "
+"Prozentwert, erscheint im Geräte-Dialog oben eine Filterwarnung und es wird "
+"beim Unterschreiten einmal angesagt. Standard: 15."
+msgstr ""
+"If an air purifier's remaining filter life drops to or below this "
+"percentage, a filter warning appears at the top of the device dialog and is "
+"announced once when crossing the threshold. Default: 15."
+
+#. Translators: Category name in the NVDA input gestures dialog. Brand name,
+#. do not translate.
+#: __init__.py:137
+msgid "Smart Home Control"
+msgstr "Smart Home Control"
+
+#. Translators: Title of the settings dialog.
+#: settings_panel.py:39
+msgid "Smart Home Control - Einstellungen"
+msgstr "Smart Home Control - Settings"
+
+#. Translators: Title of the main window with the device overview.
+#: device_dialog.py:62 device_dialog.py:1583
+msgid "Smart Home Geräte"
+msgstr "Smart home devices"
+
+#. Translators: Window title with online counter.
+#: device_dialog.py:1590
+msgid "Smart Home Geräte ({online}/{total} online)"
+msgstr "Smart home devices ({online}/{total} online)"
+
+#. General help Translators: General F1 help with all keyboard shortcuts of
+#. the dialog.
+#: dialog_help.py:44
+msgid ""
+"Smart Home Gerätesteuerung - Tastaturkürzel: Pfeiltasten: Navigation, Enter "
+"oder Leertaste: Aktion ausführen, F5: Aktualisieren, Strg+F: Suchen, Strg+B:"
+" Favorit hinzufügen oder entfernen, Strg+H: Verlauf anzeigen, Strg+T: Status"
+" ansagen, Strg+Tab: Tab wechseln, 1-9: Zur Kategorie springen, Buchstaben: "
+"Schnellsuche, F1: Kontexthilfe, ESC: Schließen"
+msgstr ""
+"Smart home device control - keyboard shortcuts: arrow keys: navigate, Enter "
+"or Space: execute action, F5: refresh, Ctrl+F: search, Ctrl+B: add or remove"
+" favorite, Ctrl+H: show history, Ctrl+T: announce status, Ctrl+Tab: switch "
+"tab, 1-9: jump to category, letters: quick search, F1: context help, ESC: "
+"close"
+
+#: dialog_help.py:351
+msgid "Smart Hub - verwaltet Sensoren"
+msgstr "Smart hub - manages sensors"
+
+#. Translators: Action entry when no target temperature is known.
+#: dialog_netatmo.py:267
+msgid "Soll-Temperatur einstellen"
+msgstr "Set target temperature"
+
+#. Help text Translators: Help text in the thermostat dialog. {name} = device
+#. name.
+#: dialog_netatmo.py:49
+msgid "Soll-Temperatur für {name} eingeben.\n"
+msgstr "Enter target temperature for {name}.\n"
+
+#: dialog_netatmo.py:71
+msgid "Soll-Temperatur in 0,5°C-Schritten wählen"
+msgstr "Choose target temperature in 0.5°C steps"
+
+#: dialog_help.py:149
+msgid ""
+"Soll-Temperatur setzen. Enter zum Eingeben einer Temperatur von 5 bis 30 "
+"Grad in 0,5-Grad-Schritten mit optionaler Dauer."
+msgstr ""
+"Set target temperature. Press Enter to enter a temperature from 5 to 30 "
+"degrees in 0.5-degree steps with optional duration."
+
+#. Translators: Announce Netatmo target temperature changes.
+#: settings_panel.py:664
+msgid "Soll-Temperatur-Änderungen ansagen"
+msgstr "Announce target temperature changes"
+
+#. Translators: Netatmo thermostat announcement: new target temperature in °C.
+#: change_detection.py:279 change_detection.py:281
+msgid "Soll-Temperatur: {temp:.1f}°C"
+msgstr "Target temperature: {temp:.1f}°C"
+
+#. Translators: Display of the current target temperature in the device tree.
+#: device_dialog.py:1762 dialog_netatmo.py:270
+msgid "Soll-Temperatur: {temp}°C"
+msgstr "Target temperature: {temp}°C"
+
+#: dialog_help.py:294
+msgid "Soll: {temp}°C"
+msgstr "Target: {temp}°C"
+
+#. Translators: Status announcement: target temperature of a thermostat.
+#: netatmo_api.py:312
+msgid "Soll: {value:.1f}°C"
+msgstr "Target: {value:.1f}°C"
+
+#. Translators: Announcement of the selected sort order.
+#: device_dialog.py:1424
+msgid "Sortiert: {sort}"
+msgstr "Sorted: {sort}"
+
+#: device_dialog.py:171
+msgid "Sortierung"
+msgstr "Sort order"
+
+#: dialog_help.py:110
+msgid "Spannung:"
+msgstr "Voltage:"
+
+#: device_dialog.py:2272
+msgid "Spannung: {value} V"
+msgstr "Voltage: {value} V"
+
+#: device_dialog.py:1849
+msgid "Spannung: {voltage} V"
+msgstr "Voltage: {voltage} V"
+
+#: device_dialog.py:2335 history.py:975
+msgid "Sprühen aus"
+msgstr "Spray off"
+
+#: dialog_help.py:361
+msgid "Sprühmodus: {mode}"
+msgstr "Spray mode: {mode}"
+
+#. Translators: Auto mode profile of a VeSync air purifier.
+#: constants.py:106
+msgid "Standard"
+msgstr "Default"
+
+#: device_dialog.py:2331 history.py:974
+msgid "Stark sprühen"
+msgstr "Strong spray"
+
+#. Translators: Spray mode of a Meross diffuser (strong).
+#: constants.py:48 meross_devices.py:906
+msgid "Starkes Sprühen"
+msgstr "Strong spray"
+
+#. Accessible name; some screen readers use the label of the preceding
+#. StaticText, but the duplication does no harm.
+#: device_dialog.py:264 settings_panel.py:139
+msgid "Status"
+msgstr "Status"
+
+#. Status line
+#: device_dialog.py:770 device_dialog.py:903 device_dialog.py:986
+#: device_dialog.py:1018 device_dialog.py:1044 dialog_help.py:106
+msgid "Status:"
+msgstr "Status:"
+
+#. Translators: Operating state in the device tree.
+#: device_dialog.py:1837 dialog_vesync.py:547
+msgid "Status: Aus"
+msgstr "Status: off"
+
+#. Translators: Operating state in the device tree.
+#: device_dialog.py:1837 dialog_vesync.py:547
+msgid "Status: Ein"
+msgstr "Status: on"
+
+#: device_dialog.py:1800
+msgid "Status: Kein Wasser"
+msgstr "Status: no water"
+
+#: device_dialog.py:1795
+msgid "Status: Keine Daten"
+msgstr "Status: no data"
+
+#. Translators: Netatmo status display "Connected" / "Not connected".
+#: settings_panel.py:421
+msgid "Status: Nicht verbunden"
+msgstr "Status: not connected"
+
+#. Translators: Status entry in the device tree.
+#: device_dialog.py:1780 device_dialog.py:2319 device_dialog.py:1727
+#: device_dialog.py:1817 dialog_cozytouch.py:424 dialog_help.py:210
+#: dialog_help.py:231 dialog_help.py:270 dialog_help.py:337
+#: dialog_vesync.py:525
+msgid "Status: Offline"
+msgstr "Status: offline"
+
+#: device_dialog.py:1817
+msgid "Status: Online"
+msgstr "Status: online"
+
+#: device_dialog.py:1831
+msgid "Status: Unbekannt"
+msgstr "Status: unknown"
+
+#. Translators: Netatmo status display "Connected" / "Not connected".
+#: device_dialog.py:1776 settings_panel.py:421 settings_panel.py:880
+msgid "Status: Verbunden"
+msgstr "Status: connected"
+
+#: device_dialog.py:1800
+msgid "Status: WASSERALARM"
+msgstr "Status: WATER ALARM"
+
+#. Update the status text
+#: device_dialog.py:785 device_dialog.py:1019 device_dialog.py:2261
+#: device_dialog.py:2301 device_dialog.py:2322 device_dialog.py:782
+#: device_dialog.py:905 device_dialog.py:1046 device_dialog.py:991
+#: dialog_help.py:199 dialog_help.py:212 dialog_help.py:233 dialog_help.py:370
+msgid "Status: {status}"
+msgstr "Status: {status}"
+
+#: dialog_help.py:133
+msgid "Statusinformation. Nur zur Anzeige."
+msgstr "Status information. Display only."
+
+#: device_dialog.py:1974 device_dialog.py:1992
+msgid "Steckdosen"
+msgstr "Plugs"
+
+#. Translators: Hint at the top of the favorites tab about keyboard usage.
+#: device_dialog.py:211
+msgid "Strg+B auf einem Gerät im Geräte-Tab: Favorit hinzufügen/entfernen"
+msgstr "Ctrl+B on a device in the devices tab: add/remove favorite"
+
+#: dialog_favorites.py:406
+msgid "Strg+B: Favorit entfernen, "
+msgstr "Ctrl+B: remove favorite, "
+
+#: dialog_favorites.py:408
+msgid "Strg+H: Verlauf anzeigen, "
+msgstr "Ctrl+H: show history, "
+
+#: dialog_favorites.py:410
+msgid "Strg+T: Status ansagen, "
+msgstr "Ctrl+T: announce status, "
+
+#: dialog_favorites.py:409
+msgid "Strg+Tab: Zum Geräte-Tab wechseln, "
+msgstr "Ctrl+Tab: switch to devices tab, "
+
+#: dialog_help.py:112
+msgid "Stromstärke:"
+msgstr "Amperage:"
+
+#: device_dialog.py:1851
+msgid "Stromstärke: {current} A"
+msgstr "Amperage: {current} A"
+
+#: device_dialog.py:2276
+msgid "Stromstärke: {value} A"
+msgstr "Amperage: {value} A"
+
+#. Translators: VeSync fan level announcement (e.g. "level 3").
+#: change_detection.py:566 dialog_vesync.py:147 dialog_vesync.py:166
+#: vesync_devices.py:618 vesync_devices.py:1004
+msgid "Stufe {level}"
+msgstr "Level {level}"
+
+#. Translators: VeSync fan level announcement with a descriptive name (e.g.
+#. "level 1 (low)") for models with 3 levels.
+#: change_detection.py:574
+msgid "Stufe {level} ({label})"
+msgstr "Level {level} ({label})"
+
+#. Translators: List entry of a fan level with plain-text suffix.
+#: dialog_vesync.py:141
+msgid "Stufe {level} – {label}"
+msgstr "Level {level} – {label}"
+
+#. Translators: Status announcement: device sounds muted.
+#: vesync_devices.py:1010
+msgid "Stumm"
+msgstr "Muted"
+
+#: history.py:997
+msgid "Stumm ausgeschaltet"
+msgstr "Mute switched off"
+
+#: history.py:996
+msgid "Stumm eingeschaltet"
+msgstr "Mute switched on"
+
+#: dialog_help.py:165
+msgid ""
+"Stummschaltung des Tower-Ventilators ein- oder ausschalten. Bei aktiver "
+"Stummschaltung gibt das Gerät keine Bestätigungstöne aus. Enter oder "
+"Leertaste zum Umschalten."
+msgstr ""
+"Turn tower fan mute on or off. When muted, the device does not play "
+"confirmation sounds. Press Enter or Space to toggle."
+
+#: dialog_vesync.py:667
+msgid "Stummschaltung: aus - Enter zum Einschalten"
+msgstr "Mute: off - press Enter to turn on"
+
+#. Translators: Combined info+action label in the device tree.
+#: dialog_vesync.py:666
+msgid "Stummschaltung: ein - Enter zum Ausschalten"
+msgstr "Mute: on - press Enter to turn off"
+
+#. Translators: Name/tooltip of the hour selection.
+#: dialog_netatmo.py:112
+msgid "Stunde"
+msgstr "Hour"
+
+#: dialog_netatmo.py:113
+msgid "Stunde bis wann die Temperatur gelten soll"
+msgstr "Hour until which the temperature should apply"
+
+#. Translators: Button for opening the device search (shortcut in
+#. parentheses).
+#: device_dialog.py:274
+msgid "Su&chen (Strg+F)"
+msgstr "Sear&ch (Ctrl+F)"
+
+#. Translators: Message when the search is cancelled.
+#: device_dialog.py:1445
+msgid "Suche abgebrochen"
+msgstr "Search cancelled"
+
+#. Translators: Short names of the light colors (for announcement/history).
+#: device_dialog.py:2768
+msgid "Tageslicht"
+msgstr "Daylight"
+
+#: device_dialog.py:2728
+msgid "Tageslicht - neutrales, natürliches Licht zum Arbeiten (ca. 4000K)"
+msgstr "Daylight - neutral, natural light for working (approx. 4000K)"
+
+#. Translators: Name/tooltip of the temperature selection list.
+#: dialog_netatmo.py:70 history.py:133
+msgid "Temperatur"
+msgstr "Temperature"
+
+#: history.py:802
+msgid "Temperatur (°C)"
+msgstr "Temperature (°C)"
+
+#: history.py:970
+msgid "Temperatur gesetzt"
+msgstr "Temperature set"
+
+#. Temperature line
+#: device_dialog.py:811 dialog_help.py:84
+msgid "Temperatur:"
+msgstr "Temperature:"
+
+#. Translators: Measured temperature in the device tree.
+#: device_dialog.py:1743 device_dialog.py:1791 dialog_help.py:274
+#: dialog_help.py:259 dialog_help.py:342 dialog_vesync.py:586
+msgid "Temperatur: {temp}°C"
+msgstr "Temperature: {temp}°C"
+
+#. Translators: Status announcement: measured temperature.
+#: device_dialog.py:815 vesync_devices.py:1015
+msgid "Temperatur: {value:.1f}°C"
+msgstr "Temperature: {value:.1f}°C"
+
+#: device_dialog.py:1977 device_dialog.py:1986
+msgid "Temperatursensoren"
+msgstr "Temperature sensors"
+
+#: settings_panel.py:1036
+msgid "Teste Cozytouch-Verbindung..."
+msgstr "Testing Cozytouch connection..."
+
+#. Translators: Status while the connection test is running.
+#: settings_panel.py:761
+msgid "Teste Meross Verbindung..."
+msgstr "Testing Meross connection..."
+
+#: settings_panel.py:912
+msgid "Teste Netatmo Verbindung..."
+msgstr "Testing Netatmo connection..."
+
+#: settings_panel.py:914
+msgid "Teste Netatmo..."
+msgstr "Testing Netatmo..."
+
+#: settings_panel.py:971
+msgid "Teste VeSync-Verbindung..."
+msgstr "Testing VeSync connection..."
+
+#: netatmo_api.py:261
+msgid "Thermostat"
+msgstr "Thermostat"
+
+#. Translators: Title of the thermostat dialog.
+#: dialog_netatmo.py:43
+msgid "Thermostat einstellen"
+msgstr "Set thermostat"
+
+#: netatmo_api.py:263
+msgid "Thermostat-Relay"
+msgstr "Thermostat relay"
+
+#: device_dialog.py:2027 device_dialog.py:2047
+msgid "Thermostate"
+msgstr "Thermostats"
+
+#. Translators: Status after toggling mute.
+#: change_detection.py:597 dialog_vesync.py:202
+msgid "Tonsignale ein"
+msgstr "Sounds on"
+
+#. Translators: Operating mode of a VeSync air purifier.
+#: constants.py:65 constants.py:74 vesync_devices.py:611 vesync_devices.py:996
+msgid "Turbo"
+msgstr "Turbo"
+
+#: history.py:800
+msgid "Typ"
+msgstr "Type"
+
+#: dialog_meross.py:85
+msgid "Türkis"
+msgstr "Turquoise"
+
+#. Translators: Placeholder for an unknown device name.
+#: dialog_favorites.py:212 dialog_favorites.py:232 dialog_favorites.py:252
+#: dialog_favorites.py:273 dialog_history.py:329 dialog_netatmo.py:295
+#: history.py:912 history.py:862 history.py:863 history.py:712
+#: meross_api.py:1402
+msgid "Unbekannt"
+msgstr "Unknown"
+
+#. Translators: Unknown diffuser spray mode.
+#: meross_devices.py:909
+msgid "Unbekannt ({mode})"
+msgstr "Unknown ({mode})"
+
+#. Translators: Placeholder when VeSync does not provide an error text.
+#: vesync_api.py:403 vesync_api.py:463 vesync_api.py:514
+msgid "Unbekannter Fehler"
+msgstr "Unknown error"
+
+#. Find the device name - use target_devices if available (faster!)
+#. Translators: Placeholder when the device name cannot be determined.
+#: meross_api.py:255 meross_api.py:261
+msgid "Unbekanntes Gerät"
+msgstr "Unknown device"
+
+#. Translators: Short hint for an unexpected response of the Netatmo API.
+#: netatmo_api.py:852
+msgid "Unerwartete Antwort vom Netatmo-Server"
+msgstr "Unexpected response from the Netatmo server"
+
+#. Translators: Error message for an unknown diffuser action.
+#: __init__.py:1697
+msgid "Ungültige Diffuser-Aktion: {action}"
+msgstr "Invalid diffuser action: {action}"
+
+#. Translators: Validation error for invalid email syntax.
+#: settings_panel.py:1108 settings_panel.py:1109
+msgid "Ungültige E-Mail-Adresse"
+msgstr "Invalid email address"
+
+#. Translators: Message on non-numeric temperature input.
+#: dialog_cozytouch.py:96
+msgid "Ungültige Eingabe"
+msgstr "Invalid input"
+
+#. Translators: Error message on non-numeric brightness input.
+#: device_dialog.py:2901
+msgid "Ungültige Eingabe. Erlaubt: Zahl von 0 bis 100."
+msgstr "Invalid input. Allowed: a number from 0 to 100."
+
+#. Translators: Error message on non-numeric RGB input.
+#: dialog_meross.py:306
+msgid "Ungültige Eingabe. Nur Zahlen mit Komma getrennt, z.B. 255,128,0"
+msgstr "Invalid input. Only comma-separated numbers, e.g. 255,128,0"
+
+#: vesync_devices.py:834 vesync_devices.py:1185
+msgid "Ungültige Lüfterstufe"
+msgstr "Invalid fan level"
+
+#: settings_panel.py:966
+msgid "Ungültiger Ländercode"
+msgstr "Invalid country code"
+
+#. Translators: Error message for an invalid white tone name.
+#: meross_api.py:1609
+msgid "Ungültiger Weißton '{value}'. Gültige Werte: {valid}"
+msgstr "Invalid white tone '{value}'. Valid values: {valid}"
+
+#. Translators: Error message for a brightness value out of range.
+#: device_dialog.py:2860
+msgid "Ungültiger Wert: {value}. Erlaubt: 0 bis 100."
+msgstr "Invalid value: {value}. Allowed: 0 to 100."
+
+#. Translators: Error message for a wrong RGB input format.
+#: dialog_meross.py:276
+msgid ""
+"Ungültiges Format. Drei Werte mit Komma getrennt eingeben, z.B. 255,128,0"
+msgstr "Invalid format. Enter three comma-separated values, e.g. 255,128,0"
+
+#. Translators: Error message for an invalid date/time input.
+#: dialog_cozytouch.py:361
+msgid "Ungültiges Format. Erwartet: TT.MM.JJJJ HH:MM (z.B. {example})"
+msgstr "Invalid format. Expected: DD.MM.YYYY HH:MM (e.g. {example})"
+
+#. Translators: Label of the email field for VeSync.
+#: settings_panel.py:464
+msgid "V&eSync E-Mail:"
+msgstr "V&eSync email:"
+
+#. The status code is enough - `resp.text` may contain sensitive fields and is
+#. not mirrored into the exception message.
+#: vesync_api.py:263
+msgid "VeSync API HTTP {code}"
+msgstr "VeSync API HTTP {code}"
+
+#: vesync_api.py:270
+msgid "VeSync API: Ungültige JSON-Antwort: {error}"
+msgstr "VeSync API: invalid JSON response: {error}"
+
+#. Translators: Explanatory text in the VeSync tab.
+#: settings_panel.py:452
+msgid ""
+"VeSync Account-Zugangsdaten (z. B. Levoit, Cosori, Etekcity).\n"
+"Aktuell unterstützt: Levoit Core 200S/300S/400S/500S/600S Luftreiniger und Levoit Tower-Ventilatoren.\n"
+"Daten werden lokal auf diesem Rechner verschlüsselt gespeichert."
+msgstr ""
+"VeSync account credentials (e.g. Levoit, Cosori, Etekcity).\n"
+"Currently supported: Levoit Core 200S/300S/400S/500S/600S air purifiers and Levoit tower fans.\n"
+"Data is stored encrypted locally on this computer."
+
+#. Translators: Login error when VeSync does not return an authorization code.
+#: vesync_api.py:413
+msgid "VeSync Anmeldung fehlgeschlagen: Kein authorizeCode erhalten"
+msgstr "VeSync login failed: no authorizeCode received"
+
+#. Translators: VeSync login error, with the server message as {msg}.
+#: vesync_api.py:406
+msgid "VeSync Anmeldung fehlgeschlagen: {msg}"
+msgstr "VeSync login failed: {msg}"
+
+#: settings_panel.py:467
+msgid "VeSync E-Mail-Adresse"
+msgstr "VeSync email address"
+
+#. Translators: Error message for a failed VeSync login.
+#: __init__.py:769 settings_panel.py:1011 settings_panel.py:1014
+msgid "VeSync Fehler: {error}"
+msgstr "VeSync error: {error}"
+
+#: settings_panel.py:501
+msgid "VeSync Filter-Warnschwelle in Prozent"
+msgstr "VeSync filter warning threshold in percent"
+
+#. Translators: Error while fetching the VeSync device list.
+#: vesync_api.py:516
+msgid "VeSync Geräteliste fehlgeschlagen: {msg}"
+msgstr "VeSync device list failed: {msg}"
+
+#. Translators: Error in the second step of the VeSync login.
+#: vesync_api.py:465
+msgid "VeSync Login fehlgeschlagen: {msg}"
+msgstr "VeSync login failed: {msg}"
+
+#: settings_panel.py:486
+msgid "VeSync Ländercode"
+msgstr "VeSync country code"
+
+#. Translators: Label of the password field for VeSync.
+#: settings_panel.py:472
+msgid "VeSync Pass&wort:"
+msgstr "VeSync pass&word:"
+
+#: settings_panel.py:477
+msgid "VeSync Passwort"
+msgstr "VeSync password"
+
+#. Translators: "Test VeSync connection" button.
+#: settings_panel.py:514
+msgid "VeSync Verbindung &prüfen"
+msgstr "Test VeSync &connection"
+
+#. Translators: Note that the VeSync connection is being established in the
+#. background.
+#: dialog_vesync.py:897
+msgid "VeSync wird verbunden..."
+msgstr "Connecting to VeSync..."
+
+#. Translators: Favorites group. Brand name, do not translate.
+#: dialog_favorites.py:241
+msgid "VeSync-Favoriten ({count})"
+msgstr "VeSync favorites ({count})"
+
+#. Translators: Generic VeSync error message with detail text.
+#: dialog_vesync.py:57 dialog_vesync.py:125 dialog_vesync.py:172
+#: dialog_vesync.py:193 dialog_vesync.py:213 dialog_vesync.py:237
+#: dialog_vesync.py:258 dialog_vesync.py:288 dialog_vesync.py:318
+#: dialog_vesync.py:392
+msgid "VeSync-Fehler: {error}"
+msgstr "VeSync error: {error}"
+
+#: dialog_help.py:157
+msgid ""
+"VeSync-Gerät ein- oder ausschalten. Enter oder Leertaste zum Ausführen."
+msgstr "Turn VeSync device on or off. Press Enter or Space to execute."
+
+#. Translators: Error when a VeSync action is to be executed on a device of
+#. the wrong type (e.g. a purifier action on a tower fan).
+#: vesync_api.py:840
+msgid "VeSync-Gerät hat den falschen Typ"
+msgstr "VeSync device has the wrong type"
+
+#. Translators: Error when a VeSync device can no longer be found in the API
+#. cache via its UUID.
+#: vesync_api.py:836
+msgid "VeSync-Gerät nicht gefunden"
+msgstr "VeSync device not found"
+
+#. Translators: Platform main node. Brand name, do not translate.
+#: device_dialog.py:2086
+msgid "VeSync-Geräte ({count})"
+msgstr "VeSync devices ({count})"
+
+#. Translators: Error message for the deferred VeSync login.
+#: dialog_vesync.py:891
+msgid "VeSync-Login fehlgeschlagen: {error}"
+msgstr "VeSync login failed: {error}"
+
+#: settings_panel.py:515
+msgid "VeSync-Verbindung prüfen"
+msgstr "Test VeSync connection"
+
+#: vesync_devices.py:919
+msgid "VeSync: Auto-Profil konnte nicht gesetzt werden"
+msgstr "VeSync: auto profile could not be set"
+
+#: settings_panel.py:1149 settings_panel.py:1150
+msgid "VeSync: Bitte E-Mail eingeben"
+msgstr "VeSync: please enter an email address"
+
+#: settings_panel.py:1164 settings_panel.py:1165
+msgid "VeSync: Bitte Passwort eingeben"
+msgstr "VeSync: please enter a password"
+
+#: vesync_devices.py:860 vesync_devices.py:1238
+msgid "VeSync: Display-Schaltbefehl fehlgeschlagen"
+msgstr "VeSync: display switch command failed"
+
+#: vesync_devices.py:935
+msgid "VeSync: Filter-Reset fehlgeschlagen"
+msgstr "VeSync: filter reset failed"
+
+#: vesync_devices.py:879
+msgid "VeSync: Kindersicherung konnte nicht geschaltet werden"
+msgstr "VeSync: child lock could not be toggled"
+
+#: __init__.py:733
+msgid "VeSync: Lade Geräte..."
+msgstr "VeSync: loading devices..."
+
+#: settings_panel.py:1171
+msgid "VeSync: Ländercode muss aus zwei Buchstaben bestehen"
+msgstr "VeSync: country code must be two letters"
+
+#: vesync_devices.py:841 vesync_devices.py:1192
+msgid "VeSync: Lüfterstufe {level} konnte nicht gesetzt werden"
+msgstr "VeSync: fan level {level} could not be set"
+
+#: vesync_devices.py:819 vesync_devices.py:1163
+msgid "VeSync: Modus '{mode}' konnte nicht gesetzt werden"
+msgstr "VeSync: mode '{mode}' could not be set"
+
+#: vesync_devices.py:898
+msgid "VeSync: Nachtlicht konnte nicht gesetzt werden"
+msgstr "VeSync: night light could not be set"
+
+#: vesync_devices.py:1208
+msgid "VeSync: Oszillation konnte nicht geschaltet werden"
+msgstr "VeSync: oscillation could not be toggled"
+
+#: vesync_devices.py:791 vesync_devices.py:1144
+msgid "VeSync: Schaltbefehl fehlgeschlagen"
+msgstr "VeSync: switch command failed"
+
+#: vesync_devices.py:1223
+msgid "VeSync: Stummschaltung fehlgeschlagen"
+msgstr "VeSync: mute toggle failed"
+
+#: settings_panel.py:1157 settings_panel.py:1158
+msgid "VeSync: Ungültige E-Mail-Adresse"
+msgstr "VeSync: invalid email address"
+
+#: settings_panel.py:1172
+msgid "VeSync: Ungültiger Ländercode"
+msgstr "VeSync: invalid country code"
+
+#: __init__.py:696
+msgid "VeSync: Verbinde..."
+msgstr "VeSync: connecting..."
+
+#: settings_panel.py:998
+msgid "VeSync: Verbunden – {count} Gerät(e)"
+msgstr "VeSync: connected – {count} device(s)"
+
+#: settings_panel.py:1004
+msgid "VeSync: {count} Gerät(e) gefunden"
+msgstr "VeSync: {count} device(s) found"
+
+#. Translators: Confirmation after loading the VeSync devices afterwards.
+#: dialog_vesync.py:908
+msgid "VeSync: {count} Gerät(e) geladen"
+msgstr "VeSync: {count} device(s) loaded"
+
+#: device_dialog.py:2093 device_dialog.py:2101
+msgid "Ventilatoren"
+msgstr "Fans"
+
+#: settings_panel.py:1038
+msgid "Verbinde mit Cozytouch..."
+msgstr "Connecting to Cozytouch..."
+
+#. Translators: Speech output during the connection test.
+#: settings_panel.py:764
+msgid "Verbinde mit Meross..."
+msgstr "Connecting to Meross..."
+
+#: settings_panel.py:973
+msgid "Verbinde mit VeSync..."
+msgstr "Connecting to VeSync..."
+
+#. Note: with TR_HIDE_ROOT the root's children are shown automatically,
+#. Expand(root) must NOT be called! Translators: Status line text while the
+#. connection is being established. No separate ui.message - the
+#. ui.message("Lade Geräte...") below is enough.
+#: device_dialog.py:370
+msgid "Verbinde..."
+msgstr "Connecting..."
+
+#. Test button Translators: Button for testing the Meross connection.
+#: settings_panel.py:321 settings_panel.py:427
+msgid "Verbindung &testen"
+msgstr "&Test connection"
+
+#: device_dialog.py:1101
+msgid "Verbindung unterbrochen"
+msgstr "Connection interrupted"
+
+#: dialog_help.py:131
+msgid ""
+"Verbleibende Lebensdauer des HEPA-Filters in Prozent. Bei niedrigen Werten "
+"Filter wechseln und anschließend zurücksetzen."
+msgstr ""
+"Remaining life of the HEPA filter in percent. At low values, replace the "
+"filter and then reset."
+
+#: device_dialog.py:1825 dialog_help.py:356
+msgid "Verbundene Sensoren: {count}"
+msgstr "Connected sensors: {count}"
+
+#: dialog_help.py:97
+msgid ""
+"Verfügbarer Warmwasservorrat in Prozent, optional mit Liter-Schätzung. Wird "
+"automatisch aktualisiert."
+msgstr ""
+"Available hot water supply in percent, optionally with a liter estimate. "
+"Updates automatically."
+
+#. Translators: Button for deleting the history.
+#: dialog_history.py:173
+msgid "Verlauf &löschen"
+msgstr "De&lete history"
+
+#. Translators: Message after refreshing the history list.
+#: dialog_history.py:250
+msgid "Verlauf aktualisiert"
+msgstr "History refreshed"
+
+#. Translators: Title of the file dialog for the CSV export.
+#: dialog_history.py:480
+msgid "Verlauf als CSV exportieren"
+msgstr "Export history as CSV"
+
+#. Translators: Confirmation after the CSV export of the history.
+#: dialog_history.py:508
+msgid "Verlauf exportiert nach {filename}"
+msgstr "History exported to {filename}"
+
+#. Translators: Confirmation after deleting the history.
+#: dialog_history.py:556
+msgid "Verlauf gelöscht"
+msgstr "History deleted"
+
+#. Translators: Title of the confirmation prompt.
+#: dialog_history.py:546
+msgid "Verlauf löschen"
+msgstr "Delete history"
+
+#: device_dialog.py:288
+msgid "Verlauf öffnen"
+msgstr "Open history"
+
+#. Translators: Title of the detail dialog of a history entry.
+#: dialog_history.py:418
+msgid "Verlaufseintrag Details"
+msgstr "History entry details"
+
+#. Translators: Status announcement: thermostat is pre-heating.
+#: dialog_help.py:304 netatmo_api.py:349
+msgid "Vorausheizen aktiv"
+msgstr "Pre-heating active"
+
+#. Translators: Announce Netatmo pre-heating (default: off).
+#: settings_panel.py:676
+msgid "Vorausheizen ansagen (kann häufig auftreten)"
+msgstr "Announce pre-heating (may occur frequently)"
+
+#. Translators: Netatmo announcement: pre-heating has finished.
+#: change_detection.py:349
+msgid "Vorausheizen beendet"
+msgstr "Pre-heating finished"
+
+#. Translators: Netatmo announcement: the thermostat is pre-heating for an
+#. upcoming target temperature increase.
+#: change_detection.py:345
+msgid "Vorausheizen gestartet"
+msgstr "Pre-heating started"
+
+#. Netatmo: pre-heating (anticipation)
+#: device_dialog.py:852 dialog_help.py:90
+msgid "Vorausheizen:"
+msgstr "Pre-heating:"
+
+#: dialog_help.py:91
+msgid ""
+"Vorausheizen: Die Heizung startet frühzeitig, damit die Soll-Temperatur zum "
+"geplanten Zeitpunkt bereits erreicht ist."
+msgstr ""
+"Pre-heating: the heating starts early so the target temperature is already "
+"reached at the scheduled time."
+
+#. Translators: Note that the thermostat is pre-heating.
+#: device_dialog.py:855 device_dialog.py:2455 dialog_netatmo.py:668
+#: dialog_netatmo.py:892
+msgid "Vorausheizen: aktiv"
+msgstr "Pre-heating: active"
+
+#: dialog_help.py:348
+msgid "WASSERALARM!"
+msgstr "WATER ALARM!"
+
+#. Translators: Name of the connected Wi-Fi network.
+#: dialog_cozytouch.py:566
+msgid "WLAN-Netz: {ssid}"
+msgstr "Wi-Fi network: {ssid}"
+
+#. Translators: Wi-Fi signal strength in dBm.
+#: dialog_cozytouch.py:561
+msgid "WLAN-Signal: {dbm} dBm"
+msgstr "Wi-Fi signal: {dbm} dBm"
+
+#: dialog_meross.py:147
+msgid "Warmes Orange"
+msgstr "Warm orange"
+
+#. Translators: Error message when toggling hot water production fails.
+#: __init__.py:1614 dialog_cozytouch.py:254
+msgid "Warmwasser konnte nicht umgeschaltet werden"
+msgstr "Hot water could not be toggled"
+
+#: dialog_help.py:183
+msgid ""
+"Warmwasser-Erzeugung ein- oder ausschalten. Enter oder Leertaste zum "
+"Ausführen."
+msgstr "Turn hot water production on or off. Press Enter or Space to execute."
+
+#. Translators: Device type display for a Cozytouch hot water heat pump.
+#: cozytouch_devices.py:205 cozytouch_devices.py:148
+msgid "Warmwasser-Wärmepumpe"
+msgstr "Hot water heat pump"
+
+#: device_dialog.py:2126
+msgid "Warmwasser-Wärmepumpen ({count})"
+msgstr "Hot water heat pumps ({count})"
+
+#: dialog_help.py:96
+msgid "Warmwasservorrat:"
+msgstr "Hot water supply:"
+
+#. Translators: Cozytouch status announcement: remaining hot water supply.
+#: cozytouch_devices.py:408 dialog_cozytouch.py:434
+msgid "Warmwasservorrat: {percent} Prozent"
+msgstr "Hot water supply: {percent} percent"
+
+#: dialog_help.py:215
+msgid "Warmwasservorrat: {percent}%"
+msgstr "Hot water supply: {percent}%"
+
+#. Translators: Short names of the light colors (for announcement/history).
+#: device_dialog.py:2768 dialog_meross.py:60
+msgid "Warmweiß"
+msgstr "Warm white"
+
+#: device_dialog.py:2727
+msgid "Warmweiß - gemütliches, warmes Licht wie Kerzenschein (ca. 2700K)"
+msgstr "Warm white - cozy, warm light like candlelight (approx. 2700K)"
+
+#. Translators: Meross water sensor: water was detected (alarm).
+#: __init__.py:1380
+msgid "Wasseralarm!"
+msgstr "Water alarm!"
+
+#: device_dialog.py:1978 device_dialog.py:1988
+msgid "Wassersensoren"
+msgstr "Water sensors"
+
+#: dialog_meross.py:58 dialog_meross.py:151
+msgid "Weiß"
+msgstr "White"
+
+#: dialog_meross.py:89
+msgid "Weißtöne"
+msgstr "White tones"
+
+#. Translators: Tooltip explanation of the external changes checkbox.
+#: settings_panel.py:335
+msgid ""
+"Wenn aktiviert, wird NVDA ansagen wenn ein Meross-Gerät über Alexa, die "
+"Meross App oder andere externe Quellen geschaltet wird."
+msgstr ""
+"If enabled, NVDA will announce when a Meross device is switched via Alexa, "
+"the Meross app or other external sources."
+
+#: device_dialog.py:2836
+msgid "Wert zwischen 0 (aus) und 100 (maximale Helligkeit)."
+msgstr "Value between 0 (off) and 100 (maximum brightness)."
+
+#: netatmo_api.py:256
+msgid "Wetterstation (Innen)"
+msgstr "Weather station (indoor)"
+
+#: device_dialog.py:2026 device_dialog.py:2060 device_dialog.py:2060
+#: device_dialog.py:2053
+msgid "Wetterstationen"
+msgstr "Weather stations"
+
+#: device_dialog.py:1755 dialog_help.py:289
+msgid "Wind: {wind} km/h"
+msgstr "Wind: {wind} km/h"
+
+#: netatmo_api.py:258
+msgid "Windmesser"
+msgstr "Wind gauge"
+
+#. Translators: Prompt in the auto profile dialog.
+#: dialog_vesync.py:299
+msgid "Wählen Sie das Auto-Profil:"
+msgstr "Choose the auto profile:"
+
+#. Translators: Prompt in the mode selection dialog.
+#: dialog_cozytouch.py:126 dialog_vesync.py:106
+msgid "Wählen Sie den Betriebsmodus:"
+msgstr "Choose the operating mode:"
+
+#. Translators: Prompt in the night light dialog.
+#: dialog_vesync.py:269
+msgid "Wählen Sie den Nachtlicht-Modus:"
+msgstr "Choose the night light mode:"
+
+#. Translators: Prompt in the fan level dialog.
+#: dialog_vesync.py:153
+msgid "Wählen Sie die Lüftergeschwindigkeit:"
+msgstr "Choose the fan speed:"
+
+#. Help text for the dialog Translators: Help text in the color picker dialog.
+#. {name} = device name.
+#: dialog_meross.py:189
+msgid "Wählen Sie eine Farbe für {name}.\n"
+msgstr "Choose a color for {name}.\n"
+
+#. Help text with the current value Translators: Help text in the light color
+#. dialog.
+#: device_dialog.py:2734
+msgid "Wählen Sie eine Lichtfarbe für {name}."
+msgstr "Choose a light color for {name}."
+
+#: dialog_help.py:99
+msgid "Zeigt an, dass die Wärmepumpe gerade mit Niedertarif-Strom heizt."
+msgstr ""
+"Indicates that the heat pump is currently heating with off-peak electricity."
+
+#. Translators: Tooltip of the history button.
+#: device_dialog.py:291
+msgid "Zeigt den Verlauf aller Schaltaktionen und Sensorwerte"
+msgstr "Shows the history of all switch actions and sensor readings"
+
+#: dialog_help.py:95
+msgid ""
+"Zeigt die nächste geplante Temperaturänderung aus dem Heizprogramm an: Zone,"
+" Zieltemperatur und Uhrzeit."
+msgstr ""
+"Shows the next scheduled temperature change from the heating program: zone, "
+"target temperature and time."
+
+#. Translators: Netatmo heating mode (follows the weekly schedule).
+#: constants.py:27
+msgid "Zeitplan"
+msgstr "Schedule"
+
+#. Translators: History detail: schedule reactivated.
+#: dialog_netatmo.py:629
+msgid "Zeitplan wiederhergestellt"
+msgstr "Schedule restored"
+
+#: dialog_netatmo.py:444
+msgid "Zeitplan – automatisch nach Heizprogramm"
+msgstr "Schedule – automatic according to heating program"
+
+#. Translators: Netatmo thermostat announcement: the schedule switched to a
+#. different zone (e.g. day -> night).
+#: change_detection.py:301
+msgid "Zeitplan-Zone: {zone}"
+msgstr "Schedule zone: {zone}"
+
+#: dialog_history.py:207 history.py:800
+msgid "Zeitpunkt"
+msgstr "Time"
+
+#. Translators: Help text in the away scheduling dialog.
+#: dialog_cozytouch.py:329
+msgid ""
+"Zeitraum der Abwesenheit festlegen. Während der Abwesenheit wird die "
+"Warmwasser-Erzeugung reduziert."
+msgstr ""
+"Set the absence period. During the absence, hot water production is reduced."
+
+#: device_dialog.py:1109
+msgid "Zeitüberschreitung - bitte erneut versuchen"
+msgstr "Timeout - please try again"
+
+#. Translators: Error message on a refresh timeout.
+#: device_dialog.py:2949
+msgid "Zeitüberschreitung – bitte erneut versuchen"
+msgstr "Timeout – please try again"
+
+#: dialog_help.py:177
+msgid ""
+"Zieltemperatur der Warmwasser-Wärmepumpe setzen. Enter zum Eingeben einer "
+"Temperatur innerhalb des erlaubten Bereichs."
+msgstr ""
+"Set the target temperature of the hot water heat pump. Press Enter to enter "
+"a temperature within the allowed range."
+
+#. Cozytouch-specific actions (keys as logged in dialog_cozytouch.py)
+#: history.py:985
+msgid "Zieltemperatur gesetzt"
+msgstr "Target temperature set"
+
+#. Translators: Input prompt for the target temperature. {lo}/{hi} = bounds.
+#: dialog_cozytouch.py:73
+msgid "Zieltemperatur in Grad ({lo} bis {hi}):"
+msgstr "Target temperature in degrees ({lo} to {hi}):"
+
+#. Translators: Error message when the API rejects the setting.
+#: dialog_cozytouch.py:111
+msgid "Zieltemperatur konnte nicht gesetzt werden"
+msgstr "Target temperature could not be set"
+
+#. Translators: Cozytouch announcement: new target temperature in degrees.
+#: change_detection.py:778
+msgid "Zieltemperatur {temp} Grad"
+msgstr "Target temperature {temp} degrees"
+
+#. Translators: Announce Cozytouch target temperature changes.
+#: settings_panel.py:722
+msgid "Zieltemperatur-Änderungen ansagen"
+msgstr "Announce target temperature changes"
+
+#. Translators: Cozytouch status announcement: configured target temperature.
+#: cozytouch_devices.py:397
+msgid "Zieltemperatur: {temp} Grad"
+msgstr "Target temperature: {temp} degrees"
+
+#. Translators: Combined info+action label in the device tree.
+#: dialog_cozytouch.py:475
+msgid "Zieltemperatur: {temp} Grad - Enter zum Ändern"
+msgstr "Target temperature: {temp} degrees - press Enter to change"
+
+#: dialog_help.py:218
+msgid "Zieltemperatur: {temp}°C"
+msgstr "Target temperature: {temp}°C"
+
+#. Translators: Action entry in the device tree.
+#: dialog_cozytouch.py:417 dialog_favorites.py:49 dialog_vesync.py:713
+msgid "Zu Favoriten hinzufügen - Enter"
+msgstr "Add to favorites - Enter"
+
+#. Translators: Netatmo heating mode (home).
+#: constants.py:37
+msgid "Zuhause"
+msgstr "Home"
+
+#: history.py:972
+msgid "Zurück zum Zeitplan"
+msgstr "Back to schedule"
+
+#. Translators: Action entry for returning to schedule mode.
+#: device_dialog.py:2509 dialog_netatmo.py:732 dialog_netatmo.py:960
+msgid "Zurück zum Zeitplan - Enter zum Aktivieren"
+msgstr "Back to schedule - press Enter to activate"
+
+#: dialog_help.py:155
+msgid "Zurück zum automatischen Zeitplan. Enter zum Ausführen."
+msgstr "Back to the automatic schedule. Press Enter to execute."
+
+#: netatmo_api.py:260
+msgid "Zusatz-Innenmodul"
+msgstr "Additional indoor module"
+
+#. Translators: Tooltip for the country code field.
+#: settings_panel.py:488
+msgid ""
+"Zwei-Buchstaben-Ländercode (ISO 3166-1 Alpha-2). Beispiele: DE, AT, CH, US, "
+"GB, FR. Bestimmt automatisch die VeSync-Server-Region (EU oder US)."
+msgstr ""
+"Two-letter country code (ISO 3166-1 alpha-2). Examples: DE, AT, CH, US, GB, "
+"FR. Automatically determines the VeSync server region (EU or US)."
+
+#: device_dialog.py:1769 dialog_help.py:300 dialog_help.py:327
+msgid "aktiv"
+msgstr "active"
+
+#. Translators: Cozytouch status announcement: actually targeted heating goal
+#. (incl. Eco/boost adjustment) if it differs from the target temperature.
+#: cozytouch_devices.py:403
+msgid "aktuelles Heizziel: {temp} Grad"
+msgstr "current heating target: {temp} degrees"
+
+#. Translators: Status "switched on" for smart home devices (short).
+#: __init__.py:1650 __init__.py:1598 __init__.py:1615 __init__.py:1174
+#: __init__.py:1401 change_detection.py:171 change_detection.py:518
+#: device_dialog.py:1769 dialog_cozytouch.py:214 dialog_cozytouch.py:239
+#: dialog_cozytouch.py:270 dialog_help.py:256 dialog_help.py:300
+#: dialog_help.py:327 dialog_vesync.py:500 dialog_vesync.py:43
+#: dialog_vesync.py:180 dialog_vesync.py:224 dialog_vesync.py:245
+#: dialog_vesync.py:644 vesync_devices.py:602 vesync_devices.py:989
+msgid "aus"
+msgstr "off"
+
+#. Translators: Air quality level 1 (best) of a VeSync air purifier.
+#: constants.py:84 vesync_devices.py:622
+msgid "ausgezeichnet"
+msgstr "excellent"
+
+#. Translators: Netatmo thermostat announcement: until when the manual target
+#. temperature applies (HH:MM).
+#: change_detection.py:311
+msgid "bis {time} Uhr"
+msgstr "until {time}"
+
+#. Translators: Status "switched on" for smart home devices (short).
+#: __init__.py:1650 __init__.py:1598 __init__.py:1615 __init__.py:1174
+#: __init__.py:1401 change_detection.py:171 change_detection.py:518
+#: dialog_cozytouch.py:214 dialog_cozytouch.py:239 dialog_help.py:256
+#: dialog_vesync.py:500 dialog_vesync.py:43 dialog_vesync.py:180
+#: dialog_vesync.py:224 dialog_vesync.py:245 vesync_devices.py:602
+#: vesync_devices.py:989
+msgid "ein"
+msgstr "on"
+
+#. Translators: Relative time in the history (less than 1 minute ago).
+#: history.py:916
+msgid "gerade eben"
+msgstr "just now"
+
+#. Translators: Air quality level 2 of a VeSync air purifier.
+#: constants.py:86 vesync_devices.py:622
+msgid "gut"
+msgstr "good"
+
+#. Translators: Meross water sensor: water was detected (alarm).
+#: __init__.py:1380
+msgid "kein Wasser erkannt"
+msgstr "no water detected"
+
+#. Translators: Placeholder when no devices are listed per platform.
+#: __init__.py:1318 cozytouch_devices.py:135
+msgid "keine"
+msgstr "none"
+
+#. Translators: Status announcement without data or device offline.
+#: netatmo_api.py:380
+msgid "keine Daten"
+msgstr "no data"
+
+#. Translators: Air quality level 3 of a VeSync air purifier.
+#: constants.py:88 vesync_devices.py:622
+msgid "mäßig"
+msgstr "moderate"
+
+#. Translators: Status line hint while no refresh has happened yet.
+#: device_dialog.py:1627
+msgid "noch nicht aktualisiert"
+msgstr "not yet updated"
+
+#. Translators: Announced when a device is currently unreachable.
+#: __init__.py:1331 __init__.py:1169 cozytouch_devices.py:391
+#: netatmo_api.py:380 vesync_devices.py:598 vesync_devices.py:985
+msgid "offline"
+msgstr "offline"
+
+#. Translators: Meross hub connection status.
+#: __init__.py:1396
+msgid "online"
+msgstr "online"
+
+#. Translators: Air quality level 4 (worst) of a VeSync air purifier.
+#: constants.py:90 vesync_devices.py:622
+msgid "schlecht"
+msgstr "poor"
+
+#. Translators: VeSync announcement: sounds (the device's beeps).
+#: change_detection.py:596 dialog_vesync.py:202
+msgid "stumm"
+msgstr "muted"
+
+#. Translators: Placeholder for an unknown mode.
+#: device_dialog.py:1698 dialog_vesync.py:552
+msgid "unbekannt"
+msgstr "unknown"
+
+#. Translators: History detail: scheduled away period.
+#: dialog_cozytouch.py:298
+msgid "von {start} bis {end}"
+msgstr "from {start} until {end}"
+
+#. Translators: Relative time in the history (minutes).
+#: history.py:920
+msgid "vor {count} Minute"
+msgstr "{count} minute ago"
+
+#: history.py:921
+msgid "vor {count} Minuten"
+msgstr "{count} minutes ago"
+
+#. Translators: Relative time in the history (hours).
+#: history.py:925
+msgid "vor {count} Stunde"
+msgstr "{count} hour ago"
+
+#: history.py:926
+msgid "vor {count} Stunden"
+msgstr "{count} hours ago"
+
+#. Translators: Relative time in the history (days).
+#: history.py:929
+msgid "vor {count} Tag"
+msgstr "{count} day ago"
+
+#: history.py:930
+msgid "vor {count} Tagen"
+msgstr "{count} days ago"
+
+#. Translators: Introduction of the status announcement. {count} = total,
+#. {detail} = breakdown per platform.
+#: __init__.py:1321
+msgid "{count} Geräte ({detail}). "
+msgstr "{count} devices ({detail}). "
+
+#. Translators: Message when opening the dialog with cached data.
+#: device_dialog.py:534
+msgid "{count} Geräte aus Cache geladen"
+msgstr "{count} devices loaded from cache"
+
+#. Translators: Message after loading the device list.
+#: device_dialog.py:1155
+msgid "{count} Geräte geladen, {online} online"
+msgstr "{count} devices loaded, {online} online"
+
+#: dialog_favorites.py:212 dialog_favorites.py:232 dialog_favorites.py:252
+#: dialog_favorites.py:273
+msgid "{name} (nicht verfügbar)"
+msgstr "{name} (not available)"
+
+#. Translators: Tree label with target temperature. {temp} = temperature.
+#: dialog_cozytouch.py:406
+msgid "{name} ({type}) - Ziel {temp}°C"
+msgstr "{name} ({type}) - target {temp}°C"
+
+#. Translators: Tree label of a device without connection.
+#: dialog_cozytouch.py:389 dialog_meross.py:112 dialog_vesync.py:499
+msgid "{name} ({type}) - offline"
+msgstr "{name} ({type}) - offline"
+
+#. Translators: Fallback display name for a device channel.
+#: __init__.py:1644
+msgid "{name} Kanal {number}"
+msgstr "{name} channel {number}"
+
+#. ---- 2. Actions ---- Translators: Action entry for switching on/off. {name}
+#. = device name.
+#: device_dialog.py:911 device_dialog.py:1024 device_dialog.py:1069
+#: device_dialog.py:2281 device_dialog.py:2347 device_dialog.py:689
+#: dialog_vesync.py:594
+msgid "{name} ausschalten"
+msgstr "Turn {name} off"
+
+#. ---- 2. Actions ---- Translators: Action entry for switching on/off. {name}
+#. = device name.
+#: device_dialog.py:911 device_dialog.py:1024 device_dialog.py:1069
+#: device_dialog.py:2281 device_dialog.py:2347 device_dialog.py:689
+#: dialog_vesync.py:594
+msgid "{name} einschalten"
+msgstr "Turn {name} on"
+
+#. Translators: Note in the notifications tab that a disabled platform offers
+#. no configurable notifications. {name} = platform name (Meross / Netatmo /
+#. VeSync).
+#: settings_panel.py:625
+msgid ""
+"{name} ist nicht aktiviert. Aktivieren Sie die Plattform im Tab "
+"\"Allgemein\", um die zugehörigen Benachrichtigungen einzustellen."
+msgstr ""
+"{name} is not enabled. Enable the platform in the \"General\" tab to "
+"configure its notifications."
+
+#: device_dialog.py:1252
+msgid "{name} {pct}%"
+msgstr "{name} {pct}%"
+
+#. Translators: Confirmation after scheduling away mode. {start}/{end} = date
+#. and time.
+#: dialog_cozytouch.py:294
+msgid "{name}: Abwesenheit von {start} bis {end}"
+msgstr "{name}: away from {start} until {end}"
+
+#. Translators: Confirmation after toggling away mode.
+#: dialog_cozytouch.py:269
+msgid "{name}: Abwesenheit {status}"
+msgstr "{name}: away mode {status}"
+
+#. Translators: Confirmation after removing from the favorites.
+#: dialog_favorites.py:90 dialog_favorites.py:464 dialog_favorites.py:123
+msgid "{name}: Aus Favoriten entfernt"
+msgstr "{name}: removed from favorites"
+
+#. Translators: Title of the auto profile dialog. {name} = device name.
+#: dialog_vesync.py:297
+msgid "{name}: Auto-Profil"
+msgstr "{name}: auto profile"
+
+#. Translators: Confirmation after an auto profile change. {profile} = profile
+#. name.
+#: dialog_vesync.py:310
+msgid "{name}: Auto-Profil {profile}"
+msgstr "{name}: auto profile {profile}"
+
+#. Translators: Hint when the device is already a favorite.
+#: dialog_favorites.py:117
+msgid "{name}: Bereits in Favoriten"
+msgstr "{name}: already in favorites"
+
+#. Translators: Confirmation after switching hot water production on/off.
+#: dialog_cozytouch.py:242
+msgid "{name}: Betrieb {status}"
+msgstr "{name}: operation {status}"
+
+#. Translators: Confirmation after toggling boost.
+#: dialog_cozytouch.py:216
+msgid "{name}: Boost {status}"
+msgstr "{name}: boost {status}"
+
+#. Translators: Error message when opening the brightness dialog.
+#: device_dialog.py:2910
+msgid "{name}: Dialogfehler"
+msgstr "{name}: dialog error"
+
+#. Translators: Confirmation after toggling the device display.
+#: dialog_vesync.py:226
+msgid "{name}: Display {status}"
+msgstr "{name}: display {status}"
+
+#. Translators: Confirmation after setting a custom RGB color.
+#: dialog_meross.py:338
+msgid "{name}: Farbe auf RGB({r}, {g}, {b}) eingestellt"
+msgstr "{name}: color set to RGB({r}, {g}, {b})"
+
+#. Translators: Error message when the RGB color cannot be set.
+#: dialog_meross.py:380
+msgid "{name}: Farbe nicht einstellbar"
+msgstr "{name}: color cannot be set"
+
+#. Translators: Error message when setting the color temperature.
+#: device_dialog.py:2817
+msgid "{name}: Farbtemperatur nicht einstellbar"
+msgstr "{name}: color temperature cannot be set"
+
+#. Translators: Generic error message with detail text.
+#: device_dialog.py:2706
+msgid "{name}: Fehler - {error}"
+msgstr "{name}: error - {error}"
+
+#. Translators: Error message on a diffuser mode change.
+#: device_dialog.py:2606
+msgid "{name}: Fehler beim Einstellen"
+msgstr "{name}: error while setting"
+
+#. Translators: Error message when opening a sub-dialog.
+#: device_dialog.py:2825
+msgid "{name}: Fehler beim Öffnen des Dialogs"
+msgstr "{name}: error opening the dialog"
+
+#. Translators: Generic error message with detail text.
+#: dialog_meross.py:375
+msgid "{name}: Fehler – {error}"
+msgstr "{name}: error – {error}"
+
+#. Translators: Confirmation after a successful filter reset.
+#: dialog_vesync.py:383
+msgid "{name}: Filter-Lebensdauer zurückgesetzt"
+msgstr "{name}: filter life reset"
+
+#. Translators: Confirmation after a heating mode change. {mode} = mode name.
+#: dialog_netatmo.py:483
+msgid "{name}: Heizmodus auf {mode} gesetzt"
+msgstr "{name}: heating mode set to {mode}"
+
+#. Translators: Success message when switching the heating schedule.
+#: dialog_netatmo.py:582
+msgid "{name}: Heizprogramm '{schedule}' aktiviert"
+msgstr "{name}: heating schedule '{schedule}' activated"
+
+#. Translators: Confirmation after a brightness change.
+#: device_dialog.py:2872
+msgid "{name}: Helligkeit auf {percent}% eingestellt"
+msgstr "{name}: brightness set to {percent}%"
+
+#. Translators: Error message when setting the brightness.
+#: device_dialog.py:2895
+msgid "{name}: Helligkeit nicht einstellbar"
+msgstr "{name}: brightness cannot be set"
+
+#. Translators: Hint when the device is not a favorite.
+#: dialog_favorites.py:470
+msgid "{name}: Ist kein Favorit"
+msgstr "{name}: is not a favorite"
+
+#. Translators: Error message when there is no internet connection.
+#: device_dialog.py:2685
+msgid "{name}: Keine Internetverbindung"
+msgstr "{name}: no internet connection"
+
+#. Translators: Error message when there is no connection.
+#: dialog_meross.py:366
+msgid "{name}: Keine Verbindung"
+msgstr "{name}: no connection"
+
+#. Translators: Confirmation after toggling the child lock.
+#: dialog_vesync.py:247
+msgid "{name}: Kindersicherung {status}"
+msgstr "{name}: child lock {status}"
+
+#. Translators: Title of the fan level dialog. {name} = device name.
+#: dialog_vesync.py:151
+msgid "{name}: Lüftergeschwindigkeit"
+msgstr "{name}: fan speed"
+
+#. Translators: Success feedback after a diffuser mode change.
+#: __init__.py:1720
+msgid "{name}: Modus gesetzt"
+msgstr "{name}: mode set"
+
+#. Translators: Title of the mode selection dialog. {name} = device name.
+#: dialog_cozytouch.py:124 dialog_vesync.py:104
+msgid "{name}: Modus wählen"
+msgstr "{name}: choose mode"
+
+#. Translators: Confirmation after a mode change. {mode} = mode name.
+#: dialog_cozytouch.py:137 dialog_vesync.py:117
+msgid "{name}: Modus {mode}"
+msgstr "{name}: mode {mode}"
+
+#. Translators: Title of the night light dialog. {name} = device name.
+#: dialog_vesync.py:267
+msgid "{name}: Nachtlicht"
+msgstr "{name}: night light"
+
+#. Translators: Confirmation after a night light change. {mode} = mode name.
+#: dialog_vesync.py:280
+msgid "{name}: Nachtlicht {mode}"
+msgstr "{name}: night light {mode}"
+
+#. Translators: Error message when the device is unreachable.
+#: device_dialog.py:2671 device_dialog.py:2703
+msgid "{name}: Nicht erreichbar"
+msgstr "{name}: unreachable"
+
+#. Translators: Message when the device is offline.
+#: device_dialog.py:2563 dialog_meross.py:372
+msgid "{name}: Offline"
+msgstr "{name}: offline"
+
+#. Translators: Confirmation after toggling oscillation.
+#: dialog_vesync.py:182
+msgid "{name}: Oszillation {status}"
+msgstr "{name}: oscillation {status}"
+
+#. Translators: Error message when switching a device on/off fails (e.g. cloud
+#. unreachable, device offline).
+#: device_dialog.py:2715
+msgid "{name}: Schaltfehler"
+msgstr "{name}: switching error"
+
+#. Translators: Confirmation without a duration.
+#: dialog_netatmo.py:231
+msgid "{name}: Soll-Temperatur auf {temp}°C gesetzt"
+msgstr "{name}: target temperature set to {temp}°C"
+
+#. Translators: Confirmation with default duration. {minutes} = minutes.
+#: dialog_netatmo.py:227
+msgid ""
+"{name}: Soll-Temperatur auf {temp}°C gesetzt (Standard-Dauer: {minutes} "
+"Minuten)"
+msgstr ""
+"{name}: target temperature set to {temp}°C (default duration: {minutes} "
+"minutes)"
+
+#. Translators: Confirmation with end time. {temp} = temperature, {end} =
+#. time.
+#: dialog_netatmo.py:218
+msgid "{name}: Soll-Temperatur auf {temp}°C gesetzt bis {end} Uhr"
+msgstr "{name}: target temperature set to {temp}°C until {end}"
+
+#. Translators: Confirmation after a level change. {level} = fan level.
+#: dialog_vesync.py:163
+msgid "{name}: Stufe {level}"
+msgstr "{name}: level {level}"
+
+#. Translators: Message when the connection is being re- established.
+#: device_dialog.py:2699
+msgid "{name}: Verbindung wird wiederhergestellt"
+msgstr "{name}: reconnecting"
+
+#. Translators: Error message on a general connection error.
+#: device_dialog.py:2688
+msgid "{name}: Verbindungsfehler"
+msgstr "{name}: connection error"
+
+#. Translators: Hint when the device was not a favorite.
+#: dialog_favorites.py:126
+msgid "{name}: War nicht in Favoriten"
+msgstr "{name}: was not in favorites"
+
+#. Translators: Error message on timeout.
+#: device_dialog.py:2674 device_dialog.py:2811 device_dialog.py:2889
+msgid "{name}: Zeitüberschreitung"
+msgstr "{name}: timeout"
+
+#. Translators: Error message on timeout while setting the color.
+#: dialog_meross.py:362
+msgid "{name}: Zeitüberschreitung – Lampe erreichbar?"
+msgstr "{name}: timeout – is the lamp reachable?"
+
+#: dialog_cozytouch.py:79
+msgid "{name}: Zieltemperatur"
+msgstr "{name}: target temperature"
+
+#. Translators: Confirmation after setting the target temperature.
+#: dialog_cozytouch.py:103
+msgid "{name}: Zieltemperatur {temp} Grad"
+msgstr "{name}: target temperature {temp} degrees"
+
+#. Translators: Confirmation after adding to the favorites.
+#: dialog_favorites.py:95 dialog_favorites.py:114
+msgid "{name}: Zu Favoriten hinzugefügt"
+msgstr "{name}: added to favorites"
+
+#. Translators: Confirmation after returning to the heating schedule.
+#: dialog_netatmo.py:627
+msgid "{name}: Zurück zum Zeitplan"
+msgstr "{name}: back to schedule"
+
+#. Translators: Confirmation after setting a predefined color.
+#: dialog_meross.py:342
+msgid "{name}: {color} eingestellt"
+msgstr "{name}: {color} set"
+
+#. Translators: Confirmation after a diffuser mode change.
+#: device_dialog.py:2588
+msgid "{name}: {mode}"
+msgstr "{name}: {mode}"
+
+#. Translators: Confirmation after a light color change.
+#: device_dialog.py:2794
+msgid "{name}: {mode} eingestellt"
+msgstr "{name}: {mode} set"
+
+#. ALWAYS a uniform announcement with a colon Translators: Announcement of an
+#. external switch state change.
+#: __init__.py:1656 __init__.py:1605 __init__.py:1619 device_dialog.py:1193
+#: dialog_vesync.py:44 dialog_vesync.py:203
+msgid "{name}: {status}"
+msgstr "{name}: {status}"
+
+#. Translators: Short live announcement of the device online status.
+#: device_dialog.py:1641
+msgid "{online} Geräte online, {offline} offline"
+msgstr "{online} devices online, {offline} offline"
+
+#. Translators: Format of the status line. {online}/{offline} = counts, {time}
+#. = time of the last refresh in HH:MM:SS format.
+#: device_dialog.py:1631
+msgid "{online} online, {offline} offline | Aktualisiert: {time}"
+msgstr "{online} online, {offline} offline | Updated: {time}"
+
+#: dialog_help.py:366
+msgid "{on} von {total} Kanälen eingeschaltet"
+msgstr "{on} of {total} channels switched on"
+
+#. Translators: Note that a platform was enabled automatically after a
+#. successful test. {platform} = brand name (Meross etc.).
+#: settings_panel.py:277
+msgid "{platform} aktiviert – beim Speichern wird angemeldet"
+msgstr "{platform} enabled – login will happen on save"
+
+#. Translators: Announced when a smart home platform is temporarily
+#. unreachable.
+#: scheduler.py:113
+msgid "{platform} vorübergehend nicht erreichbar"
+msgstr "{platform} temporarily unreachable"
+
+#. Translators: Announced when a smart home platform is reachable again after
+#. a connection loss. {platform} is Meross/Netatmo/VeSync.
+#: scheduler.py:108
+msgid "{platform} wieder verbunden"
+msgstr "{platform} reconnected"
+
+#. Translators: Fallback for a history entry of unknown type.
+#: history.py:880
+msgid "{time} – {name}: Unbekanntes Ereignis"
+msgstr "{time} – {name}: unknown event"
+
+#. Translators: Success message after login. {total} = number of devices,
+#. {detail} = breakdown per platform (e.g. "3 Meross, 1 Netatmo").
+#: __init__.py:854
+msgid "{total} Geräte bereit ({detail})"
+msgstr "{total} devices ready ({detail})"
+
+#. Translators: Status announcement: gust speed.
+#: netatmo_api.py:306
+msgid "{value} km/h Böen"
+msgstr "{value} km/h gusts"
+
+#. Translators: Status announcement: wind speed.
+#: netatmo_api.py:301
+msgid "{value} km/h Wind"
+msgstr "{value} km/h wind"
+
+#. Translators: Status announcement: rain amount.
+#: netatmo_api.py:296
+msgid "{value} mm Regen"
+msgstr "{value} mm rain"
+
+#. Translators: Status announcement: relative humidity.
+#: netatmo_api.py:279
+msgid "{value}% Luftfeuchtigkeit"
+msgstr "{value}% humidity"
+
+#. Translators: Status while the browser is opened for OAuth2.
+#: settings_panel.py:862
+msgid "Öffne Browser für Netatmo-Autorisierung..."
+msgstr "Opening browser for Netatmo authorization..."
+
+#: __init__.py:900
+msgid "Öffne Geräteübersicht..."
+msgstr "Opening device overview..."
+
+#. Translators: Description of the script in the NVDA input gestures dialog.
+#: __init__.py:879
+msgid "Öffnet das Smart Home Control Menü"
+msgstr "Opens the Smart Home Control menu"
+
+#. Translators: Description of the script in the NVDA input gestures dialog.
+#: __init__.py:944
+msgid "Öffnet die Smart Home Einstellungen"
+msgstr "Opens the Smart Home settings"
+
+#. Translators: Tree label when the actual heating target differs from the
+#. setpoint. {active} = actual target, {temp} = setpoint.
+#: dialog_cozytouch.py:400
+msgid "{name} ({type}) - Ziel {temp}°C, aktuelles Heizziel {active}°C"
+msgstr "{name} ({type}) - target {temp}°C, current heating target {active}°C"
+
+#. Translators: Description of the script in the NVDA input gestures dialog.
+#. No default gesture - the user assigns one if needed.
+#: __init__.py:953
+msgid ""
+"Sagt den Energieverbrauch der Messsteckdosen an (heute und letzte 7 Tage)"
+msgstr ""
+"Announces the energy consumption of the metering plugs (today and last 7 "
+"days)"
+
+#. Translators: Description of the script in the NVDA input gestures dialog.
+#. No default gesture - the user assigns one if needed.
+#: __init__.py:1040
+msgid "Verbindungsdiagnose: Status aller Smart Home Plattformen ansagen"
+msgstr ""
+"Connection diagnostics: announce the status of all smart home platforms"
+
+#. Translators: Diagnostics: platform is connected.
+#: __init__.py:1059
+msgid "verbunden"
+msgstr "connected"
+
+#. Translators: Diagnostics: platform is disconnected.
+#: __init__.py:1062
+msgid "getrennt"
+msgstr "disconnected"
+
+#. Translators: Diagnostics: platform has not polled yet.
+#: __init__.py:1065
+msgid "noch keine Abfrage"
+msgstr "not polled yet"
+
+#. Translators: Diagnostics: network considered offline.
+#: __init__.py:1069
+msgid "Netzwerk: offline (Fehlversuche: {count})"
+msgstr "Network: offline (failed attempts: {count})"
+
+#. Translators: Diagnostics: Netatmo token remaining lifetime.
+#: __init__.py:1075
+msgid "Netatmo-Token: noch {minutes} Minuten gültig"
+msgstr "Netatmo token: valid for another {minutes} minutes"
+
+#. Translators: Diagnostics: Netatmo token expired (auto-renewal happens on
+#. the next request).
+#: __init__.py:1080
+msgid "Netatmo-Token: abgelaufen, wird bei nächster Abfrage erneuert"
+msgstr "Netatmo token: expired, will be renewed on the next request"
+
+#. Translators: Diagnostics: seconds since the last successful Meross refresh.
+#: __init__.py:1086
+msgid "Letzte Meross-Aktualisierung vor {seconds} Sekunden"
+msgstr "Last Meross refresh {seconds} seconds ago"
+
+#. Translators: Diagnostics: no platform is enabled.
+#: __init__.py:1090
+msgid "Keine Plattform aktiviert"
+msgstr "No platform enabled"
+
+#. Translators: Message when the favorite slot is empty.
+#: __init__.py:1128 __init__.py:1160
+msgid "Favorit {number} ist nicht belegt"
+msgstr "Favorite {number} is not assigned"
+
+#. Translators: Message when the favorite's device is not loaded.
+#: __init__.py:1132 __init__.py:1163
+msgid "{name}: Gerät nicht verfügbar"
+msgstr "{name}: device not available"
+
+#. Translators: Error message when toggling a favorite fails.
+#: __init__.py:1149
+msgid "Schalten fehlgeschlagen: {error}"
+msgstr "Switching failed: {error}"
+
+#. Translators: Current power draw in the status announcement.
+#: __init__.py:1178
+msgid "{watt} Watt"
+msgstr "{watt} watts"
+
+#. Translators: Target temperature in the status announcement.
+#: __init__.py:1185
+msgid "Ziel {temp} Grad"
+msgstr "target {temp} degrees"
+
+#. Translators: Description of the numbered favorite toggle script in the NVDA
+#. input gestures dialog. {number} = favorite slot.
+#: __init__.py:1750
+msgid "Favorit {number} umschalten"
+msgstr "Toggle favorite {number}"
+
+#. Translators: Description of the numbered favorite status script in the NVDA
+#. input gestures dialog. {number} = favorite slot.
+#: __init__.py:1755
+msgid "Status von Favorit {number} ansagen"
+msgstr "Announce status of favorite {number}"
+
+#. Translators: Combined info+action label: boost duration in minutes,
+#. changeable with Enter.
+#: dialog_cozytouch.py:511
+msgid "Boost-Laufzeit: {minutes} Minuten - Enter zum Ändern"
+msgstr "Boost duration: {minutes} minutes - press Enter to change"
+
+#. Translators: Input prompt for the boost duration in minutes.
+#: dialog_cozytouch.py:157
+msgid "Boost-Laufzeit in Minuten (z. B. 60):"
+msgstr "Boost duration in minutes (e.g. 60):"
+
+#. Translators: Title of the boost duration dialog. {name} = device name.
+#: dialog_cozytouch.py:163
+msgid "{name}: Boost-Laufzeit"
+msgstr "{name}: boost duration"
+
+#. Translators: Message on invalid boost duration input.
+#: dialog_cozytouch.py:182
+msgid "Ungültige Eingabe - bitte Minuten zwischen 1 und 1440 angeben"
+msgstr "Invalid input - please enter minutes between 1 and 1440"
+
+#. Translators: Confirmation after changing the boost duration.
+#: dialog_cozytouch.py:188
+msgid "{name}: Boost-Laufzeit {minutes} Minuten"
+msgstr "{name}: boost duration {minutes} minutes"
+
+#. Translators: History detail for the boost duration.
+#: dialog_cozytouch.py:194
+msgid "{minutes} Minuten"
+msgstr "{minutes} minutes"
+
+#. Translators: Error when the cloud rejects the boost duration write (the
+#. capability may be read-only on some models).
+#: dialog_cozytouch.py:200
+msgid ""
+"Boost-Laufzeit konnte nicht gesetzt werden - das Gerät akzeptiert diese "
+"Änderung möglicherweise nicht"
+msgstr ""
+"Boost duration could not be set - the device may not accept this change"
+
+#. Translators: Device label with type and room name. {name} = device name,
+#. {type} = device type, {room} = room name.
+#: dialog_netatmo.py:305
+msgid "{name} ({type}, Raum {room})"
+msgstr "{name} ({type}, room {room})"
+
+#. Translators: Room category in the device tree. {room} = room name from the
+#. Netatmo app.
+#: device_dialog.py:2044
+msgid "Raum {room}"
+msgstr "Room {room}"
+
+#. Translators: Combined info+action label: boost has no time limit set,
+#. changeable with Enter.
+#: dialog_cozytouch.py:519
+msgid "Boost-Laufzeit: keine Zeitbegrenzung gesetzt - Enter zum Ändern"
+msgstr "Boost duration: no time limit set - press Enter to change"
+
+#. Translators: Announced while the energy data is being fetched.
+#: __init__.py:966
+msgid "Energiedaten werden abgerufen..."
+msgstr "Fetching energy data..."
+
+#. Translators: Energy summary from the device's own meter. {name} = device,
+#. {today}/{week} = kWh, {watt} = current watts.
+#: __init__.py:991
+msgid ""
+"{name}: heute {today} Kilowattstunden, letzte 7 Tage {week} Kilowattstunden,"
+" aktuell {watt} Watt"
+msgstr ""
+"{name}: today {today} kilowatt hours, last 7 days {week} kilowatt hours, "
+"currently {watt} watts"
+
+#. Translators: Energy summary from the device's own meter without a current
+#. power value.
+#: __init__.py:1001
+msgid ""
+"{name}: heute {today} Kilowattstunden, letzte 7 Tage {week} Kilowattstunden"
+msgstr ""
+"{name}: today {today} kilowatt hours, last 7 days {week} kilowatt hours"
+
+#. Translators: Energy summary estimated from background samples (only covers
+#. the time NVDA was running).
+#: __init__.py:1015
+msgid ""
+"{name}: heute {today} Kilowattstunden, letzte 7 Tage {week} Kilowattstunden,"
+" aktuell {watt} Watt (geschätzt, erfasst nur solange NVDA lief)"
+msgstr ""
+"{name}: today {today} kilowatt hours, last 7 days {week} kilowatt hours, "
+"currently {watt} watts (estimated, only recorded while NVDA was running)"
+
+#. Translators: Message when no energy data is available.
+#: __init__.py:1027
+msgid "Keine Energiedaten verfügbar. Messsteckdosen müssen verbunden sein."
+msgstr "No energy data available. Metering plugs must be connected."
+
+#. Translators: Today's consumption from the device meter.
+#: device_dialog.py:1874 device_dialog.py:804
+msgid "Verbrauch heute: {kwh} kWh"
+msgstr "Consumption today: {kwh} kWh"
+
+#. Translators: Last 7 days' consumption from the device meter.
+#: device_dialog.py:1877 device_dialog.py:806
+msgid "Verbrauch letzte 7 Tage: {kwh} kWh"
+msgstr "Consumption last 7 days: {kwh} kWh"
+
+#. Translators: Placeholder while the consumption data is fetched.
+#: device_dialog.py:1896
+msgid "Verbrauch heute: wird abgerufen..."
+msgstr "Consumption today: fetching..."
+
+#. Translators: Placeholder while the consumption data is fetched.
+#: device_dialog.py:1898
+msgid "Verbrauch letzte 7 Tage: wird abgerufen..."
+msgstr "Consumption last 7 days: fetching..."
+
+#. Consumption lines (today / last 7 days) - replace the placeholder or
+#. refresh values once the background fetch filled the cache.
+#: device_dialog.py:796 device_dialog.py:803
+msgid "Verbrauch heute:"
+msgstr "Consumption today:"
+
+#: device_dialog.py:797
+msgid "Verbrauch letzte 7 Tage:"
+msgstr "Consumption last 7 days:"
+
+#. Translators: Compact outlet label with the outlet number.
+#: meross_devices.py:569 meross_devices.py:1403
+msgid "Ausgang {number}"
+msgstr "Outlet {number}"
+
+#. Vollständiger Name inkl. Gerät: "Garten: Pumpe" (benannter Ausgang) bzw.
+#. "Garten: Ausgang 1" (ohne Namen) - überall dort verwendet, wo der Kontext
+#. (das Elterngerät) nicht ohnehin klar ist (Ansagen, Favoriten, Toggle-
+#. Aktion). Translators: Full channel name: device name plus outlet label.
+#: meross_devices.py:575 meross_devices.py:1291
+msgid "{device}: {outlet}"
+msgstr "{device}: {outlet}"
+
+#. Translators: Label before the start tab selection.
+#: settings_panel.py:211
+msgid "Beim Öffnen &anzeigen:"
+msgstr "Show on &open:"
+
+#: settings_panel.py:216
+msgid "Favoriten"
+msgstr "Favorites"
+
+#. Name
+#: device_dialog.py:1691
+msgid "Sensor"
+msgstr "Sensor"
+
+#. Online status (inherits the hub status for untracked types like MS130)
+#: device_dialog.py:1694
+msgid "Online"
+msgstr "Online"
+
+#: device_dialog.py:1710
+msgid "Batterie: wird ermittelt"
+msgstr "Battery: checking"
+
+#. Translators: One line per hub sensor. {name} = sensor name, {status} =
+#. Online/Offline, {type} = model (e.g. MS130), {battery} = battery text.
+#: device_dialog.py:1715
+msgid "{name}: {status}, {type}, {battery}"
+msgstr "{name}: {status}, {type}, {battery}"
+
+#. Translators: Fallback when the model ID is not yet known to the add-on.
+#. Helps users report new models.
+#: dialog_cozytouch.py:556
+msgid "Modell-ID: {model_id} (unbekanntes Modell)"
+msgstr "Model ID: {model_id} (unknown model)"
+
+#. Translators: Group heading in the history for the current day.
+#: dialog_history.py:53
+msgid "Heute"
+msgstr "Today"
+
+#. Translators: Group heading in the history for the previous day.
+#: dialog_history.py:56
+msgid "Gestern"
+msgstr "Yesterday"
+
+#. Translators: Group heading in the history: weekday and date, e.g. "Freitag,
+#. 24.07.2026".
+#: dialog_history.py:59
+msgid "{weekday}, {date}"
+msgstr "{weekday}, {date}"
+
+#. Translators: Heading of the change point list.
+#: dialog_history.py:457
+msgid "Letzte Änderungen:"
+msgstr "Latest changes:"
+
+#. Translators: Message when no events match the filter.
+#: dialog_history.py:357
+msgid "Keine Ereignisse gefunden"
+msgstr "No events found"
+
+#. Translators: Message when no measurements match the filter.
+#: dialog_history.py:393
+msgid "Keine Messwerte gefunden"
+msgstr "No measurements found"
+
+#. Translators: Label of the view selector in the history dialog.
+#: dialog_history.py:104
+msgid "&Ansicht:"
+msgstr "&View:"
+
+#: dialog_history.py:108
+msgid "Ereignisse"
+msgstr "Events"
+
+#: dialog_history.py:108
+msgid "Messwerte"
+msgstr "Measurements"
+
+#. Device filter
+#: dialog_history.py:120
+msgid "&Gerät:"
+msgstr "&Device:"
+
+#. Platform filter
+#: dialog_history.py:128
+msgid "&Plattform:"
+msgstr "&Platform:"
+
+#. Time range filter
+#: dialog_history.py:135
+msgid "&Zeitraum:"
+msgstr "&Period:"
+
+#: dialog_history.py:200
+msgid "Größe"
+msgstr "Quantity"
+
+#: dialog_history.py:200
+msgid "Kleinster"
+msgstr "Lowest"
+
+#: dialog_history.py:201
+msgid "Größter"
+msgstr "Highest"
+
+#: dialog_history.py:201
+msgid "Mittelwert"
+msgstr "Average"
+
+#: dialog_history.py:202
+msgid "Aktuell"
+msgstr "Current"
+
+#: dialog_history.py:202
+msgid "Punkte"
+msgstr "Points"
+
+#: dialog_history.py:208
+msgid "Ereignis"
+msgstr "Event"
+
+#: dialog_history.py:208 history.py:801
+msgid "Herkunft"
+msgstr "Source"
+
+#: dialog_history.py:348
+msgid "{count} Ereignisse angezeigt (gesamt: {total})"
+msgstr "{count} events shown (total: {total})"
+
+#: dialog_history.py:384
+msgid "{count} Messreihen (aus {total} Änderungspunkten)"
+msgstr "{count} measurement series (from {total} change points)"
+
+#. Translators: Header of the measurement detail dialog.
+#: dialog_history.py:441
+msgid "{name} – {quantity}"
+msgstr "{name} – {quantity}"
+
+#. Translators: Summary lines in the measurement detail dialog.
+#: dialog_history.py:446
+msgid "Kleinster Wert: {value}"
+msgstr "Lowest value: {value}"
+
+#: dialog_history.py:448
+msgid "Größter Wert: {value}"
+msgstr "Highest value: {value}"
+
+#. Translators: Time-weighted mean of a measurement series.
+#: dialog_history.py:451
+msgid "Mittelwert (zeitgewichtet): {value}"
+msgstr "Average (time-weighted): {value}"
+
+#: dialog_history.py:453
+msgid "Aktuell: {value}"
+msgstr "Current: {value}"
+
+#. Translators: Shown when a measurement series has no change points in the
+#. selected period.
+#: dialog_history.py:469
+msgid "Keine Änderungen im gewählten Zeitraum"
+msgstr "No changes in the selected period"
+
+#. Translators: Confirmation prompt before deleting the history. {events} =
+#. number of events, {measurements} = number of measurement change points.
+#: dialog_history.py:541
+msgid ""
+"Möchten Sie wirklich den gesamten Verlauf löschen?\n"
+"\n"
+"Es werden {events} Ereignisse und {measurements} Messwerte unwiderruflich gelöscht."
+msgstr ""
+"Do you really want to delete the entire history?\n"
+"\n"
+"This will permanently delete {events} events and {measurements} measurements."
+
+#. Translators: Message after loading the event list.
+#: dialog_history.py:354
+msgid "{count} Ereignisse"
+msgstr "{count} events"
+
+#. Translators: Message after loading the measurement view.
+#: dialog_history.py:390
+msgid "{count} Messreihen"
+msgstr "{count} measurement series"
+
+#. Translators: Success message in the export dialog. {path} = file.
+#: dialog_history.py:515
+msgid ""
+"Verlauf erfolgreich exportiert.\n"
+"\n"
+"Datei: {path}"
+msgstr ""
+"History exported successfully.\n"
+"\n"
+"File: {path}"
+
+#: history.py:134
+msgid "Luftfeuchte"
+msgstr "Humidity"
+
+#: history.py:135
+msgid "CO₂"
+msgstr "CO₂"
+
+#: history.py:136
+msgid "Luftdruck"
+msgstr "Air pressure"
+
+#. Translators: Origin of a history event - the device was switched outside of
+#. NVDA (manufacturer app, voice assistant, button on the device).
+#. Deliberately not more specific: which of these it was cannot be determined
+#. from the cloud notification.
+#: history.py:954
+msgid "extern"
+msgstr "external"
+
+#. Translators: Origin of a history event - triggered automatically.
+#: history.py:957
+msgid "automatisch"
+msgstr "automatic"
+
+#. Translators: Origin of a history event - the user did it themselves.
+#: history.py:960
+msgid "ich"
+msgstr "me"
+
+#. Translators: Explanation for a temporary Netatmo API condition.
+#: netatmo_api.py:581
+msgid "Netatmo-Anfragelimit erreicht – die Erweiterung fragt später erneut ab"
+msgstr "Netatmo request limit reached – the add-on will try again later"
+
+#. Translators: Explanation for a temporary Netatmo API condition.
+#: netatmo_api.py:586
+msgid ""
+"Netatmo-Server vorübergehend nicht erreichbar – kein Problem der Erweiterung"
+" oder deiner Einstellungen; die nächste Abfrage versucht es erneut"
+msgstr ""
+"Netatmo servers temporarily unavailable – not a problem with the add-on or "
+"your settings; the next update will try again"

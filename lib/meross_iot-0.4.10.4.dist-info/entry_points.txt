@@ -1,0 +1,3 @@
+[console_scripts]
+meross_api_cli = meross_iot.http_api:main
+meross_sniffer = utilities.meross_sniffer:main
