@@ -4,7 +4,7 @@ English translation of [CHANGELOG.md](CHANGELOG.md). The German file is the
 original; this one is kept in step with it and is what the GitHub release
 notes are built from.
 
-## 26.7.3 (unreleased)
+## 26.7.3 (August 2026)
 
 - **Cozytouch/Atlantic is now marked as experimental everywhere it is
   visible.** The caveat used to live only in the "maturity" section of the

@@ -1,6 +1,6 @@
 # Changelog – Smart Home Control
 
-## 26.7.3 (unveröffentlicht)
+## 26.7.3 (August 2026)
 
 - **Cozytouch/Atlantic ist jetzt überall als experimentell gekennzeichnet.**
   Bisher stand der Hinweis nur im Abschnitt „Reifegrad" der Dokumentation –
