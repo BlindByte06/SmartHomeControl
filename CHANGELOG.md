@@ -18,6 +18,11 @@
   Abschnitt heraus. Fehlt er, bricht der Release-Lauf ab, statt ein Release
   ohne Changelog zu veröffentlichen; ebenso, wenn der Tag nicht zur Version
   in `manifest.ini` passt.
+- **Die Startseite des Repositorys ist jetzt englisch.** Sie ist der
+  „Homepage"-Link im Add-on-Store, und dort kommen Nutzer aus der ganzen
+  NVDA-Welt an – die Erweiterung selbst spricht ja ohnehin beide Sprachen.
+  Die deutsche Fassung steht unverändert in `README.de.md`; beide verlinken
+  in der ersten Zeile aufeinander.
 
 ## 26.7.2 (August 2026)
 

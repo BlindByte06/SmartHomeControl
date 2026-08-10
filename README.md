@@ -1,462 +1,442 @@
 # Smart Home Control
 
-- Autor: Philipp Hasel
-- NVDA-Kompatibilität: ab NVDA 2025.1 und neuer
-- Lizenz: GNU General Public License, Version 2
-- [Internetseite und Quellcode](https://github.com/BlindByte06/SmartHomeControl)
+*English · [Deutsch](README.de.md)*
 
-Mit dieser Erweiterung lassen sich Smart-Home-Geräte direkt aus NVDA
-steuern – über ein einfaches Menü. Es können Geräte ein- und ausgeschaltet
-sowie Helligkeit, Farbe, Heizung und Luftreiniger gesteuert und Sensorwerte
-abgefragt werden, ganz ohne die teils schwer zugänglichen Hersteller-Apps.
+- Author: Philipp Hasel
+- NVDA compatibility: NVDA 2025.1 and newer
+- License: GNU General Public License, version 2
+- [Website and source code](https://github.com/BlindByte06/SmartHomeControl)
 
-Die Anmeldung erfolgt einmalig mit den Zugangsdaten des jeweiligen
-Hersteller-Kontos – eine zusätzliche Server- oder Hintergrund-Einrichtung
-ist nicht nötig. Die Zugangsdaten werden lokal auf dem Rechner verschlüsselt
-gespeichert.
+This add-on lets you control smart home devices directly from NVDA, through a
+simple menu. You can switch devices on and off, control brightness, colour,
+heating and air purifiers, and read sensor values — without the manufacturer
+apps, which are often hard to use with a screen reader.
 
----
-
-## Inhalt
-
-- [Tastenkürzel](#tastenkürzel)
-- [Unterstützte Plattformen und Geräte](#unterstützte-plattformen-und-geräte)
-  (Cozytouch/Atlantic ist **experimentell**)
-- [Einrichtung](#einrichtung)
-- [Netatmo: Redirect-URI und Port](#netatmo-redirect-uri-und-port)
-- [Bedienung](#bedienung)
-- [Benachrichtigungen bei Änderungen](#benachrichtigungen-bei-änderungen)
-- [Hinweise zu Cloud-Limits](#hinweise-zu-cloud-limits)
-- [Reifegrad und Hinweise](#reifegrad-und-hinweise)
-- [Datenschutz und Sicherheit](#datenschutz-und-sicherheit)
-- [Fehlerbehebung](#fehlerbehebung)
-- [Selbst bauen](#selbst-bauen)
-- [Lizenz und verwendete Komponenten](#lizenz-und-verwendete-komponenten)
+You sign in once with the credentials of the respective manufacturer account;
+no additional server or background setup is required. The credentials are
+stored encrypted, locally on your computer.
 
 ---
 
-## Tastenkürzel
+## Contents
 
-- **NVDA + Umschalt + H**: Smart-Home-Menü öffnen (Geräteübersicht)
-- **NVDA + Strg + Umschalt + P**: Status aller Geräte ansagen
-
-Der Einstellungs-Dialog ist über die Schaltfläche „Einstellungen (Alt+E)"
-im Geräte-Menü erreichbar.
-
-Alle Befehle lassen sich mit eigenen Tastenkürzeln belegen; auch die
-Standard-Belegung kann geändert werden: **NVDA-Menü → Optionen →
-Tastenbefehle → Kategorie „Smart Home Control"**.
-
-Folgende Befehle haben bewusst **keine Standard-Belegung** und werden bei
-Bedarf dort mit einem eigenen Kürzel versehen:
-
-- **Energieverbrauch ansagen** – Tages- und 7-Tage-Verbrauch der
-  Messsteckdosen in Kilowattstunden. Die Werte kommen bevorzugt direkt vom
-  Verbrauchszähler im Gerät – der zählt auch weiter, wenn NVDA nicht
-  läuft. Nur wenn ein Gerät diese Abfrage nicht unterstützt, wird auf im
-  Hintergrund gesammelte Stichproben zurückgegriffen (dann als „geschätzt"
-  gekennzeichnet, da sie nur die NVDA-Laufzeit abdecken).
-- **Verbindungsdiagnose** – sagt pro Plattform den Verbindungsstatus an,
-  dazu Netzwerkstatus und die Restlaufzeit des Netatmo-Tokens.
-- **Favorit 1–9 umschalten** und **Status von Favorit 1–9 ansagen** –
-  schaltet das jeweilige Favoriten-Gerät bzw. sagt dessen Status an, ohne
-  das Menü zu öffnen. Die Nummer entspricht der Reihenfolge im
-  Favoriten-Tab des Geräte-Menüs (Nummer 1 ist der oberste Eintrag).
-  Favoriten legt man im Geräte-Menü an: Gerät auswählen und den Eintrag
-  „Zu Favoriten hinzufügen" aktivieren.
+- [Keyboard shortcuts](#keyboard-shortcuts)
+- [Supported platforms and devices](#supported-platforms-and-devices)
+  (Cozytouch/Atlantic is **experimental**)
+- [Setup](#setup)
+- [Netatmo: redirect URI and port](#netatmo-redirect-uri-and-port)
+- [Usage](#usage)
+- [Change announcements](#change-announcements)
+- [Notes on cloud limits](#notes-on-cloud-limits)
+- [Maturity and notes](#maturity-and-notes)
+- [Privacy and security](#privacy-and-security)
+- [Troubleshooting](#troubleshooting)
+- [Building it yourself](#building-it-yourself)
+- [License and bundled components](#license-and-bundled-components)
 
 ---
 
-## Unterstützte Plattformen und Geräte
+## Keyboard shortcuts
 
-Die Erweiterung unterstützt vier Smart-Home-Plattformen. Jede lässt sich
-einzeln aktivieren; es wird nur benötigt, was tatsächlich verwendet wird.
-**Cozytouch/Atlantic ist experimentell** – dort ist bisher nur ein einziges
-Gerätemodell getestet.
+- **NVDA + Shift + H**: open the smart home menu (device overview)
+- **NVDA + Ctrl + Shift + P**: announce the status of all devices
+
+The settings dialog is reachable through the "Settings (Alt+E)" button in the
+device menu.
+
+You can assign your own shortcuts to every command, and change the defaults:
+**NVDA menu → Options → Input gestures → category "Smart Home Control"**.
+
+The following commands deliberately have **no default gesture** and are given
+one there when needed:
+
+- **Announce energy consumption** — today's and the last 7 days' consumption
+  of the metering plugs in kilowatt hours. The values preferably come straight
+  from the meter inside the device, which keeps counting even while NVDA is
+  not running. Only if a device does not support that query are background
+  samples used instead (marked as "estimated", since they only cover the time
+  NVDA was running).
+- **Connection diagnostics** — announces the connection state per platform,
+  plus the network state and the remaining lifetime of the Netatmo token.
+- **Toggle favourite 1–9** and **announce status of favourite 1–9** — switches
+  the respective favourite device, or announces its status, without opening
+  the menu. The number matches the order in the favourites tab of the device
+  menu (number 1 is the top entry). You add favourites in the device menu:
+  select a device and activate the "Add to favorites" entry.
+
+---
+
+## Supported platforms and devices
+
+The add-on supports four smart home platforms. Each can be enabled
+individually; you only need the ones you actually use.
+**Cozytouch/Atlantic is experimental** — only a single device model has been
+tested there so far.
 
 ### Meross
 
-Die Anmeldung erfolgt mit E-Mail und Passwort des Meross-Kontos. Auch
-externe Änderungen (z. B. Schalten über die Meross-App, Alexa oder den
-Schalter am Gerät) werden angesagt.
+Sign in with the email address and password of your Meross account. External
+changes are announced too, for example switching through the Meross app, Alexa
+or the button on the device.
 
-#### Steckdosen und Steckdosenleisten
+#### Plugs and power strips
 
-- **MSS210** – Schaltbare Steckdose (Ein/Aus)
-- **MSS310** – Steckdose mit Energiemessung (Leistung, Spannung, Strom)
-- **MSS315** – Steckdose mit Energiemessung (Leistung, Spannung, Strom)
-- **MSS425**, **MSS425E**, **MSS425F** – Steckdosenleisten; jede Steckdose
-  ist einzeln schaltbar. Die USB-Anschlüsse dieser Leisten bilden einen
-  gemeinsamen Ausgang und lassen sich daher nur zusammen schalten. Ausgänge,
-  die in der Meross-App einen eigenen Namen haben, erscheinen mit diesem
-  Namen.
-- **MSS620** – Outdoor-Doppelsteckdose; beide Ausgänge einzeln schaltbar
-  (die Taste am Gerät selbst schaltet immer beide gemeinsam)
-- **MOP320** – Outdoor-Doppelsteckdose mit Energiemessung; beide Ausgänge
-  einzeln schaltbar
+- **MSS210** — switchable plug (on/off)
+- **MSS310** — plug with energy monitoring (power, voltage, current)
+- **MSS315** — plug with energy monitoring (power, voltage, current)
+- **MSS425**, **MSS425E**, **MSS425F** — power strips; every mains outlet can
+  be switched individually. The USB ports of these strips form a single shared
+  outlet and can therefore only be switched together. Outlets that have their
+  own name in the Meross app appear under that name.
+- **MSS620** — outdoor dual plug; both outlets switchable individually (the
+  button on the device itself always switches both together)
+- **MOP320** — outdoor dual plug with energy monitoring; both outlets
+  switchable individually
 
-#### Lampen und LED-Strips
+#### Lights and LED strips
 
-- **MSL320** (LED-Strip), **MSL450**, **MSL610**
-- Weitere MSL-Modelle werden automatisch erkannt und erhalten dieselben
-  Funktionen, soweit das jeweilige Modell sie unterstützt: Ein/Aus,
-  Helligkeit, RGB-Farbe, Farbtemperatur und Weiß-Voreinstellungen.
+- **MSL320** (LED strip), **MSL450**, **MSL610**
+- Other MSL models are detected automatically and get the same functions as
+  far as the model supports them: on/off, brightness, RGB colour, colour
+  temperature and white presets.
 
-#### Aroma-Diffuser
+#### Aroma diffusers
 
-- **MOD150** – Sprühsteuerung: aus, schwaches oder starkes Sprühen
-  (die Licht-Funktion des Geräts wird von der Erweiterung nicht gesteuert)
+- **MOD150** — spray control: off, light or strong spray (the light function
+  of the device is not controlled by the add-on)
 
-#### Hubs und Sensoren
+#### Hubs and sensors
 
-Die Sensoren verbinden sich über einen Meross-Hub. Beide Hub-Generationen
-(**MSH300** und **MSH450**) werden automatisch erkannt; welcher Hub welchen
-Sensor aufnehmen kann, legt Meross fest und steht in der Meross-App.
+The sensors connect through a Meross hub. Both hub generations (**MSH300** and
+**MSH450**) are detected automatically; which hub accepts which sensor is
+defined by Meross and shown in the Meross app.
 
-Unterstützte Sensoren:
+Supported sensors:
 
-- **MS100** und **MS100F** – Temperatur- und Feuchtesensor
-- **MS130** – Temperatur- und Feuchtesensor mit Display
-- **MS400**, **MS405** – Wasserleck-Sensoren
+- **MS100** and **MS100F** — temperature and humidity sensor
+- **MS130** — temperature and humidity sensor with display
+- **MS400**, **MS405** — water leak sensors
 
 ### Netatmo
 
-Heizungssteuerung und Wetterstations-Anzeige über das Netatmo-Konto.
+Heating control and weather station display through your Netatmo account.
 
-#### Heizung
+#### Heating
 
-- **NATherm1** – Raum-Thermostat
-- **NRV** – Smartes Heizkörperventil
-- **NAPlug** – Relais/Gateway (Bridge, für NATherm1 erforderlich)
+- **NATherm1** — room thermostat
+- **NRV** — smart radiator valve
+- **NAPlug** — relay/gateway (bridge, required for the NATherm1)
 
-Thermostate und Heizkörperventile werden nach den in der Netatmo-App
-vergebenen Räumen gruppiert; der Raumname wird auch im Gerätenamen
-angesagt.
+Thermostats and radiator valves are grouped by the rooms assigned in the
+Netatmo app; the room name is also announced as part of the device name.
 
-Einstellbar sind: Solltemperatur (manuell, mit wählbarer Dauer), die
-Betriebsmodi **Zeitplan**, **Abwesend** und **Frostschutz** sowie der
-Wechsel des aktiven Heizprogramms. Angezeigt werden außerdem:
-Ist-Temperatur, aktueller Modus (inklusive „Maximum", falls über die App
-gesetzt), Kessel-/Brenner-Status, aktive Zeitplan-Zone, Vorheizen
-(Anticipation), Batteriestand sowie die Fenster-offen-Erkennung (diese
-Funktion hat nur das Heizkörperventil NRV, nicht das Raum-Thermostat).
+Adjustable: target temperature (manual, with a selectable duration), the
+operating modes **schedule**, **away** and **frost guard**, and switching the
+active heating schedule. Also displayed: measured temperature, current mode
+(including "maximum" if set through the app), boiler/burner status, active
+schedule zone, pre-heating (anticipation), battery level, and open window
+detection (only the NRV radiator valve has this feature, not the room
+thermostat).
 
-#### Wetter und Raumluft (nur Anzeige)
+#### Weather and indoor air (display only)
 
-- **Wetterstation NAMain** mit Außen-, Wind-, Regen- und
-  Zusatz-Innenmodulen
-- **Raumluft-Monitor NHC**
+- **NAMain weather station** with outdoor, wind, rain and additional indoor
+  modules
+- **NHC indoor air quality monitor**
 
-Angezeigt werden: Temperatur, Luftfeuchtigkeit, CO₂, Lautstärke, Luftdruck,
-Regen und Wind – reine Anzeige, keine Steuerung.
+Displayed: temperature, humidity, CO₂, noise, air pressure, rain and wind —
+display only, no control.
 
 ### VeSync / Levoit
 
-Die Anmeldung erfolgt mit E-Mail, Passwort und Länder-Code des
-VeSync-Kontos.
+Sign in with the email address, password and country code of your VeSync
+account.
 
-#### Luftreiniger (Levoit Core)
+#### Air purifiers (Levoit Core)
 
 - **Core200S**, **Core300S**, **Core400S**, **Core500S**, **Core600S**
-- ebenso die regionalen Varianten dieser Baureihen, die VeSync als
+- and the regional variants of these series, which VeSync reports as
   **LAP-C201S**, **LAP-C202S**, **LAP-C301S**, **LAP-C302S**, **LAP-C401S**,
-  **LAP-C501S** und **LAP-C601S** meldet – unabhängig vom Länderkürzel am
-  Ende der Modellbezeichnung (z. B. `-WEU`, `-WUSR`, `-WJP`).
+  **LAP-C501S** and **LAP-C601S** — regardless of the country suffix at the
+  end of the model name (e.g. `-WEU`, `-WUSR`, `-WJP`).
 
-Verfügbare Funktionen: Ein/Aus, Modus (Manuell und Schlaf; Auto bei allen
-Modellen außer dem Core200S), Lüfterstufe, Display, Kindersicherung,
-Auto-Profil (Standard/Effizient/Leise), Luftqualität sowie
-Filter-Restlebensdauer mit Warnung bei niedrigem Wert. Der **Core200S**
-(und seine Varianten LAP-C201S/C202S) hat zusätzlich ein steuerbares
-**Nachtlicht** (Ein/Aus/Gedimmt).
+Available functions: on/off, mode (manual and sleep; auto on all models except
+the Core200S), fan level, display, child lock, auto profile
+(default/efficient/quiet), air quality, and remaining filter life with a
+warning at a low value. The **Core200S** (and its LAP-C201S/C202S variants)
+additionally has a controllable **night light** (on/off/dimmed).
 
-#### Tower-Ventilatoren (Levoit)
+#### Tower fans (Levoit)
 
-- **LTF-F422S**-Serie, ebenfalls unabhängig vom Länderkürzel
-  (getestet: KEU, WUSR, WJP, WUS)
+- **LTF-F422S** series, likewise regardless of the country suffix (tested:
+  KEU, WUSR, WJP, WUS)
 
-Verfügbare Funktionen: Ein/Aus, Modus (Normal, Auto, Turbo, Schlaf),
-Lüfterstufe, Oszillation, Stummschaltung und Display.
+Available functions: on/off, mode (normal, auto, turbo, sleep), fan level,
+oscillation, mute and display.
 
-Andere Gerätetypen im VeSync-Konto (z. B. Steckdosen, Lampen oder
-Luftbefeuchter) werden derzeit nicht angezeigt.
+Other device types in your VeSync account (plugs, lights or humidifiers, for
+example) are currently not shown.
 
-### Cozytouch / Atlantic (experimentell)
+### Cozytouch / Atlantic (experimental)
 
-> **Experimentell.** Von den Cozytouch-Geräten ist bisher nur eine
-> Warmwasser-Wärmepumpe getestet. Andere Gerätetypen werden möglicherweise
-> falsch erkannt oder falsch dargestellt, und einzelne Funktionen können
-> ausfallen, wenn Atlantic die Cloud-Schnittstelle ändert. Details unter
-> [Reifegrad und Hinweise](#reifegrad-und-hinweise).
+> **Experimental.** Of the Cozytouch devices, only one hot water heat pump has
+> been tested so far. Other device types may be detected or presented
+> incorrectly, and individual functions can stop working if Atlantic changes
+> its cloud interface. Details under [Maturity and
+> notes](#maturity-and-notes).
 
-Die Anmeldung erfolgt mit E-Mail und Passwort des Cozytouch-/
-Atlantic-Kontos.
+Sign in with the email address and password of your Cozytouch/Atlantic
+account.
 
-- **Warmwasser-Wärmepumpe** (getestet: Austria Email Revolution Evo 3; das
-  genaue Modell wird im Geräte-Menü angezeigt)
+- **Hot water heat pump** (tested: Austria Email Revolution Evo 3; the exact
+  model is shown in the device menu)
 
-Verfügbare Funktionen: Warmwasser-Erzeugung ein/aus, Zieltemperatur
-(inklusive des tatsächlichen Heizziels bei Eco/Boost; eine gemessene
-Wassertemperatur liefert die Cloud bei diesem Modell nicht), Heizmodus,
-Boost-Funktion (inklusive experimentell einstellbarer Boost-Laufzeit),
-Abwesenheits-Modus mit planbarem Zeitraum, verfügbarer
-Warmwasservorrat in Prozent sowie Anzeige der heute programmierten
-Heizzeiten und des Status von Elektro-Heizstab und Niedertarif. Die
-Nennkapazität (in Litern) lässt sich in den Einstellungen hinterlegen.
+Available functions: hot water production on/off, target temperature
+(including the actual heating target under Eco/boost; the cloud does not
+report a measured water temperature for this model), heating mode, boost
+(including an experimentally adjustable boost duration), away mode with a
+schedulable period, available hot water in percent, and a display of today's
+programmed heating times and the status of the electric heating element and
+the off-peak tariff. The rated capacity (in litres) can be entered in the
+settings.
 
-Die drei Heizmodi:
+The three heating modes:
 
-- **Manuell** – heizt dauerhaft auf die eingestellte Zieltemperatur.
-- **Eco+** – heizt energiesparend mit abgesenktem Heizziel; das
-  tatsächliche Heizziel wird im Geräteeintrag angezeigt.
-- **Programm** – heizt nur innerhalb der Zeitfenster, die in der
-  Cozytouch-App festgelegt wurden (bis zu drei pro Tag, z. B. für
-  Niedertarif-Zeiten). Die Zeitfenster selbst lassen sich nur in der
-  Cozytouch-App bearbeiten; die Erweiterung zeigt die heute programmierten
-  Heizzeiten im Geräteeintrag an.
+- **Manual** — heats continuously to the configured target temperature.
+- **Eco+** — heats economically with a lowered heating target; the actual
+  target is shown in the device entry.
+- **Schedule** — heats only within the time windows configured in the
+  Cozytouch app (up to three per day, e.g. for off-peak hours). The time
+  windows themselves can only be edited in the Cozytouch app; the add-on shows
+  today's programmed heating times in the device entry.
 
 ---
 
-## Einrichtung
+## Setup
 
-Voraussetzung: Die Geräte müssen vorab einmal mit der jeweiligen
-Hersteller-App (Meross, Netatmo, VeSync, Cozytouch) eingerichtet worden
-sein – die Erweiterung übernimmt sie dann aus dem Konto.
+Prerequisite: the devices must have been set up once with the respective
+manufacturer app (Meross, Netatmo, VeSync, Cozytouch) — the add-on then picks
+them up from your account.
 
-Das Menü wird mit **NVDA + Umschalt + H** geöffnet. Ohne bestehende
-Anmeldung öffnet sich automatisch der Einstellungs-Dialog. Dort die
-gewünschten Plattformen aktivieren und die Zugangsdaten eintragen – Details
-pro Plattform in den folgenden Abschnitten. Zum Schluss: optional
-„Automatische Anmeldung" aktivieren (die Verbindung wird dann bei jedem
-NVDA-Start automatisch aufgebaut) und speichern. Die Geräte werden geladen
-und stehen sofort im Menü zur Verfügung – ein NVDA-Neustart ist nicht
-nötig.
+Open the menu with **NVDA + Shift + H**. If you are not signed in yet, the
+settings dialog opens automatically. Enable the platforms you use and enter
+the credentials — details per platform in the following sections. Finally:
+optionally enable "Automatic login" (the connection is then established at
+every NVDA start) and save. The devices are loaded and immediately available
+in the menu; no NVDA restart is required.
 
-### Meross einrichten
+### Set up Meross
 
-E-Mail und Passwort des Meross-Kontos eintragen – fertig.
+Enter the email address and password of your Meross account — done.
 
-### Netatmo einrichten
+### Set up Netatmo
 
-Netatmo verwendet eine Browser-Anmeldung (OAuth2) statt E-Mail/Passwort in
-der Erweiterung. Einmalig nötig:
+Netatmo uses a browser sign-in (OAuth2) instead of an email address and
+password inside the add-on. Required once:
 
-1. Eine eigene (kostenlose) App auf [dev.netatmo.com](https://dev.netatmo.com)
-   anlegen; dort werden eine **Client-ID** und ein **Client-Secret**
-   ausgestellt.
-2. Beides im Netatmo-Tab der Erweiterung eintragen.
-3. Die im Tab angezeigte **Redirect-URI** bei der Netatmo-App hinterlegen –
-   Details und was es mit dem Port auf sich hat, erklärt der Abschnitt
-   [Netatmo: Redirect-URI und Port](#netatmo-redirect-uri-und-port).
-4. Auf „Mit Netatmo verbinden (OAuth2)" gehen, im Browser anmelden und
-   bestätigen.
+1. Create your own (free) app on [dev.netatmo.com](https://dev.netatmo.com);
+   you receive a **client ID** and a **client secret**.
+2. Enter both in the Netatmo tab of the add-on.
+3. Register the **redirect URI** shown in the tab with your Netatmo app —
+   details, and what the port is about, are explained in the section
+   [Netatmo: redirect URI and port](#netatmo-redirect-uri-and-port).
+4. Choose "Connect with Netatmo (OAuth2)", sign in in the browser and confirm.
 
-### VeSync / Levoit einrichten
+### Set up VeSync / Levoit
 
-E-Mail, Passwort und Länder-Code des VeSync-Kontos eintragen.
+Enter the email address, password and country code of your VeSync account.
 
-### Cozytouch / Atlantic einrichten (experimentell)
+### Set up Cozytouch / Atlantic (experimental)
 
-E-Mail und Passwort des Cozytouch-Kontos eintragen (dieselben wie in der
-Cozytouch-App). Optional: die Nennkapazität des Warmwasserspeichers in
-Litern, damit der Vorrat zusätzlich in Litern geschätzt wird. Der Reiter
-ist im Einstellungsdialog als „experimentell" gekennzeichnet – siehe
-[Reifegrad und Hinweise](#reifegrad-und-hinweise).
+Enter the email address and password of your Cozytouch account (the same as in
+the Cozytouch app). Optional: the rated capacity of your hot water tank in
+litres, so the available hot water is additionally estimated in litres. The
+tab is labelled "experimental" in the settings dialog — see [Maturity and
+notes](#maturity-and-notes).
 
 ---
 
-## Netatmo: Redirect-URI und Port
+## Netatmo: redirect URI and port
 
-### Was ist die Redirect-URI?
+### What is the redirect URI?
 
-Bei der Browser-Anmeldung schickt Netatmo die Freigabe an eine vorher
-festgelegte Adresse zurück – die Redirect-URI. Die Erweiterung zeigt sie im
-Netatmo-Tab an. Standardmäßig lautet sie **exakt**:
+During the browser sign-in, Netatmo sends the authorisation back to a
+previously registered address — the redirect URI. The add-on shows it in the
+Netatmo tab. By default it is **exactly**:
 
 ```
 http://localhost:8474/callback
 ```
 
-Genau diese Adresse muss in der Netatmo-App auf dev.netatmo.com im Feld
-„redirect URI" eingetragen werden – am besten unverändert aus der
-Erweiterung kopieren.
+You must enter exactly this address in the "redirect URI" field of your
+Netatmo app on dev.netatmo.com — best copied unchanged from the add-on.
 
-### Warum muss die Adresse exakt stimmen?
+### Why does the address have to match exactly?
 
-Netatmo vergleicht die registrierte Redirect-URI Zeichen für Zeichen mit
-der tatsächlich verwendeten. Schon ein Unterschied bei Schema (`http`),
-Host (`localhost` ist nicht dasselbe wie `127.0.0.1`), Port oder Pfad führt
-zur Fehlermeldung `redirect_uri mismatch`.
+Netatmo compares the registered redirect URI character by character with the
+one actually used. Even a difference in scheme (`http`), host (`localhost` is
+not the same as `127.0.0.1`), port or path leads to the error
+`redirect_uri mismatch`.
 
-### Wozu der Port und warum 8474?
+### What is the port for, and why 8474?
 
-Während der Anmeldung startet die Erweiterung kurzzeitig einen kleinen
-lokalen Webserver, der die Freigabe von Netatmo entgegennimmt. Der Port
-(Standard **8474**) legt fest, auf welchem „Kanal" dieser Server lauscht.
-Er ist nur lokal und nur für den Moment der Anmeldung aktiv; nach außen ist
-nichts geöffnet. 8474 ist bewusst ein unauffälliger, selten belegter Port.
+During sign-in the add-on briefly starts a small local web server that
+receives the authorisation from Netatmo. The port (default **8474**)
+determines the "channel" this server listens on. It is only local and only
+active for the moment of signing in; nothing is opened to the outside. 8474
+was chosen as an inconspicuous, rarely used port.
 
-Ist der Port bereits belegt (die Anmeldung schlägt mit einer Port-Meldung
-fehl), im Netatmo-Tab einfach den **Redirect-Port** auf einen freien Wert
-ändern – und die dann neu angezeigte Redirect-URI wieder bei
-dev.netatmo.com eintragen, damit beide Seiten übereinstimmen.
+If the port is already taken (the sign-in fails with a port message), simply
+change the **redirect port** in the Netatmo tab to a free value — and register
+the newly shown redirect URI with dev.netatmo.com again, so both sides match.
 
 ---
 
-## Bedienung
+## Usage
 
-Im Geräte-Menü sind die Geräte nach Plattform und Typ in einer Baumansicht
-gruppiert. Navigiert wird mit den Pfeiltasten; mit Eingabe oder Leertaste
-wird geschaltet oder ein Wert geändert. Häufig genutzte Geräte können als
-Favoriten markiert werden (Eintrag „Zu Favoriten hinzufügen" am Gerät); sie
-erscheinen dann zusätzlich im Favoriten-Tab. In den Einstellungen lässt sich
-festlegen, welcher Tab (alle Geräte oder Favoriten) beim Öffnen des Menüs
-zuerst erscheint.
+In the device menu the devices are grouped by platform and type in a tree
+view. Navigate with the arrow keys; switch or change a value with Enter or
+Space. Frequently used devices can be marked as favourites (the "Add to
+favorites" entry on a device); they then also appear in the favourites tab. In
+the settings you can choose which tab — all devices or favourites — is shown
+first when the menu opens.
 
-Jede Aktion gibt eine sofortige Sprach- und Signalton-Rückmeldung. Bei
-geöffnetem Menü werden die Geräte häufiger aktualisiert, damit die Werte
-stets aktuell sind.
+Every action gives immediate speech and tone feedback. While the menu is open
+the devices are refreshed more frequently, so the values stay up to date.
 
 ---
 
-## Benachrichtigungen bei Änderungen
+## Change announcements
 
-Auch externe Änderungen werden angesagt – zum Beispiel, wenn ein Gerät über
-die Hersteller-App, Alexa oder den Schalter am Gerät geschaltet wird. Im
-Tab „Benachrichtigungen" lässt sich pro Plattform und Ereignistyp
-festlegen, was angesagt wird (z. B. Schalten, Modus, Lüfterstufe,
-Luftqualität, Filter, Thermostat-Soll, Kessel-Status). Eigene Aktionen im
-Dialog werden nicht doppelt gemeldet.
-
----
-
-## Hinweise zu Cloud-Limits
-
-Meross begrenzt die Cloud auf **200 Nachrichten pro Stunde und Gerät** – laut
-Auskunft des Meross-Supports eine Schutzmaßnahme gegen Server-Überlastung.
-Wird das Limit dauerhaft überschritten, verschickt Meross zunächst eine
-Warnung („cloud termination notice"). Sendet dasselbe Gerät drei Tage nach
-dieser Warnung weiterhin zu viele Nachrichten, wird **dieses Gerät** für
-24 Stunden gesperrt. Andere Geräte und das Konto selbst sind davon nicht
-betroffen.
-
-Die Erweiterung bleibt automatisch darunter: die regelmäßige Abfrage ist
-bewusst zurückhaltend eingestellt, Ein/Aus-Änderungen kommen ohnehin in
-Echtzeit per Push, und zusätzlich begrenzt die Erweiterung die Anfragen pro
-Gerät selbst. Sollte ein einzelnes Gerät die Obergrenze doch einmal
-erreichen, wird es vorübergehend seltener abgefragt; eine Meldung nennt dann
-das betroffene Gerät. Alle anderen Geräte laufen normal weiter.
+External changes are announced as well — for example when a device is switched
+through the manufacturer app, Alexa or the button on the device. In the
+"Notifications" tab you configure per platform and event type what is
+announced (switching, mode, fan level, air quality, filter, thermostat
+setpoint, boiler status, and so on). Your own actions in the dialog are not
+reported twice.
 
 ---
 
-## Reifegrad und Hinweise
+## Notes on cloud limits
 
-Einzig Netatmo bietet eine offizielle, dokumentierte
-Programmierschnittstelle. Meross, VeSync und Cozytouch sind nachgebaute
-(reverse-engineerte) Cloud-Anbindungen ohne offizielle Schnittstelle – für
-Meross hat der Hersteller-Support auf Anfrage ausdrücklich bestätigt, dass es
-keine offizielle Programmierschnittstelle gibt. Sie funktionieren zuverlässig
-mit den getesteten Geräten, können aber bei Server-Änderungen der Hersteller
-vorübergehend ausfallen.
+Meross limits its cloud to **200 messages per hour and device** — according to
+Meross support, a safety measure against server flooding. If the limit is
+exceeded persistently, Meross first sends a warning (a "cloud termination
+notice"). If the same device still sends too many messages three days after
+that warning, **that device** is blocked for 24 hours. Other devices and the
+account itself are not affected.
 
-Die Plattformen sind unterschiedlich weit erprobt:
-
-- **Meross** und **Netatmo** gelten als stabil.
-- **VeSync/Levoit:** Unterstützt werden ausschließlich Levoit-Luftreiniger
-  der Core-Reihe und Levoit-Tower-Ventilatoren. Andere VeSync-Geräte
-  (Steckdosen, Lampen, Luftbefeuchter, Küchengeräte) werden nicht
-  angezeigt.
-- **Cozytouch/Atlantic (experimentell):** Getestet wurde bisher nur die
-  Warmwasser-Wärmepumpe Austria Email Revolution Evo 3. Andere
-  Cozytouch-Geräte (z. B. Heizkörper, Klimageräte) werden derzeit fälschlich
-  ebenfalls als Warmwasser-Wärmepumpe dargestellt und sind nicht nutzbar.
+The add-on automatically stays below the limit: the periodic polling is
+deliberately conservative, on/off changes arrive in real time via push anyway,
+and the add-on additionally caps the requests per device itself. Should a
+single device reach the ceiling nonetheless, it is temporarily polled less
+often, and a message names the affected device. All other devices continue
+normally.
 
 ---
 
-## Datenschutz und Sicherheit
+## Maturity and notes
 
-- Die Zugangsdaten werden ausschließlich **lokal auf dem Rechner** und
-  **verschlüsselt** gespeichert. Passwörter liegen nie im Klartext in der
-  Konfiguration.
-- Die Kommunikation läuft direkt mit den jeweiligen Hersteller-Clouds – es
-  werden keine Daten an Dritte gesendet.
+Only Netatmo offers an official, documented API. Meross, VeSync and Cozytouch
+are reverse-engineered cloud integrations without an official interface — for
+Meross, the manufacturer's support explicitly confirmed on request that no
+official API exists. They work reliably with the tested devices but can fail
+temporarily when the manufacturers change their servers.
 
----
+The platforms differ in how well they are field-tested:
 
-## Fehlerbehebung
-
-- **Keine Geräte sichtbar:** Zugangsdaten und aktivierte Plattform im
-  Einstellungs-Dialog prüfen; danach speichern (die Anmeldung läuft im
-  Hintergrund).
-- **Gerät offline:** Prüfen, ob das Gerät in der Hersteller-App erreichbar
-  ist.
-- **Eine Plattform meldet „nicht erreichbar":** meist eine vorübergehende
-  Cloud-/Netzwerkstörung – die Erweiterung verbindet sich automatisch
-  wieder und sagt an, sobald die Plattform wieder verbunden ist.
+- **Meross** and **Netatmo** are considered stable.
+- **VeSync/Levoit:** only Levoit Core series air purifiers and Levoit tower
+  fans are supported. Other VeSync devices (plugs, lights, humidifiers,
+  kitchen appliances) are not shown.
+- **Cozytouch/Atlantic (experimental):** only the Austria Email Revolution
+  Evo 3 hot water heat pump has been tested so far. Other Cozytouch devices
+  (radiators or air conditioners, for example) are currently shown incorrectly
+  as hot water heat pumps as well and are not usable.
 
 ---
 
-## Selbst bauen
+## Privacy and security
 
-Dieses Add-on nutzt **nicht** die SCons-Vorlage (`buildVars.py`/`sconstruct`)
-des offiziellen NVDA-Add-on-Templates, sondern ein eigenes Build-Skript –
-nötig wegen der gebündelten Binärpakete für zwei Python-Architekturen
-(`lib/_arch/cp311-win32` und `cp313-amd64`). Für den NVDA Add-on Store ist
-das zulässig; der Store prüft das fertige `.nvda-addon`-Paket, nicht das
-Build-System.
+- Your credentials are stored exclusively **locally on your computer** and
+  **encrypted**. Passwords are never stored in plain text in the
+  configuration.
+- Communication goes directly to the respective manufacturer clouds — no data
+  is sent to third parties.
+
+---
+
+## Troubleshooting
+
+- **No devices visible:** check the credentials and the enabled platform in
+  the settings dialog, then save (the sign-in runs in the background).
+- **Device offline:** check whether the device is reachable in the
+  manufacturer app.
+- **A platform reports "unreachable":** usually a temporary cloud or network
+  issue — the add-on reconnects automatically and announces when the platform
+  is connected again.
+
+---
+
+## Building it yourself
+
+This add-on does **not** use the SCons template (`buildVars.py`/`sconstruct`)
+of the official NVDA add-on template, but a build script of its own — which is
+necessary because of the bundled binary packages for two Python architectures
+(`lib/_arch/cp311-win32` and `cp313-amd64`). That is acceptable for the NVDA
+add-on store; the store reviews the finished `.nvda-addon` package, not the
+build system.
 
 ```bash
 python build_addon.py pack
 ```
 
-erzeugt `dist/SmartHomeControl-<version>.nvda-addon`, prüft dabei die
-Übersetzungen (`.po`/`.mo` deckungsgleich) und die Paketintegrität
-(kein `__pycache__`, Manifest vorhanden, `.mo` enthalten) und
-synchronisiert die Versionsnummer in die Dokumentationstitel.
-`python build_addon.py libs` erzeugt `lib/` reproduzierbar aus
-`requirements-bundle.txt` neu. Die GitHub-Actions-Pipeline
-(`.github/workflows/build.yml`) baut bei jedem Push auf `main` und hängt
-bei Tags (`v*`) das Paket an ein GitHub-Release an.
+produces `dist/SmartHomeControl-<version>.nvda-addon`. It checks the
+translations along the way (`.po` and `.mo` in agreement) and the package
+integrity (no `__pycache__`, manifest present, `.mo` included), and
+synchronises the version number into the documentation titles.
+`python build_addon.py libs` rebuilds `lib/` reproducibly from
+`requirements-bundle.txt`. The GitHub Actions pipeline
+(`.github/workflows/build.yml`) builds on every push to `main` and, for tags
+(`v*`), attaches the package to a GitHub release together with the changelog
+section of that version.
 
-## Lizenz und verwendete Komponenten
+## License and bundled components
 
-Smart Home Control steht unter der **GNU General Public License, Version 2**
-(siehe Datei `LICENSE`).
+Smart Home Control is licensed under the **GNU General Public License,
+version 2** (see the `LICENSE` file).
 
-Die Erweiterung bringt die benötigten Python-Bibliotheken mit, damit keine
-Zusatzinstallation nötig ist. Alle Pakete werden unverändert von PyPI
-übernommen; ihre vollständigen Lizenztexte liegen im Add-on-Paket unter
-`lib/`.
+The add-on ships the Python libraries it needs, so no extra installation is
+required. All packages are taken unmodified from PyPI; their full license
+texts are included in the add-on package under `lib/`.
 
-| Komponente | Zweck | Lizenz |
+| Component | Purpose | License |
 |---|---|---|
-| meross-iot | Meross-Cloud und MQTT | MIT |
-| paho-mqtt | MQTT-Protokoll | EPL-2.0 / **EDL-1.0** |
-| requests, urllib3, idna, certifi, charset-normalizer | HTTPS-Aufrufe | Apache-2.0, MIT, MPL-2.0 |
-| aiohttp, yarl, multidict, frozenlist, propcache, aiosignal, aiohappyeyeballs, attrs | asynchrone HTTP-Aufrufe | Apache-2.0, MIT |
-| pycryptodomex | AES-Fallback der Zugangsdaten-Verschlüsselung | BSD-2 / Public Domain |
-| typing-extensions, pycparser | Hilfsbibliotheken | PSF, BSD |
+| meross-iot | Meross cloud and MQTT | MIT |
+| paho-mqtt | MQTT protocol | EPL-2.0 / **EDL-1.0** |
+| requests, urllib3, idna, certifi, charset-normalizer | HTTPS requests | Apache-2.0, MIT, MPL-2.0 |
+| aiohttp, yarl, multidict, frozenlist, propcache, aiosignal, aiohappyeyeballs, attrs | asynchronous HTTP requests | Apache-2.0, MIT |
+| pycryptodomex | AES fallback for credential encryption | BSD-2 / Public Domain |
+| typing-extensions, pycparser | helper libraries | PSF, BSD |
 
-Eine vollständige Liste mit den exakten Versionsnummern steht in
-`THIRD_PARTY_LICENSES.md`. Sie wird mit
-`python build_addon.py licenses --write` direkt aus den
-`*.dist-info/METADATA`-Feldern der gebündelten Pakete erzeugt und kann
-deshalb nicht veralten.
+A complete list with the exact version numbers is in
+`THIRD_PARTY_LICENSES.md`. It is generated by
+`python build_addon.py licenses --write` directly from the
+`*.dist-info/METADATA` fields of the bundled packages, so it cannot go stale.
 
-Zwei Pakete verdienen einen ausdrücklichen Hinweis:
+Two packages deserve an explicit note:
 
-- **`paho-mqtt` 2.1.0** ist dual lizenziert. Die Paket-Metadaten geben
-  `EPL-2.0 OR BSD-3-Clause` an, die beiliegende `LICENSE.txt` nennt dieselbe
-  Wahl in der Eclipse-Schreibweise: Eclipse Public License 2.0 **oder**
-  Eclipse Distribution License 1.0. Die EPL-2.0 ist mit der GPL-2.0 nicht
-  vereinbar; für die Verwendung in dieser Erweiterung gilt daher die
-  **EDL-1.0 / BSD-3-Clause**-Option, die es ist.
-- **`certifi`** steht unter der **MPL-2.0**. Das ist ein dateiweises
-  Copyleft, das sich mit der GPL kombinieren lässt, solange die Datei selbst
-  unverändert bleibt – sie wird hier unverändert übernommen.
+- **`paho-mqtt` 2.1.0** is dual-licensed. The package metadata states
+  `EPL-2.0 OR BSD-3-Clause`; the bundled `LICENSE.txt` names the same choice in
+  Eclipse wording: Eclipse Public License 2.0 **or** Eclipse Distribution
+  License 1.0. The EPL-2.0 is not compatible with the GPL-2.0, so for use in
+  this add-on the **EDL-1.0 / BSD-3-Clause** option applies, which is.
+- **`certifi`** is under the **MPL-2.0**. That is a file-level copyleft which
+  can be combined with the GPL as long as the file itself stays unmodified —
+  and it is taken over unmodified here.
 
 ---
 
-*Smart Home Control ist eine Community-Erweiterung und steht in keiner
-Verbindung zu Meross, Netatmo, VeSync/Levoit oder Atlantic/Cozytouch. Alle
-genannten Marken- und Produktnamen gehören den jeweiligen Eigentümern.*
+*Smart Home Control is a community add-on and is not affiliated with Meross,
+Netatmo, VeSync/Levoit or Atlantic/Cozytouch. All brand and product names
+belong to their respective owners.*

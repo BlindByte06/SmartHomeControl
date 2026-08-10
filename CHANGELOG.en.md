@@ -22,6 +22,10 @@ notes are built from.
   missing the release run fails rather than publishing a release without a
   changelog, and likewise if the tag does not match the version in
   `manifest.ini`.
+- **The repository landing page is now in English.** It is the "homepage" link
+  in the add-on store, where users from all over the NVDA world arrive – and
+  the add-on itself speaks both languages anyway. The German version is
+  unchanged in `README.de.md`; each links to the other on its first line.
 
 ## 26.7.2 (August 2026)
 
