@@ -11,6 +11,13 @@
   „experimentell" konkret bedeutet: getestet ist bisher nur eine
   Warmwasser-Wärmepumpe, andere Gerätetypen können falsch dargestellt
   werden. Auch die Add-on-Beschreibung im Store nennt es.
+- **GitHub-Releases tragen jetzt den Changelog der jeweiligen Version** statt
+  eines immer gleichen Textbausteins – auf Englisch, weil Release-Seiten
+  international gelesen werden. Grundlage ist die neue Datei
+  `CHANGELOG.en.md`; `build_addon.py relnotes` schneidet den passenden
+  Abschnitt heraus. Fehlt er, bricht der Release-Lauf ab, statt ein Release
+  ohne Changelog zu veröffentlichen; ebenso, wenn der Tag nicht zur Version
+  in `manifest.ini` passt.
 
 ## 26.7.2 (August 2026)
 

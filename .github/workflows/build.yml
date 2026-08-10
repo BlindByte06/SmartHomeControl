@@ -46,20 +46,29 @@ jobs:
         path: dist/*.nvda-addon
         if-no-files-found: error
 
+    # Die Release-Notes sind der Changelog-Abschnitt der getaggten Version,
+    # auf Englisch (CHANGELOG.en.md) - Release-Seiten werden international
+    # gelesen. Fehlt der Abschnitt, bricht der Schritt ab: ein Release ohne
+    # Changelog fiele sonst erst nach der Veröffentlichung auf.
+    # Zusätzlich muss der Tag zur Version in manifest.ini passen, sonst trüge
+    # das Release einen anderen Namen als das Paket darin.
+    - name: Build release notes (on tag)
+      if: startsWith(github.ref, 'refs/tags/')
+      run: |
+        $version = "${{ github.ref_name }}" -replace '^v', ''
+        $manifest = python -c "import build_addon; print(build_addon.read_version())"
+        if ($version -ne $manifest) {
+          Write-Host "::error::Tag v$version passt nicht zu manifest.ini ($manifest)"
+          exit 1
+        }
+        python build_addon.py relnotes --version $version --out release-notes.md
+        Get-Content release-notes.md
+
     - name: Create Release (on tag)
       if: startsWith(github.ref, 'refs/tags/')
       uses: softprops/action-gh-release@v2
       with:
         files: dist/*.nvda-addon
-        body: |
-          ## Smart Home Control ${{ github.ref_name }}
-
-          Download und Installation:
-          1. Laden Sie die .nvda-addon Datei herunter
-          2. Öffnen Sie die Datei mit NVDA
-          3. Bestätigen Sie die Installation
-          4. Starten Sie NVDA neu
-
-          Weitere Informationen im [README](README.md) und [CHANGELOG](CHANGELOG.md).
+        body_path: release-notes.md
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

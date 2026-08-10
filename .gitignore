@@ -12,6 +12,8 @@ __pycache__/
 *.egg-info/
 dist/
 build/
+# Erzeugt "build_addon.py relnotes" im Release-Workflow
+release-notes.md
 # Backup, das "build_addon.py libs" vor dem Ersetzen anlegt
 lib.old/
 

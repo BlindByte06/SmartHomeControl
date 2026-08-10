@@ -148,6 +148,69 @@ def read_version():
     return m.group(1).strip()
 
 
+def cmd_relnotes(version=None, out_path=None):
+    """Schneidet den Abschnitt einer Version aus CHANGELOG.en.md heraus.
+
+    Die GitHub-Releases sollen den Changelog der jeweiligen Version tragen,
+    und zwar auf Englisch - Release-Seiten lesen international. Quelle ist
+    deshalb CHANGELOG.en.md, nicht die deutsche Originaldatei.
+
+    Ohne --version wird die Version aus manifest.ini genommen; im Workflow
+    kommt sie aus dem Tag. Fehlt der Abschnitt, ist das ein Fehler und kein
+    stiller Rückfall auf einen Platzhaltertext: ein Release ohne Changelog
+    fiele erst auf, wenn es veröffentlicht ist.
+    """
+    version = version or read_version()
+    path = os.path.join(ROOT, "CHANGELOG.en.md")
+    if not os.path.exists(path):
+        raise SystemExit(f"[relnotes] {path} fehlt")
+    with open(path, encoding="utf-8") as f:
+        lines = f.read().splitlines()
+
+    # Abschnitt = von "## <version>" bis zur nächsten "## "-Überschrift.
+    start = None
+    for i, line in enumerate(lines):
+        if re.match(r'^##\s+' + re.escape(version) + r'(\s|$)', line):
+            start = i
+            break
+    if start is None:
+        raise SystemExit(
+            f"[relnotes] Kein Abschnitt '## {version}' in CHANGELOG.en.md - "
+            f"vor dem Taggen den Changelog-Eintrag ergaenzen")
+    end = len(lines)
+    for i in range(start + 1, len(lines)):
+        if lines[i].startswith("## "):
+            end = i
+            break
+
+    body = "\n".join(lines[start + 1:end]).strip()
+    if not body:
+        raise SystemExit(f"[relnotes] Abschnitt '## {version}' ist leer")
+
+    text = (f"## Smart Home Control {version}\n\n{body}\n\n"
+            "---\n\n"
+            "### Installation\n\n"
+            "1. Download the `.nvda-addon` file below\n"
+            "2. Open the file with NVDA\n"
+            "3. Confirm the installation\n"
+            "4. Restart NVDA\n\n"
+            "See the [README](README.md) for setup instructions per platform. "
+            "German changelog: [CHANGELOG.md](CHANGELOG.md).\n")
+
+    if out_path:
+        with open(out_path, "w", encoding="utf-8") as f:
+            f.write(text)
+        print(f"[relnotes] {version} -> {out_path} ({len(body.splitlines())} Zeilen)")
+    else:
+        # Die Konsole ist unter Windows oft cp1252; der Changelog enthält
+        # aber Zeichen wie CO₂. Ohne Umstellung bricht die Ausgabe hier ab.
+        try:
+            sys.stdout.reconfigure(encoding="utf-8")
+        except (AttributeError, OSError):
+            pass
+        print(text)
+
+
 def _dir_excluded(name):
     return name in EXCLUDE_DIR_NAMES or any(
         fnmatch.fnmatch(name, g) for g in EXCLUDE_DIR_GLOBS)
@@ -393,11 +456,15 @@ def cmd_pack(out_dir=None):
 def main():
     parser = argparse.ArgumentParser(description="Smart Home Control Build")
     parser.add_argument("command",
-                        choices=["libs", "pack", "all", "i18n", "licenses"])
+                        choices=["libs", "pack", "all", "i18n", "licenses",
+                                 "relnotes"])
     parser.add_argument("--out", help="Zusätzlicher Zielordner für das fertige Paket "
-                        "(z.B. C:\\Users\\hasel_bg\\SynologyDrive\\NVDA-Addons)")
+                        "(z.B. C:\\Users\\hasel_bg\\SynologyDrive\\NVDA-Addons); "
+                        "bei 'relnotes': Zieldatei für den Text")
     parser.add_argument("--write", action="store_true",
                         help="bei 'licenses': THIRD_PARTY_LICENSES.md schreiben")
+    parser.add_argument("--version",
+                        help="bei 'relnotes': Version statt der aus manifest.ini")
     args = parser.parse_args()
 
     if args.command == "i18n":
@@ -405,6 +472,9 @@ def main():
         return
     if args.command == "licenses":
         cmd_licenses(write=args.write)
+        return
+    if args.command == "relnotes":
+        cmd_relnotes(version=args.version, out_path=args.out)
         return
     if args.command in ("libs", "all"):
         cmd_libs()
