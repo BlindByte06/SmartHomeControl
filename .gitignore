@@ -52,10 +52,16 @@ SmartHomeControl_energy.json*
 SmartHomeControl_favorites.json*
 smarthomecontrol_salt.bin
 
-# Interne Arbeitsdokumente (nicht fürs öffentliche Repo)
+# Interne Arbeitsdokumente (nicht fürs öffentliche Repo).
+# Ins Repo gehören nur README, CHANGELOG, LICENSE und
+# THIRD_PARTY_LICENSES - alles andere ist Arbeitsmaterial.
 VEROEFFENTLICHUNG.md
 README_FAKTENPRUEFUNG.md
 VOR_EINREICHUNG_CHECKLISTE.md
+SmartHomeControl_Fehleranalyse.md
+SmartHomeControl_Release_Checkliste.md
+BACKLOG_NACH_RELEASE_1.md
+CODE_REVIEW_*.md
 
 # Aus dem Upstream entpackte Bibliotheks-Quellen (werden über
 # requirements-bundle.txt reproduziert, nicht eingecheckt)
