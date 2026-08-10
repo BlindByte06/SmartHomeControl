@@ -1747,15 +1747,26 @@ class GlobalPlugin(_CredentialsMixin, _SchedulerMixin, _ChangeDetectionMixin,
 # wenn sie nachträglich per setattr an die Klasse gehängt werden.
 # ----------------------------------------------------------------------
 def _install_favorite_scripts():
+    # WICHTIG: Der Name der Funktion muss mit "script_" beginnen, BEVOR
+    # scriptHandler.script() sie dekoriert. Der Dekorator prüft
+    # ``decoratedScript.__name__.startswith("script_")`` und steigt sonst
+    # kommentarlos (nur mit einer Log-Warnung) wieder aus, ohne __doc__ zu
+    # setzen. Ohne __doc__ verwirft NVDA das Skript beim Aufbau des
+    # Tastenbefehle-Dialogs (inputCore: "if not info.displayName: return
+    # None") - die Favoriten-Befehle waren dort schlicht nicht auffindbar
+    # und ließen sich deshalb nie belegen. Der Name wird zusätzlich exakt
+    # auf den Attributnamen gesetzt, unter dem das Skript später hängt.
     def make_toggle(n):
-        def script(self, gesture):
+        def script_toggleFavorite(self, gesture):
             self._favorite_toggle(n)
-        return script
+        script_toggleFavorite.__name__ = f"script_toggleFavorite{n}"
+        return script_toggleFavorite
 
     def make_status(n):
-        def script(self, gesture):
+        def script_favoriteStatus(self, gesture):
             self._favorite_status(n)
-        return script
+        script_favoriteStatus.__name__ = f"script_favoriteStatus{n}"
+        return script_favoriteStatus
 
     for n in range(1, 10):
         toggle_fn = scriptHandler.script(

@@ -4,6 +4,20 @@ English translation of [CHANGELOG.md](CHANGELOG.md). The German file is the
 original; this one is kept in step with it and is what the GitHub release
 notes are built from.
 
+## 26.7.4 (unreleased)
+
+- **The favourite gestures can finally be assigned.** The 18 commands
+  ("toggle favourite 1–9" and "announce status of favourite 1–9") did not
+  appear in the Input Gestures dialog at all — only the other five commands
+  were listed. That made it impossible to ever assign a shortcut to them, so
+  the feature described in the manual was simply unreachable.
+  The cause: the commands are generated automatically for the digits 1–9, and
+  the resulting functions were internally named just `script`. NVDA requires
+  the function name to start with `script_`, otherwise it discards the
+  description — and without a description a command is not listed in the
+  dialog. NVDA logged this 18 times on every start, with nothing in the user
+  interface hinting at it.
+
 ## 26.7.3 (August 2026)
 
 - **Cozytouch/Atlantic is now marked as experimental everywhere it is

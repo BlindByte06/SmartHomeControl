@@ -1,5 +1,19 @@
 # Changelog – Smart Home Control
 
+## 26.7.4 (unveröffentlicht)
+
+- **Die Favoriten-Tastenbefehle lassen sich endlich belegen.** Die 18 Befehle
+  („Favorit 1–9 umschalten" und „Status von Favorit 1–9 ansagen") tauchten im
+  Dialog Tastenbefehle überhaupt nicht auf – dort standen nur die fünf
+  übrigen Befehle. Damit ließ sich ihnen nie ein Kürzel zuweisen, und die im
+  Handbuch beschriebene Funktion war schlicht nicht erreichbar.
+  Ursache: Die Befehle werden für die Ziffern 1–9 automatisch erzeugt, und
+  die dabei entstehenden Funktionen hießen intern nur `script`. NVDA verlangt
+  aber, dass der Funktionsname mit `script_` beginnt, sonst verwirft es die
+  Beschreibung – und ohne Beschreibung erscheint ein Befehl nicht im Dialog.
+  NVDA hat das bei jedem Start 18-mal ins Log geschrieben, ohne dass in der
+  Oberfläche etwas darauf hindeutete.
+
 ## 26.7.3 (August 2026)
 
 - **Cozytouch/Atlantic ist jetzt überall als experimentell gekennzeichnet.**
