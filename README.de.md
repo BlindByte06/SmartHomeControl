@@ -67,7 +67,9 @@ Bedarf dort mit einem eigenen Kürzel versehen:
 
 ### Favoriten-Ebene
 
-Nach dem selbst vergebenen Kürzel sagt die Ziffer **1 bis 9** sofort den
+Nach dem selbst vergebenen Kürzel meldet sich die Erweiterung mit
+„Favorit wählen: Ziffer 1 bis 9“ und wartet. Dann sagt die Ziffer
+**1 bis 9** sofort den
 Status des Favoriten mit dieser Nummer an. **Dieselbe Ziffer ein zweites Mal**
 kurz danach **schaltet** ihn. **0** liest vor, welche Ziffer mit welchem Gerät
 belegt ist, **Escape** bricht ab.

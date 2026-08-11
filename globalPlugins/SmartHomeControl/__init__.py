@@ -1127,9 +1127,11 @@ class GlobalPlugin(_CredentialsMixin, _SchedulerMixin, _ChangeDetectionMixin,
     @scriptHandler.script(
         # Translators: Description of the favorites layer script in the
         # NVDA input gestures dialog.
-        description=_("Favoriten-Ebene: danach sagt Ziffer 1 bis 9 den Status "
-                      "des jeweiligen Favoriten an, zweimal gedrückt wird er "
-                      "geschaltet, 0 liest die Belegung vor, Escape bricht ab"),
+        # Kurz halten: Der Dialog Tastenbefehle zeigt eine Liste, in der
+        # jeder Eintrag am Stück vorgelesen wird. Details stehen im
+        # Handbuch und sagt in der Ebene die Taste 0 an.
+        description=_("Favorit per Ziffer wählen (einmal drücken sagt den "
+                      "Status an, zweimal drücken schaltet)"),
         # BEWUSST OHNE Standard-Belegung - wie alle frei belegbaren Befehle
         # dieser Erweiterung. Eine mitgelieferte Vorgabe kann man nicht
         # verlässlich kollisionsfrei wählen: NVDAs eigene Quelltexte sind nur
@@ -1155,8 +1157,12 @@ class GlobalPlugin(_CredentialsMixin, _SchedulerMixin, _ChangeDetectionMixin,
         self._fav_layer_watchdog = wx.CallLater(
             self._FAV_LAYER_IDLE_MS, self._fav_layer_idle_timeout)
         _beep(BEEP_ACTION)
-        # Translators: Announced when the favorites layer opens.
-        ui.message(_("Favoriten"))
+        # "Favoriten" allein war irreführend - es klang nach einer
+        # erledigten Aktion statt nach einer Rückfrage. Der Text sagt
+        # jetzt, dass die Erweiterung wartet und was sie erwartet.
+        # Translators: Announced when the favorites layer opens and waits
+        # for a digit. Keep it short - it is spoken on every use.
+        ui.message(_("Favorit wählen: Ziffer 1 bis 9"))
 
     def _fav_layer_exit(self):
         """Verlässt die Ebene und räumt Abfang-Funktion und Timer ab."""
@@ -1176,6 +1182,20 @@ class GlobalPlugin(_CredentialsMixin, _SchedulerMixin, _ChangeDetectionMixin,
     def _fav_layer_capture(self, gesture):
         """Wertet die nächste Eingabe innerhalb der Ebene aus.
 
+        ACHTUNG - LÄUFT AUF NVDAs EINGABE-THREAD, NICHT im wx-Hauptthread:
+        inputCore ruft die Abfang-Funktion direkt aus ``executeGesture``
+        auf. wx-Timer dürfen dort nicht angefasst werden; ``Start()`` wirft
+        sonst "wxAssertionError: timer can only be started from the main
+        thread" und inputCore schaltet die Abfang-Funktion daraufhin ab -
+        die Ebene wäre mitten in der Bedienung tot.
+
+        Deshalb entscheidet diese Funktion nur das, was sie SOFORT
+        entscheiden muss - ob die Taste geschluckt wird - und schiebt jede
+        weitere Arbeit per ``wx.CallAfter`` (thread-sicher) in den
+        Hauptthread. Angenehmer Nebeneffekt: der gesamte Zustand der Ebene
+        wird damit ausschließlich im Hauptthread verändert, Sperren sind
+        nicht nötig.
+
         Rückgabe False schluckt die Geste (inputCore bricht die
         Verarbeitung ab), True lässt sie normal weiterlaufen.
         """
@@ -1187,37 +1207,45 @@ class GlobalPlugin(_CredentialsMixin, _SchedulerMixin, _ChangeDetectionMixin,
             if not isinstance(gesture, KeyboardInputGesture):
                 # Braille-/Touch-Eingabe o.ä.: Ebene beenden, normal
                 # weiterreichen.
-                self._fav_layer_exit()
+                wx.CallAfter(self._fav_layer_exit)
                 return True
             key = gesture.mainKeyName
             # Nummernblock-Ziffern gleichbehandeln (Desktop-Layout)
             if key.startswith('numpad') and key[6:].isdigit():
                 key = key[6:]
             if key == 'escape':
-                # Bricht auch ein noch nicht ausgeführtes Schalten ab
-                # (solange das Doppeldruck-Fenster läuft) - kleines
-                # "Vertippt!"-Fenster.
-                self._fav_layer_exit()
-                ui.message(_("Abgebrochen"))
+                wx.CallAfter(self._fav_layer_cancel)
                 return False
             if key == '0':
-                self._fav_layer_announce_overview()
+                wx.CallAfter(self._fav_layer_announce_overview)
                 return False
             if len(key) == 1 and key.isdigit():  # '1'..'9'
-                self._fav_layer_digit(int(key))
+                wx.CallAfter(self._fav_layer_digit, int(key))
                 return False
-            # Jede andere Taste: Ebene beenden, Fehlerton; ein ausstehendes
-            # Schalten wird verworfen (unerwartete Eingabe = alles anhalten).
-            # Die Taste wird geschluckt, damit z.B. kein Buchstabe in ein
-            # Eingabefeld der fokussierten Anwendung rutscht.
-            self._fav_layer_exit()
-            _beep(BEEP_ERROR)
+            # Jede andere Taste: Ebene beenden, Fehlerton. Die Taste wird
+            # geschluckt, damit z.B. kein Buchstabe in ein Eingabefeld der
+            # fokussierten Anwendung rutscht.
+            wx.CallAfter(self._fav_layer_reject)
             return False
         except Exception:
             # inputCore würde die Abfang-Funktion bei einer Ausnahme selbst
             # deaktivieren - unsere Timer/Flags müssen trotzdem weg.
-            self._fav_layer_exit()
+            wx.CallAfter(self._fav_layer_exit)
             raise
+
+    def _fav_layer_cancel(self):
+        """Escape: Ebene verlassen und das ansagen (im Hauptthread)."""
+        if not getattr(self, '_fav_layer_active', False):
+            return
+        self._fav_layer_exit()
+        ui.message(_("Abgebrochen"))
+
+    def _fav_layer_reject(self):
+        """Unerwartete Taste: Ebene verlassen, Fehlerton (im Hauptthread)."""
+        if not getattr(self, '_fav_layer_active', False):
+            return
+        self._fav_layer_exit()
+        _beep(BEEP_ERROR)
 
     def _fav_layer_digit(self, number):
         """Ziffer 1-9 in der Ebene: Status ansagen, bei Doppeldruck schalten.
@@ -1227,7 +1255,12 @@ class GlobalPlugin(_CredentialsMixin, _SchedulerMixin, _ChangeDetectionMixin,
         den Titel sofort, zweimal buchstabiert ihn). Das folgenreiche
         Schalten verlangt bewusst den zweiten Druck; es gibt deshalb auch
         keine Rücknahme-Frist mehr - der Doppeldruck IST die Bestätigung.
+
+        Läuft immer im wx-Hauptthread (per CallAfter aus der
+        Abfang-Funktion) - nur dort dürfen die Timer angefasst werden.
         """
+        if not getattr(self, '_fav_layer_active', False):
+            return  # Ebene wurde zwischenzeitlich verlassen
         watchdog = getattr(self, '_fav_layer_watchdog', None)
         if watchdog:
             watchdog.Start(self._FAV_LAYER_IDLE_MS)
@@ -1272,7 +1305,12 @@ class GlobalPlugin(_CredentialsMixin, _SchedulerMixin, _ChangeDetectionMixin,
         self._fav_layer_exit()
 
     def _fav_layer_announce_overview(self):
-        """Sagt an, welche Ziffer welchen Favoriten schaltet (Taste 0)."""
+        """Sagt an, welche Ziffer welchen Favoriten schaltet (Taste 0).
+
+        Läuft im wx-Hauptthread (per CallAfter aus der Abfang-Funktion).
+        """
+        if not getattr(self, '_fav_layer_active', False):
+            return
         watchdog = getattr(self, '_fav_layer_watchdog', None)
         if watchdog:
             watchdog.Start(self._FAV_LAYER_IDLE_MS)

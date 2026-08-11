@@ -22,6 +22,9 @@ eine bestehende Belegung überschreibt, wäre schlimmer als gar keins. Zu
 vergeben unter **NVDA-Menü → Optionen → Tastenbefehle → Kategorie „Smart
 Home Control"**. Danach:
 
+- Nach dem Kürzel meldet sich die Ebene mit **„Favorit wählen: Ziffer 1
+  bis 9“** – sie sagt damit, dass sie wartet und was sie erwartet. Ein
+  bloßes „Favoriten“ klang nach einer erledigten Aktion.
 - **Ziffer 1–9 sagt sofort den Status** des Favoriten mit dieser Nummer an.
 - **Dieselbe Ziffer ein zweites Mal** kurz danach **schaltet** ihn –
   dasselbe Doppeldruck-Muster wie bei NVDAs eigenen Befehlen, mit der in

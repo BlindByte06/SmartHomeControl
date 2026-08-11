@@ -26,6 +26,9 @@ shortcut that overrides an existing binding would be worse than none.
 Assign it under **NVDA menu → Options → Input gestures → category "Smart
 Home Control"**. After that:
 
+- After the shortcut the layer prompts with **“Choose a favorite: digit 1
+  to 9”** – saying that it is waiting and what it expects. A bare
+  “Favorites” sounded like a completed action.
 - **Digits 1–9 immediately announce the status** of the favourite with
   that number.
 - **The same digit a second time** shortly after **toggles** it — the same

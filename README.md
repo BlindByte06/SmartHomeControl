@@ -65,7 +65,9 @@ one there when needed:
 
 ### Favorites layer
 
-After the shortcut you assigned, digits **1 to 9** immediately announce the
+After the shortcut you assigned, the add-on prompts with “Choose a
+favorite: digit 1 to 9” and waits. Digits **1 to 9** then immediately
+announce the
 status of the favourite with that number. **The same digit a second time**
 shortly after **toggles** it. **0** reads which digit is assigned to which
 device, **Escape** cancels.
