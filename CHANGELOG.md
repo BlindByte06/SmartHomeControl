@@ -2,17 +2,44 @@
 
 ## 26.7.4 (unveröffentlicht)
 
-- **Die Favoriten-Tastenbefehle lassen sich endlich belegen.** Die 18 Befehle
-  („Favorit 1–9 umschalten" und „Status von Favorit 1–9 ansagen") tauchten im
-  Dialog Tastenbefehle überhaupt nicht auf – dort standen nur die fünf
-  übrigen Befehle. Damit ließ sich ihnen nie ein Kürzel zuweisen, und die im
-  Handbuch beschriebene Funktion war schlicht nicht erreichbar.
-  Ursache: Die Befehle werden für die Ziffern 1–9 automatisch erzeugt, und
-  die dabei entstehenden Funktionen hießen intern nur `script`. NVDA verlangt
-  aber, dass der Funktionsname mit `script_` beginnt, sonst verwirft es die
-  Beschreibung – und ohne Beschreibung erscheint ein Befehl nicht im Dialog.
-  NVDA hat das bei jedem Start 18-mal ins Log geschrieben, ohne dass in der
-  Oberfläche etwas darauf hindeutete.
+### Favoriten-Tastenbefehle – neu gedacht
+
+Die bisherigen 18 Einzelbefehle („Favorit 1–9 umschalten", „Status von
+Favorit 1–9 ansagen") hatten zwei Probleme. Erstens tauchten sie wegen
+eines Fehlers im Dialog Tastenbefehle überhaupt nicht auf und ließen sich
+deshalb nie belegen – die im Handbuch beschriebene Funktion war schlicht
+unerreichbar (NVDA schrieb dazu bei jedem Start 18 Warnungen ins Log, ohne
+dass die Oberfläche etwas zeigte). Zweitens wäre selbst die reparierte
+Fassung unbequem gewesen: 18 Kürzel einzeln vergeben, und „Favorit 1" war
+nur die Listenposition – ein neuer Favorit konnte verschieben, welches
+Gerät ein gemerktes Kürzel schaltet.
+
+Beides ersetzt jetzt die **Favoriten-Ebene** mit einem einzigen Kürzel.
+Es ist wie die übrigen Zusatzbefehle **ohne Standard-Belegung** – eine
+mitgelieferte Vorgabe ließe sich nicht verlässlich kollisionsfrei wählen
+(Tastaturlayout, andere Add-ons, eigene Zuweisungen), und ein Kürzel, das
+eine bestehende Belegung überschreibt, wäre schlimmer als gar keins. Zu
+vergeben unter **NVDA-Menü → Optionen → Tastenbefehle → Kategorie „Smart
+Home Control"**. Danach:
+
+- **Ziffer 1–9 sagt sofort den Status** des Favoriten mit dieser Nummer an.
+- **Dieselbe Ziffer ein zweites Mal** kurz danach **schaltet** ihn –
+  dasselbe Doppeldruck-Muster wie bei NVDAs eigenen Befehlen, mit der in
+  NVDA eingestellten Doppeldruck-Zeit. Die harmlose Auskunft kommt also
+  sofort, das folgenreiche Schalten verlangt den bewussten zweiten Druck;
+  ein Vertippen sagt nur etwas an, statt ein Gerät zu schalten.
+- **Nicht schaltbare Favoriten** (Sensoren, Netatmo-Geräte) melden beim
+  zweiten Druck „nicht schaltbar – im Geräte-Menü einstellbar". Bisher
+  wiederholten sie an dieser Stelle wortlos den Status, was wirkte, als
+  sei der Tastendruck ins Leere gegangen.
+- **0 liest die Belegung vor** („1: Steckdose, 2: Ventilator, …"),
+  **Escape bricht ab**.
+- **Die Nummer gehört jetzt dem Gerät, nicht der Listenposition.** Sie
+  wird beim Hinzufügen einmal vergeben und angesagt („Als Favorit 3
+  hinzugefügt"), steht im Favoriten-Tab vor dem Gerätenamen und bleibt
+  erhalten, wenn andere Favoriten entfernt werden. Bestehende Favoriten
+  bekommen ihre Nummern beim ersten Start in der bisherigen Reihenfolge –
+  es verschiebt sich also nichts.
 
 ## 26.7.3 (August 2026)
 

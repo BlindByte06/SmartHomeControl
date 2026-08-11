@@ -6,17 +6,45 @@ notes are built from.
 
 ## 26.7.4 (unreleased)
 
-- **The favourite gestures can finally be assigned.** The 18 commands
-  ("toggle favourite 1–9" and "announce status of favourite 1–9") did not
-  appear in the Input Gestures dialog at all — only the other five commands
-  were listed. That made it impossible to ever assign a shortcut to them, so
-  the feature described in the manual was simply unreachable.
-  The cause: the commands are generated automatically for the digits 1–9, and
-  the resulting functions were internally named just `script`. NVDA requires
-  the function name to start with `script_`, otherwise it discards the
-  description — and without a description a command is not listed in the
-  dialog. NVDA logged this 18 times on every start, with nothing in the user
-  interface hinting at it.
+### Favourite gestures – rethought
+
+The previous 18 individual commands ("toggle favourite 1–9", "announce
+status of favourite 1–9") had two problems. First, due to a bug they did
+not appear in the Input Gestures dialog at all, so a shortcut could never
+be assigned to them — the feature described in the manual was simply
+unreachable (NVDA logged 18 warnings about it on every start, with nothing
+showing in the interface). Second, even the repaired version would have
+been inconvenient: 18 shortcuts to assign one by one, and "favourite 1"
+was merely the list position — adding a favourite could shift which device
+a memorised shortcut switches.
+
+Both are now replaced by the **favorites layer** with a single shortcut.
+Like the other extra commands it comes **without a default gesture** — a
+shipped default cannot be chosen free of conflicts with any confidence
+(keyboard layout, other add-ons, the user's own assignments), and a
+shortcut that overrides an existing binding would be worse than none.
+Assign it under **NVDA menu → Options → Input gestures → category "Smart
+Home Control"**. After that:
+
+- **Digits 1–9 immediately announce the status** of the favourite with
+  that number.
+- **The same digit a second time** shortly after **toggles** it — the same
+  double-press pattern as NVDA's own commands, using the double-press time
+  configured in NVDA. The harmless enquiry therefore happens at once,
+  while the consequential switching requires a deliberate second press; a
+  mistyped digit only announces something instead of switching a device.
+- **Favourites that cannot be switched** (sensors, Netatmo devices) report
+  "cannot be switched – adjustable in the device menu" on the second
+  press. Previously they silently repeated the status here, which felt as
+  if the key press had gone nowhere.
+- **0 reads the assignments** ("1: plug, 2: fan, …"), **Escape
+  cancels**.
+- **The number now belongs to the device, not to the list position.** It
+  is assigned once when the device is added and announced at that moment
+  ("added as favourite 3"), shown in front of the device name in the
+  favourites tab, and kept when other favourites are removed. Existing
+  favourites get their numbers on first start in their previous order, so
+  nothing shifts.
 
 ## 26.7.3 (August 2026)
 

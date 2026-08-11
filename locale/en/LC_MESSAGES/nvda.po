@@ -4803,18 +4803,6 @@ msgstr "{watt} watts"
 msgid "Ziel {temp} Grad"
 msgstr "target {temp} degrees"
 
-#. Translators: Description of the numbered favorite toggle script in the NVDA
-#. input gestures dialog. {number} = favorite slot.
-#: __init__.py:1750
-msgid "Favorit {number} umschalten"
-msgstr "Toggle favorite {number}"
-
-#. Translators: Description of the numbered favorite status script in the NVDA
-#. input gestures dialog. {number} = favorite slot.
-#: __init__.py:1755
-msgid "Status von Favorit {number} ansagen"
-msgstr "Announce status of favorite {number}"
-
 #. Translators: Combined info+action label: boost duration in minutes,
 #. changeable with Enter.
 #: dialog_cozytouch.py:511
@@ -5254,3 +5242,34 @@ msgstr "{field} (saved - leave empty to keep it)"
 #: settings_panel.py:749
 msgid "Cozytouch (experimentell)"
 msgstr "Cozytouch (experimental)"
+
+#. Translators: Description of the favorites layer script in the NVDA input
+#. gestures dialog.
+#: __init__.py:1128
+msgid ""
+"Favoriten-Ebene: danach sagt Ziffer 1 bis 9 den Status des jeweiligen "
+"Favoriten an, zweimal gedrückt wird er geschaltet, 0 liest die Belegung vor,"
+" Escape bricht ab"
+msgstr ""
+"Favorites layer: after this, digits 1 to 9 announce the status of the "
+"respective favorite, pressed twice it is toggled, 0 reads the assignments, "
+"Escape cancels"
+
+#. Translators: Usage hint at the end of the favorites layer overview
+#. (announced after pressing 0 in the layer).
+#: __init__.py:1275
+msgid "Ziffer sagt den Status an, zweimal drücken schaltet, Escape bricht ab"
+msgstr ""
+"A digit announces the status, pressing it twice toggles, Escape cancels"
+
+#. Translators: Confirmation after adding to the favorites, including the
+#. digit that toggles it in the favorites layer.
+#: dialog_favorites.py:97
+msgid "{name}: Als Favorit {number} hinzugefügt"
+msgstr "{name}: added as favorite {number}"
+
+#. Translators: Message when the user tries to switch a device that cannot be
+#. switched on/off (sensors, Netatmo devices).
+#: __init__.py:1351
+msgid "{name}: nicht schaltbar – im Geräte-Menü einstellbar"
+msgstr "{name}: cannot be switched – adjustable in the device menu"

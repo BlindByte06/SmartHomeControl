@@ -95,6 +95,7 @@ class DeviceFavorites:
                     self._favorites = json.load(f)
                 log.debug(f"Favoriten geladen: {len(self._favorites)} Geräte")
                 self._migrate_platform_fields()
+                self._assign_slots()
             else:
                 self._favorites = []
         except Exception as e:
@@ -120,6 +121,53 @@ class DeviceFavorites:
             log.info("Favoriten: Cozytouch-Einträge auf korrekte Plattform migriert")
             self._save()
 
+    def _assign_slots(self):
+        """Vergibt die festen Ebenen-Plätze 1-9 ("slot").
+
+        Der Platz gehört dem Gerät, nicht seiner Listenposition: einmal
+        vergeben, bleibt er beim Entfernen anderer Favoriten unverändert -
+        ein gemerktes "2 schaltet die Stehlampe" stimmt also dauerhaft.
+        (Die frühere Nummerierung über die Anzeige-Reihenfolge verschob
+        sich bei jeder Änderung an der Favoritenliste.)
+
+        Beim ersten Laden nach dem Update bekommen bestehende Favoriten
+        ihre Plätze in der bisherigen Anzeige-Reihenfolge - für den Nutzer
+        ändert sich dadurch nichts. Ungültige oder doppelte Plätze (z.B.
+        von Hand editierte Datei) werden bereinigt; frei werdende Plätze
+        gehen an Favoriten ohne Platz (ab dem zehnten Favoriten).
+
+        Returns:
+            True, wenn sich etwas geändert hat (dann wurde gespeichert).
+        """
+        changed = False
+        seen = set()
+        for fav in self._favorites:
+            slot = fav.get('slot')
+            if isinstance(slot, int) and 1 <= slot <= 9 and slot not in seen:
+                seen.add(slot)
+            elif slot is not None:
+                fav['slot'] = None
+                changed = True
+        free = sorted(set(range(1, 10)) - seen)
+        # Anzeige-Reihenfolge, damit die Erstvergabe der bisherigen
+        # Nummerierung entspricht
+        for fav in self.get_ordered():
+            if not free:
+                break
+            if fav.get('slot') is None:
+                fav['slot'] = free.pop(0)
+                changed = True
+        if changed:
+            self._save()
+        return changed
+
+    def get_by_slot(self, number):
+        """Liefert den Favoriten mit Ebenen-Platz ``number`` (oder None)."""
+        for fav in self._favorites:
+            if fav.get('slot') == number:
+                return fav
+        return None
+
     def _save(self):
         """Saves favorites atomically to the JSON file.
 
@@ -143,7 +191,10 @@ class DeviceFavorites:
             device: device wrapper (Meross/Netatmo/VeSync/Cozytouch)
 
         Returns:
-            True if added, False if already present
+            Die vergebene Ebenen-Platznummer (1-9), True bei Aufnahme ohne
+            freien Platz (ab dem zehnten Favoriten), False wenn bereits
+            vorhanden. Beide Erfolgsfälle sind wahrheitswertig - bestehende
+            ``if add(...)``-Aufrufer funktionieren unverändert.
         """
         uid = device.unique_id if hasattr(device, 'unique_id') else device.uuid
         if self.is_favorite(uid):
@@ -153,16 +204,21 @@ class DeviceFavorites:
 
         # Determine the device type
         device_type = self._determine_device_type(device, platform)
-        
-        self._favorites.append({
+
+        entry = {
             "uuid": uid,
             "name": device.name,
             "platform": platform,
             "device_type": device_type,
-        })
-        self._save()
-        log.info(f"Favorit hinzugefügt: {device.name} ({platform})")
-        return True
+            "slot": None,
+        }
+        self._favorites.append(entry)
+        # _assign_slots speichert selbst, wenn ein Platz vergeben wurde;
+        # ohne freien Platz muss der neue Eintrag trotzdem gesichert werden.
+        if not self._assign_slots():
+            self._save()
+        log.info(f"Favorit hinzugefügt: {device.name} ({platform}), Platz {entry['slot']}")
+        return entry['slot'] if entry['slot'] else True
     
     def remove(self, uuid):
         """Removes a device from the favorites.
@@ -177,6 +233,10 @@ class DeviceFavorites:
         self._favorites = [f for f in self._favorites if f.get('uuid') != uuid]
         if len(self._favorites) < before:
             self._save()
+            # Der frei gewordene Platz geht sofort an einen Favoriten ohne
+            # Platz (existiert nur ab dem zehnten Favoriten). Bereits
+            # vergebene Plätze verschieben sich dabei NICHT.
+            self._assign_slots()
             log.info(f"Favorit entfernt: {uuid}")
             return True
         return False
@@ -206,10 +266,15 @@ class DeviceFavorites:
     def get_by_platform(self, platform):
         """Returns the favorites of one platform.
 
+        Sortiert nach Ebenen-Platz (1-9), Favoriten ohne Platz dahinter in
+        Aufnahme-Reihenfolge - so liest sich der Favoriten-Tab als "1: ...,
+        2: ..." statt in zufällig wirkender Nummernfolge.
+
         Args:
             platform: 'meross', 'netatmo', 'vesync' or 'cozytouch'
         """
-        return [f for f in self._favorites if f.get('platform') == platform]
+        matches = [f for f in self._favorites if f.get('platform') == platform]
+        return sorted(matches, key=lambda f: (f.get('slot') is None, f.get('slot') or 0))
 
     def get_count(self, platform=None):
         """Returns the number of favorites.

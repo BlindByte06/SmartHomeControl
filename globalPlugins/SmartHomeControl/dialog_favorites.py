@@ -89,10 +89,17 @@ class _FavoritesTreeMixin:
             # Translators: Confirmation after removing from the favorites.
             ui.message(_("{name}: Aus Favoriten entfernt").format(name=device.name))
         else:
-            favorites.add(device)
+            slot = favorites.add(device)
             _beep(BEEP_ON)
-            # Translators: Confirmation after adding to the favorites.
-            ui.message(_("{name}: Zu Favoriten hinzugefügt").format(name=device.name))
+            if isinstance(slot, int):
+                # Translators: Confirmation after adding to the favorites,
+                # including the digit that toggles it in the favorites layer.
+                ui.message(_("{name}: Als Favorit {number} hinzugefügt").format(
+                    name=device.name, number=slot))
+            else:
+                # Kein freier Platz 1-9 mehr (ab dem zehnten Favoriten)
+                # Translators: Confirmation after adding to the favorites.
+                ui.message(_("{name}: Zu Favoriten hinzugefügt").format(name=device.name))
         
         # Refresh the favorites tree view
         wx.CallAfter(self._refresh_favorites_tree)
@@ -108,10 +115,19 @@ class _FavoritesTreeMixin:
         is_fav_context = (self.tree is self.fav_tree)
         
         if action == 'favorite_add':
-            if favorites.add(device):
+            slot = favorites.add(device)
+            if slot:
                 _beep(BEEP_ON)
-                # Translators: Confirmation after adding to the favorites.
-                ui.message(_("{name}: Zu Favoriten hinzugefügt").format(name=device.name))
+                if isinstance(slot, int):
+                    # Translators: Confirmation after adding to the
+                    # favorites, including the digit that toggles it in the
+                    # favorites layer.
+                    ui.message(_("{name}: Als Favorit {number} hinzugefügt").format(
+                        name=device.name, number=slot))
+                else:
+                    # Kein freier Platz 1-9 mehr (ab dem zehnten Favoriten)
+                    # Translators: Confirmation after adding to the favorites.
+                    ui.message(_("{name}: Zu Favoriten hinzugefügt").format(name=device.name))
             else:
                 # Translators: Hint when the device is already a favorite.
                 ui.message(_("{name}: Bereits in Favoriten").format(name=device.name))
@@ -138,6 +154,23 @@ class _FavoritesTreeMixin:
     # ----------------------------------------------------------
     # Favorites tree view: construction and event handlers
     # ----------------------------------------------------------
+    def _prefix_fav_slot(self, platform_node, fav_entry):
+        """Stellt dem zuletzt eingefügten Eintrag seine Platznummer voran.
+
+        Aus "Wohnzimmerlampe: ein" wird "3: Wohnzimmerlampe: ein" - so
+        steht im Favoriten-Tab sichtbar, welche Ziffer das Gerät in der
+        Favoriten-Ebene schaltet. Der Platz ist die feste Nummer aus der
+        Favoriten-Datei (favorites._assign_slots), nicht die Position.
+        Favoriten ohne Platz (ab dem zehnten) bleiben ohne Präfix.
+        """
+        slot = fav_entry.get('slot')
+        if not slot:
+            return
+        item = self.fav_tree.GetLastChild(platform_node)
+        if item.IsOk():
+            self.fav_tree.SetItemText(
+                item, f"{slot}: {self.fav_tree.GetItemText(item)}")
+
     def _refresh_favorites_tree(self):
         """Completely rebuilds the favorites tree view (data only, no focus).
 
@@ -213,6 +246,7 @@ class _FavoritesTreeMixin:
                             self.fav_tree.SetItemData(offline_item, {
                                 'type': 'info', 'fav_uuid': fav_uuid
                             })
+                        self._prefix_fav_slot(meross_node, fav_entry)
                 
                 # Netatmo favorites
                 if fav_netatmo:
@@ -233,6 +267,7 @@ class _FavoritesTreeMixin:
                             self.fav_tree.SetItemData(offline_item, {
                                 'type': 'info', 'fav_uuid': fav_uuid
                             })
+                        self._prefix_fav_slot(netatmo_node, fav_entry)
 
                 # VeSync favorites
                 if fav_vesync:
@@ -253,6 +288,7 @@ class _FavoritesTreeMixin:
                             self.fav_tree.SetItemData(offline_item, {
                                 'type': 'info', 'fav_uuid': fav_uuid
                             })
+                        self._prefix_fav_slot(vesync_node, fav_entry)
 
                 # Cozytouch favorites
                 if fav_cozytouch:
@@ -274,6 +310,7 @@ class _FavoritesTreeMixin:
                             self.fav_tree.SetItemData(offline_item, {
                                 'type': 'info', 'fav_uuid': fav_uuid
                             })
+                        self._prefix_fav_slot(cozytouch_node, fav_entry)
             finally:
                 # Reset self.tree - ALWAYS, even on error
                 self.tree = original_tree

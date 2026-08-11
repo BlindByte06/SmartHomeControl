@@ -60,11 +60,32 @@ one there when needed:
   plus the network state and the remaining lifetime of the Netatmo token.
 - **Open the settings** — opens the Smart Home settings directly, without the
   detour through the device menu.
-- **Toggle favourite 1–9** and **announce status of favourite 1–9** — switches
-  the respective favourite device, or announces its status, without opening
-  the menu. The number matches the order in the favourites tab of the device
-  menu (number 1 is the top entry). You add favourites in the device menu:
-  select a device and activate the "Add to favorites" entry.
+- **Favorites layer** — announce status and switch favourites without opening
+  the menu (see below). The most rewarding one to assign for everyday use.
+
+### Favorites layer
+
+After the shortcut you assigned, digits **1 to 9** immediately announce the
+status of the favourite with that number. **The same digit a second time**
+shortly after **toggles** it. **0** reads which digit is assigned to which
+device, **Escape** cancels.
+
+The split is deliberate: the harmless enquiry happens at once, while the
+consequential switching requires a deliberate second press. A mistyped digit
+therefore only announces something instead of switching a device.
+
+Not every favourite can be switched: sensors and Netatmo devices (thermostats,
+weather stations) report "cannot be switched – adjustable in the device menu"
+on the second press. Their status comes on the first press as usual;
+thermostats are adjusted in the device menu.
+
+The number is assigned once when a device is added to the favourites and
+announced at that moment ("added as favorite 3"); in the favourites tab it is
+shown in front of the device name. It stays with the device permanently, even
+when other favourites are removed.
+
+You add favourites in the device menu: select a device and activate the
+"Add to favorites" entry.
 
 ---
 

@@ -11,6 +11,8 @@ import ui
 import gui
 import wx
 import scriptHandler
+import inputCore
+from keyboardHandler import KeyboardInputGesture
 import config
 import addonHandler
 import threading
@@ -83,10 +85,9 @@ if lib_path not in sys.path:
     log.debug(f"Smart Home Control: lib-Pfad angehängt: {lib_path}")
 
 # Initialize the add-on.
-# Guarded like every other module in this package: _install_favorite_scripts()
-# runs at the END of this module and calls _() at import time, so an
-# unguarded failure here would abort the import of the WHOLE add-on instead of
-# just losing the translations.
+# Guarded like every other module in this package: an unguarded failure here
+# would abort the import of the WHOLE add-on instead of just losing the
+# translations.
 try:
     addonHandler.initTranslation()
 except Exception as e:
@@ -108,7 +109,7 @@ from .change_detection import _ChangeDetectionMixin
 from .platform_utils import split_by_platform, PLATFORM_LABELS
 from .dialog_helpers import _beep
 from .constants import (
-    CONFSPEC, BEEP_ERROR, BEEP_SUCCESS, BEEP_LOADING,
+    CONFSPEC, BEEP_ERROR, BEEP_SUCCESS, BEEP_LOADING, BEEP_ACTION,
     NETATMO_REDIRECT_PORT,
 )
 
@@ -268,6 +269,13 @@ class GlobalPlugin(_CredentialsMixin, _SchedulerMixin, _ChangeDetectionMixin,
     def terminate(self):
         """Cleanup when NVDA exits"""
         log.info("Smart Home Control: Add-on wird beendet")
+        # Eine noch aktive Favoriten-Ebene abräumen - sonst bliebe die
+        # Abfang-Funktion in inputCore über das Add-on-Ende hinaus
+        # installiert (z.B. beim Neustart des Add-ons).
+        try:
+            self._fav_layer_exit()
+        except Exception as e:
+            log.debug(f"Favoriten-Ebene beim Beenden: {e}")
         # Save unsaved history entries from the debounce window.
         try:
             from .history import flush_pending
@@ -1095,22 +1103,215 @@ class GlobalPlugin(_CredentialsMixin, _SchedulerMixin, _ChangeDetectionMixin,
         ui.message("; ".join(parts))
 
     # ------------------------------------------------------------------
-    # Favoriten-Direktgesten (ohne Standard-Belegung; zuweisbar unter
-    # NVDA-Menü -> Optionen -> Tastenbefehle -> Smart Home Control)
+    # Favoriten-Ebene: EIN frei belegbarer Befehl statt 18 einzeln zu
+    # belegender.
+    #
+    # Ablauf: Geste -> Ansage "Favoriten" -> nächste Ziffer 1-9 sagt den
+    # Status des Favoriten mit diesem festen Platz an. Dieselbe Ziffer
+    # zweimal kurz hintereinander schaltet ihn (Fenster = NVDA-Einstellung
+    # "multiPressTimeout", wie bei NVDAs eigenen Doppeldruck-Befehlen).
+    # 0 liest die Belegung vor, Escape bricht ab.
+    #
+    # Die Aufteilung ist Absicht: die harmlose Auskunft kommt sofort und
+    # ohne Umweg, das folgenreiche Schalten verlangt den bewussten zweiten
+    # Druck. Ein Vertippen sagt also nur etwas an, statt ein Gerät zu
+    # schalten.
+    #
+    # Technik: inputCore.manager._captureFunc fängt die nächste Eingabe ab,
+    # bevor NVDA sie als Befehl auflöst; False als Rückgabe schluckt die
+    # Taste, damit sie nicht in die fokussierte Anwendung durchrutscht.
+    # Dasselbe Muster nutzt z.B. der SPL Assistant (StationPlaylist).
     # ------------------------------------------------------------------
+    _FAV_LAYER_IDLE_MS = 15000  # Sicherheitsnetz: Ebene ohne Eingabe beenden
+
+    @scriptHandler.script(
+        # Translators: Description of the favorites layer script in the
+        # NVDA input gestures dialog.
+        description=_("Favoriten-Ebene: danach sagt Ziffer 1 bis 9 den Status "
+                      "des jeweiligen Favoriten an, zweimal gedrückt wird er "
+                      "geschaltet, 0 liest die Belegung vor, Escape bricht ab"),
+        # BEWUSST OHNE Standard-Belegung - wie alle frei belegbaren Befehle
+        # dieser Erweiterung. Eine mitgelieferte Vorgabe kann man nicht
+        # verlässlich kollisionsfrei wählen: NVDAs eigene Quelltexte sind nur
+        # die halbe Wahrheit, dazu kommen Tastaturlayout (Desktop/Laptop),
+        # andere Add-ons und eigene Zuweisungen des Nutzers. Ein Kürzel, das
+        # eine bestehende Belegung überschreibt, ist schlimmer als gar keins.
+        # Der Nutzer vergibt es unter NVDA-Menü -> Optionen -> Tastenbefehle
+        # -> Kategorie "Smart Home Control".
+    )
+    def script_favoritesLayer(self, gesture):
+        """Öffnet die Favoriten-Ebene (nächste Ziffer wählt den Favoriten)."""
+        if not self.is_logged_in:
+            ui.message(_("Nicht angemeldet"))
+            return
+        from .favorites import get_favorites
+        if not get_favorites().get_count():
+            # Translators (bestehende msgid aus dem Favoriten-Tab)
+            ui.message(_("Noch keine Favoriten – im Geräte-Tab mit Strg+B hinzufügen"))
+            return
+        self._fav_layer_active = True
+        self._fav_layer_pending = None  # (Platz, wx.CallLater) während des Doppeldruck-Fensters
+        inputCore.manager._captureFunc = self._fav_layer_capture
+        self._fav_layer_watchdog = wx.CallLater(
+            self._FAV_LAYER_IDLE_MS, self._fav_layer_idle_timeout)
+        _beep(BEEP_ACTION)
+        # Translators: Announced when the favorites layer opens.
+        ui.message(_("Favoriten"))
+
+    def _fav_layer_exit(self):
+        """Verlässt die Ebene und räumt Abfang-Funktion und Timer ab."""
+        self._fav_layer_active = False
+        if inputCore.manager._captureFunc == self._fav_layer_capture:
+            inputCore.manager._captureFunc = None
+        # getattr: terminate() ruft auch auf, wenn die Ebene nie offen war
+        pending = getattr(self, '_fav_layer_pending', None)
+        self._fav_layer_pending = None
+        if pending:
+            pending[1].Stop()
+        watchdog = getattr(self, '_fav_layer_watchdog', None)
+        self._fav_layer_watchdog = None
+        if watchdog:
+            watchdog.Stop()
+
+    def _fav_layer_capture(self, gesture):
+        """Wertet die nächste Eingabe innerhalb der Ebene aus.
+
+        Rückgabe False schluckt die Geste (inputCore bricht die
+        Verarbeitung ab), True lässt sie normal weiterlaufen.
+        """
+        try:
+            # Modifier-Tasten (Umschalt, NVDA, ...) durchlassen und in der
+            # Ebene bleiben - sie kommen als eigene "Gesten" an.
+            if getattr(gesture, 'isModifier', False):
+                return True
+            if not isinstance(gesture, KeyboardInputGesture):
+                # Braille-/Touch-Eingabe o.ä.: Ebene beenden, normal
+                # weiterreichen.
+                self._fav_layer_exit()
+                return True
+            key = gesture.mainKeyName
+            # Nummernblock-Ziffern gleichbehandeln (Desktop-Layout)
+            if key.startswith('numpad') and key[6:].isdigit():
+                key = key[6:]
+            if key == 'escape':
+                # Bricht auch ein noch nicht ausgeführtes Schalten ab
+                # (solange das Doppeldruck-Fenster läuft) - kleines
+                # "Vertippt!"-Fenster.
+                self._fav_layer_exit()
+                ui.message(_("Abgebrochen"))
+                return False
+            if key == '0':
+                self._fav_layer_announce_overview()
+                return False
+            if len(key) == 1 and key.isdigit():  # '1'..'9'
+                self._fav_layer_digit(int(key))
+                return False
+            # Jede andere Taste: Ebene beenden, Fehlerton; ein ausstehendes
+            # Schalten wird verworfen (unerwartete Eingabe = alles anhalten).
+            # Die Taste wird geschluckt, damit z.B. kein Buchstabe in ein
+            # Eingabefeld der fokussierten Anwendung rutscht.
+            self._fav_layer_exit()
+            _beep(BEEP_ERROR)
+            return False
+        except Exception:
+            # inputCore würde die Abfang-Funktion bei einer Ausnahme selbst
+            # deaktivieren - unsere Timer/Flags müssen trotzdem weg.
+            self._fav_layer_exit()
+            raise
+
+    def _fav_layer_digit(self, number):
+        """Ziffer 1-9 in der Ebene: Status ansagen, bei Doppeldruck schalten.
+
+        Einmal drücken ist die harmlose Auskunft und passiert SOFORT -
+        dasselbe Muster wie NVDAs eigene Doppeldruck-Befehle (NVDA+T sagt
+        den Titel sofort, zweimal buchstabiert ihn). Das folgenreiche
+        Schalten verlangt bewusst den zweiten Druck; es gibt deshalb auch
+        keine Rücknahme-Frist mehr - der Doppeldruck IST die Bestätigung.
+        """
+        watchdog = getattr(self, '_fav_layer_watchdog', None)
+        if watchdog:
+            watchdog.Start(self._FAV_LAYER_IDLE_MS)
+
+        pending = self._fav_layer_pending
+        if pending and pending[0] == number:
+            # Zweiter Druck derselben Ziffer: schalten. Die laufende
+            # Status-Ansage wird dabei von der Schalt-Rückmeldung abgelöst.
+            pending[1].Stop()
+            self._fav_layer_pending = None
+            self._fav_layer_exit()
+            self._favorite_toggle(number)
+            return
+        if pending:
+            # Andere Ziffer: das Doppeldruck-Fenster der vorherigen gilt
+            # nicht mehr (sonst schaltete "1, 2, 1" versehentlich Favorit 1).
+            pending[1].Stop()
+            self._fav_layer_pending = None
+
+        from .favorites import get_favorites
+        if get_favorites().get_by_slot(number) is None:
+            # Translators (bestehende msgid)
+            ui.message(_("Favorit {number} ist nicht belegt").format(number=number))
+            return  # in der Ebene bleiben - der Nutzer kann neu wählen
+        # Erster Druck: Status sofort ansagen, dann auf einen möglichen
+        # zweiten Druck warten.
+        self._favorite_status(number)
+        timer = wx.CallLater(
+            int(config.conf["keyboard"]["multiPressTimeout"]),
+            self._fav_layer_window_expired)
+        self._fav_layer_pending = (number, timer)
+
+    def _fav_layer_window_expired(self):
+        """Kein zweiter Druck: Der Status ist angesagt, die Ebene endet.
+
+        Bewusst ohne Ton oder Ansage - die Auskunft war die Aktion, ein
+        zusätzliches "Ebene beendet" wäre nur Lärm.
+        """
+        if not getattr(self, '_fav_layer_active', False):
+            return  # bereits verlassen (Escape, andere Taste, Beenden)
+        self._fav_layer_pending = None
+        self._fav_layer_exit()
+
+    def _fav_layer_announce_overview(self):
+        """Sagt an, welche Ziffer welchen Favoriten schaltet (Taste 0)."""
+        watchdog = getattr(self, '_fav_layer_watchdog', None)
+        if watchdog:
+            watchdog.Start(self._FAV_LAYER_IDLE_MS)
+        from .favorites import get_favorites
+        favs = get_favorites()
+        parts = []
+        for n in range(1, 10):
+            fav = favs.get_by_slot(n)
+            if fav:
+                parts.append(f"{n}: {fav.get('name', '')}")
+        # Translators: Usage hint at the end of the favorites layer
+        # overview (announced after pressing 0 in the layer).
+        parts.append(_("Ziffer sagt den Status an, zweimal drücken schaltet, "
+                       "Escape bricht ab"))
+        ui.message(". ".join(parts))
+
+    def _fav_layer_idle_timeout(self):
+        """Sicherheitsnetz: Ebene nach längerer Untätigkeit beenden.
+
+        Ohne dieses Netz bliebe die Abfang-Funktion beliebig lange aktiv
+        und würde Minuten später einen völlig zusammenhanglosen
+        Tastendruck verschlucken.
+        """
+        if not getattr(self, '_fav_layer_active', False):
+            return
+        self._fav_layer_exit()
+        ui.message(_("Abgebrochen"))
+
     def _get_favorite_device(self, number):
-        """Liefert (favorit, device) für Favorit Nr. ``number`` (1-basiert).
+        """Liefert (favorit, device) für den Ebenen-Platz ``number`` (1-9).
 
         device kann None sein (z.B. noch nicht geladen/offline entfernt).
-        Die Nummerierung folgt der Anzeige-Reihenfolge im Favoriten-Tab
-        (nach Plattform gruppiert), damit "Favorit 1" wirklich der oberste
-        Eintrag dort ist.
+        Der Platz ist die feste, in der Favoriten-Datei gespeicherte Nummer
+        des Geräts (favorites._assign_slots) - nicht seine Listenposition.
         """
         from .favorites import get_favorites
-        favs = get_favorites().get_ordered()
-        if number > len(favs):
+        fav = get_favorites().get_by_slot(number)
+        if fav is None:
             return None, None
-        fav = favs[number - 1]
         uid = fav.get('uuid', '')
         with self._devices_lock:
             for d in self.devices:
@@ -1137,8 +1338,18 @@ class GlobalPlugin(_CredentialsMixin, _SchedulerMixin, _ChangeDetectionMixin,
                 name=fav.get('name', '?')))
             return
         if getattr(device, 'is_netatmo', False) or getattr(device, 'is_sensor', False):
-            # Nicht schaltbar - stattdessen Status ansagen.
-            self._favorite_status(number)
+            # Nicht schaltbare Geräte: Sensoren (Meross MS100/MS400 ...) und
+            # alle Netatmo-Geräte - Thermostate lassen sich zwar verstellen,
+            # aber nicht ein-/ausschalten; Wetterstationen sind reine Anzeige.
+            # Früher sagte dieser Zweig einfach nochmal den Status an. Nach
+            # dem Doppeldruck wirkte das, als sei nichts passiert. Jetzt
+            # nennt die Ansage den Grund; der Status kam beim ersten Druck
+            # ohnehin schon.
+            _beep(BEEP_ERROR)
+            # Translators: Message when the user tries to switch a device
+            # that cannot be switched on/off (sensors, Netatmo devices).
+            ui.message(_("{name}: nicht schaltbar – im Geräte-Menü einstellbar").format(
+                name=device.name))
             return
 
         def task():
@@ -1739,48 +1950,8 @@ class GlobalPlugin(_CredentialsMixin, _SchedulerMixin, _ChangeDetectionMixin,
 
 
 
-# ----------------------------------------------------------------------
-# Favoriten-Direktgesten: je 9 Skripte zum Schalten und für die
-# Status-Ansage. Bewusst OHNE Standard-Belegung - die Tastenkürzel
-# vergibt der Nutzer selbst (NVDA-Menü -> Optionen -> Tastenbefehle ->
-# Kategorie "Smart Home Control"). NVDA findet script_-Methoden auch,
-# wenn sie nachträglich per setattr an die Klasse gehängt werden.
-# ----------------------------------------------------------------------
-def _install_favorite_scripts():
-    # WICHTIG: Der Name der Funktion muss mit "script_" beginnen, BEVOR
-    # scriptHandler.script() sie dekoriert. Der Dekorator prüft
-    # ``decoratedScript.__name__.startswith("script_")`` und steigt sonst
-    # kommentarlos (nur mit einer Log-Warnung) wieder aus, ohne __doc__ zu
-    # setzen. Ohne __doc__ verwirft NVDA das Skript beim Aufbau des
-    # Tastenbefehle-Dialogs (inputCore: "if not info.displayName: return
-    # None") - die Favoriten-Befehle waren dort schlicht nicht auffindbar
-    # und ließen sich deshalb nie belegen. Der Name wird zusätzlich exakt
-    # auf den Attributnamen gesetzt, unter dem das Skript später hängt.
-    def make_toggle(n):
-        def script_toggleFavorite(self, gesture):
-            self._favorite_toggle(n)
-        script_toggleFavorite.__name__ = f"script_toggleFavorite{n}"
-        return script_toggleFavorite
-
-    def make_status(n):
-        def script_favoriteStatus(self, gesture):
-            self._favorite_status(n)
-        script_favoriteStatus.__name__ = f"script_favoriteStatus{n}"
-        return script_favoriteStatus
-
-    for n in range(1, 10):
-        toggle_fn = scriptHandler.script(
-            # Translators: Description of the numbered favorite toggle script
-            # in the NVDA input gestures dialog. {number} = favorite slot.
-            description=_("Favorit {number} umschalten").format(number=n)
-        )(make_toggle(n))
-        status_fn = scriptHandler.script(
-            # Translators: Description of the numbered favorite status script
-            # in the NVDA input gestures dialog. {number} = favorite slot.
-            description=_("Status von Favorit {number} ansagen").format(number=n)
-        )(make_status(n))
-        setattr(GlobalPlugin, f"script_toggleFavorite{n}", toggle_fn)
-        setattr(GlobalPlugin, f"script_favoriteStatus{n}", status_fn)
-
-
-_install_favorite_scripts()
+# Hinweis: Die früheren 18 Einzel-Skripte ("Favorit N umschalten" /
+# "Status von Favorit N ansagen") sind durch die Favoriten-Ebene ersetzt
+# (script_favoritesLayer in der Klasse): eine Geste, dann Ziffer 1-9.
+# Verwaiste gestures.ini-Einträge auf die alten Skriptnamen sind harmlos -
+# NVDA ignoriert Bindungen an nicht existierende Skripte.

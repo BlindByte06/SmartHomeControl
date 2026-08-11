@@ -62,12 +62,32 @@ Bedarf dort mit einem eigenen Kürzel versehen:
   dazu Netzwerkstatus und die Restlaufzeit des Netatmo-Tokens.
 - **Einstellungen öffnen** – öffnet die Smart-Home-Einstellungen direkt, ohne
   den Umweg über das Geräte-Menü.
-- **Favorit 1–9 umschalten** und **Status von Favorit 1–9 ansagen** –
-  schaltet das jeweilige Favoriten-Gerät bzw. sagt dessen Status an, ohne
-  das Menü zu öffnen. Die Nummer entspricht der Reihenfolge im
-  Favoriten-Tab des Geräte-Menüs (Nummer 1 ist der oberste Eintrag).
-  Favoriten legt man im Geräte-Menü an: Gerät auswählen und den Eintrag
-  „Zu Favoriten hinzufügen" aktivieren.
+- **Favoriten-Ebene** – Status ansagen und schalten, ohne das Menü zu öffnen
+  (siehe unten). Für die tägliche Nutzung der lohnendste Befehl.
+
+### Favoriten-Ebene
+
+Nach dem selbst vergebenen Kürzel sagt die Ziffer **1 bis 9** sofort den
+Status des Favoriten mit dieser Nummer an. **Dieselbe Ziffer ein zweites Mal**
+kurz danach **schaltet** ihn. **0** liest vor, welche Ziffer mit welchem Gerät
+belegt ist, **Escape** bricht ab.
+
+Die Aufteilung ist Absicht: Die harmlose Auskunft kommt sofort, das
+folgenreiche Schalten verlangt den bewussten zweiten Druck. Ein Vertippen sagt
+also nur etwas an, statt ein Gerät zu schalten.
+
+Nicht alle Favoriten lassen sich schalten: Sensoren und Netatmo-Geräte
+(Thermostate, Wetterstationen) melden beim zweiten Druck „nicht schaltbar –
+im Geräte-Menü einstellbar". Ihr Status kommt beim ersten Druck wie gewohnt;
+Thermostate stellt man im Geräte-Menü ein.
+
+Die Nummer wird beim Hinzufügen zu den Favoriten einmal fest vergeben und
+dabei angesagt („Als Favorit 3 hinzugefügt"); im Favoriten-Tab steht sie vor
+dem Gerätenamen. Sie bleibt dem Gerät dauerhaft zugeordnet, auch wenn andere
+Favoriten entfernt werden.
+
+Favoriten legt man im Geräte-Menü an: Gerät auswählen und den Eintrag
+„Zu Favoriten hinzufügen" aktivieren.
 
 ---
 
