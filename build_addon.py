@@ -45,9 +45,13 @@ ARCH_TARGETS = [
 INCLUDE_TOP = ("manifest.ini", "globalPlugins", "lib", "doc", "locale", "LICENSE")
 OPTIONAL_TOP = {"doc", "locale", "LICENSE"}
 
-EXCLUDE_DIR_NAMES = {"__pycache__"}
+# "SelfTest" ist die Testsuite von pycryptodomex: 196 Dateien, 2,8 MB
+# entpackt, die zur Laufzeit nie importiert werden (geprüft: kein Treffer im
+# Add-on-Code und in meross_iot). Dasselbe gilt fuer aiohttps test_utils.
+EXCLUDE_DIR_NAMES = {"__pycache__", "SelfTest"}
 EXCLUDE_DIR_GLOBS = ["_old_*"]
-EXCLUDE_FILE_GLOBS = ["*.pyc", "*.pyo", "*.log", "*.tmp", "*.bak"]
+EXCLUDE_FILE_GLOBS = ["*.pyc", "*.pyo", "*.log", "*.tmp", "*.bak",
+                      "test_utils.py"]
 
 
 def read_requirements():
@@ -149,11 +153,12 @@ def read_version():
 
 
 def cmd_relnotes(version=None, out_path=None):
-    """Schneidet den Abschnitt einer Version aus CHANGELOG.en.md heraus.
+    """Schneidet den Abschnitt einer Version aus CHANGELOG.md heraus.
 
-    Die GitHub-Releases sollen den Changelog der jeweiligen Version tragen,
-    und zwar auf Englisch - Release-Seiten lesen international. Quelle ist
-    deshalb CHANGELOG.en.md, nicht die deutsche Originaldatei.
+    Die GitHub-Releases tragen den Changelog der jeweiligen Version. Es gibt
+    genau eine Changelog-Datei, und zwar auf Englisch - so halten es auch die
+    offizielle Add-on-Vorlage und die groesseren NVDA-Add-ons; Release-Seiten
+    werden international gelesen.
 
     Ohne --version wird die Version aus manifest.ini genommen; im Workflow
     kommt sie aus dem Tag. Fehlt der Abschnitt, ist das ein Fehler und kein
@@ -161,7 +166,7 @@ def cmd_relnotes(version=None, out_path=None):
     fiele erst auf, wenn es veröffentlicht ist.
     """
     version = version or read_version()
-    path = os.path.join(ROOT, "CHANGELOG.en.md")
+    path = os.path.join(ROOT, "CHANGELOG.md")
     if not os.path.exists(path):
         raise SystemExit(f"[relnotes] {path} fehlt")
     with open(path, encoding="utf-8") as f:
@@ -175,7 +180,7 @@ def cmd_relnotes(version=None, out_path=None):
             break
     if start is None:
         raise SystemExit(
-            f"[relnotes] Kein Abschnitt '## {version}' in CHANGELOG.en.md - "
+            f"[relnotes] Kein Abschnitt '## {version}' in CHANGELOG.md - "
             f"vor dem Taggen den Changelog-Eintrag ergaenzen")
     end = len(lines)
     for i in range(start + 1, len(lines)):
@@ -194,8 +199,8 @@ def cmd_relnotes(version=None, out_path=None):
             "2. Open the file with NVDA\n"
             "3. Confirm the installation\n"
             "4. Restart NVDA\n\n"
-            "See the [README](README.md) for setup instructions per platform. "
-            "German changelog: [CHANGELOG.md](CHANGELOG.md).\n")
+            "See the [README](README.md) for setup instructions per "
+            "platform.\n")
 
     if out_path:
         with open(out_path, "w", encoding="utf-8") as f:
@@ -245,6 +250,68 @@ def sync_doc_titles(version):
             print(f"[pack] Titel aktualisiert: doc/{lang_dir}/readme.html -> {version}")
 
 
+def cmd_check_min_python(strict=True):
+    """Prüft den Code gegen die Python-Version der ältesten NVDA-Fassung.
+
+    minimumNVDAVersion 2025.1 bedeutet Python 3.11. Dort ist es ein
+    SyntaxError, wenn ein Ausdruck IM f-String dasselbe Anführungszeichen
+    benutzt wie der f-String selbst - erst 3.12 erlaubt das (PEP 701).
+
+    Genau daran ist das Add-on schon einmal beim Nutzer gescheitert, während
+    es auf dem Entwicklungsrechner (Python 3.12) fehlerfrei übersetzte:
+
+        f"{device.name}: {_("Error")}. "   ->  auf 3.11 SyntaxError
+
+    Ein `python -m compileall` mit einer neueren Version findet das NICHT,
+    deshalb diese eigene Prüfung. Sie läuft bei `pack` mit, damit ein Paket
+    gar nicht erst entsteht, das auf der Mindestversion nicht startet.
+    """
+    import ast
+    problems = []
+    pattern = os.path.join(ROOT, "globalPlugins", "SmartHomeControl", "*.py")
+    for path in sorted(glob.glob(pattern)):
+        with open(path, encoding="utf-8") as f:
+            src = f.read()
+        for node in ast.walk(ast.parse(src, path)):
+            if not isinstance(node, ast.JoinedStr):
+                continue
+            seg = ast.get_source_segment(src, node)
+            if not seg:
+                continue
+            m = re.match(r'^[a-zA-Z]*("""|\'\'\'|"|\')', seg)
+            if not m:
+                continue
+            quote = m.group(1)
+            inner = seg[len(m.group(0)):]
+            if inner.endswith(quote):
+                inner = inner[:-len(quote)]
+            for expr in re.findall(r"\{([^{}]*)\}", inner):
+                if quote in expr:
+                    problems.append(
+                        f"{os.path.basename(path)}:{node.lineno} - Ausdruck im "
+                        f"f-String nutzt {quote} wie der f-String selbst "
+                        f"(auf Python 3.11 ein SyntaxError): {seg[:70]}")
+                    break
+                # Zweite Falle derselben Art: Backslashes im Ausdruck erlaubt
+                # ebenfalls erst 3.12.
+                if "\\" in expr:
+                    problems.append(
+                        f"{os.path.basename(path)}:{node.lineno} - Backslash im "
+                        f"f-String-Ausdruck (auf Python 3.11 ein SyntaxError): "
+                        f"{seg[:70]}")
+                    break
+
+    if problems:
+        print("[py311] " + "\n[py311] ".join(problems))
+        if strict:
+            raise SystemExit(
+                "Code ist auf der Mindest-NVDA-Version nicht lauffähig - "
+                "im f-String das andere Anführungszeichen verwenden")
+        return False
+    print("[py311] OK - keine verschachtelten Anführungszeichen in f-Strings")
+    return True
+
+
 def _translatable_literals():
     """Alle `_("...")`-Literale im Quellcode, mit Fundstelle.
 
@@ -272,16 +339,21 @@ def _translatable_literals():
 
 
 def cmd_check_translations(strict=True):
-    """Prüft, ob .po und .mo zum Quellcode passen.
+    """Prüft alle Übersetzungen unter locale/ gegen den Quellcode.
 
-    Drei Fehlerbilder, die alle schon vorgekommen sind:
+    Quellsprache ist Englisch: die `_()`-Texte im Code SIND die msgids, jede
+    Sprache unter locale/ ist eine Übersetzung davon. Damit sehen Nutzer ohne
+    passende Übersetzung Englisch und nicht die Sprache des Autors.
 
-    1. Ein `_()`-String steht nicht in der .po -> im Add-on-Store erscheint
-       an dieser Stelle Deutsch, obwohl die Oberfläche auf Englisch steht.
-       (So war zuletzt die komplette Statuszeile jedes Hub-Sensors betroffen.)
+    Vier Fehlerbilder, die alle schon vorgekommen sind:
+
+    1. Ein `_()`-String fehlt in einer .po -> dort erscheint Englisch,
+       obwohl die Oberfläche in der jeweiligen Sprache läuft.
     2. Die .mo ist älter als die .po -> NVDA lädt die .mo, die neuen
        Übersetzungen wirken nicht.
     3. Nicht übersetzte oder fuzzy Einträge.
+    4. Die .pot passt nicht mehr zum Code - Übersetzer bekämen eine
+       veraltete Vorlage.
 
     Läuft automatisch bei `pack`.
     """
@@ -292,55 +364,72 @@ def cmd_check_translations(strict=True):
               "(pip install polib)")
         return True
 
-    po_path = os.path.join(ROOT, "locale", "en", "LC_MESSAGES", "nvda.po")
-    mo_path = os.path.join(ROOT, "locale", "en", "LC_MESSAGES", "nvda.mo")
+    locale_dir = os.path.join(ROOT, "locale")
+    literals = _translatable_literals()
     problems = []
 
-    if not os.path.isfile(po_path):
-        problems.append(f"{po_path} fehlt")
-    if not os.path.isfile(mo_path):
-        problems.append(f"{mo_path} fehlt - NVDA lädt zur Laufzeit die .mo, "
-                        f"nicht die .po!")
+    # Die .pot ist die Vorlage für Übersetzer und muss den Code abbilden.
+    pot_path = os.path.join(locale_dir, "SmartHomeControl.pot")
+    if not os.path.isfile(pot_path):
+        problems.append(f"{pot_path} fehlt - Übersetzer haben keine Vorlage")
+    else:
+        pot_ids = {e.msgid for e in polib.pofile(pot_path) if e.msgid}
+        pot_missing = sorted(set(literals) - pot_ids)
+        if pot_missing:
+            problems.append(
+                f"{len(pot_missing)} Strings im Code fehlen in der .pot "
+                f"(z.B. {literals[pot_missing[0]]}) - .pot neu erzeugen")
+
+    langs = sorted(d for d in os.listdir(locale_dir)
+                   if os.path.isdir(os.path.join(locale_dir, d)))
+    if not langs:
+        print("[i18n] keine Übersetzungen vorhanden (Quellsprache Englisch)")
+        return True
+
+    counts = []
+    for lang in langs:
+        po_path = os.path.join(locale_dir, lang, "LC_MESSAGES", "nvda.po")
+        mo_path = os.path.join(locale_dir, lang, "LC_MESSAGES", "nvda.mo")
+        if not os.path.isfile(po_path):
+            problems.append(f"{lang}: nvda.po fehlt")
+            continue
+        if not os.path.isfile(mo_path):
+            problems.append(f"{lang}: nvda.mo fehlt - NVDA lädt zur Laufzeit "
+                            f"die .mo, nicht die .po!")
+            continue
+
+        po = polib.pofile(po_path)
+        mo = polib.mofile(mo_path)
+        po_ids = {e.msgid for e in po}
+
+        missing = sorted(set(literals) - po_ids)
+        if missing:
+            problems.append(f"{lang}: {len(missing)} Strings im Code fehlen "
+                            f"in der .po:")
+            for msgid in missing[:15]:
+                problems.append(f"    {literals[msgid]:<28} {msgid[:60]!r}")
+            if len(missing) > 15:
+                problems.append(f"    ... und {len(missing) - 15} weitere")
+
+        drift = po_ids ^ {e.msgid for e in mo}
+        if drift:
+            problems.append(f"{lang}: .mo weicht von der .po ab "
+                            f"({len(drift)} Einträge) - .mo neu kompilieren")
+        if po.untranslated_entries():
+            problems.append(f"{lang}: {len(po.untranslated_entries())} "
+                            f"unübersetzte Einträge")
+        if po.fuzzy_entries():
+            problems.append(f"{lang}: {len(po.fuzzy_entries())} fuzzy Einträge")
+        counts.append(f"{lang}={len(po)}")
+
     if problems:
         print("[i18n] " + "\n[i18n] ".join(problems))
         if strict:
             raise SystemExit("Übersetzungsprüfung fehlgeschlagen")
         return False
 
-    po = polib.pofile(po_path)
-    mo = polib.mofile(mo_path)
-    po_ids = {e.msgid for e in po}
-    mo_ids = {e.msgid for e in mo}
-
-    literals = _translatable_literals()
-    missing = sorted(set(literals) - po_ids)
-    if missing:
-        problems.append(f"{len(missing)} Strings im Code fehlen in der .po:")
-        for msgid in missing[:15]:
-            problems.append(f"    {literals[msgid]:<28} {msgid[:60]!r}")
-        if len(missing) > 15:
-            problems.append(f"    ... und {len(missing) - 15} weitere")
-
-    drift = po_ids ^ mo_ids
-    if drift:
-        problems.append(f".mo weicht von der .po ab ({len(drift)} Einträge) "
-                        f"- .mo neu kompilieren")
-
-    untranslated = po.untranslated_entries()
-    if untranslated:
-        problems.append(f"{len(untranslated)} unübersetzte Einträge")
-    fuzzy = po.fuzzy_entries()
-    if fuzzy:
-        problems.append(f"{len(fuzzy)} fuzzy Einträge")
-
-    if problems:
-        print("[i18n] " + "\n[i18n] ".join(problems))
-        if strict:
-            raise SystemExit("Übersetzungsprüfung fehlgeschlagen")
-        return False
-
-    print(f"[i18n] OK - {len(literals)} Strings, {len(po)} Einträge, "
-          f".mo deckungsgleich")
+    print(f"[i18n] OK - {len(literals)} Strings im Code (englisch), "
+          f"Übersetzungen: {', '.join(counts)}")
     return True
 
 
@@ -399,6 +488,9 @@ def cmd_licenses(write=False):
 def cmd_pack(out_dir=None):
     """Baut das .nvda-addon-Paket."""
     version = read_version()
+    # Zuerst die Lauffaehigkeit auf der Mindestversion - ein Paket, das dort
+    # nicht startet, braucht niemand.
+    cmd_check_min_python()
     cmd_check_translations()
     sync_doc_titles(version)
     os.makedirs(DIST_DIR, exist_ok=True)
@@ -457,7 +549,7 @@ def main():
     parser = argparse.ArgumentParser(description="Smart Home Control Build")
     parser.add_argument("command",
                         choices=["libs", "pack", "all", "i18n", "licenses",
-                                 "relnotes"])
+                                 "relnotes", "py311"])
     parser.add_argument("--out", help="Zusätzlicher Zielordner für das fertige Paket "
                         "(z.B. C:\\Users\\hasel_bg\\SynologyDrive\\NVDA-Addons); "
                         "bei 'relnotes': Zieldatei für den Text")
@@ -467,6 +559,9 @@ def main():
                         help="bei 'relnotes': Version statt der aus manifest.ini")
     args = parser.parse_args()
 
+    if args.command == "py311":
+        cmd_check_min_python()
+        return
     if args.command == "i18n":
         cmd_check_translations()
         return

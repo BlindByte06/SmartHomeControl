@@ -26,10 +26,10 @@ import addonHandler
 try:
     addonHandler.initTranslation()
 except Exception as e:
-    log.debug(f"Ignorierter Fehler in <module>: {e}")
-if "_" not in globals():  # Fallback, falls initTranslation() scheitert
-    # Ohne diesen Fallback bleibt `_` undefiniert und der erste `_()`-Aufruf
-    # wirft einen NameError mitten im Dialogaufbau statt beim Import.
+    log.debug(f"Ignored error during translation setup: {e}")
+if "_" not in globals():  # fallback if initTranslation() fails
+    # Without this fallback `_` stays undefined and the first `_()` call
+    # raises a NameError mid-dialog instead of at import time.
     def _(s):
         return s
 
@@ -119,11 +119,11 @@ class CozytouchAPI:
         if resp.status_code in (401, 403) and not _is_retry and self._reauth_callback:
             if self._reauth_lock.acquire(blocking=False):
                 try:
-                    log.info(f"Cozytouch: Token abgelaufen (HTTP {resp.status_code}), Re-Auth...")
+                    log.info(f"Cozytouch: token expired (HTTP {resp.status_code}), re-auth...")
                     try:
                         ok = bool(self._reauth_callback(self))
                     except Exception as e:
-                        log.warning(f"Cozytouch Re-Auth fehlgeschlagen: {e}")
+                        log.warning(f"Cozytouch re-auth failed: {e}")
                         ok = False
                 finally:
                     self._reauth_lock.release()
@@ -151,7 +151,7 @@ class CozytouchAPI:
         """
         if not email or not password:
             # Translators: Validation error when email or password is missing.
-            raise ValueError(_("E-Mail und Passwort erforderlich"))
+            raise ValueError(_("Email and password required"))
         url = API_BASE + "/users/token"
         try:
             resp = self._session.post(
@@ -171,23 +171,23 @@ class CozytouchAPI:
         except (requests.ConnectionError, requests.Timeout) as e:
             # Translators: Error message on a Cozytouch connection problem.
             # {error} = technical error type.
-            raise ConnectionError(_("Cozytouch Verbindungsfehler: {error}").format(
+            raise ConnectionError(_("Cozytouch connection error: {error}").format(
                 error=type(e).__name__))
 
         try:
             token = resp.json()
         except ValueError:
-            raise RuntimeError(_("Cozytouch: Ungültige Antwort beim Login"))
+            raise RuntimeError(_("Cozytouch: invalid response during login"))
 
         if not isinstance(token, dict) or "access_token" not in token:
             err = token.get("error") if isinstance(token, dict) else None
             if err == "invalid_grant":
-                raise ValueError(_("Cozytouch: E-Mail oder Passwort falsch"))
-            raise RuntimeError(_("Cozytouch: Login fehlgeschlagen (HTTP {code})").format(
+                raise ValueError(_("Cozytouch: incorrect email or password"))
+            raise RuntimeError(_("Cozytouch: login failed (HTTP {code})").format(
                 code=resp.status_code))
 
         self._token = token["access_token"]
-        log.info("Cozytouch: Login erfolgreich")
+        log.info("Cozytouch: login successful")
         return True
 
     # ---------------- Devices ----------------
@@ -195,7 +195,7 @@ class CozytouchAPI:
         """Reads the device list (setupviewv2) and returns wrapper objects."""
         status, data = self._request("GET", "/magellan/cozytouch/setupviewv2")
         if not isinstance(data, list) or not data:
-            log.warning(f"Cozytouch: Geräteliste unerwartet (HTTP {status})")
+            log.warning(f"Cozytouch: unexpected device list (HTTP {status})")
             return []
         setup = data[0]
         self._setup_id = setup.get("id")
@@ -215,7 +215,7 @@ class CozytouchAPI:
             wrapper = self._wrap_device(raw)
             if wrapper is not None:
                 devices.append(wrapper)
-        log.info(f"Cozytouch: {len(devices)} Gerät(e) gefunden")
+        log.info(f"Cozytouch: {len(devices)} device(s) found")
         return devices
 
     def _wrap_device(self, raw):
@@ -228,7 +228,7 @@ class CozytouchAPI:
         try:
             return CozytouchWaterHeater(raw, self)
         except Exception as e:
-            log.warning(f"Cozytouch: Gerät konnte nicht eingelesen werden: {e}")
+            log.warning(f"Cozytouch: could not read a device: {e}")
             return None
 
     def _fetch_capabilities(self, device_id):
@@ -260,7 +260,7 @@ class CozytouchAPI:
                 else:
                     dev.is_offline = True
             except Exception as e:
-                log.debug(f"Cozytouch: Status-Update für {dev.name} fehlgeschlagen: {e}")
+                log.debug(f"Cozytouch: status update for {dev.name} failed: {e}")
         return {"devices_ok": ok_count, "devices_total": total}
 
     # ---------------- Control ----------------
@@ -310,30 +310,28 @@ class CozytouchAPI:
         )
         if status != 201:
             _log = log.debug if quiet else log.warning
-            _log(f"Cozytouch: writecapability fehlgeschlagen (HTTP {status})")
+            _log(f"Cozytouch: writecapability failed (HTTP {status})")
             return False, status
         exec_id = self._extract_execution_id(exec_resp)
         if exec_id is None:
             log.warning(
-                f"Cozytouch: writecapability ohne verwertbare executionId "
-                f"(HTTP {status}, Antworttyp {type(exec_resp).__name__})")
+                f"Cozytouch: writecapability without a usable executionId "
+                f"(HTTP {status}, response type {type(exec_resp).__name__})")
             return False, status
 
         # Poll for completion (state: 1=waiting, 2=running, 3=done).
         #
-        # WICHTIG: Die Ausführungs-Meldung der Atlantic-Cloud ist NICHT
-        # verlässlich. Beobachtet am realen Gerät: Beim Umstellen auf den
-        # Zeitprogramm-Modus meldet die Cloud Status 4 ("fehlgeschlagen"),
-        # obwohl das Gerät den Befehl übernimmt. Auch die Referenz-
-        # Implementierung (gduteil/cozytouch) behandelt alles außer 3 als
-        # Fehler - loggt ihn aber nur still, statt ihn dem Nutzer zu zeigen.
-        # Ein falsches False hätte hier doppelte Folgen: Fehlerton trotz
-        # erfolgreicher Umstellung UND die eigene Änderung würde nicht als
-        # lokale Aktion registriert - der nächste Poll meldet sie dann
-        # fälschlich als externe Änderung.
-        # Daher gilt: Bei jedem unklaren Ergebnis (Status 4, unbekannte
-        # Status-Werte, Timeout) wird der TATSÄCHLICHE Capability-Wert am
-        # Gerät nachgeprüft - der ist die einzige verlässliche Wahrheit.
+        # IMPORTANT: the execution result reported by the Atlantic cloud is
+        # NOT reliable. Observed on real hardware: switching to schedule mode
+        # reports state 4 ("failed") although the device accepts the command.
+        # The reference implementation (gduteil/cozytouch) also treats
+        # anything but 3 as an error - but only logs it silently.
+        # A wrong False would hurt twice here: an error tone despite a
+        # successful change AND the change would not be registered as a local
+        # action, so the next poll would report it as an external one.
+        # Therefore every unclear result (state 4, unknown states, timeout)
+        # is checked against the ACTUAL capability value on the device - the
+        # only reliable truth.
         deadline = time.time() + EXECUTION_POLL_TIMEOUT
         timed_out = True
         state = None
@@ -345,45 +343,45 @@ class CozytouchAPI:
             if state == 3:
                 return True, status
             if state is not None and state not in (1, 2):
-                # Cloud meldet Fehlschlag (z.B. Status 4) - nachprüfen.
+                # Cloud reports a failure (e.g. state 4) - verify it.
                 timed_out = False
                 break
             time.sleep(1)
 
-        # Kurz warten, bis der neue Wert in der Cloud sichtbar ist, dann den
-        # echten Geräte-Zustand prüfen.
+        # Wait briefly until the new value is visible in the cloud, then
+        # check the real device state.
         time.sleep(1.5)
         verified = self._verify_capability_value(device_id, capability_id, value)
         if verified:
             log.debug(
-                f"Cozytouch: Ausführung {exec_id} (Status {state}) - Wert wurde "
-                f"trotzdem übernommen, gilt als Erfolg")
+                f"Cozytouch: execution {exec_id} (state {state}) - value was applied "
+                f"anyway, counted as success")
             return True, status
         if timed_out and verified is None:
-            # Timeout UND Prüfung nicht möglich: Write wurde mit HTTP 201
-            # angenommen - im Zweifel als Erfolg werten (Gerät ist ggf. nur
-            # langsam), statt fälschlich einen Fehler zu melden.
+            # Timeout AND no verification possible: the write was accepted
+            # with HTTP 201, so count it as success (the device may just be
+            # slow) rather than report a false error.
             log.debug(
-                f"Cozytouch: Ausführung {exec_id} unbestätigt, Prüfung nicht "
-                f"möglich - Write angenommen (HTTP 201), gilt als Erfolg")
+                f"Cozytouch: execution {exec_id} unconfirmed, no check possible - "
+                f"write accepted (HTTP 201), counted as success")
             return True, status
         log.warning(
-            f"Cozytouch: Ausführung {exec_id} fehlgeschlagen "
-            f"(Status {state}, Wert nicht übernommen)")
+            f"Cozytouch: execution {exec_id} failed "
+            f"(state {state}, value not applied)")
         return False, status
 
     def _verify_capability_value(self, device_id, capability_id, expected_value):
-        """Prüft, ob eine Capability tatsächlich den erwarteten Wert trägt.
+        """Checks whether a capability really carries the expected value.
 
         Returns:
-            True  - Wert wurde übernommen
-            False - Wert weicht ab (Befehl wirklich nicht übernommen)
-            None  - Prüfung nicht möglich (Capabilities nicht lesbar)
+            True  - value was applied
+            False - value differs (command really not applied)
+            None  - no check possible (capabilities not readable)
         """
         try:
             caps = self._fetch_capabilities(device_id)
         except Exception as e:
-            log.debug(f"Cozytouch: Verifikation nicht möglich: {e}")
+            log.debug(f"Cozytouch: verification not possible: {e}")
             return None
         if not caps:
             return None
@@ -393,7 +391,7 @@ class CozytouchAPI:
                 expected = str(expected_value).strip()
                 if actual == expected:
                     return True
-                # Numerischer Vergleich als Fallback ("4" vs. "4.0000...")
+                # Numeric comparison as a fallback ("4" vs. "4.0000...")
                 try:
                     return abs(float(actual) - float(expected)) < 0.01
                 except (TypeError, ValueError):
@@ -435,7 +433,7 @@ class CozytouchAPI:
             mode_capability_id = CAP_AWAY
 
         if self._setup_id is None:
-            log.warning("Cozytouch: set_away_mode ohne Setup-ID (get_devices nie gelaufen?)")
+            log.warning("Cozytouch: set_away_mode without a setup ID (get_devices never ran?)")
             return False
 
         # 1. Setup-level absence range
@@ -449,7 +447,7 @@ class CozytouchAPI:
             json_body=json_data,
         )
         if status not in (200, 204):
-            log.warning(f"Cozytouch: Absence-PUT fehlgeschlagen (HTTP {status})")
+            log.warning(f"Cozytouch: absence PUT failed (HTTP {status})")
             return False
 
         # 2. + 3. Capability writes - best effort only (see docstring).
@@ -464,12 +462,12 @@ class CozytouchAPI:
                 device_id, mode_capability_id, "1" if on else "0", quiet=True)
             if 403 in (st_ts, st_mode):
                 log.info(
-                    "Cozytouch: writecapability für Abwesenheit nicht erlaubt "
-                    "(HTTP 403) – Cloud pflegt die Werte selbst; künftige "
-                    "Schreibversuche werden übersprungen.")
+                    "Cozytouch: writecapability for absence not allowed (HTTP 403) - "
+                    "the cloud maintains the values itself; further write "
+                    "attempts are skipped.")
                 self._away_cap_write_forbidden = True
             elif not (ok_ts and ok_mode):
-                log.debug("Cozytouch: Abwesenheits-Capability-Write unbestätigt (unkritisch)")
+                log.debug("Cozytouch: absence capability write unconfirmed (not critical)")
 
         return True
 
@@ -478,4 +476,4 @@ class CozytouchAPI:
         try:
             self._session.close()
         except Exception as e:
-            log.debug(f"Ignorierter Fehler in logout: {e}")
+            log.debug(f"Ignored error in logout: {e}")

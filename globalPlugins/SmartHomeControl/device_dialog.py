@@ -18,15 +18,16 @@ import addonHandler
 try:
     addonHandler.initTranslation()
 except Exception as e:
-    _nvda_log.debug(f"initTranslation fehlgeschlagen: {e}")
-if "_" not in globals():  # Fallback, falls initTranslation() scheitert
-    # Ohne diesen Fallback bleibt `_` undefiniert und der erste `_()`-Aufruf
-    # wirft einen NameError mitten im Dialogaufbau statt beim Import.
+    _nvda_log.debug(f"initTranslation failed: {e}")
+if "_" not in globals():  # fallback if initTranslation() fails
+    # Without this fallback `_` stays undefined and the first `_()` call
+    # raises a NameError mid-dialog instead of at import time.
     def _(s):
         return s
 
 from .constants import (
-    DIFFUSER_MODE_NAMES, BEEP_ON, BEEP_OFF, BEEP_ERROR, BEEP_LOADING,
+    DIFFUSER_MODE_NAMES, MEROSS_WHITE_PRESET_NAMES,
+    BEEP_ON, BEEP_OFF, BEEP_ERROR, BEEP_LOADING,
 )
 
 
@@ -48,7 +49,7 @@ from .dialog_meross import _MerossDialogMixin
 from .dialog_cozytouch import _CozytouchDialogMixin
 from .dialog_help import _ContextHelpMixin
 from .dialog_favorites import _FavoritesTreeMixin
-from .dialog_history import HistoryDialog  # noqa: F401 (re-export, wird unten genutzt)
+from .dialog_history import HistoryDialog  # noqa: F401 (re-export, used below)
 
 class SmartHomeControlDialog(_NetatmoDialogMixin, _VeSyncDialogMixin, _MerossDialogMixin,
                          _CozytouchDialogMixin, _ContextHelpMixin, _FavoritesTreeMixin,
@@ -59,7 +60,7 @@ class SmartHomeControlDialog(_NetatmoDialogMixin, _VeSyncDialogMixin, _MerossDia
         super(SmartHomeControlDialog, self).__init__(
             parent,
             # Translators: Title of the main window with the device overview.
-            title=_("Smart Home Geräte"),
+            title=_("Smart home devices"),
             size=(800, 600)  # larger for the status line
         )
         
@@ -109,7 +110,7 @@ class SmartHomeControlDialog(_NetatmoDialogMixin, _VeSyncDialogMixin, _MerossDia
         self.filter_warning_bar.Bind(wx.EVT_CHAR, lambda e: None)  # block input
         # Translators: Accessible name of the filter warning field at the top
         # of the dialog.
-        self.filter_warning_bar.SetName(_("Filterwarnung"))
+        self.filter_warning_bar.SetName(_("Filter warning"))
         self.filter_warning_bar.Hide()
         main_sizer.Add(self.filter_warning_bar, 0, wx.ALL | wx.EXPAND, 5)
 
@@ -117,7 +118,7 @@ class SmartHomeControlDialog(_NetatmoDialogMixin, _VeSyncDialogMixin, _MerossDia
         self.notebook = wx.Notebook(panel)
         # Translators: Accessible name for the tab switching control in the
         # device dialog.
-        self.notebook.SetName(_("Ansicht"))
+        self.notebook.SetName(_("View"))
 
         # ========== Tab 1: devices ==========
         devices_page = wx.Panel(self.notebook)
@@ -133,51 +134,51 @@ class SmartHomeControlDialog(_NetatmoDialogMixin, _VeSyncDialogMixin, _MerossDia
 
         self.filter_choice = wx.Choice(devices_page, choices=[
             # Translators: Filter option: show all devices.
-            _("Alle"),
+            _("All"),
             # Translators: Filter option: show only online devices.
-            _("Nur Online"),
+            _("Online only"),
             # Translators: Filter option: show only offline devices.
-            _("Nur Offline"),
+            _("Offline only"),
             # Translators: Filter option: only smart plugs.
-            _("Nur Steckdosen"),
+            _("Plugs only"),
             # Translators: Filter option: only smart lamps.
-            _("Nur Lampen"),
+            _("Lamps only"),
             # Translators: Filter option: only sensors (temperature, water,
             # etc.).
-            _("Nur Sensoren"),
+            _("Sensors only"),
         ])
         self.filter_choice.SetSelection(0)
         self.filter_choice.Bind(wx.EVT_CHOICE, self._on_filter_changed)
         self.filter_choice.SetName(_("Filter"))
         # Translators: Tooltip for the filter control.
-        self.filter_choice.SetToolTip(_("Geräteliste nach Typ oder Status filtern"))
+        self.filter_choice.SetToolTip(_("Filter device list by type or status"))
         toolbar_sizer.Add(self.filter_choice, 0, wx.ALL, 5)
 
         # Sort order with accessible name and help text
         # Translators: Label for the sort selection in the device overview.
-        sort_label = wx.StaticText(devices_page, label=_("S&ortierung:"))
+        sort_label = wx.StaticText(devices_page, label=_("S&ort order:"))
         toolbar_sizer.Add(sort_label, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
 
         self.sort_choice = wx.Choice(devices_page, choices=[
             # Translators: Sort option: alphabetically by device name.
-            _("Nach Name"),
+            _("By name"),
             # Translators: Sort option: grouped by device type.
-            _("Nach Typ"),
+            _("By type"),
             # Translators: Sort option: by on/off or online status.
-            _("Nach Status"),
+            _("By status"),
         ])
         self.sort_choice.SetSelection(0)
         self.sort_choice.Bind(wx.EVT_CHOICE, self._on_sort_changed)
-        self.sort_choice.SetName(_("Sortierung"))
+        self.sort_choice.SetName(_("Sort order"))
         # Translators: Tooltip for the sort control.
-        self.sort_choice.SetToolTip(_("Reihenfolge der Geräte ändern"))
+        self.sort_choice.SetToolTip(_("Change device order"))
         toolbar_sizer.Add(self.sort_choice, 0, wx.ALL, 5)
 
         devices_sizer.Add(toolbar_sizer, 0, wx.ALL | wx.EXPAND, 0)
 
         # Tree view with accessible name
         # Translators: Label above the device tree.
-        tree_label = wx.StaticText(devices_page, label=_("&Geräte:"))
+        tree_label = wx.StaticText(devices_page, label=_("&Devices:"))
         devices_sizer.Add(tree_label, 0, wx.ALL, 5)
 
         self.tree = wx.TreeCtrl(
@@ -187,20 +188,20 @@ class SmartHomeControlDialog(_NetatmoDialogMixin, _VeSyncDialogMixin, _MerossDia
         self.tree.Bind(wx.EVT_TREE_ITEM_ACTIVATED, self._on_item_activated)
         self.tree.Bind(wx.EVT_CHAR_HOOK, self._on_tree_char)
         self.tree.Bind(wx.EVT_TREE_ITEM_EXPANDING, self._on_item_expanding)
-        self.tree.SetName(_("Geräteliste"))
+        self.tree.SetName(_("Device list"))
         # Translators: Tooltip with the most important shortcuts for the device
         # list.
         self.tree.SetToolTip(_(
-            "Enter/Leertaste: Aktion ausführen, Pfeiltasten: Navigation, "
-            "F1: Kontexthilfe, F5: Aktualisieren, Strg+F: Suchen, "
-            "1-9: Zur Kategorie springen, Buchstaben: Schnellsuche"
+            "Enter/Space: execute action, arrow keys: navigate, F1: context "
+            "help, F5: refresh, Ctrl+F: search, 1-9: jump to category, "
+            "letters: quick search"
         ))
         devices_sizer.Add(self.tree, 1, wx.ALL | wx.EXPAND, 5)
 
         devices_page.SetSizer(devices_sizer)
         # Translators: Name of the first tab in the device dialog (& marks the
         # accelerator).
-        self.notebook.AddPage(devices_page, _("Alle Geräte"))
+        self.notebook.AddPage(devices_page, _("All devices"))
 
         # ========== Tab 2: device favorites ==========
         fav_page = wx.Panel(self.notebook)
@@ -209,7 +210,7 @@ class SmartHomeControlDialog(_NetatmoDialogMixin, _VeSyncDialogMixin, _MerossDia
         # Translators: Hint at the top of the favorites tab about keyboard
         # usage.
         fav_hint = wx.StaticText(fav_page, label=_(
-            "Strg+B auf einem Gerät im Geräte-Tab: Favorit hinzufügen/entfernen"
+            "Ctrl+B on a device in the devices tab: add/remove favorite"
         ))
         fav_sizer.Add(fav_hint, 0, wx.ALL, 5)
 
@@ -219,19 +220,19 @@ class SmartHomeControlDialog(_NetatmoDialogMixin, _VeSyncDialogMixin, _MerossDia
         )
         self.fav_tree.Bind(wx.EVT_TREE_ITEM_ACTIVATED, self._on_fav_item_activated)
         self.fav_tree.Bind(wx.EVT_CHAR_HOOK, self._on_fav_tree_char)
-        self.fav_tree.SetName(_("Geräte-Favoriten"))
+        self.fav_tree.SetName(_("Device favorites"))
         # Translators: Tooltip of the favorites list with keyboard shortcuts.
         self.fav_tree.SetToolTip(_(
-            "Enter/Leertaste: Aktion ausführen, Pfeiltasten: Navigation, "
-            "F1: Hilfe, F5: Aktualisieren, Strg+B: Favorit entfernen"
+            "Enter/Space: execute action, arrow keys: navigate, F1: help, F5: "
+            "refresh, Ctrl+B: remove favorite"
         ))
         fav_sizer.Add(self.fav_tree, 1, wx.ALL | wx.EXPAND, 5)
 
         fav_page.SetSizer(fav_sizer)
         # Translators: Name of the second tab in the device dialog.
-        self.notebook.AddPage(fav_page, _("Geräte-Favoriten"))
+        self.notebook.AddPage(fav_page, _("Device favorites"))
 
-        # Start-Tab gemäß Einstellung wählen (0 = Geräte, 1 = Favoriten).
+        # Pick the start tab from the setting (0 = devices, 1 = favorites).
         if getattr(self.plugin, 'start_tab', 'devices') == 'favorites':
             self.notebook.SetSelection(1)
 
@@ -252,7 +253,7 @@ class SmartHomeControlDialog(_NetatmoDialogMixin, _VeSyncDialogMixin, _MerossDia
         # Translators: Initial text of the status display.
         self.status_bar = wx.TextCtrl(
             panel,
-            value=_("Lade Geräte..."),
+            value=_("Loading devices..."),
             style=wx.BORDER_NONE,
         )
         self.status_bar.SetBackgroundColour(panel.GetBackgroundColour())
@@ -271,35 +272,36 @@ class SmartHomeControlDialog(_NetatmoDialogMixin, _VeSyncDialogMixin, _MerossDia
 
         # Translators: Button for opening the device search (shortcut in
         # parentheses).
-        search_btn = wx.Button(panel, label=_("Su&chen (Strg+F)"))
-        search_btn.SetName(_("Geräte suchen"))
+        search_btn = wx.Button(panel, label=_("Sear&ch (Ctrl+F)"))
+        search_btn.SetName(_("Find devices"))
         search_btn.Bind(wx.EVT_BUTTON, lambda e: self._on_search())
         button_sizer.Add(search_btn, 0, wx.ALL, 5)
 
         # Translators: Button for reloading the device status.
-        self.refresh_btn = wx.Button(panel, label=_("A&ktualisieren (F5)"))
-        self.refresh_btn.SetName(_("Geräte aktualisieren"))
+        self.refresh_btn = wx.Button(panel, label=_("&Refresh (F5)"))
+        self.refresh_btn.SetName(_("Refresh devices"))
         self.refresh_btn.Bind(wx.EVT_BUTTON, self._on_refresh)
         button_sizer.Add(self.refresh_btn, 0, wx.ALL, 5)
 
         # Translators: Button opens the history of all switch actions and
         # sensor values.
-        history_btn = wx.Button(panel, label=_("&Verlauf (Strg+H)"))
-        history_btn.SetName(_("Verlauf öffnen"))
+        history_btn = wx.Button(panel, label=_("&History (Ctrl+H)"))
+        history_btn.SetName(_("Open history"))
         history_btn.Bind(wx.EVT_BUTTON, lambda e: self._show_history_dialog())
         # Translators: Tooltip of the history button.
-        history_btn.SetToolTip(_("Zeigt den Verlauf aller Schaltaktionen und Sensorwerte"))
+        history_btn.SetToolTip(_("Shows the history of all switch actions and "
+                                 "sensor readings"))
         button_sizer.Add(history_btn, 0, wx.ALL, 5)
 
         # Translators: Button opens the settings dialog (Smart Home).
-        settings_btn = wx.Button(panel, label=_("&Einstellungen (Alt+E)"))
-        settings_btn.SetName(_("Einstellungen öffnen"))
+        settings_btn = wx.Button(panel, label=_("S&ettings (Alt+E)"))
+        settings_btn.SetName(_("Open settings"))
         settings_btn.Bind(wx.EVT_BUTTON, self._on_settings)
         button_sizer.Add(settings_btn, 0, wx.ALL, 5)
 
         # Translators: Button for closing the device dialog.
-        close_btn = wx.Button(panel, wx.ID_CLOSE, label=_("&Schließen (Esc)"))
-        close_btn.SetName(_("Dialog schließen"))
+        close_btn = wx.Button(panel, wx.ID_CLOSE, label=_("&Close (Esc)"))
+        close_btn.SetName(_("Close dialog"))
         close_btn.Bind(wx.EVT_BUTTON, lambda e: self.Close())
         button_sizer.Add(close_btn, 0, wx.ALL, 5)
         
@@ -313,7 +315,7 @@ class SmartHomeControlDialog(_NetatmoDialogMixin, _VeSyncDialogMixin, _MerossDia
         
         if cache_fresh and self.plugin.devices:
             # IMMEDIATE display from the cache - no loading needed!
-            log.debug(f"Dialog: Sofortige Anzeige von {len(self.plugin.devices)} gecachten Geräten")
+            log.debug(f"Dialog: showing {len(self.plugin.devices)} cached devices immediately")
             self._populate_tree(self.plugin.devices)
             self._focus_first_tree_item()
         else:
@@ -345,7 +347,7 @@ class SmartHomeControlDialog(_NetatmoDialogMixin, _VeSyncDialogMixin, _MerossDia
             try:
                 ui.message(text)
             except Exception as e:
-                log.debug(f"Ignorierter Fehler in _set_status_text: {e}")
+                log.debug(f"Ignored error in _set_status_text: {e}")
 
     def _get_status_text(self):
         """Current status line text."""
@@ -358,19 +360,19 @@ class SmartHomeControlDialog(_NetatmoDialogMixin, _VeSyncDialogMixin, _MerossDia
         """Shows the loading state in the tree (immediately, without blocking)"""
         self.tree.DeleteAllItems()
         # Translators: Root node label of the device tree.
-        root = self.tree.AddRoot(_("Geräte"))
+        root = self.tree.AddRoot(_("Devices"))
         # Translators: Placeholder entry while the device list is loading.
-        loading_item = self.tree.AppendItem(root, _("Lade Geräte..."))
+        loading_item = self.tree.AppendItem(root, _("Loading devices..."))
         self.tree.SetItemData(loading_item, {'type': 'loading'})
         # Note: with TR_HIDE_ROOT the root's children are shown automatically,
         # Expand(root) must NOT be called!
         # Translators: Status line text while the connection is being
-        # established. No separate ui.message - the ui.message("Lade
-        # Geräte...") below is enough.
-        self._set_status_text(_("Verbinde..."))
+        # established. No separate ui.message - the ui.message below is
+        # enough.
+        self._set_status_text(_("Connecting..."))
         # Short announcement (its own phrase - the status line shows
         # "Connecting...")
-        ui.message(_("Lade Geräte..."))
+        ui.message(_("Loading devices..."))
         # Start the periodic loading beep (every 1 second)
         self._start_loading_beep()
 
@@ -481,18 +483,18 @@ class SmartHomeControlDialog(_NetatmoDialogMixin, _VeSyncDialogMixin, _MerossDia
                 wx.CallAfter(lambda: func() if not self._is_destroyed else None)
     
     def _begin_cloud_action(self):
-        """Guard für Cloud-Aktionen im Hintergrund: nur eine gleichzeitig.
+        """Guard for background cloud actions: only one at a time.
 
-        Die Schalt-/Modus-Aktionen laufen in einem Thread (siehe
-        _execute_action), damit der wx-Thread - und damit NVDA - während der
-        bis zu 10-25 s dauernden Cloud-Aufrufe nicht einfriert. Der Guard
-        verhindert, dass ein zweiter Enter-Druck parallel eine weitere Aktion
-        startet und sich Baum-Umbauten überlagern.
+        The switch/mode actions run on a thread (see _execute_action) so the
+        wx thread - and with it NVDA - does not freeze during cloud calls
+        taking up to 10-25 s. The guard keeps a second Enter press from
+        starting another action in parallel and tree rebuilds from
+        overlapping.
         """
         if getattr(self, '_cloud_action_running', False):
             # Translators: Message when an action is triggered while the
             # previous one is still running.
-            ui.message(_("Bitte warten - die vorherige Aktion läuft noch"))
+            ui.message(_("Please wait - the previous action is still running"))
             return False
         self._cloud_action_running = True
         return True
@@ -517,11 +519,12 @@ class SmartHomeControlDialog(_NetatmoDialogMixin, _VeSyncDialogMixin, _MerossDia
                 
                 if cache_valid and self.plugin.devices:
                     # Use the cache - super fast! (NO network call)
-                    log.debug(f"Dialog: Cache frisch - sofortige Anzeige von {len(self.plugin.devices)} Geräten")
+                    log.debug(f"Dialog: cache fresh - showing {len(self.plugin.devices)} devices immediately")
                     self._safe_call_after(self._populate_tree_from_cache)
                 else:
                     # Load fresh data (status update only, no full discovery)
-                    self._safe_call_after(self._set_status_text, _("Lade Geräte..."))
+                    self._safe_call_after(self._set_status_text, _("Loading "
+                                                                   "devices..."))
                     
                     # Check again before the network call
                     if self._is_destroyed:
@@ -532,7 +535,7 @@ class SmartHomeControlDialog(_NetatmoDialogMixin, _VeSyncDialogMixin, _MerossDia
                     self._safe_call_after(self._populate_tree, devices)
                     
             except Exception as e:
-                log.error(f"Fehler beim Laden: {e}")
+                log.error(f"Loading failed: {e}")
                 if not self._is_destroyed:
                     self._safe_call_after(self._show_error_state, str(e))
         
@@ -547,7 +550,7 @@ class SmartHomeControlDialog(_NetatmoDialogMixin, _VeSyncDialogMixin, _MerossDia
             self.last_update_time = self.plugin._last_refresh_time
         self._populate_tree(self.plugin.devices)
         # Translators: Message when opening the dialog with cached data.
-        ui.message(_("{count} Geräte aus Cache geladen").format(count=len(self.plugin.devices)))
+        ui.message(_("{count} devices loaded from cache").format(count=len(self.plugin.devices)))
     
     def refresh_all_device_data_live(self):
         """
@@ -571,7 +574,7 @@ class SmartHomeControlDialog(_NetatmoDialogMixin, _VeSyncDialogMixin, _MerossDia
         # children would break NVDA's focus tracking on the main dialog behind
         # it (BrokenCommctrl5Item / "level 0").
         if getattr(self, '_suppress_live_updates', False):
-            log.debug("Live-Update übersprungen: Kind-Dialog ist aktiv")
+            log.debug("Live update skipped: a child dialog is active")
             return
 
         # Debounce: the polling scheduler can trigger this method in quick
@@ -582,7 +585,7 @@ class SmartHomeControlDialog(_NetatmoDialogMixin, _VeSyncDialogMixin, _MerossDia
         now = time.time()
         last = getattr(self, '_last_live_refresh_ts', 0)
         if now - last < 0.7:
-            log.debug("Live-Update debounced (zu kurz nach vorherigem Refresh)")
+            log.debug("Live update debounced (too soon after the previous refresh)")
             return
         self._last_live_refresh_ts = now
 
@@ -626,7 +629,7 @@ class SmartHomeControlDialog(_NetatmoDialogMixin, _VeSyncDialogMixin, _MerossDia
             if new_focused_item.IsOk():
                 focused_new_text = self.tree.GetItemText(new_focused_item)
                 if focused_old_text and focused_new_text != focused_old_text:
-                    log.debug(f"Live-Update: Fokussiertes Element geändert: '{focused_old_text}' -> '{focused_new_text}'")
+                    log.debug(f"Live update: focused item changed: '{focused_old_text}' -> '{focused_new_text}'")
                     
             # Update the status line - use _update_status_bar for a consistent
             # format
@@ -637,7 +640,7 @@ class SmartHomeControlDialog(_NetatmoDialogMixin, _VeSyncDialogMixin, _MerossDia
             self._update_filter_warning_banner()
 
         except Exception as e:
-            log.debug(f"Fehler beim Live-Refresh: {e}")
+            log.debug(f"Live refresh failed: {e}")
     
     def _update_device_tree_item_data(self, device_item, device):
         """
@@ -702,7 +705,9 @@ class SmartHomeControlDialog(_NetatmoDialogMixin, _VeSyncDialogMixin, _MerossDia
                     else:
                         is_on = device.is_on if hasattr(device, 'is_on') else False
                         target_name = device.name
-                    new_label = (_("{name} ausschalten") if is_on else _("{name} einschalten")).format(name=target_name)
+                    new_label = (_("Turn {name} off") if is_on else _("Turn "
+                                                                         "{name} "
+                                                                         "on")).format(name=target_name)
                     if new_label != current_text:
                         self.tree.SetItemText(child, new_label)
                 
@@ -711,7 +716,8 @@ class SmartHomeControlDialog(_NetatmoDialogMixin, _VeSyncDialogMixin, _MerossDia
                     if hasattr(device, 'get_luminance'):
                         luminance = device.get_luminance()
                         if luminance is not None:
-                            new_text = _("Helligkeit: {value}% - Enter zum Ändern").format(value=luminance)
+                            new_text = _("Brightness: {value}% - press Enter "
+                                         "to change").format(value=luminance)
                             if new_text != current_text:
                                 self.tree.SetItemText(child, new_text)
                 
@@ -726,7 +732,7 @@ class SmartHomeControlDialog(_NetatmoDialogMixin, _VeSyncDialogMixin, _MerossDia
                 # Netatmo thermostat: update the heating mode
                 elif info_type == 'action' and child_data.get('action') == 'netatmo_therm_mode':
                     mode_text = self._get_netatmo_mode_text(device)
-                    new_text = _("Heizmodus: {mode} - Enter zum Ändern").format(mode=mode_text)
+                    new_text = _("Heating mode: {mode} - press Enter to change").format(mode=mode_text)
                     if new_text != current_text:
                         self.tree.SetItemText(child, new_text)
                 
@@ -768,7 +774,7 @@ class SmartHomeControlDialog(_NetatmoDialogMixin, _VeSyncDialogMixin, _MerossDia
                 # Structure changed: rebuild fully (keeps status cache).
                 self._update_device_item(device_item, {'device': device}, skip_status_update=True)
         except Exception as e:
-            log.debug(f"Ignorierter Fehler in _live_update_hub_children: {e}")
+            log.debug(f"Ignored error in _live_update_hub_children: {e}")
 
     def _get_updated_info_text(self, current_text, device, child_data):
         """
@@ -794,92 +800,92 @@ class SmartHomeControlDialog(_NetatmoDialogMixin, _VeSyncDialogMixin, _MerossDia
             if hasattr(device, 'is_multi_channel') and device.is_multi_channel:
                 channels = device.get_channels() if hasattr(device, 'get_channels') else []
                 if channels:
-                    channel_stati = [f"{ch.name}: {_('Ein') if ch.is_on else _('Aus')}" for ch in channels]
+                    channel_stati = [f"{ch.name}: {_('On') if ch.is_on else _('Off')}" for ch in channels]
                     return _("Status: {status}").format(status=", ".join(channel_stati))
             else:
                 is_on = device.is_on if hasattr(device, 'is_on') else False
-                return _("Status: {status}").format(status=_('Ein') if is_on else _('Aus'))
+                return _("Status: {status}").format(status=_("On") if is_on else _("Off"))
         
         # Power line
-        if current_text.startswith(_("Leistung:")):
+        if current_text.startswith(_("Power:")):
             if hasattr(device, 'get_power'):
                 power = device.get_power()
                 if power is not None:
-                    return _("Leistung: {value} W").format(value=power)
+                    return _("Power: {value} W").format(value=power)
 
         # Consumption lines (today / last 7 days) - replace the placeholder
         # or refresh values once the background fetch filled the cache.
-        if (current_text.startswith(_("Verbrauch heute:"))
-                or current_text.startswith(_("Verbrauch letzte 7 Tage:"))):
+        if (current_text.startswith(_("Consumption today:"))
+                or current_text.startswith(_("Consumption last 7 days:"))):
             api = getattr(self.plugin, 'api', None)
             if api and hasattr(api, 'peek_daily_consumption'):
                 data = api.peek_daily_consumption(device.uuid)
                 if data:
                     kwh_today, kwh_week = api.summarize_daily_consumption(data)
-                    if current_text.startswith(_("Verbrauch heute:")):
-                        return _("Verbrauch heute: {kwh} kWh").format(
+                    if current_text.startswith(_("Consumption today:")):
+                        return _("Consumption today: {kwh} kWh").format(
                             kwh=f"{kwh_today:.2f}".replace(".", ","))
-                    return _("Verbrauch letzte 7 Tage: {kwh} kWh").format(
+                    return _("Consumption last 7 days: {kwh} kWh").format(
                         kwh=f"{kwh_week:.2f}".replace(".", ","))
             return None
         
         # Temperature line
-        if current_text.startswith(_("Temperatur:")):
+        if current_text.startswith(_("Temperature:")):
             if hasattr(device, 'get_temperature'):
                 temp = device.get_temperature()
                 if temp is not None:
-                    return _("Temperatur: {value:.1f}°C").format(value=temp)
+                    return _("Temperature: {value:.1f}°C").format(value=temp)
         
         # Humidity line
-        if current_text.startswith(_("Luftfeuchtigkeit:")):
+        if current_text.startswith(_("Humidity:")):
             if hasattr(device, 'get_humidity'):
                 humidity = device.get_humidity()
                 if humidity is not None:
-                    return _("Luftfeuchtigkeit: {value:g}%").format(value=humidity)
+                    return _("Humidity: {value:g}%").format(value=humidity)
         
         # Brightness line (as info, not as an action)
-        if current_text.startswith(_("Helligkeit:")) and "Enter" not in current_text:
+        if current_text.startswith(_("Brightness:")) and "Enter" not in current_text:
             if hasattr(device, 'get_luminance'):
                 luminance = device.get_luminance()
                 if luminance is not None:
-                    return _("Helligkeit: {value}%").format(value=luminance)
+                    return _("Brightness: {value}%").format(value=luminance)
         
         # Color temperature line
-        if current_text.startswith(_("Farbtemperatur:")):
+        if current_text.startswith(_("Color temperature:")):
             if hasattr(device, 'get_color_temperature'):
                 temp = device.get_color_temperature()
                 if temp is not None:
-                    return _("Farbtemperatur: {value}K").format(value=temp)
+                    return _("Color temperature: {value}K").format(value=temp)
         
         # RGB color line
-        if current_text.startswith(_("Farbe:")) or current_text.startswith("RGB:"):
+        if current_text.startswith(_("Color:")) or current_text.startswith("RGB:"):
             if hasattr(device, 'get_rgb'):
                 rgb = device.get_rgb()
                 if rgb:
-                    return _("Farbe: R={r}, G={g}, B={b}").format(r=rgb[0], g=rgb[1], b=rgb[2])
+                    return _("Color: R={r}, G={g}, B={b}").format(r=rgb[0], g=rgb[1], b=rgb[2])
         
         # Netatmo: heating status (boiler)
-        if current_text.startswith(_("Heizung:")):
+        if current_text.startswith(_("Heating:")):
             boiler = device.get_boiler_status() if hasattr(device, 'get_boiler_status') else None
             if boiler is not None:
-                return _("Heizung: aktiv") if boiler else _("Heizung: aus")
+                return _("Heating: active") if boiler else _("Heating: off")
         
         # Netatmo: pre-heating (anticipation)
-        if current_text.startswith(_("Vorausheizen:")):
+        if current_text.startswith(_("Pre-heating:")):
             anticipating = device.is_anticipating() if hasattr(device, 'is_anticipating') else None
             if anticipating:
-                return _("Vorausheizen: aktiv")
+                return _("Pre-heating: active")
             return None  # remove the item when no longer active
         
         # Netatmo: open window
-        if current_text.startswith(_("Offenes Fenster:")):
+        if current_text.startswith(_("Open window:")):
             open_window = device.is_open_window() if hasattr(device, 'is_open_window') else None
             if open_window:
-                return _("Offenes Fenster: erkannt (Heizung pausiert)")
+                return _("Open window: detected (heating paused)")
             return None  # remove the item when no longer active
         
         # Netatmo: next schedule change
-        if current_text.startswith(_("Nächste Planänderung:")):
+        if current_text.startswith(_("Next schedule change:")):
             next_change = device.get_next_schedule_change() if hasattr(device, 'get_next_schedule_change') else None
             if next_change and next_change.get('time'):
                 try:
@@ -887,18 +893,19 @@ class SmartHomeControlDialog(_NetatmoDialogMixin, _VeSyncDialogMixin, _MerossDia
                     nc_zone = next_change.get('zone_name', '')
                     nc_temp = next_change.get('temp')
                     if nc_temp is not None:
-                        return _("Nächste Planänderung: {zone} ({temp:.1f}°C) um {time}").format(zone=nc_zone, temp=nc_temp, time=change_time_str)
+                        return _("Next schedule change: {zone} ({temp:.1f}°C) "
+                                 "at {time}").format(zone=nc_zone, temp=nc_temp, time=change_time_str)
                     else:
-                        return _("Nächste Planänderung: {zone} um {time}").format(zone=nc_zone, time=change_time_str)
+                        return _("Next schedule change: {zone} at {time}").format(zone=nc_zone, time=change_time_str)
                 except Exception as e:
-                    log.debug(f"Ignorierter Fehler in _get_updated_info_text: {e}")
+                    log.debug(f"Ignored error in _get_updated_info_text: {e}")
             return None
         
         # Netatmo: battery
-        if current_text.startswith(_("Batterie:")):
+        if current_text.startswith(_("Battery:")):
             battery = device.get_battery_percent() if hasattr(device, 'get_battery_percent') else None
             if battery is not None:
-                return _("Batterie: {value}%").format(value=battery)
+                return _("Battery: {value}%").format(value=battery)
         
         return None
     
@@ -918,13 +925,15 @@ class SmartHomeControlDialog(_NetatmoDialogMixin, _VeSyncDialogMixin, _MerossDia
             if child_data and child_data.get('type') == 'info':
                 if current_text.startswith(_("Status:")):
                     is_on = channel.is_on if hasattr(channel, 'is_on') else False
-                    new_text = _("Status: {status}").format(status=_('Ein') if is_on else _('Aus'))
+                    new_text = _("Status: {status}").format(status=_("On") if is_on else _("Off"))
                     if new_text != current_text:
                         self.tree.SetItemText(child, new_text)
             
             if child_data and child_data.get('type') == 'action' and child_data.get('action') == 'toggle':
                 is_on = channel.is_on if hasattr(channel, 'is_on') else False
-                new_label = (_("{name} ausschalten") if is_on else _("{name} einschalten")).format(name=channel.name)
+                new_label = (_("Turn {name} off") if is_on else _("Turn "
+                                                                     "{name} "
+                                                                     "on")).format(name=channel.name)
                 if new_label != current_text:
                     self.tree.SetItemText(child, new_label)
             
@@ -972,14 +981,14 @@ class SmartHomeControlDialog(_NetatmoDialogMixin, _VeSyncDialogMixin, _MerossDia
                                     # Normal device: update the status child
                                     # node
                                     self._update_status_child(device_item, new_state)
-                                log.debug(f"Live-Update: {device.name} -> {'Ein' if new_state else 'Aus'}")
+                                log.debug(f"Live update: {device.name} -> {'on' if new_state else 'off'}")
                                 return
                         device_item, d_cookie = self.tree.GetNextChild(category, d_cookie)
                     category, c_cookie = self.tree.GetNextChild(platform, c_cookie)
                 platform, p_cookie = self.tree.GetNextChild(root, p_cookie)
                 
         except Exception as e:
-            log.debug(f"Fehler beim Live-Update: {e}")
+            log.debug(f"Live update failed: {e}")
     
     def _update_multi_channel_status(self, device_item, device, channel_name, new_state):
         """
@@ -1003,7 +1012,7 @@ class SmartHomeControlDialog(_NetatmoDialogMixin, _VeSyncDialogMixin, _MerossDia
                     # Fetch the current status of all channels
                     channels = device.get_channels() if hasattr(device, 'get_channels') else []
                     if channels:
-                        channel_stati = [f"{ch.name}: {_('Ein') if ch.is_on else _('Aus')}" for ch in channels]
+                        channel_stati = [f"{ch.name}: {_('On') if ch.is_on else _('Off')}" for ch in channels]
                         new_status = _("Status: {status}").format(status=", ".join(channel_stati))
                         self.tree.SetItemText(child, new_status)
             
@@ -1032,12 +1041,14 @@ class SmartHomeControlDialog(_NetatmoDialogMixin, _VeSyncDialogMixin, _MerossDia
             
             # Update the status entry
             if child_data and child_data.get('type') == 'info' and current_text.startswith(_("Status:")):
-                new_text = _("Status: {status}").format(status=_('Ein') if new_state else _('Aus'))
+                new_text = _("Status: {status}").format(status=_("On") if new_state else _("Off"))
                 self.tree.SetItemText(child, new_text)
             
             # Update the toggle action
             if child_data and child_data.get('type') == 'action' and child_data.get('action') == 'toggle':
-                label = (_("{name} ausschalten") if new_state else _("{name} einschalten")).format(name=channel.name)
+                label = (_("Turn {name} off") if new_state else _("Turn "
+                                                                     "{name} "
+                                                                     "on")).format(name=channel.name)
                 self.tree.SetItemText(child, label)
             
             child, cookie = self.tree.GetNextChild(channel_item, cookie)
@@ -1059,7 +1070,7 @@ class SmartHomeControlDialog(_NetatmoDialogMixin, _VeSyncDialogMixin, _MerossDia
                 current_text = self.tree.GetItemText(child)
                 if current_text.startswith(_("Status:")):
                     # Update the status text
-                    new_text = _("Status: {status}").format(status=_('Ein') if new_state else _('Aus'))
+                    new_text = _("Status: {status}").format(status=_("On") if new_state else _("Off"))
                     self.tree.SetItemText(child, new_text)
                     
                     # Also update the device object in the plugin cache
@@ -1081,8 +1092,10 @@ class SmartHomeControlDialog(_NetatmoDialogMixin, _VeSyncDialogMixin, _MerossDia
             if child_data and child_data.get('type') == 'action' and child_data.get('action') == 'toggle':
                 device = child_data.get('device')
                 channel = child_data.get('channel')
-                target_name = channel.name if channel else (device.name if device else _("Gerät"))
-                label = (_("{name} ausschalten") if new_state else _("{name} einschalten")).format(name=target_name)
+                target_name = channel.name if channel else (device.name if device else _("Device"))
+                label = (_("Turn {name} off") if new_state else _("Turn "
+                                                                     "{name} "
+                                                                     "on")).format(name=target_name)
                 self.tree.SetItemText(child, label)
                 if channel:
                     channel._is_on = new_state
@@ -1099,7 +1112,7 @@ class SmartHomeControlDialog(_NetatmoDialogMixin, _VeSyncDialogMixin, _MerossDia
             'failed to resolve', 'getaddrinfo failed', 'name resolution',
             'nodename nor servname', 'dns',
         ]):
-            return _("Keine Internetverbindung - DNS-Auflösung fehlgeschlagen")
+            return _("No internet connection - DNS resolution failed")
         
         # Connection refused / unreachable
         if any(s in msg_lower for s in [
@@ -1107,40 +1120,40 @@ class SmartHomeControlDialog(_NetatmoDialogMixin, _VeSyncDialogMixin, _MerossDia
             'no route to host', 'nicht erreichbar', 'winerror 10065',
             'network is unreachable', 'winerror 10051',
         ]):
-            return _("Keine Internetverbindung - Server nicht erreichbar")
+            return _("No internet connection - server unreachable")
         
         # Connection aborted / reset
         if any(s in msg_lower for s in [
             'connection reset', 'connection aborted', 'broken pipe',
             'winerror 10054', 'winerror 10053',
         ]):
-            return _("Verbindung unterbrochen")
+            return _("Connection interrupted")
         
         # Max retries / general connection problems
         if 'max retries exceeded' in msg_lower:
-            return _("Keine Internetverbindung - Server antwortet nicht")
+            return _("No internet connection - server not responding")
         
         # Timeout
         if 'timeout' in msg_lower or 'zeitüberschreitung' in msg_lower:
-            return _("Zeitüberschreitung - bitte erneut versuchen")
+            return _("Timeout - please try again")
         
         # Event loop / internal errors
         if 'event loop' in msg_lower:
-            return _("Interner Verbindungsfehler - bitte erneut versuchen")
+            return _("Internal connection error - please try again")
         
         # Not logged in
         if 'nicht angemeldet' in msg_lower or 'not logged' in msg_lower:
-            return _("Nicht angemeldet - bitte Einstellungen prüfen")
+            return _("Not logged in - please check settings")
         
         # Fallback: shorten the original message
-        return _("Fehler: {msg}").format(msg=error_msg[:50])
+        return _("Error: {msg}").format(msg=error_msg[:50])
     
     def _show_error_state(self, error_msg):
         """Shows the error state in the tree"""
         # Stop the loading beep on error
         self._stop_loading_beep()
         self.tree.DeleteAllItems()
-        root = self.tree.AddRoot(_("Geräte"))
+        root = self.tree.AddRoot(_("Devices"))
         
         # Phrase network errors in a user-friendly way
         user_msg = self._format_network_error(error_msg)
@@ -1149,7 +1162,7 @@ class SmartHomeControlDialog(_NetatmoDialogMixin, _VeSyncDialogMixin, _MerossDia
         self.tree.SetItemData(error_item, {'type': 'error'})
         # Translators: Hint in the device tree how the user can retry after an
         # error.
-        retry_item = self.tree.AppendItem(root, _("F5 drücken zum Wiederholen"))
+        retry_item = self.tree.AppendItem(root, _("Press F5 to retry"))
         self.tree.SetItemData(retry_item, {'type': 'info'})
         # With TR_HIDE_ROOT children become visible automatically
         self._set_status_text(user_msg[:40])
@@ -1168,7 +1181,7 @@ class SmartHomeControlDialog(_NetatmoDialogMixin, _VeSyncDialogMixin, _MerossDia
         
         online = sum(1 for d in devices if not (hasattr(d, 'is_offline') and d.is_offline))
         # Translators: Message after loading the device list.
-        ui.message(_("{count} Geräte geladen, {online} online").format(count=len(devices), online=online))
+        ui.message(_("{count} devices loaded, {online} online").format(count=len(devices), online=online))
 
         # Set the filter warning banner at the very top (without immediate
         # speech - it would run before the dialog is shown and be swallowed by
@@ -1180,16 +1193,16 @@ class SmartHomeControlDialog(_NetatmoDialogMixin, _VeSyncDialogMixin, _MerossDia
             try:
                 wx.CallLater(800, self._announce_filter_warning_on_open)
             except Exception as e:
-                log.debug(f"Ignorierter Fehler in _populate_tree: {e}")
+                log.debug(f"Ignored error in _populate_tree: {e}")
 
         # Load the favorites tree delayed (does not block the display).
-        # Die Sensorerfassung hängt NICHT mehr hier: sie lief früher bei jedem
-        # Aufbau der Liste, und die 15-Minuten-Sperre lag auf der Dialog-
-        # Instanz, die bei jedem Öffnen neu entsteht. Fünfmal Menü öffnen
-        # ergab fünf identische Schnappschüsse pro Gerät. Erfasst wird jetzt
-        # im Hintergrund-Scheduler (_log_sensor_measurements), gefiltert auf
-        # echte Änderungen - erst dadurch ist es ein Verlauf und nicht ein
-        # Protokoll der Menüöffnungen.
+        # Recording readings no longer hangs off here: it used to run on
+        # every rebuild of the list, and the 15-minute lock lived on the
+        # dialog instance, which is new on every opening. Opening the menu
+        # five times gave five identical snapshots per device. Recording now
+        # happens in the background scheduler (_log_sensor_measurements),
+        # filtered to real changes - only that makes it a history rather
+        # than a log of menu openings.
         wx.CallAfter(self._refresh_favorites_tree)
 
     def _announce_device_action(self, device_name, new_state, is_first_mention=False):
@@ -1207,7 +1220,7 @@ class SmartHomeControlDialog(_NetatmoDialogMixin, _VeSyncDialogMixin, _MerossDia
         # ALWAYS a uniform announcement with a colon
         # Translators: Announcement of an external switch state change.
         ui.message(_("{name}: {status}").format(
-            name=device_name, status=_("Ein") if new_state else _("Aus")))
+            name=device_name, status=_("On") if new_state else _("Off")))
     
     def _announce_status_bar(self):
         """Announces the current status of the status line (Ctrl+T)
@@ -1231,12 +1244,12 @@ class SmartHomeControlDialog(_NetatmoDialogMixin, _VeSyncDialogMixin, _MerossDia
                 age = max(0, int(time.time() - update_time))
                 # Translators: Relative age of the last refresh (Ctrl+T). {sec}
                 # = seconds since the last update.
-                status_text += _(" – zuletzt aktualisiert vor {sec} Sekunden").format(sec=age)
+                status_text += _(" – last updated {sec} seconds ago").format(sec=age)
             ui.message(status_text)
             _beep(BEEP_OFF)  # short confirmation tone (600 Hz)
         else:
             # Translators: Announced when the status line is empty.
-            ui.message(_("Kein Status verfügbar"))
+            ui.message(_("No status available"))
 
     def _update_filter_warning_banner(self, announce=False, speak=True):
         """Shows/hides the filter warning banner at the top of the dialog.
@@ -1261,7 +1274,7 @@ class SmartHomeControlDialog(_NetatmoDialogMixin, _VeSyncDialogMixin, _MerossDia
             warnings = (self.plugin.get_vesync_filter_warnings()
                         if hasattr(self.plugin, 'get_vesync_filter_warnings') else [])
         except Exception as e:
-            log.debug(f"Filter-Warnungen konnten nicht ermittelt werden: {e}")
+            log.debug(f"Could not determine the filter warnings: {e}")
             return
         try:
             if warnings:
@@ -1269,7 +1282,7 @@ class SmartHomeControlDialog(_NetatmoDialogMixin, _VeSyncDialogMixin, _MerossDia
                 # Translators: Warning banner at the top of the dialog:
                 # affected purifiers and remaining filter life. Prompt to
                 # replace the filter.
-                text = _("Filter wechseln: {list}").format(list=", ".join(parts))
+                text = _("Replace filter: {list}").format(list=", ".join(parts))
                 changed = (text != self._last_filter_warning_text)
                 self.filter_warning_bar.SetValue(text)
                 if not self.filter_warning_bar.IsShown():
@@ -1303,7 +1316,7 @@ class SmartHomeControlDialog(_NetatmoDialogMixin, _VeSyncDialogMixin, _MerossDia
                 ui.message(self._last_filter_warning_text)
                 self._filter_warning_announced = True
             except Exception as e:
-                log.debug(f"Ignorierter Fehler in _announce_filter_warning_on_open: {e}")
+                log.debug(f"Ignored error in _announce_filter_warning_on_open: {e}")
     
     def _on_dialog_char(self, event):
         """Handles keyboard events at dialog level (ESC to close, Ctrl+T for status, Ctrl+Tab for tab switching)"""
@@ -1410,7 +1423,7 @@ class SmartHomeControlDialog(_NetatmoDialogMixin, _VeSyncDialogMixin, _MerossDia
         self.filter_mode = filter_map.get(selection, "all")
         
         # Translators: Short loading announcement on a filter/sort change.
-        ui.message(_("Lade..."))
+        ui.message(_("Loading..."))
         self._load_devices(force_refresh=False)
         
         # Set the focus to the first tree entry (BEFORE the announcement)
@@ -1428,7 +1441,7 @@ class SmartHomeControlDialog(_NetatmoDialogMixin, _VeSyncDialogMixin, _MerossDia
         self.sort_mode = sort_map.get(selection, "name")
         
         # Translators: Short loading announcement on a filter/sort change.
-        ui.message(_("Lade..."))
+        ui.message(_("Loading..."))
         self._load_devices(force_refresh=False)
         
         # Set the focus to the first tree entry (BEFORE the announcement)
@@ -1437,7 +1450,7 @@ class SmartHomeControlDialog(_NetatmoDialogMixin, _VeSyncDialogMixin, _MerossDia
         # Announcement and tone AFTER focusing
         tones.beep(600, 30)
         # Translators: Announcement of the selected sort order.
-        ui.message(_("Sortiert: {sort}").format(sort=self.sort_choice.GetStringSelection()))
+        ui.message(_("Sorted: {sort}").format(sort=self.sort_choice.GetStringSelection()))
     
     def _focus_first_tree_item(self):
         """Sets the focus to the first entry in the tree"""
@@ -1451,14 +1464,15 @@ class SmartHomeControlDialog(_NetatmoDialogMixin, _VeSyncDialogMixin, _MerossDia
     def _on_search(self):
         """Opens the search dialog"""
         # Translators: Prompt and title of the device search dialog.
-        dlg = wx.TextEntryDialog(self, _("Gerätename eingeben:"), _("Gerät suchen"), self.search_text)
+        dlg = wx.TextEntryDialog(self, _("Enter device name:"), _("Find "
+                                                                    "device"), self.search_text)
         if dlg.ShowModal() == wx.ID_OK:
             self.search_text = dlg.GetValue().strip().lower()
             if self.search_text:
                 self._find_device(self.search_text)
             else:
                 # Translators: Message when the search is cancelled.
-                ui.message(_("Suche abgebrochen"))
+                ui.message(_("Search cancelled"))
         dlg.Destroy()
     
     def _find_device(self, search_text):
@@ -1478,7 +1492,7 @@ class SmartHomeControlDialog(_NetatmoDialogMixin, _VeSyncDialogMixin, _MerossDia
                 # Set the focus to the tree
                 self.tree.SetFocus()
                 # Translators: Announcement of a search hit.
-                ui.message(_("Gefunden: {item}").format(item=self.tree.GetItemText(item)))
+                ui.message(_("Found: {item}").format(item=self.tree.GetItemText(item)))
                 found = True
                 break
             
@@ -1494,7 +1508,7 @@ class SmartHomeControlDialog(_NetatmoDialogMixin, _VeSyncDialogMixin, _MerossDia
                         # Set the focus to the tree
                         self.tree.SetFocus()
                         # Translators: Announcement of a search hit.
-                        ui.message(_("Gefunden: {item}").format(item=self.tree.GetItemText(child)))
+                        ui.message(_("Found: {item}").format(item=self.tree.GetItemText(child)))
                         found = True
                         break
                     child = self.tree.GetNextSibling(child)
@@ -1506,7 +1520,7 @@ class SmartHomeControlDialog(_NetatmoDialogMixin, _VeSyncDialogMixin, _MerossDia
         if not found:
             tones.beep(200, 100)  # error tone
             # Translators: Message when the search found no match.
-            ui.message(_("'{text}' nicht gefunden").format(text=search_text))
+            ui.message(_("'{text}' not found").format(text=search_text))
     
     def _jump_to_category(self, index):
         """Jumps to the category with the given index (0-based)"""
@@ -1521,7 +1535,7 @@ class SmartHomeControlDialog(_NetatmoDialogMixin, _VeSyncDialogMixin, _MerossDia
                 self.tree.Expand(item)
                 # Translators: Announcement when jumping to a category via a
                 # number key.
-                ui.message(_("Kategorie {number}: {name}").format(
+                ui.message(_("Category {number}: {name}").format(
                     number=index + 1, name=self.tree.GetItemText(item)))
                 return
             current_index += 1
@@ -1529,7 +1543,7 @@ class SmartHomeControlDialog(_NetatmoDialogMixin, _VeSyncDialogMixin, _MerossDia
         
         tones.beep(200, 100)  # error tone
         # Translators: Message when the chosen category number does not exist.
-        ui.message(_("Kategorie {number} nicht vorhanden").format(number=index + 1))
+        ui.message(_("Category {number} does not exist").format(number=index + 1))
     
     def _quick_navigate_by_letter(self, char):
         """
@@ -1596,14 +1610,14 @@ class SmartHomeControlDialog(_NetatmoDialogMixin, _VeSyncDialogMixin, _MerossDia
         IMPROVEMENT 6: updates the dialog title with the device count
         """
         if not self.plugin.devices:
-            self.SetTitle(_("Smart Home Geräte"))
+            self.SetTitle(_("Smart home devices"))
             return
         
         total = len(self.plugin.devices)
         online = sum(1 for d in self.plugin.devices if not (hasattr(d, 'is_offline') and d.is_offline))
         
         # Translators: Window title with online counter.
-        self.SetTitle(_("Smart Home Geräte ({online}/{total} online)").format(online=online, total=total))
+        self.SetTitle(_("Smart home devices ({online}/{total} online)").format(online=online, total=total))
     
     def _update_status_bar(self, announce=False):
         """
@@ -1615,7 +1629,7 @@ class SmartHomeControlDialog(_NetatmoDialogMixin, _VeSyncDialogMixin, _MerossDia
         if not self.plugin.devices:
             # Translators: Status line text when no devices have been loaded
             # yet.
-            status_text = _("Keine Geräte geladen")
+            status_text = _("No devices loaded")
             self._set_status_text(status_text)
             if announce:
                 ui.message(status_text)
@@ -1640,11 +1654,11 @@ class SmartHomeControlDialog(_NetatmoDialogMixin, _VeSyncDialogMixin, _MerossDia
             time_text = time.strftime("%H:%M:%S", time.localtime(update_time))
         else:
             # Translators: Status line hint while no refresh has happened yet.
-            time_text = _("noch nicht aktualisiert")
+            time_text = _("not yet updated")
 
         # Translators: Format of the status line. {online}/{offline} = counts,
         # {time} = time of the last refresh in HH:MM:SS format.
-        status_text = _("{online} online, {offline} offline | Aktualisiert: {time}").format(
+        status_text = _("{online} online, {offline} offline | Updated: {time}").format(
             online=online, offline=offline, time=time_text,
         )
 
@@ -1654,7 +1668,7 @@ class SmartHomeControlDialog(_NetatmoDialogMixin, _VeSyncDialogMixin, _MerossDia
         # changes
         if announce:
             # Translators: Short live announcement of the device online status.
-            ui.message(_("{online} Geräte online, {offline} offline").format(
+            ui.message(_("{online} devices online, {offline} offline").format(
                 online=online, offline=offline,
             ))
         
@@ -1686,7 +1700,7 @@ class SmartHomeControlDialog(_NetatmoDialogMixin, _VeSyncDialogMixin, _MerossDia
             online = getattr(subdev, 'online_status', None)
             online_val = getattr(online, 'value', None)
         except Exception as e:
-            log.debug(f"Ignorierter Fehler beim Lesen des Online-Status: {e}")
+            log.debug(f"Ignored error while reading the online status: {e}")
             online_val = None
         if online_val == 1:      # OnlineStatus.ONLINE
             return True
@@ -1711,19 +1725,19 @@ class SmartHomeControlDialog(_NetatmoDialogMixin, _VeSyncDialogMixin, _MerossDia
 
         # Model type (e.g. MS130)
         type_str = getattr(subdev, 'type', None)
-        type_text = type_str.upper() if type_str else _("unbekannt")
+        type_text = type_str.upper() if type_str else _("unknown")
 
         # Battery (from the background-polled cache)
         battery = None
         try:
             battery = get_subdevice_battery(getattr(subdev, 'subdevice_id', None))
         except Exception as e:
-            log.debug(f"Ignorierter Fehler beim Lesen des Batteriestands: {e}")
+            log.debug(f"Ignored error while reading the battery level: {e}")
         # Translators: Battery level of a hub sensor. {value} = percentage.
-        # 'wird ermittelt' is shown until the first background battery poll has
-        # completed (battery is fetched separately and cached).
-        battery_text = (_("Batterie: {value}%").format(value=battery)
-                        if battery is not None else _("Batterie: wird ermittelt"))
+        # The placeholder is shown until the first background battery poll
+        # has completed (battery is fetched separately and cached).
+        battery_text = (_("Battery: {value}%").format(value=battery)
+                        if battery is not None else _("Battery: checking"))
 
         # Translators: One line per hub sensor. {name} = sensor name,
         # {status} = Online/Offline, {type} = model (e.g. MS130),
@@ -1740,10 +1754,10 @@ class SmartHomeControlDialog(_NetatmoDialogMixin, _VeSyncDialogMixin, _MerossDia
         if getattr(device, 'is_netatmo', False):
             # Offline check first
             if hasattr(device, 'is_offline') and device.is_offline:
-                info = [_("Status: Offline")]
+                info = [_("Status: offline")]
                 battery = device.get_battery_percent() if hasattr(device, 'get_battery_percent') else None
                 if battery is not None:
-                    info.append(_("Batterie: {percent}%").format(percent=battery))
+                    info.append(_("Battery: {percent}%").format(percent=battery))
                 return info
 
             info = []
@@ -1756,17 +1770,17 @@ class SmartHomeControlDialog(_NetatmoDialogMixin, _VeSyncDialogMixin, _MerossDia
             wind = device.get_wind_strength()
 
             if temp is not None:
-                info.append(_("Temperatur: {temp}°C").format(temp=f"{temp:.1f}"))
+                info.append(_("Temperature: {temp}°C").format(temp=f"{temp:.1f}"))
             if humidity is not None:
-                info.append(_("Luftfeuchtigkeit: {humidity}%").format(humidity=f"{humidity:g}"))
+                info.append(_("Humidity: {humidity}%").format(humidity=f"{humidity:g}"))
             if co2 is not None:
                 info.append(f"CO₂: {co2} ppm")
             if noise is not None:
-                info.append(_("Lautstärke: {noise} dB").format(noise=noise))
+                info.append(_("Noise level: {noise} dB").format(noise=noise))
             if pressure is not None:
-                info.append(_("Luftdruck: {pressure} mbar").format(pressure=f"{pressure:.1f}"))
+                info.append(_("Air pressure: {pressure} mbar").format(pressure=f"{pressure:.1f}"))
             if rain is not None:
-                info.append(_("Regen: {rain} mm").format(rain=rain))
+                info.append(_("Rain: {rain} mm").format(rain=rain))
             if wind is not None:
                 info.append(_("Wind: {wind} km/h").format(wind=wind))
 
@@ -1775,25 +1789,25 @@ class SmartHomeControlDialog(_NetatmoDialogMixin, _VeSyncDialogMixin, _MerossDia
             if not getattr(device, 'is_thermostat', False):
                 setpoint = device.get_setpoint_temp()
                 if setpoint is not None:
-                    info.append(_("Soll-Temperatur: {temp}°C").format(temp=f"{setpoint:.1f}"))
+                    info.append(_("Target temperature: {temp}°C").format(temp=f"{setpoint:.1f}"))
 
             # NAPlug (relay): show the boiler status
             if getattr(device, 'is_relay', False):
                 boiler = device.get_boiler_status() if hasattr(device, 'get_boiler_status') else None
                 if boiler is not None:
-                    info.append(_("Heizung: {status}").format(
-                        status=_("aktiv") if boiler else _("aus")))
+                    info.append(_("Heating: {status}").format(
+                        status=_("active") if boiler else _("off")))
 
             # Battery
             battery = device.get_battery_percent() if hasattr(device, 'get_battery_percent') else None
             if battery is not None:
-                info.append(_("Batterie: {percent}%").format(percent=battery))
+                info.append(_("Battery: {percent}%").format(percent=battery))
 
-            return info if info else [_("Status: Verbunden")]
+            return info if info else [_("Status: connected")]
 
         # Handle offline devices first
         if hasattr(device, 'is_offline') and device.is_offline:
-            return [_("Status: Offline")]
+            return [_("Status: offline")]
         
         type_lower = device.type.lower()
         
@@ -1804,16 +1818,17 @@ class SmartHomeControlDialog(_NetatmoDialogMixin, _VeSyncDialogMixin, _MerossDia
 
             info = []
             if temp is not None:
-                info.append(_("Temperatur: {temp}°C").format(temp=f"{temp:.1f}"))
+                info.append(_("Temperature: {temp}°C").format(temp=f"{temp:.1f}"))
             if humidity is not None:
-                info.append(_("Luftfeuchtigkeit: {humidity}%").format(humidity=f"{humidity:g}"))
+                info.append(_("Humidity: {humidity}%").format(humidity=f"{humidity:g}"))
 
-            return info if info else [_("Status: Keine Daten")]
+            return info if info else [_("Status: no data")]
 
         # Water sensor (MS400, MS405)
         elif device.is_water_sensor:
             alarm = device.is_water_detected()
-            return [_("Status: WASSERALARM")] if alarm else [_("Status: Kein Wasser")]
+            return [_("Status: WATER ALARM")] if alarm else [_("Status: no "
+                                                               "water")]
         
         # Hub (MSH300, MSH450)
         elif "msh" in type_lower:
@@ -1830,7 +1845,8 @@ class SmartHomeControlDialog(_NetatmoDialogMixin, _VeSyncDialogMixin, _MerossDia
                 elif hasattr(device._device, '_online'):
                     is_online = (getattr(getattr(device._device, '_online', None), 'value', None) == 1)
 
-                info.append(_("Status: Online") if is_online else _("Status: Offline"))
+                info.append(_("Status: online") if is_online else _("Status: "
+                                                                    "offline"))
 
                 # Show the connected sensors: first the count, then one line per
                 # sensor with name, online status, model type and battery level.
@@ -1838,19 +1854,19 @@ class SmartHomeControlDialog(_NetatmoDialogMixin, _VeSyncDialogMixin, _MerossDia
                     if hasattr(device._device, 'get_subdevices'):
                         subdevices = list(device._device.get_subdevices()) if callable(device._device.get_subdevices) else []
                         if subdevices:
-                            info.append(_("Verbundene Sensoren: {count}").format(count=len(subdevices)))
+                            info.append(_("Connected sensors: {count}").format(count=len(subdevices)))
                             for subdev in subdevices:
                                 info.append(self._format_hub_subdevice_line(subdev, is_online))
                 except Exception as e:
-                    log.debug(f"Ignorierter Fehler in _get_device_info: {e}")
+                    log.debug(f"Ignored error in _get_device_info: {e}")
             except Exception:
-                info.append(_("Status: Unbekannt"))
+                info.append(_("Status: unknown"))
 
             return info
 
         # Normal devices (plugs, lamps, LED strips)
         else:
-            info = [_("Status: Ein") if device.is_on else _("Status: Aus")]
+            info = [_("Status: on") if device.is_on else _("Status: off")]
 
             # Power consumption for MSS310/MSS315 (with voltage and amperage).
             # NOTE: lamp-specific info is now added as interactive elements
@@ -1860,25 +1876,25 @@ class SmartHomeControlDialog(_NetatmoDialogMixin, _VeSyncDialogMixin, _MerossDia
                 current = device.get_current()
 
                 if power is not None:
-                    info.append(_("Leistung: {power} W").format(power=power))
+                    info.append(_("Power: {power} W").format(power=power))
                 if voltage is not None:
-                    info.append(_("Spannung: {voltage} V").format(voltage=voltage))
+                    info.append(_("Voltage: {voltage} V").format(voltage=voltage))
                 if current is not None:
-                    info.append(_("Stromstärke: {current} A").format(current=current))
+                    info.append(_("Amperage: {current} A").format(current=current))
 
-                # Verbrauch heute + letzte 7 Tage aus dem Geräte-Zähler
-                # (consumptionX). Anzeige NUR aus dem Cache - der eigentliche
-                # Abruf läuft im Hintergrund und ist per 15-Minuten-Cache
-                # cloud-schonend (kein Budget-Verbrauch bei Dialog-Refreshes).
+                # Consumption today + last 7 days from the device counter
+                # (consumptionX). Displayed from the cache ONLY - the actual
+                # fetch runs in the background and is gentle on the cloud via
+                # a 15-minute cache (no budget spent on dialog refreshes).
                 info.extend(self._consumption_info_lines(device))
 
             return info
 
     def _consumption_info_lines(self, device):
-        """Baut die Verbrauchs-Zeilen (heute / letzte 7 Tage) für eine
-        Messsteckdose. Liest nur den Cache; fehlt er, wird EIN Hintergrund-
-        Abruf gestartet und zunächst ein Platzhalter gezeigt, den das
-        Live-Update später ersetzt."""
+        """Builds the consumption rows (today / last 7 days) of a metering
+        outlet. Reads the cache only; if it is missing, ONE background fetch
+        is started and a placeholder is shown until the live update replaces
+        it."""
         api = getattr(self.plugin, 'api', None)
         if not api or not hasattr(api, 'peek_daily_consumption'):
             return []
@@ -1887,14 +1903,14 @@ class SmartHomeControlDialog(_NetatmoDialogMixin, _VeSyncDialogMixin, _MerossDia
             kwh_today, kwh_week = api.summarize_daily_consumption(data)
             return [
                 # Translators: Today's consumption from the device meter.
-                _("Verbrauch heute: {kwh} kWh").format(
+                _("Consumption today: {kwh} kWh").format(
                     kwh=f"{kwh_today:.2f}".replace(".", ",")),
                 # Translators: Last 7 days' consumption from the device meter.
-                _("Verbrauch letzte 7 Tage: {kwh} kWh").format(
+                _("Consumption last 7 days: {kwh} kWh").format(
                     kwh=f"{kwh_week:.2f}".replace(".", ",")),
             ]
-        # Noch kein Cache: Abruf im Hintergrund anstoßen (nur einmal je
-        # Gerät und Dialog-Sitzung), Platzhalter anzeigen.
+        # Nothing cached yet: start the fetch in the background (once per
+        # device and dialog session) and show a placeholder.
         if not hasattr(self, '_consumption_fetch_started'):
             self._consumption_fetch_started = set()
         if device.uuid not in self._consumption_fetch_started:
@@ -1905,41 +1921,42 @@ class SmartHomeControlDialog(_NetatmoDialogMixin, _VeSyncDialogMixin, _MerossDia
                     if api.get_daily_consumption(uuid):
                         self._safe_call_after(self.refresh_all_device_data_live)
                 except Exception as e:
-                    log.debug(f"Verbrauchs-Abruf fehlgeschlagen: {e}")
+                    log.debug(f"Consumption fetch failed: {e}")
             threading.Thread(target=fetch, daemon=True).start()
         return [
             # Translators: Placeholder while the consumption data is fetched.
-            _("Verbrauch heute: wird abgerufen..."),
+            _("Consumption today: fetching..."),
             # Translators: Placeholder while the consumption data is fetched.
-            _("Verbrauch letzte 7 Tage: wird abgerufen..."),
+            _("Consumption last 7 days: fetching..."),
         ]
     
     def _load_devices(self, force_refresh=False):
-        """
-        Loads devices into the tree (legacy - uses _load_devices_internal)
+        """Rebuilds the tree from the cached devices - WITHOUT a cloud call.
+
+        Runs on the wx main thread (filter and sort handlers), so it must
+        never poll: refresh_devices() used to run right here whenever the
+        device list was empty, and froze NVDA for a whole cloud round on
+        exactly those setups that have nothing to show yet. A refresh that is
+        really needed goes to _load_devices_async(), which threads it and
+        reports progress.
 
         Args:
-            force_refresh: if True, reload the devices
-                          if False, use the already loaded devices
+            force_refresh: True = fetch in the background instead of using
+                the cache
         """
+        if force_refresh or not self.plugin.devices:
+            self._load_devices_async()
+            return
         try:
-            # Only reload on the first load or when explicitly requested
-            if force_refresh or not self.plugin.devices:
-                devices = self.plugin.refresh_devices()
-                self.last_update_time = time.time()
-            else:
-                # Use the already loaded devices (faster!)
-                devices = self.plugin.devices
-            
-            self._load_devices_internal(devices)
+            self._load_devices_internal(self.plugin.devices)
             self._refresh_favorites_tree()
-            
+
         except Exception as e:
             _beep(BEEP_ERROR)  # long error tone
             # Translators: Error dialog when loading the device list.
             wx.MessageBox(
-                _("Fehler beim Laden: {error}").format(error=e),
-                _("Fehler"),
+                _("Error while loading: {error}").format(error=e),
+                _("Error"),
                 wx.OK | wx.ICON_ERROR
             )
     
@@ -1955,7 +1972,7 @@ class SmartHomeControlDialog(_NetatmoDialogMixin, _VeSyncDialogMixin, _MerossDia
         self.tree.Freeze()
         self.tree.DeleteAllItems()
         # Translators: Invisible root node of the device tree.
-        root = self.tree.AddRoot(_("Geräte"))
+        root = self.tree.AddRoot(_("Devices"))
         
         try:
             # Apply the filter
@@ -1981,37 +1998,38 @@ class SmartHomeControlDialog(_NetatmoDialogMixin, _VeSyncDialogMixin, _MerossDia
             if meross_devices:
                 # Translators: Platform main node. Brand name, do not
                 # translate.
-                meross_root = self.tree.AppendItem(root, _("Meross-Geräte ({count})").format(count=len(meross_devices)))
+                meross_root = self.tree.AppendItem(root, _("Meross devices "
+                                                           "({count})").format(count=len(meross_devices)))
                 self.tree.SetItemData(meross_root, None)
                 
                 # Group Meross devices by type
                 # Translators: Category names in the device tree.
                 meross_groups = {
-                    _('Steckdosen'): [],
-                    _('Lampen und LED-Strips'): [],
-                    _('Diffuser'): [],
-                    _('Temperatursensoren'): [],
-                    _('Wassersensoren'): [],
-                    _('Hubs'): [],
-                    _('Andere Geräte'): []
+                    _("Plugs"): [],
+                    _("Lamps and LED strips"): [],
+                    _("Diffuser"): [],
+                    _("Temperature sensors"): [],
+                    _("Water sensors"): [],
+                    _("Hubs"): [],
+                    _("Other devices"): []
                 }
 
                 for device in meross_devices:
                     type_lower = device.type.lower()
                     if device.is_temperature_sensor:
-                        meross_groups[_('Temperatursensoren')].append(device)
+                        meross_groups[_("Temperature sensors")].append(device)
                     elif device.is_water_sensor:
-                        meross_groups[_('Wassersensoren')].append(device)
+                        meross_groups[_("Water sensors")].append(device)
                     elif "msh" in type_lower:
-                        meross_groups[_('Hubs')].append(device)
+                        meross_groups[_("Hubs")].append(device)
                     elif device.is_plug:
-                        meross_groups[_('Steckdosen')].append(device)
+                        meross_groups[_("Plugs")].append(device)
                     elif device.is_light:
-                        meross_groups[_('Lampen und LED-Strips')].append(device)
+                        meross_groups[_("Lamps and LED strips")].append(device)
                     elif device.is_diffuser:
-                        meross_groups[_('Diffuser')].append(device)
+                        meross_groups[_("Diffuser")].append(device)
                     else:
-                        meross_groups[_('Andere Geräte')].append(device)
+                        meross_groups[_("Other devices")].append(device)
                 
                 # Apply the sort order
                 for group_devices in meross_groups.values():
@@ -2033,22 +2051,23 @@ class SmartHomeControlDialog(_NetatmoDialogMixin, _VeSyncDialogMixin, _MerossDia
             if netatmo_devices:
                 # Translators: Platform main node. Brand name, do not
                 # translate.
-                netatmo_root = self.tree.AppendItem(root, _("Netatmo-Geräte ({count})").format(count=len(netatmo_devices)))
+                netatmo_root = self.tree.AppendItem(root, _("Netatmo devices "
+                                                            "({count})").format(count=len(netatmo_devices)))
                 self.tree.SetItemData(netatmo_root, None)
                 
                 # Group Netatmo devices by type
                 # Translators: Category names in the device tree.
                 netatmo_groups = {
-                    _('Wetterstationen'): [],
-                    _('Thermostate'): [],
-                    _('Gateways'): [],
-                    _('Raumluft'): [],
-                    _('Andere Geräte'): []
+                    _("Weather stations"): [],
+                    _("Thermostats"): [],
+                    _("Gateways"): [],
+                    _("Indoor air"): [],
+                    _("Other devices"): []
                 }
 
-                # Heiz-Geräte (Thermostate/Ventile) werden nach Räumen
-                # gruppiert, sofern Netatmo einen Raumnamen liefert. Geräte
-                # ohne Raum bleiben in der Sammelkategorie "Thermostate".
+                # Heating devices (thermostats/valves) are grouped by room
+                # if Netatmo provides a room name. Devices without a room
+                # stay in the catch-all "thermostats" category.
                 room_groups = {}
                 for device in netatmo_devices:
                     dev_type = getattr(device, 'device_type', '')
@@ -2057,23 +2076,24 @@ class SmartHomeControlDialog(_NetatmoDialogMixin, _VeSyncDialogMixin, _MerossDia
                         if room:
                             # Translators: Room category in the device tree.
                             # {room} = room name from the Netatmo app.
-                            key = _("Raum {room}").format(room=room)
+                            key = _("Room {room}").format(room=room)
                             room_groups.setdefault(key, []).append(device)
                         else:
-                            netatmo_groups[_('Thermostate')].append(device)
+                            netatmo_groups[_("Thermostats")].append(device)
                     elif dev_type == 'gateway':
-                        netatmo_groups[_('Gateways')].append(device)
+                        netatmo_groups[_("Gateways")].append(device)
                     elif dev_type == 'aircare':
-                        netatmo_groups[_('Raumluft')].append(device)
+                        netatmo_groups[_("Indoor air")].append(device)
                     elif dev_type == 'weather':
-                        netatmo_groups[_('Wetterstationen')].append(device)
+                        netatmo_groups[_("Weather stations")].append(device)
                     else:
-                        netatmo_groups[_('Andere Geräte')].append(device)
+                        netatmo_groups[_("Other devices")].append(device)
 
-                # Raum-Kategorien alphabetisch direkt nach den
-                # Wetterstationen einsortieren (vor der Sammelkategorie).
+                # Insert the room categories alphabetically right after
+                # the weather stations (before the catch-all category).
                 if room_groups:
-                    merged = {_('Wetterstationen'): netatmo_groups.pop(_('Wetterstationen'))}
+                    merged = {_("Weather stations"): netatmo_groups.pop(_("Weather "
+                                                                         "stations"))}
                     for key in sorted(room_groups):
                         merged[key] = room_groups[key]
                     merged.update(netatmo_groups)
@@ -2099,24 +2119,25 @@ class SmartHomeControlDialog(_NetatmoDialogMixin, _VeSyncDialogMixin, _MerossDia
             if vesync_devices:
                 # Translators: Platform main node. Brand name, do not
                 # translate.
-                vesync_root = self.tree.AppendItem(root, _("VeSync-Geräte ({count})").format(count=len(vesync_devices)))
+                vesync_root = self.tree.AppendItem(root, _("VeSync devices "
+                                                           "({count})").format(count=len(vesync_devices)))
                 self.tree.SetItemData(vesync_root, None)
 
                 # Group VeSync devices by type (air purifiers / fans)
                 # Translators: Category names in the device tree.
                 vesync_groups = {
-                    _('Luftreiniger'): [],
-                    _('Ventilatoren'): [],
-                    _('Andere Geräte'): [],
+                    _("Air purifiers"): [],
+                    _("Fans"): [],
+                    _("Other devices"): [],
                 }
                 for device in vesync_devices:
                     cls_name = type(device).__name__
                     if cls_name == 'VeSyncPurifier':
-                        vesync_groups[_('Luftreiniger')].append(device)
+                        vesync_groups[_("Air purifiers")].append(device)
                     elif cls_name == 'VeSyncTowerFan':
-                        vesync_groups[_('Ventilatoren')].append(device)
+                        vesync_groups[_("Fans")].append(device)
                     else:
-                        vesync_groups[_('Andere Geräte')].append(device)
+                        vesync_groups[_("Other devices")].append(device)
 
                 # Apply the sort order
                 for group_devices in vesync_groups.values():
@@ -2135,12 +2156,15 @@ class SmartHomeControlDialog(_NetatmoDialogMixin, _VeSyncDialogMixin, _MerossDia
                 # Translators: Platform main node. Brand name, do not
                 # translate; the parenthesis marks the platform as
                 # experimental.
-                cozytouch_root = self.tree.AppendItem(root, _("Cozytouch-Geräte, experimentell ({count})").format(count=len(cozytouch_devices)))
+                cozytouch_root = self.tree.AppendItem(root, _("Cozytouch "
+                                                              "devices, "
+                                                              "experimental "
+                                                              "({count})").format(count=len(cozytouch_devices)))
                 self.tree.SetItemData(cozytouch_root, None)
                 self._sort_device_list(cozytouch_devices)
                 # Translators: Category name in the device tree.
                 cat = self.tree.AppendItem(
-                    cozytouch_root, _("Warmwasser-Wärmepumpen ({count})").format(count=len(cozytouch_devices)))
+                    cozytouch_root, _("Hot water heat pumps ({count})").format(count=len(cozytouch_devices)))
                 self.tree.SetItemData(cat, None)
                 self._add_cozytouch_devices_to_category(cat, cozytouch_devices)
                 self.tree.Collapse(cat)
@@ -2150,14 +2174,14 @@ class SmartHomeControlDialog(_NetatmoDialogMixin, _VeSyncDialogMixin, _MerossDia
                     and not cozytouch_devices:
                 # Translators: Entry when no devices are present/after
                 # filtering.
-                empty_item = self.tree.AppendItem(root, _("Keine Geräte gefunden"))
+                empty_item = self.tree.AppendItem(root, _("No devices found"))
                 self.tree.SetItemData(empty_item, {'type': 'info'})
             
             # Update the status line
             self._update_status_bar()
                 
         except Exception as e:
-            log.error(f"Fehler beim Befüllen des Baums: {e}")
+            log.error(f"Filling the tree failed: {e}")
             _beep(BEEP_ERROR)
         finally:
             self.tree.Thaw()
@@ -2243,9 +2267,9 @@ class SmartHomeControlDialog(_NetatmoDialogMixin, _VeSyncDialogMixin, _MerossDia
             channel = data.get('channel')
             is_off = bool(hasattr(device, 'is_offline') and device.is_offline)
             if is_off:
-                # Offline-Geräte: kein Status-Refresh (kostet nur Zeit). Ein
-                # Kanal-Node wird trotzdem befüllt, damit er sich aufklappen
-                # lässt und "Status: Offline" zeigt, statt leer zu bleiben.
+                # Offline devices: no status refresh (it only costs time).
+                # A channel node is still filled so it can be expanded and
+                # shows "status: offline" instead of staying empty.
                 if channel is not None:
                     self.tree.DeleteChildren(item)
                     self._build_meross_device_children(item, device, channel)
@@ -2274,7 +2298,7 @@ class SmartHomeControlDialog(_NetatmoDialogMixin, _VeSyncDialogMixin, _MerossDia
 
         # ---- Channel node (one output of a multi-channel device) ----
         if channel:
-            status = _("Offline") if offline else (_("Ein") if channel.is_on else _("Aus"))
+            status = _("Offline") if offline else (_("On") if channel.is_on else _("Off"))
             info_item = self.tree.AppendItem(node, _("Status: {status}").format(status=status))
             self.tree.SetItemData(info_item, {'type': 'info', 'device': device, 'channel': channel})
 
@@ -2282,24 +2306,34 @@ class SmartHomeControlDialog(_NetatmoDialogMixin, _VeSyncDialogMixin, _MerossDia
             if channel.has_power_meter:
                 power = channel.get_power()
                 if power is not None:
-                    power_item = self.tree.AppendItem(node, _("Leistung: {value} W").format(value=power))
+                    power_item = self.tree.AppendItem(node, _("Power: {value} "
+                                                              "W").format(value=power))
                     self.tree.SetItemData(power_item, {'type': 'info', 'device': device, 'channel': channel})
                 voltage = channel.get_voltage() if hasattr(channel, 'get_voltage') else None
                 if voltage is not None:
-                    voltage_item = self.tree.AppendItem(node, _("Spannung: {value} V").format(value=voltage))
+                    voltage_item = self.tree.AppendItem(node, _("Voltage: "
+                                                                "{value} V").format(value=voltage))
                     self.tree.SetItemData(voltage_item, {'type': 'info', 'device': device, 'channel': channel})
                 current = channel.get_current() if hasattr(channel, 'get_current') else None
                 if current is not None:
-                    current_item = self.tree.AppendItem(node, _("Stromstärke: {value} A").format(value=current))
+                    current_item = self.tree.AppendItem(node, _("Amperage: "
+                                                                "{value} A").format(value=current))
                     self.tree.SetItemData(current_item, {'type': 'info', 'device': device, 'channel': channel})
 
             # Action only when online
             if not offline:
-                action_text = (_("{name} ausschalten") if channel.is_on else _("{name} einschalten")).format(name=channel.name)
+                action_text = (_("Turn {name} off") if channel.is_on else _("Turn "
+                                                                               "{name} "
+                                                                               "on")).format(name=channel.name)
                 action_item = self.tree.AppendItem(node, action_text)
                 self.tree.SetItemData(action_item, {'type': 'action', 'device': device, 'channel': channel, 'action': 'toggle'})
                 action_items['toggle'] = action_item
-            # Channels carry no favorite (favorites are per device).
+            # A single outlet can be a favorite too - on power strips
+            # that is the interesting case ("pump" instead of "all outlets
+            # at once"). The channel brings everything needed: its own
+            # unique_id (parent_uuid_chN) through which plugin.toggle_device
+            # hits the right outlet.
+            self._add_favorite_action(node, channel, is_favorite_view)
             return action_items
 
         # ---- Device node ----
@@ -2307,21 +2341,20 @@ class SmartHomeControlDialog(_NetatmoDialogMixin, _VeSyncDialogMixin, _MerossDia
 
         if channels:
             # Multi-channel device: combined status + expandable channel nodes.
-            # Im Kombistatus reicht das kurze Ausgangs-Label (das Elterngerät
-            # ist der Baumknoten darüber): "Ausgang 1: Ein, Ausgang 2: Aus".
+            # The combined status only needs the short outlet label (the
+            # parent device is the tree node above it).
             def _ch_label(ch):
                 return getattr(ch, 'outlet_label', None) or ch.name
             if offline:
                 channel_stati = [f"{_ch_label(ch)}: {_('Offline')}" for ch in channels]
             else:
-                channel_stati = [f"{_ch_label(ch)}: {_('Ein') if ch.is_on else _('Aus')}" for ch in channels]
+                channel_stati = [f"{_ch_label(ch)}: {_('On') if ch.is_on else _('Off')}" for ch in channels]
             status_item = self.tree.AppendItem(node, _("Status: {status}").format(status=", ".join(channel_stati)))
             self.tree.SetItemData(status_item, {'type': 'info', 'device': device})
 
             for ch in channels:
-                # Kanal-Node trägt den vollen Namen "Garten: Ausgang 1" ohne
-                # zusätzliches "Kanal:"-Präfix (selbsterklärend, wie vom Nutzer
-                # gewünscht).
+                # The channel node carries the full name ("garden: outlet
+                # 1") without an extra "channel:" prefix - self-explanatory.
                 channel_item = self.tree.AppendItem(node, ch.name)
                 self.tree.SetItemData(channel_item, {'type': 'device', 'device': device, 'channel': ch})
                 self.tree.SetItemHasChildren(channel_item, True)  # lazy: filled on expand
@@ -2333,7 +2366,7 @@ class SmartHomeControlDialog(_NetatmoDialogMixin, _VeSyncDialogMixin, _MerossDia
         # Normal single device: diffuser vs. everything else
         if device.is_diffuser:
             if offline:
-                status_text = _("Status: Offline")
+                status_text = _("Status: offline")
             else:
                 spray_mode = device.get_diffuser_spray_mode()
                 status_text = _("Status: {status}").format(status=spray_mode)
@@ -2341,15 +2374,15 @@ class SmartHomeControlDialog(_NetatmoDialogMixin, _VeSyncDialogMixin, _MerossDia
             self.tree.SetItemData(info_item, {'type': 'info', 'device': device})
 
             if not offline:
-                action_light = self.tree.AppendItem(node, _("Schwach sprühen"))
+                action_light = self.tree.AppendItem(node, _("Light spray"))
                 self.tree.SetItemData(action_light, {'type': 'action', 'device': device, 'action': 'diffuser_light'})
                 action_items['diffuser_light'] = action_light
 
-                action_strong = self.tree.AppendItem(node, _("Stark sprühen"))
+                action_strong = self.tree.AppendItem(node, _("Strong spray"))
                 self.tree.SetItemData(action_strong, {'type': 'action', 'device': device, 'action': 'diffuser_strong'})
                 action_items['diffuser_strong'] = action_strong
 
-                action_off = self.tree.AppendItem(node, _("Sprühen aus"))
+                action_off = self.tree.AppendItem(node, _("Spray off"))
                 self.tree.SetItemData(action_off, {'type': 'action', 'device': device, 'action': 'diffuser_off'})
                 action_items['diffuser_off'] = action_off
         else:
@@ -2361,7 +2394,9 @@ class SmartHomeControlDialog(_NetatmoDialogMixin, _VeSyncDialogMixin, _MerossDia
 
             # Toggle only for switchable, online, non-sensor, non-hub devices
             if not device.is_sensor and not getattr(device, 'is_hub', False) and not offline:
-                action_text = (_("{name} ausschalten") if device.is_on else _("{name} einschalten")).format(name=device.name)
+                action_text = (_("Turn {name} off") if device.is_on else _("Turn "
+                                                                              "{name} "
+                                                                              "on")).format(name=device.name)
                 action_item = self.tree.AppendItem(node, action_text)
                 self.tree.SetItemData(action_item, {'type': 'action', 'device': device, 'action': 'toggle'})
                 action_items['toggle'] = action_item
@@ -2371,9 +2406,10 @@ class SmartHomeControlDialog(_NetatmoDialogMixin, _VeSyncDialogMixin, _MerossDia
                     if device.supports_luminance():
                         luminance = device.get_luminance()
                         if luminance is not None:
-                            lum_text = _("Helligkeit: {value}% - Enter zum Ändern").format(value=luminance)
+                            lum_text = _("Brightness: {value}% - press Enter "
+                                         "to change").format(value=luminance)
                         else:
-                            lum_text = _("Helligkeit einstellen - Enter zum Öffnen")
+                            lum_text = _("Set brightness - press Enter to open")
                         brightness_item = self.tree.AppendItem(node, lum_text)
                         self.tree.SetItemData(brightness_item, {'type': 'action', 'device': device, 'action': 'light_luminance'})
                         action_items['light_luminance'] = brightness_item
@@ -2384,18 +2420,26 @@ class SmartHomeControlDialog(_NetatmoDialogMixin, _VeSyncDialogMixin, _MerossDia
                         if not is_in_rgb:
                             if temp is not None and temp > 0:
                                 if temp <= 33:
-                                    temp_text = _("Lichtfarbe: Warmweiß (gemütlich) - Enter zum Ändern")
+                                    temp_text = _("Light color: warm white "
+                                                  "(cozy) - press Enter to "
+                                                  "change")
                                 elif temp <= 66:
-                                    temp_text = _("Lichtfarbe: Tageslicht (neutral) - Enter zum Ändern")
+                                    temp_text = _("Light color: daylight "
+                                                  "(neutral) - press Enter to "
+                                                  "change")
                                 else:
-                                    temp_text = _("Lichtfarbe: Kaltweiß (hell) - Enter zum Ändern")
+                                    temp_text = _("Light color: cool white "
+                                                  "(bright) - press Enter to "
+                                                  "change")
                             else:
-                                temp_text = _("Lichtfarbe (Weiß) einstellen - Enter zum Öffnen")
+                                temp_text = _("Set light color (white) - "
+                                              "press Enter to open")
                             temp_item = self.tree.AppendItem(node, temp_text)
                             self.tree.SetItemData(temp_item, {'type': 'action', 'device': device, 'action': 'light_temperature'})
                             action_items['light_temperature'] = temp_item
                         else:
-                            temp_text = _("Auf Weißmodus wechseln - Enter zum Öffnen")
+                            temp_text = _("Switch to white mode - press Enter "
+                                          "to open")
                             temp_item = self.tree.AppendItem(node, temp_text)
                             self.tree.SetItemData(temp_item, {'type': 'action', 'device': device, 'action': 'light_temperature'})
                             action_items['light_temperature'] = temp_item
@@ -2407,13 +2451,17 @@ class SmartHomeControlDialog(_NetatmoDialogMixin, _VeSyncDialogMixin, _MerossDia
                             if rgb is not None:
                                 color_name = self._get_color_name_from_rgb(rgb)
                                 if color_name:
-                                    rgb_text = _("Farbe: {color} (RGB {r},{g},{b}) - Enter zum Ändern").format(color=color_name, r=rgb[0], g=rgb[1], b=rgb[2])
+                                    rgb_text = _("Color: {color} (RGB "
+                                                 "{r},{g},{b}) - press Enter "
+                                                 "to change").format(color=color_name, r=rgb[0], g=rgb[1], b=rgb[2])
                                 else:
-                                    rgb_text = _("Farbe: RGB({r}, {g}, {b}) - Enter zum Ändern").format(r=rgb[0], g=rgb[1], b=rgb[2])
+                                    rgb_text = _("Color: RGB({r}, {g}, {b}) - "
+                                                 "press Enter to change").format(r=rgb[0], g=rgb[1], b=rgb[2])
                             else:
-                                rgb_text = _("Farbe einstellen - Enter zum Öffnen")
+                                rgb_text = _("Set color - press Enter to open")
                         else:
-                            rgb_text = _("Auf Farbmodus wechseln - Enter zum Öffnen")
+                            rgb_text = _("Switch to color mode - press Enter "
+                                         "to open")
                         rgb_item = self.tree.AppendItem(node, rgb_text)
                         self.tree.SetItemData(rgb_item, {'type': 'action', 'device': device, 'action': 'light_rgb'})
                         action_items['light_rgb'] = rgb_item
@@ -2423,15 +2471,14 @@ class SmartHomeControlDialog(_NetatmoDialogMixin, _VeSyncDialogMixin, _MerossDia
         return action_items
 
     def _prefetch_netatmo_schedules(self, home_id):
-        """Füllt den Heizprogramm-Zwischenspeicher im Hintergrund.
+        """Fills the heating schedule cache in the background.
 
-        Wird aufgerufen, wenn beim Aufklappen eines Thermostats noch nichts
-        zwischengespeichert war. Der Baum bekommt bewusst KEIN nachträgliches
-        Update: einen Eintrag umzubenennen, während der Nutzer schon mit den
-        Pfeiltasten darauf steht, verwirrt mehr als es hilft - NVDA würde die
-        Zeile erneut ansagen. Beim nächsten Aufklappen steht der Name da.
+        Called when nothing was cached while a thermostat was expanded. The
+        tree deliberately gets NO later update: renaming an entry while the
+        arrow keys are already on it confuses more than it helps - NVDA would
+        announce the row again. The name is there on the next expand.
 
-        Höchstens ein Abruf gleichzeitig; ein Fehlschlag bleibt folgenlos.
+        At most one fetch at a time; a failure has no consequences.
         """
         if getattr(self, '_schedule_prefetch_running', False):
             return
@@ -2444,7 +2491,7 @@ class SmartHomeControlDialog(_NetatmoDialogMixin, _VeSyncDialogMixin, _MerossDia
             try:
                 netatmo_api.get_schedules(home_id)
             except Exception as e:
-                log.debug(f"Heizprogramme konnten nicht vorgeladen werden: {e}")
+                log.debug(f"Could not preload the heating schedules: {e}")
             finally:
                 self._schedule_prefetch_running = False
 
@@ -2490,20 +2537,25 @@ class SmartHomeControlDialog(_NetatmoDialogMixin, _VeSyncDialogMixin, _MerossDia
                     # Show the boiler status
                     boiler = device.get_boiler_status() if hasattr(device, 'get_boiler_status') else None
                     if boiler is not None:
-                        boiler_text = _("Heizung: aktiv") if boiler else _("Heizung: aus")
+                        boiler_text = _("Heating: active") if boiler else _("Heating: "
+                                                                           "off")
                         boiler_item = self.tree.AppendItem(item, boiler_text)
                         self.tree.SetItemData(boiler_item, {'type': 'info', 'device': device})
                     
                     # Show pre-heating (anticipation)
                     anticipating = device.is_anticipating() if hasattr(device, 'is_anticipating') else None
                     if anticipating:
-                        antic_item = self.tree.AppendItem(item, _("Vorausheizen: aktiv"))
+                        antic_item = self.tree.AppendItem(item, _("Pre-heating: "
+                                                                  "active"))
                         self.tree.SetItemData(antic_item, {'type': 'info', 'device': device})
                     
                     # Show the open window
                     open_window = device.is_open_window() if hasattr(device, 'is_open_window') else None
                     if open_window:
-                        ow_item = self.tree.AppendItem(item, _("Offenes Fenster: erkannt (Heizung pausiert)"))
+                        ow_item = self.tree.AppendItem(item, _("Open window: "
+                                                               "detected "
+                                                               "(heating "
+                                                               "paused)"))
                         self.tree.SetItemData(ow_item, {'type': 'info', 'device': device})
                     
                     # Show the next schedule change (schedule mode only)
@@ -2514,13 +2566,15 @@ class SmartHomeControlDialog(_NetatmoDialogMixin, _VeSyncDialogMixin, _MerossDia
                             nc_zone = next_change.get('zone_name', '')
                             nc_temp = next_change.get('temp')
                             if nc_temp is not None:
-                                nc_text = _("Nächste Planänderung: {zone} ({temp:.1f}°C) um {time}").format(zone=nc_zone, temp=nc_temp, time=change_time_str)
+                                nc_text = _("Next schedule change: {zone} "
+                                            "({temp:.1f}°C) at {time}").format(zone=nc_zone, temp=nc_temp, time=change_time_str)
                             else:
-                                nc_text = _("Nächste Planänderung: {zone} um {time}").format(zone=nc_zone, time=change_time_str)
+                                nc_text = _("Next schedule change: {zone} at "
+                                            "{time}").format(zone=nc_zone, time=change_time_str)
                             nc_item = self.tree.AppendItem(item, nc_text)
                             self.tree.SetItemData(nc_item, {'type': 'info', 'device': device})
                         except Exception as e:
-                            log.debug(f"Ignorierter Fehler in _update_device_item: {e}")
+                            log.debug(f"Ignored error in _update_device_item: {e}")
                     
                     setpoint = device.get_setpoint_temp()
                     end_time = device.get_setpoint_end_time() if hasattr(device, 'get_setpoint_end_time') else None
@@ -2529,26 +2583,28 @@ class SmartHomeControlDialog(_NetatmoDialogMixin, _VeSyncDialogMixin, _MerossDia
                     self.tree.SetItemData(sp_item, {'type': 'action', 'device': device, 'action': 'netatmo_thermostat'})
                     
                     mode_text = self._get_netatmo_mode_text(device)
-                    hm_item = self.tree.AppendItem(item, _("Heizmodus: {mode} - Enter zum Ändern").format(mode=mode_text))
+                    hm_item = self.tree.AppendItem(item, _("Heating mode: "
+                                                           "{mode} - press "
+                                                           "Enter to change").format(mode=mode_text))
                     self.tree.SetItemData(hm_item, {'type': 'action', 'device': device, 'action': 'netatmo_therm_mode'})
                     
                     # Switch the heating schedule (with the active schedule
                     # name).
                     #
-                    # WICHTIG: hier NIE eine Netzanfrage auslösen. Diese
-                    # Methode läuft im wx-Hauptthread am Aufklapp-Ereignis des
-                    # Baums. get_schedules() ging früher direkt an die
-                    # Netatmo-API - mit zwei Wiederholungen und 30 s Timeout
-                    # dahinter. Antwortete Netatmo mit 503 (kommt vor, deren
-                    # Server), fror der Dialog rund 7 Sekunden ein, bei
-                    # hängender Verbindung bis zu 97. Ein eingefrorenes Fenster
-                    # ohne Rückmeldung ist für Screenreader-Nutzer die
-                    # unangenehmste Art zu scheitern.
+                    # IMPORTANT: never issue a network request here. This
+                    # method runs on the wx main thread from the tree's
+                    # expand event. get_schedules() used to go straight to
+                    # the Netatmo API - with two retries and a 30 s timeout
+                    # behind it. When Netatmo answered 503 (it happens, their
+                    # servers), the dialog froze for about 7 seconds, and up
+                    # to 97 on a hanging connection. A frozen window without
+                    # feedback is the nastiest way to fail for screen reader
+                    # users.
                     #
-                    # Jetzt: nur aus dem Zwischenspeicher (cached_only). Ist er
-                    # leer, wird er im Hintergrund gefüllt und die Zeile beim
-                    # nächsten Aufklappen beschriftet.
-                    sched_label = _("Heizprogramm wechseln")
+                    # Now: from the cache only (cached_only). If it is empty
+                    # it gets filled in the background and the row is
+                    # labelled on the next expand.
+                    sched_label = _("Switch heating schedule")
                     try:
                         netatmo_api = self.plugin.netatmo_api
                         home_id = getattr(device, 'home_id', '')
@@ -2557,18 +2613,22 @@ class SmartHomeControlDialog(_NetatmoDialogMixin, _VeSyncDialogMixin, _MerossDia
                                 home_id, cached_only=True)
                             for sched in schedules:
                                 if sched.get('selected', False):
-                                    sched_label = _("Heizprogramm: {name} - Enter zum Wechseln").format(name=sched['name'])
+                                    sched_label = _("Heating schedule: {name} "
+                                                    "- press Enter to switch").format(name=sched['name'])
                                     break
                             else:
                                 self._prefetch_netatmo_schedules(home_id)
                     except Exception as e:
-                        log.debug(f"Ignorierter Fehler in _update_device_item: {e}")
+                        log.debug(f"Ignored error in _update_device_item: {e}")
                     sched_item = self.tree.AppendItem(item, sched_label)
                     self.tree.SetItemData(sched_item, {'type': 'action', 'device': device, 'action': 'netatmo_switch_schedule'})
                     
                     current_mode = device.get_setpoint_mode() if hasattr(device, 'get_setpoint_mode') else None
                     if current_mode and current_mode != 'schedule':
-                        back_item = self.tree.AppendItem(item, _("Zurück zum Zeitplan - Enter zum Aktivieren"))
+                        back_item = self.tree.AppendItem(item, _("Back to "
+                                                                 "schedule - "
+                                                                 "press Enter "
+                                                                 "to activate"))
                         self.tree.SetItemData(back_item, {'type': 'action', 'device': device, 'action': 'netatmo_back_to_schedule'})
                 
                 # No toggle for Netatmo devices (thermostats, gateways, etc.)
@@ -2579,7 +2639,7 @@ class SmartHomeControlDialog(_NetatmoDialogMixin, _VeSyncDialogMixin, _MerossDia
             # the action handlers.
             self._build_meross_device_children(item, device, channel)
         except Exception as e:
-            log.debug(f"Fehler beim Aktualisieren von {device.name}: {e}")
+            log.debug(f"Failed to update {device.name}: {e}")
     
     # Action type -> method name of the handler (VeSync/Cozytouch/Netatmo). As
     # a name mapping (instead of bound methods) so the table can be defined at
@@ -2608,7 +2668,7 @@ class SmartHomeControlDialog(_NetatmoDialogMixin, _VeSyncDialogMixin, _MerossDia
     }
 
     def _after_toggle_ok(self, item, device, channel, device_name, new_state):
-        """UI-Teil nach erfolgreichem Schalten (läuft im wx-Thread)."""
+        """UI part after a successful switch (runs on the wx thread)."""
         # Optimized speech output
         is_first = self.last_announced_device != device_name
         self._announce_device_action(device_name, new_state, is_first)
@@ -2626,7 +2686,7 @@ class SmartHomeControlDialog(_NetatmoDialogMixin, _VeSyncDialogMixin, _MerossDia
             self.tree.SelectItem(sel)
 
     def _after_diffuser_mode_set(self, item, device, action, mode_name):
-        """UI-Teil nach erfolgreichem Diffuser-Moduswechsel (wx-Thread)."""
+        """UI part after a successful diffuser mode change (wx thread)."""
         # Translators: Confirmation after a diffuser mode change.
         ui.message(_("{name}: {mode}").format(name=device.name, mode=mode_name))
 
@@ -2657,7 +2717,7 @@ class SmartHomeControlDialog(_NetatmoDialogMixin, _VeSyncDialogMixin, _MerossDia
         if hasattr(device, 'is_offline') and device.is_offline:
             tones.beep(300, 100)  # error tone
             # Translators: Message when the device is offline.
-            ui.message(_("{name}: Offline").format(name=device.name))
+            ui.message(_("{name}: offline").format(name=device.name))
             return
         
         # Platform handlers via a dispatch table instead of a long if/elif
@@ -2668,10 +2728,10 @@ class SmartHomeControlDialog(_NetatmoDialogMixin, _VeSyncDialogMixin, _MerossDia
             getattr(self, handler)(device, item)
             return
         
-        # Diffuser actions. Der Cloud-Aufruf läuft im Thread (Meross-Timeout
-        # bis 10 s), UI-Feedback über _safe_call_after - gleiches Muster wie
-        # _favorite_toggle (__init__.py). Beeps sind threadsicher und bleiben
-        # als Sofort-Feedback im Thread.
+        # Diffuser actions. The cloud call runs on a thread (Meross
+        # timeout up to 10 s), UI feedback via _safe_call_after - the same
+        # pattern as _favorite_toggle (__init__.py). Beeps are thread-safe
+        # and stay in the thread as immediate feedback.
         if action in ['diffuser_light', 'diffuser_strong', 'diffuser_off']:
             if not self._begin_cloud_action():
                 return
@@ -2685,11 +2745,11 @@ class SmartHomeControlDialog(_NetatmoDialogMixin, _VeSyncDialogMixin, _MerossDia
                     device._update_status()
                 except Exception as e:
                     _beep(BEEP_ERROR)
-                    log.error(f"Fehler beim Setzen des Diffuser-Modus: {e}")
+                    log.error(f"Failed to set the diffuser mode: {e}")
                     # Translators: Error message on a diffuser mode change.
                     self._safe_call_after(
                         ui.message,
-                        _("{name}: Fehler beim Einstellen").format(name=device.name))
+                        _("{name}: error while setting").format(name=device.name))
                     return
                 finally:
                     self._cloud_action_running = False
@@ -2713,11 +2773,10 @@ class SmartHomeControlDialog(_NetatmoDialogMixin, _VeSyncDialogMixin, _MerossDia
             if not self._begin_cloud_action():
                 return
 
-            # Der Cloud-Aufruf läuft im Thread (Meross bis 10 s, VeSync bis
-            # ~25 s inkl. Retry) - im wx-Thread fror sonst der Dialog und
-            # NVDA während des Schaltens ein. Fehlansagen gehen über
-            # _safe_call_after zurück in den UI-Thread; Beeps sind
-            # threadsicher.
+            # The cloud call runs on a thread (Meross up to 10 s, VeSync
+            # up to ~25 s including the retry) - on the wx thread the dialog
+            # and NVDA froze while switching. Error announcements go back to
+            # the UI thread via _safe_call_after; beeps are thread-safe.
             def toggle_task():
                 try:
                     # Execute the toggle - the status is only updated AFTER
@@ -2745,7 +2804,7 @@ class SmartHomeControlDialog(_NetatmoDialogMixin, _VeSyncDialogMixin, _MerossDia
 
                 except TimeoutError as e:
                     _beep(BEEP_ERROR)
-                    log.warning(f"Timeout beim Schalten von {device_name}: {e}")
+                    log.warning(f"Timeout while switching {device_name}: {e}")
                     # Check whether the device is unreachable (most common
                     # case on timeout)
                     error_msg = str(e).lower()
@@ -2754,27 +2813,27 @@ class SmartHomeControlDialog(_NetatmoDialogMixin, _VeSyncDialogMixin, _MerossDia
                             or "offline" in error_msg):
                         # Translators: Error message when the device is
                         # unreachable.
-                        msg = _("{name}: Nicht erreichbar").format(name=device_name)
+                        msg = _("{name}: unreachable").format(name=device_name)
                     else:
                         # Translators: Error message on timeout.
-                        msg = _("{name}: Zeitüberschreitung").format(name=device_name)
+                        msg = _("{name}: timeout").format(name=device_name)
                     self._safe_call_after(ui.message, msg)
                     # Do NOT change the status on error!
                     return
 
                 except (ConnectionError, OSError) as e:
                     _beep(BEEP_ERROR)
-                    log.warning(f"Verbindungsfehler beim Schalten von {device_name}: {e}")
+                    log.warning(f"Connection error while switching {device_name}: {e}")
                     # Check for a general network outage (DNS, no route)
                     err_str = str(e).lower()
                     if any(s in err_str for s in ['resolve', 'getaddrinfo', 'dns', 'no route', '10065', '10051']):
                         # Translators: Error message when there is no internet
                         # connection.
-                        msg = _("{name}: Keine Internetverbindung").format(name=device_name)
+                        msg = _("{name}: no internet connection").format(name=device_name)
                     else:
                         # Translators: Error message on a general connection
                         # error.
-                        msg = _("{name}: Verbindungsfehler").format(name=device_name)
+                        msg = _("{name}: connection error").format(name=device_name)
                     self._safe_call_after(ui.message, msg)
                     # Do NOT change the status on error!
                     return
@@ -2782,21 +2841,21 @@ class SmartHomeControlDialog(_NetatmoDialogMixin, _VeSyncDialogMixin, _MerossDia
                 except RuntimeError as e:
                     # Offline devices raise RuntimeError
                     _beep(BEEP_ERROR)
-                    log.warning(f"RuntimeError beim Schalten von {device_name}: {e}")
+                    log.warning(f"RuntimeError while switching {device_name}: {e}")
                     error_msg = str(e).lower()
                     if "event loop" in error_msg:
                         # Translators: Message when the connection is being
                         # re-established.
-                        msg = _("{name}: Verbindung wird wiederhergestellt").format(name=device_name)
+                        msg = _("{name}: reconnecting").format(name=device_name)
                     elif ("offline" in error_msg
                             or "nicht erreichbar" in error_msg
                             or "unreachable" in error_msg):
                         # Translators: Error message when the device is
                         # unreachable.
-                        msg = _("{name}: Nicht erreichbar").format(name=device_name)
+                        msg = _("{name}: unreachable").format(name=device_name)
                     else:
                         # Translators: Generic error message with detail text.
-                        msg = _("{name}: Fehler - {error}").format(name=device_name, error=str(e)[:40])
+                        msg = _("{name}: error - {error}").format(name=device_name, error=str(e)[:40])
                     self._safe_call_after(ui.message, msg)
                     # Do NOT change the status on error!
                     return
@@ -2805,12 +2864,12 @@ class SmartHomeControlDialog(_NetatmoDialogMixin, _VeSyncDialogMixin, _MerossDia
                     _beep(BEEP_ERROR)
                     # No exc_info: could leak tokens/headers in the stack
                     # trace.
-                    log.error(f"Fehler beim Schalten von {device_name}: {type(e).__name__}: {e}")
+                    log.error(f"Failed to switch {device_name}: {type(e).__name__}: {e}")
                     # Translators: Error message when switching a device
                     # on/off fails (e.g. cloud unreachable, device offline).
                     self._safe_call_after(
                         ui.message,
-                        _("{name}: Schaltfehler").format(name=device_name))
+                        _("{name}: switching error").format(name=device_name))
                     # Do NOT change the status on error!
                     return
 
@@ -2820,9 +2879,9 @@ class SmartHomeControlDialog(_NetatmoDialogMixin, _VeSyncDialogMixin, _MerossDia
                 # Short message + sound
                 _beep(BEEP_ON if new_state else BEEP_OFF)
 
-                # Der Verlaufseintrag entsteht in plugin.toggle_device() -
-                # dem gemeinsamen Engpass von Dialog UND Favoriten-Gesten.
-                # Hier wäre er doppelt und würde die Gesten weiter auslassen.
+                # The history entry is written in plugin.toggle_device(),
+                # the shared bottleneck of dialog AND favorites gestures.
+                # Here it would be a duplicate and still miss the gestures.
                 self._safe_call_after(
                     self._after_toggle_ok, item, device, channel, device_name, new_state)
 
@@ -2837,30 +2896,33 @@ class SmartHomeControlDialog(_NetatmoDialogMixin, _VeSyncDialogMixin, _MerossDia
                 # Extended selection with descriptions for screen readers
                 # Translators: Choices for the light color (with description).
                 choices = [
-                    _("Warmweiß - gemütliches, warmes Licht wie Kerzenschein (ca. 2700K)"),
-                    _("Tageslicht - neutrales, natürliches Licht zum Arbeiten (ca. 4000K)"),
-                    _("Kaltweiß - helles, bläuliches Licht für Konzentration (ca. 6500K)"),
+                    _("Warm white - cozy, warm light like candlelight "
+                      "(approx. 2700K)"),
+                    _("Daylight - neutral, natural light for working (approx. "
+                      "4000K)"),
+                    _("Cool white - bright, bluish light for concentration "
+                      "(approx. 6500K)"),
                 ]
                 
                 # Help text with the current value
                 # Translators: Help text in the light color dialog.
-                help_text = _("Wählen Sie eine Lichtfarbe für {name}.").format(name=device.name) + "\n"
+                help_text = _("Choose a light color for {name}.").format(name=device.name) + "\n"
                 if temp is not None:
                     if temp <= 33:
                         # Translators: Current light color in the help text.
-                        help_text += _("Aktuelle Einstellung: Warmweiß") + "\n"
+                        help_text += _("Current setting: warm white") + "\n"
                     elif temp <= 66:
-                        help_text += _("Aktuelle Einstellung: Tageslicht") + "\n"
+                        help_text += _("Current setting: daylight") + "\n"
                     else:
-                        help_text += _("Aktuelle Einstellung: Kaltweiß") + "\n"
+                        help_text += _("Current setting: cool white") + "\n"
                 # Translators: Usage hint in the light color dialog.
-                help_text += _("Mit Pfeiltasten navigieren, Enter zum Bestätigen.")
+                help_text += _("Navigate with arrow keys, Enter to confirm.")
                 
                 dlg = wx.SingleChoiceDialog(
                     self, 
                     help_text, 
                     # Translators: Title of the light color dialog.
-                    _("Farbtemperatur für {name}").format(name=device.name),
+                    _("Color temperature for {name}").format(name=device.name),
                     choices
                 )
                 
@@ -2875,10 +2937,9 @@ class SmartHomeControlDialog(_NetatmoDialogMixin, _VeSyncDialogMixin, _MerossDia
                 
                 if dlg.ShowModal() == wx.ID_OK:
                     selection = dlg.GetSelection()
-                    mode_map = {0: 'warm', 1: 'tageslicht', 2: 'kalt'}
-                    # Translators: Short names of the light colors (for
-                    # announcement/history).
-                    name_map = {0: _('Warmweiß'), 1: _('Tageslicht'), 2: _('Kaltweiß')}
+                    mode_map = {0: 'warm', 1: 'daylight', 2: 'cool'}
+                    name_map = {i: MEROSS_WHITE_PRESET_NAMES[k]
+                                for i, k in mode_map.items()}
                     temp_map = {0: 0, 1: 50, 2: 100}  # temperature values for the cache
                     
                     mode_key = mode_map[selection]
@@ -2904,10 +2965,11 @@ class SmartHomeControlDialog(_NetatmoDialogMixin, _VeSyncDialogMixin, _MerossDia
                         # Success feedback
                         _beep(BEEP_ON)
                         # Translators: Confirmation after a light color change.
-                        ui.message(_("{name}: {mode} eingestellt").format(name=device.name, mode=mode_name))
-                        # Translators: History detail: light color that was
-                        # set.
-                        get_history().log_action(device, 'light_temperature', _('Farbtemperatur: {mode}').format(mode=mode_name))
+                        ui.message(_("{name}: {mode} set").format(name=device.name, mode=mode_name))
+                        # Preset key, not its label - "Light color changed"
+                        # already names what happened.
+                        get_history().log_action(
+                            device, 'light_temperature', str(mode_key))
                         
                         # Update the tree
                         try:
@@ -2916,26 +2978,26 @@ class SmartHomeControlDialog(_NetatmoDialogMixin, _VeSyncDialogMixin, _MerossDia
                             self._update_device_item(parent, {'device': device}, skip_status_update=True)
                             self.tree.Expand(parent)
                         except Exception as e:
-                            log.debug(f"Fehler beim Aktualisieren des Baums: {e}")
+                            log.debug(f"Failed to refresh the tree: {e}")
                             
                     except TimeoutError:
                         _beep(BEEP_ERROR)
                         # Translators: Error message on timeout.
-                        ui.message(_("{name}: Zeitüberschreitung").format(name=device.name))
+                        ui.message(_("{name}: timeout").format(name=device.name))
                     except Exception as e:
                         _beep(BEEP_ERROR)
-                        log.error(f"Fehler beim Setzen der Farbtemperatur: {e}")
+                        log.error(f"Failed to set the colour temperature: {e}")
                         # Translators: Error message when setting the color
                         # temperature.
-                        ui.message(_("{name}: Farbtemperatur nicht einstellbar").format(name=device.name))
+                        ui.message(_("{name}: color temperature cannot be set").format(name=device.name))
                 
                 dlg.Destroy()
                 
             except Exception as e:
                 _beep(BEEP_ERROR)
-                log.error(f"Fehler beim Öffnen des Farbtemperatur-Dialogs: {e}")
+                log.error(f"Failed to open the colour temperature dialog: {e}")
                 # Translators: Error message when opening a sub-dialog.
-                ui.message(_("{name}: Fehler beim Öffnen des Dialogs").format(name=device.name))
+                ui.message(_("{name}: error opening the dialog").format(name=device.name))
         
         elif action == 'light_luminance':
             try:
@@ -2945,16 +3007,17 @@ class SmartHomeControlDialog(_NetatmoDialogMixin, _VeSyncDialogMixin, _MerossDia
                 
                 # Detailed help text for screen readers
                 # Translators: Help texts in the brightness dialog.
-                help_text = _("Geben Sie die Helligkeit für {name} ein.").format(name=device.name) + "\n"
-                help_text += _("Wert zwischen 0 (aus) und 100 (maximale Helligkeit).") + "\n"
+                help_text = _("Enter the brightness for {name}.").format(name=device.name) + "\n"
+                help_text += _("Value between 0 (off) and 100 (maximum "
+                               "brightness).") + "\n"
                 if current_luminance is not None:
-                    help_text += _("Aktuelle Helligkeit: {value}%").format(value=current_luminance)
+                    help_text += _("Current brightness: {value}%").format(value=current_luminance)
                 
                 dlg = wx.TextEntryDialog(
                     self, 
                     help_text, 
                     # Translators: Title of the brightness dialog.
-                    _("Helligkeit für {name}").format(name=device.name),
+                    _("Brightness for {name}").format(name=device.name),
                     default_value
                 )
                 
@@ -2970,7 +3033,8 @@ class SmartHomeControlDialog(_NetatmoDialogMixin, _VeSyncDialogMixin, _MerossDia
                             tones.beep(300, 100)
                             # Translators: Error message for a brightness value
                             # out of range.
-                            ui.message(_("Ungültiger Wert: {value}. Erlaubt: 0 bis 100.").format(value=luminance))
+                            ui.message(_("Invalid value: {value}. Allowed: 0 "
+                                         "to 100.").format(value=luminance))
                             dlg.Destroy()
                             return
                         
@@ -2982,11 +3046,10 @@ class SmartHomeControlDialog(_NetatmoDialogMixin, _VeSyncDialogMixin, _MerossDia
                             _beep(BEEP_ON)
                             # Translators: Confirmation after a brightness
                             # change.
-                            ui.message(_("{name}: Helligkeit auf {percent}% eingestellt").format(
+                            ui.message(_("{name}: brightness set to {percent}%").format(
                                 name=device.name, percent=luminance))
-                            # Translators: History detail: brightness that was
-                            # set.
-                            get_history().log_action(device, 'light_luminance', _('Helligkeit: {value}%').format(value=luminance))
+                            get_history().log_action(
+                                device, 'light_luminance', f"{luminance}%")
                             
                             # Update the tree
                             try:
@@ -2994,33 +3057,34 @@ class SmartHomeControlDialog(_NetatmoDialogMixin, _VeSyncDialogMixin, _MerossDia
                                 self._update_device_item(parent, {'device': device})
                                 self.tree.Expand(parent)
                             except Exception as e:
-                                log.debug(f"Fehler beim Aktualisieren des Baums: {e}")
+                                log.debug(f"Failed to refresh the tree: {e}")
                                 
                         except TimeoutError:
                             _beep(BEEP_ERROR)
                             # Translators: Error message on timeout.
-                            ui.message(_("{name}: Zeitüberschreitung").format(name=device.name))
+                            ui.message(_("{name}: timeout").format(name=device.name))
                         except Exception as e:
                             _beep(BEEP_ERROR)
-                            log.error(f"Fehler beim Setzen der Helligkeit: {e}")
+                            log.error(f"Failed to set the brightness: {e}")
                             # Translators: Error message when setting the
                             # brightness.
-                            ui.message(_("{name}: Helligkeit nicht einstellbar").format(name=device.name))
+                            ui.message(_("{name}: brightness cannot be set").format(name=device.name))
                         
                     except ValueError:
                         tones.beep(300, 100)
                         # Translators: Error message on non-numeric brightness
                         # input.
-                        ui.message(_("Ungültige Eingabe. Erlaubt: Zahl von 0 bis 100."))
+                        ui.message(_("Invalid input. Allowed: a number from 0 "
+                                     "to 100."))
                         
                 dlg.Destroy()
                 
             except Exception as e:
                 _beep(BEEP_ERROR)
-                log.error(f"Fehler beim Öffnen des Helligkeits-Dialogs: {e}")
+                log.error(f"Failed to open the brightness dialog: {e}")
                 # Translators: Error message when opening the brightness
                 # dialog.
-                ui.message(_("{name}: Dialogfehler").format(name=device.name))
+                ui.message(_("{name}: dialog error").format(name=device.name))
         
         elif action == 'light_rgb':
             # Show the accessible color picker dialog
@@ -3033,12 +3097,12 @@ class SmartHomeControlDialog(_NetatmoDialogMixin, _VeSyncDialogMixin, _MerossDia
         """Refreshes the device list - OPTIMIZED for faster updates"""
         # Disable the button and change its text
         # Translators: Temporary label of the refresh button while loading.
-        self.refresh_btn.SetLabel(_("Lädt..."))
+        self.refresh_btn.SetLabel(_("Loading..."))
         self.refresh_btn.Enable(False)
 
         # OPTIMIZED: set the status line + speak in one step.
         # Translators: Status while a manual refresh is running.
-        self._set_status_text(_("Aktualisiere..."), announce=True)
+        self._set_status_text(_("Refreshing..."), announce=True)
         
         # Start the periodic loading beep (as on opening)
         self._start_loading_beep()
@@ -3053,13 +3117,14 @@ class SmartHomeControlDialog(_NetatmoDialogMixin, _VeSyncDialogMixin, _MerossDia
                 start_time = time.time()
                 self.plugin.refresh_devices()
                 elapsed = time.time() - start_time
-                log.debug(f"Refresh dauerte {elapsed:.1f}s")
+                log.debug(f"Refresh took {elapsed:.1f}s")
                 self._safe_call_after(self._reload_and_notify, elapsed)
             except TimeoutError:
                 self._safe_call_after(self._stop_loading_beep)
                 self._safe_call_after(tones.beep, 200, 200)
                 # Translators: Error message on a refresh timeout.
-                self._safe_call_after(ui.message, _("Zeitüberschreitung – bitte erneut versuchen"))
+                self._safe_call_after(ui.message, _("Timeout – please try "
+                                                    "again"))
                 self._safe_call_after(self._reset_refresh_button)
             except (ConnectionError, OSError) as e:
                 self._safe_call_after(self._stop_loading_beep)
@@ -3091,11 +3156,11 @@ class SmartHomeControlDialog(_NetatmoDialogMixin, _VeSyncDialogMixin, _MerossDia
         online = sum(1 for d in self.plugin.devices if not (hasattr(d, 'is_offline') and d.is_offline))
         if elapsed:
             # Translators: Message after a manual refresh with duration.
-            ui.message(_("Aktualisiert in {seconds}s - {online} Geräte online").format(
+            ui.message(_("Refreshed in {seconds}s - {online} devices online").format(
                 seconds=f"{elapsed:.1f}", online=online))
         else:
             # Translators: Message after a manual refresh.
-            ui.message(_("Aktualisiert - {online} Geräte online").format(online=online))
+            ui.message(_("Refreshed - {online} devices online").format(online=online))
         
         # Set the focus to the tree
         self._focus_first_tree_item()
@@ -3130,9 +3195,13 @@ class SmartHomeControlDialog(_NetatmoDialogMixin, _VeSyncDialogMixin, _MerossDia
                         self.plugin.netatmo_refresh_token,
                         self.plugin.netatmo_token_expiry
                     )
-                    log.info("Netatmo API aus Einstellungsdialog heraus initialisiert")
+                    # Same as after the login: renewed tokens must be
+                    # persisted, since Netatmo rotates refresh tokens.
+                    self.plugin.netatmo_api.set_token_update_callback(
+                        self.plugin._on_netatmo_tokens_renewed)
+                    log.info("Netatmo API initialised from the settings dialog")
                 except Exception as e:
-                    log.error(f"Netatmo API Initialisierung fehlgeschlagen: {e}")
+                    log.error(f"Netatmo API initialisation failed: {e}")
 
             # Reinitialize VeSync when enabled and credentials are present but
             # the API is not built yet (e.g. after enabling it in the

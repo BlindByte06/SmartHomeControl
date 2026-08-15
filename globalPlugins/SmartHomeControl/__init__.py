@@ -35,15 +35,14 @@ from logHandler import log
 # - NVDA 2025.x : 32-bit, Python 3.11  -> lib/_arch/cp311-win32
 # - NVDA 2026.1 : 64-bit, Python 3.13  -> lib/_arch/cp313-amd64
 #
-# WICHTIG: Es gibt KEINEN Pure-Python-Fallback für diese Pakete. Frühere
-# Fassungen dieses Kommentars versprachen einen ("slower, but functional") -
-# im gebauten Paket liegen aiohttp, multidict, yarl, frozenlist, propcache,
-# charset_normalizer und Cryptodome aber ausschließlich unter lib/_arch/.
-# Passt keine Architektur, steht damit nicht ein langsamerer Weg zur
-# Verfügung, sondern gar keiner: die Meross-Unterstützung fällt aus. Die
-# beiden gebündelten Architekturen decken NVDA 2025.1 bis 2026.1 vollständig
-# ab; ein dritter Fall ist hypothetisch, soll dann aber ehrlich gemeldet
-# werden statt als "Fallback" durchzugehen.
+# IMPORTANT: there is NO pure Python fallback for these packages. Earlier
+# versions of this comment promised one ("slower, but functional") - but in
+# the built package aiohttp, multidict, yarl, frozenlist, propcache,
+# charset_normalizer and Cryptodome exist only under lib/_arch/. If no
+# architecture matches, there is not a slower way but none at all: Meross
+# support drops out. The two bundled architectures cover NVDA 2025.1 through
+# 2026.1 completely; a third case is hypothetical but should then be reported
+# honestly instead of passing as a "fallback".
 # Selection is primarily by bitness; the Python version is only used for the
 # warning.
 import struct as _struct
@@ -58,17 +57,16 @@ def _select_arch_dir(arch_root):
         exp_minor = 13 if is_64bit else 11
         if py.minor != exp_minor:
             log.warning(
-                f"Smart Home Control: Python {py.major}.{py.minor} weicht von der "
-                f"für {expected} gebauten Version ab – die kompilierten Extensions "
-                f"lassen sich möglicherweise nicht laden."
+                f"Smart Home Control: Python {py.major}.{py.minor} differs from the "
+                f"version built for {expected} - the compiled extensions may "
+                f"fail to load."
             )
         return candidate
     log.error(
-        f"Smart Home Control: Kein passender _arch-Ordner ({expected}) gefunden. "
-        f"Die Meross-Unterstützung steht auf dieser NVDA-/Python-Version NICHT "
-        f"zur Verfügung (es gibt keinen Pure-Python-Ersatz für aiohttp und "
-        f"Cryptodome). Die übrigen Plattformen – Netatmo, VeSync und Cozytouch – "
-        f"funktionieren unverändert."
+        f"Smart Home Control: no matching _arch folder ({expected}) found. "
+        f"Meross support is NOT available on this NVDA/Python version (there "
+        f"is no pure Python replacement for aiohttp and Cryptodome). The "
+        f"other platforms - Netatmo, VeSync and Cozytouch - work unchanged."
     )
     return None
 
@@ -79,10 +77,10 @@ _arch_dir = _select_arch_dir(os.path.join(lib_path, "_arch"))
 # pure Python packages (requests, idna, meross_iot, ...) come from lib/.
 if _arch_dir and _arch_dir not in sys.path:
     sys.path.append(_arch_dir)
-    log.debug(f"Smart Home Control: arch-Pfad angehängt: {_arch_dir}")
+    log.debug(f"Smart Home Control: arch path appended: {_arch_dir}")
 if lib_path not in sys.path:
     sys.path.append(lib_path)
-    log.debug(f"Smart Home Control: lib-Pfad angehängt: {lib_path}")
+    log.debug(f"Smart Home Control: lib path appended: {lib_path}")
 
 # Initialize the add-on.
 # Guarded like every other module in this package: an unguarded failure here
@@ -91,7 +89,7 @@ if lib_path not in sys.path:
 try:
     addonHandler.initTranslation()
 except Exception as e:
-    log.debug(f"initTranslation fehlgeschlagen: {e}")
+    log.debug(f"initTranslation failed: {e}")
 if "_" not in globals():  # fallback outside of NVDA
     def _(s):
         return s
@@ -110,7 +108,7 @@ from .platform_utils import split_by_platform, PLATFORM_LABELS
 from .dialog_helpers import _beep
 from .constants import (
     CONFSPEC, BEEP_ERROR, BEEP_SUCCESS, BEEP_LOADING, BEEP_ACTION,
-    NETATMO_REDIRECT_PORT,
+    BEEP_ON, BEEP_OFF, NETATMO_REDIRECT_PORT,
 )
 
 
@@ -128,10 +126,10 @@ class GlobalPlugin(_CredentialsMixin, _SchedulerMixin, _ChangeDetectionMixin,
                    globalPluginHandler.GlobalPlugin):
     """Smart Home Control global plugin.
 
-    Aufgeteilt in Mixins (Verhalten unverändert):
-      - _CredentialsMixin    (credentials.py): verschlüsselte Passwort-Properties
-      - _SchedulerMixin      (scheduler.py): Polling-Scheduler + Plattform-Refresh
-      - _ChangeDetectionMixin (change_detection.py): externe Änderungserkennung
+    Split into mixins (behaviour unchanged):
+      - _CredentialsMixin     (credentials.py): encrypted password properties
+      - _SchedulerMixin       (scheduler.py): polling scheduler + platform refresh
+      - _ChangeDetectionMixin (change_detection.py): external change detection
     """
 
     # Translators: Category name in the NVDA input gestures dialog. Brand name,
@@ -153,6 +151,17 @@ class GlobalPlugin(_CredentialsMixin, _SchedulerMixin, _ChangeDetectionMixin,
         # Read/write accesses should hold the lock or work with a snapshot
         # copy.
         self._devices_lock = threading.RLock()
+        # Coalesces cloud refreshes: the scheduler pass and refresh_devices()
+        # (dialog) do the SAME work. Without this lock, opening the dialog ran
+        # both at once - three Meross status rounds within 13 s were visible in
+        # the log, which tripled the cloud budget and made the dialog wait for
+        # the second round. A second caller now waits for the running refresh
+        # and uses its result instead of starting another one.
+        self._refresh_lock = threading.Lock()
+        # Per platform the time of the last completed refresh - regardless of
+        # which path did it. The scheduler uses it to re-schedule instead of
+        # repeating a poll the dialog has just made (see _scheduler_body).
+        self._platform_last_refresh = {}
         self.devices = []  # all devices (Meross + Netatmo + VeSync mixed)
         self.is_logged_in = False
         self.is_loading = False
@@ -224,6 +233,10 @@ class GlobalPlugin(_CredentialsMixin, _SchedulerMixin, _ChangeDetectionMixin,
         self._previous_netatmo_therm_states = {}
         self._last_boiler_announce_time = {}  # cooldown for boiler notifications per device
 
+        # Water sensors (MS400/MS405): last known state per device, so only
+        # the CHANGE is announced and logged - not every poll.
+        self._previous_water_states = {}
+
         # Cozytouch state tracking for external change detection
         self._previous_cozytouch_states = {}
         # Per Cozytouch device: timestamp of the last local action (dialog).
@@ -242,7 +255,7 @@ class GlobalPlugin(_CredentialsMixin, _SchedulerMixin, _ChangeDetectionMixin,
         self._force_poll = False
         
         log.info("=" * 50)
-        log.info("Smart Home Control: Add-on gestartet")
+        log.info("Smart Home Control: add-on started")
         log.info(f"Python-Version: {sys.version}")
         log.info(f"Addon-Pfad: {os.path.dirname(__file__)}")
         log.info("=" * 50)
@@ -264,30 +277,30 @@ class GlobalPlugin(_CredentialsMixin, _SchedulerMixin, _ChangeDetectionMixin,
             if has_meross or has_netatmo or has_vesync or has_cozytouch:
                 self._start_auto_login()
         
-        log.info("Smart Home Control: Initialisierung abgeschlossen")
+        log.info("Smart Home Control: initialisation finished")
     
     def terminate(self):
         """Cleanup when NVDA exits"""
-        log.info("Smart Home Control: Add-on wird beendet")
-        # Eine noch aktive Favoriten-Ebene abräumen - sonst bliebe die
-        # Abfang-Funktion in inputCore über das Add-on-Ende hinaus
-        # installiert (z.B. beim Neustart des Add-ons).
+        log.info("Smart Home Control: add-on is shutting down")
+        # Tear down a still active favorites layer, otherwise the capture
+        # function stays installed in inputCore beyond the add-on's end (for
+        # instance when the add-on is restarted).
         try:
             self._fav_layer_exit()
         except Exception as e:
-            log.debug(f"Favoriten-Ebene beim Beenden: {e}")
+            log.debug(f"Favorites layer during shutdown: {e}")
         # Save unsaved history entries from the debounce window.
         try:
             from .history import flush_pending
             flush_pending()
         except Exception as e:
-            log.debug(f"History-Flush beim Beenden fehlgeschlagen: {e}")
+            log.debug(f"History flush during shutdown failed: {e}")
         # Save unsaved energy samples as well.
         try:
             from .energy import flush_pending as flush_energy
             flush_energy()
         except Exception as e:
-            log.debug(f"Energie-Flush beim Beenden fehlgeschlagen: {e}")
+            log.debug(f"Energy flush during shutdown failed: {e}")
         # Stop the unified scheduler thread.
         self._stop_background_refresh()
 
@@ -297,30 +310,30 @@ class GlobalPlugin(_CredentialsMixin, _SchedulerMixin, _ChangeDetectionMixin,
             try:
                 t.join(timeout=2.0)
                 if t.is_alive():
-                    log.debug("Scheduler-Thread konnte nicht binnen 2s beendet werden")
+                    log.debug("Scheduler thread could not be stopped within 2s")
             except Exception as e:
-                log.debug(f"Join für Scheduler-Thread fehlgeschlagen: {e}")
+                log.debug(f"Join of the scheduler thread failed: {e}")
 
         if self.api:
             try:
                 self.api.logout()
             except Exception as e:
-                log.debug(f"Ignorierter Fehler in terminate: {e}")
+                log.debug(f"Ignored error in terminate: {e}")
         if self.netatmo_api:
             try:
                 self.netatmo_api.logout()
             except Exception as e:
-                log.debug(f"Ignorierter Fehler in terminate: {e}")
+                log.debug(f"Ignored error in terminate: {e}")
         if self.vesync_api:
             try:
                 self.vesync_api.logout()
             except Exception as e:
-                log.debug(f"Ignorierter Fehler in terminate: {e}")
+                log.debug(f"Ignored error in terminate: {e}")
         if self.cozytouch_api:
             try:
                 self.cozytouch_api.logout()
             except Exception as e:
-                log.debug(f"Ignorierter Fehler in terminate: {e}")
+                log.debug(f"Ignored error in terminate: {e}")
         super().terminate()
     
     def load_settings(self):
@@ -346,6 +359,7 @@ class GlobalPlugin(_CredentialsMixin, _SchedulerMixin, _ChangeDetectionMixin,
 
             # Fine-grained notification settings ("Notifications" tab)
             self.notify_meross_toggle = conf.get("notifyMerossToggle", True)
+            self.notify_meross_water = conf.get("notifyMerossWater", True)
             self.notify_netatmo_mode = conf.get("notifyNetatmoMode", True)
             self.notify_netatmo_setpoint = conf.get("notifyNetatmoSetpoint", True)
             self.notify_netatmo_boiler = conf.get("notifyNetatmoBoiler", True)
@@ -398,9 +412,9 @@ class GlobalPlugin(_CredentialsMixin, _SchedulerMixin, _ChangeDetectionMixin,
             self.notify_cozytouch_power = conf.get("notifyCozytouchPower", True)
             self.notify_cozytouch_away = conf.get("notifyCozytouchAway", True)
 
-            log.debug(f"Einstellungen geladen: Meross={self.use_meross}, Netatmo={self.use_netatmo}, VeSync={self.use_vesync}, Cozytouch={self.use_cozytouch}, Auto-Login={self.auto_login}")
+            log.debug(f"Settings loaded: Meross={self.use_meross}, Netatmo={self.use_netatmo}, VeSync={self.use_vesync}, Cozytouch={self.use_cozytouch}, auto login={self.auto_login}")
         except Exception as e:
-            log.error(f"Fehler beim Laden der Einstellungen: {e}")
+            log.error(f"Failed to load the settings: {e}")
             self.email = ""
             self._encrypted_password = ""
             self.auto_login = True
@@ -411,6 +425,7 @@ class GlobalPlugin(_CredentialsMixin, _SchedulerMixin, _ChangeDetectionMixin,
             self.use_vesync = False
             # Defaults for the notification settings
             self.notify_meross_toggle = True
+            self.notify_meross_water = True
             self.notify_netatmo_mode = True
             self.notify_netatmo_setpoint = True
             self.notify_netatmo_boiler = True
@@ -465,6 +480,7 @@ class GlobalPlugin(_CredentialsMixin, _SchedulerMixin, _ChangeDetectionMixin,
 
             # Fine-grained notification settings
             conf["notifyMerossToggle"] = self.notify_meross_toggle
+            conf["notifyMerossWater"] = self.notify_meross_water
             conf["notifyNetatmoMode"] = self.notify_netatmo_mode
             conf["notifyNetatmoSetpoint"] = self.notify_netatmo_setpoint
             conf["notifyNetatmoBoiler"] = self.notify_netatmo_boiler
@@ -510,9 +526,9 @@ class GlobalPlugin(_CredentialsMixin, _SchedulerMixin, _ChangeDetectionMixin,
             # - a crash with restartUnsafely (see the Vocalizer/WASAPI crash)
             # then discards all credentials entered since.
             self._flush_config_to_disk()
-            log.debug("Einstellungen gespeichert (Credentials DPAPI-verschlüsselt)")
+            log.debug("Settings saved (credentials DPAPI encrypted)")
         except Exception as e:
-            log.error(f"Fehler beim Speichern der Einstellungen: {e}")
+            log.error(f"Failed to save the settings: {e}")
 
     def _flush_config_to_disk(self):
         """Writes NVDA's configuration atomically to disk.
@@ -529,7 +545,7 @@ class GlobalPlugin(_CredentialsMixin, _SchedulerMixin, _ChangeDetectionMixin,
             try:
                 config.conf.save()
             except Exception as e:
-                log.error(f"Fehler beim Schreiben der Konfiguration: {e}")
+                log.error(f"Failed to write the configuration: {e}")
 
         if wx.IsMainThread():
             _do_save()
@@ -545,7 +561,7 @@ class GlobalPlugin(_CredentialsMixin, _SchedulerMixin, _ChangeDetectionMixin,
         save them in the NVDA configuration.
         """
         if not (self.vesync_email and self._encrypted_vesync_password):
-            log.warning("VeSync Re-Auth nicht möglich – keine Zugangsdaten gespeichert")
+            log.warning("VeSync re-auth not possible - no credentials stored")
             return False
         try:
             pw = self.vesync_password
@@ -561,10 +577,10 @@ class GlobalPlugin(_CredentialsMixin, _SchedulerMixin, _ChangeDetectionMixin,
                 self.vesync_country_code = creds["country_code"]
                 self.vesync_region = creds["region"]
                 self.save_settings()
-            log.info("VeSync Re-Auth erfolgreich")
+            log.info("VeSync re-auth successful")
             return True
         except Exception as e:
-            _safe_log_error("VeSync Re-Auth fehlgeschlagen", e)
+            _safe_log_error("VeSync re-auth failed", e)
             return False
 
     def _cozytouch_reauth(self, api):
@@ -575,7 +591,7 @@ class GlobalPlugin(_CredentialsMixin, _SchedulerMixin, _ChangeDetectionMixin,
         in the NVDA configuration.
         """
         if not (self.cozytouch_email and self._encrypted_cozytouch_password):
-            log.warning("Cozytouch Re-Auth nicht möglich – keine Zugangsdaten gespeichert")
+            log.warning("Cozytouch re-auth not possible - no credentials stored")
             return False
         try:
             pw = self.cozytouch_password
@@ -588,15 +604,15 @@ class GlobalPlugin(_CredentialsMixin, _SchedulerMixin, _ChangeDetectionMixin,
             if creds.get("token"):
                 self.cozytouch_token = creds["token"]
                 self.save_settings()
-            log.info("Cozytouch Re-Auth erfolgreich")
+            log.info("Cozytouch re-auth successful")
             return True
         except Exception as e:
-            _safe_log_error("Cozytouch Re-Auth fehlgeschlagen", e)
+            _safe_log_error("Cozytouch re-auth failed", e)
             return False
 
     def _start_auto_login(self):
         """Starts the automatic login in the background"""
-        log.info("Starte Auto-Login...")
+        log.info("Starting auto login...")
         platforms = []
         if self.use_meross:
             platforms.append("Meross")
@@ -606,13 +622,13 @@ class GlobalPlugin(_CredentialsMixin, _SchedulerMixin, _ChangeDetectionMixin,
             platforms.append("VeSync")
         if self.use_cozytouch:
             platforms.append("Cozytouch")
-        ui.message(_("Anmeldung bei {platforms}...").format(platforms=", ".join(platforms)))
+        ui.message(_("Logging in to {platforms}...").format(platforms=", ".join(platforms)))
         threading.Thread(target=self._do_login, daemon=True).start()
     
     def _do_login(self):
         """Performs the login (in a separate thread) - Meross and/or Netatmo and/or VeSync"""
         try:
-            log.info("_do_login: Login-Prozess startet...")
+            log.info("_do_login: login process starting...")
             self.is_loading = True
             meross_devices = []
             netatmo_devices = []
@@ -622,8 +638,8 @@ class GlobalPlugin(_CredentialsMixin, _SchedulerMixin, _ChangeDetectionMixin,
             # ---- Meross login ----
             if self.use_meross and self.email and self._encrypted_password:
                 try:
-                    wx.CallAfter(ui.message, _("Meross: Verbinde..."))
-                    log.info("Verbinde mit Meross-Server...")
+                    wx.CallAfter(ui.message, _("Meross: connecting..."))
+                    log.info("Connecting to the Meross server...")
                     
                     # Take over the new instance only AFTER a successful login:
                     # if a re-login fails, the previous (still working)
@@ -641,9 +657,9 @@ class GlobalPlugin(_CredentialsMixin, _SchedulerMixin, _ChangeDetectionMixin,
                     finally:
                         _tmp_password = None
                         del _tmp_password
-                    log.info("Meross Login erfolgreich!")
+                    log.info("Meross login successful")
                     
-                    wx.CallAfter(ui.message, _("Meross: Lade Geräte..."))
+                    wx.CallAfter(ui.message, _("Meross: loading devices..."))
                     meross_devices = new_api.get_devices()
                     new_api.set_wrapped_devices(meross_devices)
                     old_api, self.api = self.api, new_api
@@ -651,21 +667,21 @@ class GlobalPlugin(_CredentialsMixin, _SchedulerMixin, _ChangeDetectionMixin,
                         try:
                             old_api.logout()
                         except Exception as e:
-                            log.debug(f"Logout der alten Meross-Instanz fehlgeschlagen: {e}")
-                    log.info(f"Meross: {len(meross_devices)} Gerät(e) gefunden")
+                            log.debug(f"Logout of the old Meross instance failed: {e}")
+                    log.info(f"Meross: {len(meross_devices)} device(s) found")
                     
                 except Exception as e:
                     # No exc_info -> avoids token/header leaks in the log.
-                    _safe_log_error("Meross Login fehlgeschlagen", e)
+                    _safe_log_error("Meross login failed", e)
                     error_msg = str(e)[:80]
                     # Translators: Error message for a failed Meross login.
-                    wx.CallAfter(ui.message, _("Meross Fehler: {error}").format(error=error_msg))
+                    wx.CallAfter(ui.message, _("Meross error: {error}").format(error=error_msg))
             
             # ---- Netatmo login ----
             if self.use_netatmo and self.netatmo_client_id and self.netatmo_refresh_token:
                 try:
-                    wx.CallAfter(ui.message, _("Netatmo: Verbinde..."))
-                    log.info("Verbinde mit Netatmo...")
+                    wx.CallAfter(ui.message, _("Netatmo: connecting..."))
+                    log.info("Connecting to Netatmo...")
                     
                     new_netatmo = NetatmoAPI(
                         self.netatmo_client_id,
@@ -677,33 +693,36 @@ class GlobalPlugin(_CredentialsMixin, _SchedulerMixin, _ChangeDetectionMixin,
                         self.netatmo_refresh_token,
                         self.netatmo_token_expiry
                     )
-                    
+                    # EVERY later renewal must arrive here as well - Netatmo
+                    # rotates refresh tokens, so without this the config kept
+                    # the ones from the login and a restart hours later
+                    # restored an already invalidated refresh token.
+                    new_netatmo.set_token_update_callback(
+                        self._on_netatmo_tokens_renewed)
+
                     # Renew the token if necessary
                     new_netatmo._ensure_valid_token()
-                    
+
                     # Tokens possibly renewed - save them
                     tokens = new_netatmo.get_tokens()
                     if tokens['access_token'] != self.netatmo_access_token:
-                        self.netatmo_access_token = tokens['access_token']
-                        self.netatmo_refresh_token = tokens['refresh_token']
-                        self.netatmo_token_expiry = tokens['token_expiry']
-                        self.save_settings()
-                    
+                        self._on_netatmo_tokens_renewed(tokens)
+
                     netatmo_devices = new_netatmo.get_devices()
                     self.netatmo_api = new_netatmo
-                    log.info(f"Netatmo: {len(netatmo_devices)} Gerät(e) gefunden")
+                    log.info(f"Netatmo: {len(netatmo_devices)} device(s) found")
                     
                 except Exception as e:
-                    _safe_log_error("Netatmo Login fehlgeschlagen", e)
+                    _safe_log_error("Netatmo login failed", e)
                     error_msg = str(e)[:80]
                     # Translators: Error message for a failed Netatmo login.
-                    wx.CallAfter(ui.message, _("Netatmo Fehler: {error}").format(error=error_msg))
+                    wx.CallAfter(ui.message, _("Netatmo error: {error}").format(error=error_msg))
             
             # ---- VeSync login ----
             if self.use_vesync:
                 try:
-                    wx.CallAfter(ui.message, _("VeSync: Verbinde..."))
-                    log.info("Verbinde mit VeSync...")
+                    wx.CallAfter(ui.message, _("VeSync: connecting..."))
+                    log.info("Connecting to VeSync...")
 
                     vs_api = VeSyncAPI(country_code=self.vesync_country_code or "DE")
 
@@ -737,9 +756,9 @@ class GlobalPlugin(_CredentialsMixin, _SchedulerMixin, _ChangeDetectionMixin,
                         # Translators: Error message when VeSync was enabled
                         # but neither a token nor email/password are
                         # configured.
-                        raise RuntimeError(_("Keine VeSync-Zugangsdaten konfiguriert"))
+                        raise RuntimeError(_("No VeSync credentials configured"))
 
-                    wx.CallAfter(ui.message, _("VeSync: Lade Geräte..."))
+                    wx.CallAfter(ui.message, _("VeSync: loading devices..."))
                     try:
                         vesync_devices = vs_api.get_devices()
                     except RuntimeError as e:
@@ -747,7 +766,7 @@ class GlobalPlugin(_CredentialsMixin, _SchedulerMixin, _ChangeDetectionMixin,
                         # login
                         if (have_tokens and self.vesync_email
                                 and self._encrypted_vesync_password):
-                            log.info(f"VeSync: Token-Login fehlgeschlagen ({e}) – versuche Passwort-Login")
+                            log.info(f"VeSync: token login failed ({e}) - trying the password login")
                             _vs_password = self.vesync_password
                             try:
                                 vs_api.login(self.vesync_email, _vs_password)
@@ -769,19 +788,19 @@ class GlobalPlugin(_CredentialsMixin, _SchedulerMixin, _ChangeDetectionMixin,
                         self.vesync_country_code = creds["country_code"]
                         self.vesync_region = creds["region"]
                         self.save_settings()
-                    log.info(f"VeSync: {len(vesync_devices)} Gerät(e) gefunden")
+                    log.info(f"VeSync: {len(vesync_devices)} device(s) found")
 
                 except Exception as e:
-                    _safe_log_error("VeSync Login fehlgeschlagen", e)
+                    _safe_log_error("VeSync login failed", e)
                     error_msg = str(e)[:80]
                     # Translators: Error message for a failed VeSync login.
-                    wx.CallAfter(ui.message, _("VeSync Fehler: {error}").format(error=error_msg))
+                    wx.CallAfter(ui.message, _("VeSync error: {error}").format(error=error_msg))
 
             # ---- Cozytouch login (Atlantic / Austria Email) ----
             if self.use_cozytouch and self.cozytouch_email and self._encrypted_cozytouch_password:
                 try:
-                    wx.CallAfter(ui.message, _("Cozytouch: Verbinde..."))
-                    log.info("Verbinde mit Cozytouch...")
+                    wx.CallAfter(ui.message, _("Cozytouch: connecting..."))
+                    log.info("Connecting to Cozytouch...")
 
                     ct_api = CozytouchAPI()
                     if hasattr(ct_api, 'set_reauth_callback'):
@@ -794,7 +813,7 @@ class GlobalPlugin(_CredentialsMixin, _SchedulerMixin, _ChangeDetectionMixin,
                         _ct_password = None
                         del _ct_password
 
-                    wx.CallAfter(ui.message, _("Cozytouch: Lade Geräte..."))
+                    wx.CallAfter(ui.message, _("Cozytouch: loading devices..."))
                     cozytouch_devices = ct_api.get_devices()
                     self.cozytouch_api = ct_api
 
@@ -803,13 +822,13 @@ class GlobalPlugin(_CredentialsMixin, _SchedulerMixin, _ChangeDetectionMixin,
                     if creds.get("token"):
                         self.cozytouch_token = creds["token"]
                         self.save_settings()
-                    log.info(f"Cozytouch: {len(cozytouch_devices)} Gerät(e) gefunden")
+                    log.info(f"Cozytouch: {len(cozytouch_devices)} device(s) found")
 
                 except Exception as e:
-                    _safe_log_error("Cozytouch Login fehlgeschlagen", e)
+                    _safe_log_error("Cozytouch login failed", e)
                     error_msg = str(e)[:80]
                     # Translators: Error message for a failed Cozytouch login.
-                    wx.CallAfter(ui.message, _("Cozytouch Fehler: {error}").format(error=error_msg))
+                    wx.CallAfter(ui.message, _("Cozytouch error: {error}").format(error=error_msg))
 
             # ---- Merge the device lists (atomically under the lock) ----
             new_devices = meross_devices + netatmo_devices + vesync_devices + cozytouch_devices
@@ -823,10 +842,11 @@ class GlobalPlugin(_CredentialsMixin, _SchedulerMixin, _ChangeDetectionMixin,
                 with self._devices_lock:
                     has_existing = bool(self.devices)
                 if has_existing:
-                    log.warning("Re-Login lieferte keine Geräte – bestehende Sitzung bleibt aktiv")
+                    log.warning("Re-login returned no devices - the existing session stays active")
                     # Translators: Announcement when a renewed login fails but
                     # the previous device list remains in use.
-                    wx.CallAfter(ui.message, _("Anmeldung fehlgeschlagen – bisherige Geräte bleiben verfügbar"))
+                    wx.CallAfter(ui.message, _("Login failed – existing "
+                                               "devices remain available"))
                     return
 
             with self._devices_lock:
@@ -839,9 +859,8 @@ class GlobalPlugin(_CredentialsMixin, _SchedulerMixin, _ChangeDetectionMixin,
             for cd in cozytouch_devices:
                 self._previous_cozytouch_states[cd.uuid] = self._snapshot_cozytouch_state(cd)
 
-            # Über die lokale Liste statt self.devices: die Referenz wurde
-            # gerade unter dem Lock zugewiesen, so entfällt der ungeschützte
-            # Lesezugriff.
+            # Via the local list instead of self.devices: the reference was
+            # just assigned under the lock, which avoids an unguarded read.
             if new_devices:
                 self.is_logged_in = True
                 self._last_refresh_time = time.time()
@@ -864,22 +883,22 @@ class GlobalPlugin(_CredentialsMixin, _SchedulerMixin, _ChangeDetectionMixin,
                 # devices, {detail} = breakdown per platform (e.g. "3 Meross, 1
                 # Netatmo").
                 wx.CallAfter(ui.message, _(
-                    "{total} Geräte bereit ({detail})").format(
+                    "{total} devices ready ({detail})").format(
                     total=total, detail=detail))
             else:
                 self.is_logged_in = False
                 # Translators: Announced when the login succeeded but there are
                 # no devices in the account.
-                wx.CallAfter(ui.message, _("Keine Geräte gefunden"))
+                wx.CallAfter(ui.message, _("No devices found"))
 
         except Exception as e:
-            _safe_log_error("Login fehlgeschlagen", e)
+            _safe_log_error("Login failed", e)
             with self._devices_lock:
                 has_existing = bool(self.devices)
             if self.is_logged_in and has_existing:
                 # Do not discard the existing session because of a failed re-
                 # login (session protection, see above).
-                log.warning("Re-Login fehlgeschlagen – bestehende Sitzung bleibt aktiv")
+                log.warning("Re-login failed - the existing session stays active")
             else:
                 self.is_logged_in = False
         finally:
@@ -888,19 +907,19 @@ class GlobalPlugin(_CredentialsMixin, _SchedulerMixin, _ChangeDetectionMixin,
     @scriptHandler.script(
         # Translators: Description of the script in the NVDA input gestures
         # dialog.
-        description=_("Öffnet das Smart Home Control Menü"),
+        description=_("Opens the Smart Home Control menu"),
         gesture="kb:NVDA+shift+h",
     )
     def script_openSmartMenu(self, gesture):
         """Opens the main menu with the device controls"""
         
         if self.is_loading:
-            ui.message(_("Anmeldung läuft..."))
+            ui.message(_("Login in progress..."))
             return
         
         if not self.is_logged_in:
             # Not logged in yet - open the settings
-            ui.message(_("Nicht angemeldet – öffne Einstellungen"))
+            ui.message(_("Not logged in – opening settings"))
             wx.CallAfter(self._show_settings)
             return
         
@@ -909,16 +928,16 @@ class GlobalPlugin(_CredentialsMixin, _SchedulerMixin, _ChangeDetectionMixin,
     
     def _show_device_dialog(self):
         """Shows the device control dialog"""
-        ui.message(_("Öffne Geräteübersicht..."))
+        ui.message(_("Opening device overview..."))
         gui.mainFrame.prePopup()
         dlg = SmartHomeControlDialog(gui.mainFrame, self)
         self._active_dialog = dlg  # store the reference for live updates
         # Trigger an immediate poll at the foreground rate so external changes
         # (Levoit app or physical controls) arrive in the dialog quickly. The
         # scheduler detects the open dialog itself and polls at the shorter
-        # foreground interval from now on. request_immediate_poll() weckt den
-        # Scheduler zusätzlich auf - er schläft bis zur nächsten fälligen
-        # Abfrage und würde das Flag sonst erst verzögert sehen.
+        # foreground interval from now on. request_immediate_poll() also
+        # wakes the scheduler: it sleeps until the next due poll and would
+        # otherwise see the flag only with a delay.
         self.request_immediate_poll()
         try:
             dlg.ShowModal()
@@ -953,7 +972,7 @@ class GlobalPlugin(_CredentialsMixin, _SchedulerMixin, _ChangeDetectionMixin,
     @scriptHandler.script(
         # Translators: Description of the script in the NVDA input gestures
         # dialog.
-        description=_("Öffnet die Smart Home Einstellungen")
+        description=_("Opens the Smart Home settings")
     )
     def script_openSettings(self, gesture):
         """Opens the settings dialog"""
@@ -962,33 +981,38 @@ class GlobalPlugin(_CredentialsMixin, _SchedulerMixin, _ChangeDetectionMixin,
     @scriptHandler.script(
         # Translators: Description of the script in the NVDA input gestures
         # dialog. No default gesture - the user assigns one if needed.
-        description=_("Sagt den Energieverbrauch der Messsteckdosen an (heute und letzte 7 Tage)")
+        description=_("Announces the energy consumption of the metering plugs "
+                      "(today and last 7 days)")
     )
     def script_announceEnergy(self, gesture):
         """Announces today's and last week's energy per metering plug.
 
-        Bevorzugte Quelle ist der GERÄTE-eigene Verbrauchszähler
-        (consumptionX): Der zählt auch weiter, wenn NVDA nicht läuft.
-        Nur wenn ein Gerät diese Abfrage nicht unterstützt, kommen die im
-        Hintergrund gesammelten Leistungs-Stichproben zum Einsatz - dann
-        als "geschätzt" gekennzeichnet, weil sie nur die NVDA-Laufzeit
-        abdecken.
+        The preferred source is the DEVICE's own consumption counter
+        (consumptionX), which keeps counting while NVDA is not running. Only
+        if a device does not support that query are the power samples
+        collected in the background used - marked as "estimated", because
+        they only cover NVDA's runtime.
         """
         # Translators: Announced while the energy data is being fetched.
-        ui.message(_("Energiedaten werden abgerufen..."))
+        ui.message(_("Fetching energy data..."))
 
         def task():
             parts = []
             covered_uuids = set()
-            # 1. Geräte-Zähler (vollständig, unabhängig von NVDA-Laufzeit).
-            # get_daily_consumption ist cloud-schonend gecacht (15 min TTL) -
-            # wiederholte Ansagen kosten keine zusätzlichen Cloud-Nachrichten.
+            # 1. Device counter (complete, independent of NVDA's runtime).
+            # get_daily_consumption is cached gently (15 min TTL), so
+            # repeated announcements cost no extra cloud messages.
             if self.api and self.use_meross:
                 with self._devices_lock:
                     meters = [d for d in self.devices
                               if getattr(d, 'has_power_meter', False)]
+                # One bulk query instead of one blocking call per plug: the
+                # single-device variant paid the queueing time on the event
+                # loop again for every plug, so with several meters the later
+                # ones ran into the timeout and were missing from the report.
+                bulk = self.api.get_daily_consumption_bulk([d.uuid for d in meters])
                 for dev in meters:
-                    data = self.api.get_daily_consumption(dev.uuid)
+                    data = bulk.get(dev.uuid)
                     if not data:
                         continue
                     kwh_today, kwh_week = self.api.summarize_daily_consumption(data)
@@ -1001,8 +1025,9 @@ class GlobalPlugin(_CredentialsMixin, _SchedulerMixin, _ChangeDetectionMixin,
                         # meter. {name} = device, {today}/{week} = kWh,
                         # {watt} = current watts.
                         parts.append(_(
-                            "{name}: heute {today} Kilowattstunden, letzte 7 Tage "
-                            "{week} Kilowattstunden, aktuell {watt} Watt").format(
+                            "{name}: today {today} kilowatt hours, last 7 "
+                            "days {week} kilowatt hours, currently {watt} "
+                            "watts").format(
                             name=dev.name,
                             today=f"{kwh_today:.2f}".replace(".", ","),
                             week=f"{kwh_week:.2f}".replace(".", ","),
@@ -1011,12 +1036,12 @@ class GlobalPlugin(_CredentialsMixin, _SchedulerMixin, _ChangeDetectionMixin,
                         # Translators: Energy summary from the device's own
                         # meter without a current power value.
                         parts.append(_(
-                            "{name}: heute {today} Kilowattstunden, letzte 7 Tage "
-                            "{week} Kilowattstunden").format(
+                            "{name}: today {today} kilowatt hours, last 7 "
+                            "days {week} kilowatt hours").format(
                             name=dev.name,
                             today=f"{kwh_today:.2f}".replace(".", ","),
                             week=f"{kwh_week:.2f}".replace(".", ",")))
-            # 2. Fallback: gesammelte Stichproben für Geräte ohne Zähler-Antwort
+            # 2. Fallback: collected samples for devices without a counter
             try:
                 from .energy import get_energy_log
                 for uuid, name, kwh_today, kwh_week, last_watt in get_energy_log().summary():
@@ -1025,38 +1050,56 @@ class GlobalPlugin(_CredentialsMixin, _SchedulerMixin, _ChangeDetectionMixin,
                     # Translators: Energy summary estimated from background
                     # samples (only covers the time NVDA was running).
                     parts.append(_(
-                        "{name}: heute {today} Kilowattstunden, letzte 7 Tage "
-                        "{week} Kilowattstunden, aktuell {watt} Watt "
-                        "(geschätzt, erfasst nur solange NVDA lief)").format(
+                        "{name}: today {today} kilowatt hours, last 7 days "
+                        "{week} kilowatt hours, currently {watt} watts "
+                        "(estimated, only recorded while NVDA was running)").format(
                         name=name,
                         today=f"{kwh_today:.2f}".replace(".", ","),
                         week=f"{kwh_week:.2f}".replace(".", ","),
                         watt=f"{last_watt:g}".replace(".", ",")))
             except Exception as e:
-                log.debug(f"Energie-Fallback fehlgeschlagen: {e}")
+                log.debug(f"Energy fallback failed: {e}")
             if not parts:
                 # Translators: Message when no energy data is available.
-                parts.append(_("Keine Energiedaten verfügbar. Messsteckdosen "
-                               "müssen verbunden sein."))
+                parts.append(_("No energy data available. Metering plugs must "
+                               "be connected."))
             else:
-                # Alphabetisch nach Gerätename (jeder Eintrag beginnt mit dem
-                # Namen) - gleiche Ordnung wie beim Übersichts-Befehl.
+                # Alphabetically by device name (every entry starts with
+                # it) - the same order as the overview command.
                 parts.sort(key=str.casefold)
             wx.CallAfter(ui.message, "; ".join(parts))
 
         threading.Thread(target=task, daemon=True).start()
 
+    def _on_netatmo_tokens_renewed(self, tokens):
+        """Takes over tokens renewed by NetatmoAPI and persists them.
+
+        Runs on whichever thread triggered the refresh (usually the
+        scheduler), so it only touches the config - no UI.
+        """
+        if tokens.get('access_token') == self.netatmo_access_token and \
+                tokens.get('token_expiry') == self.netatmo_token_expiry:
+            return
+        self.netatmo_access_token = tokens.get('access_token', '')
+        self.netatmo_refresh_token = tokens.get('refresh_token', '')
+        self.netatmo_token_expiry = tokens.get('token_expiry', 0)
+        try:
+            self.save_settings()
+        except Exception as e:
+            log.debug(f"Could not save the renewed Netatmo tokens: {e}")
+
     @scriptHandler.script(
         # Translators: Description of the script in the NVDA input gestures
         # dialog. No default gesture - the user assigns one if needed.
-        description=_("Verbindungsdiagnose: Status aller Smart Home Plattformen ansagen")
+        description=_("Connection diagnostics: announce the status of all "
+                      "smart home platforms")
     )
     def script_connectionDiagnostics(self, gesture):
         """Announces per-platform connection state, network state and token info."""
         parts = []
         if not self.is_logged_in:
             # Translators: Diagnostics: not logged in at all.
-            parts.append(_("Nicht angemeldet"))
+            parts.append(_("Not logged in"))
         platform_states = (
             ('Meross', self.use_meross, self._meross_connected),
             ('Netatmo', self.use_netatmo, self._netatmo_connected),
@@ -1068,149 +1111,159 @@ class GlobalPlugin(_CredentialsMixin, _SchedulerMixin, _ChangeDetectionMixin,
                 continue
             if connected is True:
                 # Translators: Diagnostics: platform is connected.
-                state = _("verbunden")
+                state = _("connected")
             elif connected is False:
                 # Translators: Diagnostics: platform is disconnected.
-                state = _("getrennt")
+                state = _("disconnected")
             else:
                 # Translators: Diagnostics: platform has not polled yet.
-                state = _("noch keine Abfrage")
+                state = _("not polled yet")
             parts.append(f"{label}: {state}")
         if self._network_offline:
             # Translators: Diagnostics: network considered offline.
-            parts.append(_("Netzwerk: offline (Fehlversuche: {count})").format(
+            parts.append(_("Network: offline (failed attempts: {count})").format(
                 count=self._consecutive_refresh_failures))
-        if self.use_netatmo and self.netatmo_token_expiry:
-            remaining = int(self.netatmo_token_expiry - time.time())
-            if remaining > 0:
-                # Translators: Diagnostics: Netatmo token remaining lifetime.
-                parts.append(_("Netatmo-Token: noch {minutes} Minuten gültig").format(
-                    minutes=remaining // 60))
-            else:
-                # Translators: Diagnostics: Netatmo token expired (auto-renewal
-                # happens on the next request).
-                parts.append(_("Netatmo-Token: abgelaufen, wird bei nächster "
-                               "Abfrage erneuert"))
+        if self.use_netatmo:
+            # Read the LIVE value from the API object: it renews the token
+            # itself roughly every three hours. The plugin's own copy is only
+            # the last persisted state and used to be frozen at login time -
+            # which is why this line kept claiming "expired" forever.
+            api = self.netatmo_api
+            expiry = getattr(api, 'token_expiry', 0) if api else self.netatmo_token_expiry
+            has_refresh = bool(getattr(api, 'refresh_token', None)) if api \
+                else bool(self.netatmo_refresh_token)
+            if not has_refresh:
+                # Netatmo discarded the tokens (see _refresh_access_token_locked);
+                # no request can renew them - only a new authorization can.
+                parts.append(_("Netatmo login is no longer valid. Please "
+                               "reconnect in the settings."))
+            elif expiry:
+                remaining = int(expiry - time.time())
+                if remaining > 0:
+                    # Translators: Diagnostics: Netatmo token remaining lifetime.
+                    parts.append(_("Netatmo token: valid for another "
+                                   "{minutes} minutes").format(
+                        minutes=remaining // 60))
+                else:
+                    # Translators: Diagnostics: Netatmo token expired (auto-renewal
+                    # happens on the next request).
+                    parts.append(_("Netatmo token: expired, will be renewed "
+                                   "on the next request"))
         if self._last_refresh_time:
             age = int(time.time() - self._last_refresh_time)
             # Translators: Diagnostics: seconds since the last successful
             # Meross refresh.
-            parts.append(_("Letzte Meross-Aktualisierung vor {seconds} Sekunden").format(
+            parts.append(_("Last Meross refresh {seconds} seconds ago").format(
                 seconds=age))
         if not parts:
             # Translators: Diagnostics: no platform is enabled.
-            parts.append(_("Keine Plattform aktiviert"))
+            parts.append(_("No platform enabled"))
         ui.message("; ".join(parts))
 
     # ------------------------------------------------------------------
-    # Favoriten-Ebene: EIN frei belegbarer Befehl statt 18 einzeln zu
-    # belegender.
+    # Favorites layer: ONE assignable command instead of 18 to assign
+    # individually.
     #
-    # Ablauf: Geste -> Ansage "Favoriten" -> nächste Ziffer 1-9 sagt den
-    # Status des Favoriten mit diesem festen Platz an. Dieselbe Ziffer
-    # zweimal kurz hintereinander schaltet ihn (Fenster = NVDA-Einstellung
-    # "multiPressTimeout", wie bei NVDAs eigenen Doppeldruck-Befehlen).
-    # 0 liest die Belegung vor, Escape bricht ab.
+    # Flow: gesture -> announcement -> digit 1-9 announces the status of the
+    # favorite in that fixed slot. The layer stays open; pressing the SAME
+    # digit again then switches. 0 reads out the assignment, Escape and any
+    # other key end the layer, as does the idle timeout.
     #
-    # Die Aufteilung ist Absicht: die harmlose Auskunft kommt sofort und
-    # ohne Umweg, das folgenreiche Schalten verlangt den bewussten zweiten
-    # Druck. Ein Vertippen sagt also nur etwas an, statt ein Gerät zu
-    # schalten.
+    # The split is deliberate: the harmless information comes at once, while
+    # the consequential switching needs the deliberate second press. A typo
+    # therefore only announces something instead of switching a device.
     #
-    # Technik: inputCore.manager._captureFunc fängt die nächste Eingabe ab,
-    # bevor NVDA sie als Befehl auflöst; False als Rückgabe schluckt die
-    # Taste, damit sie nicht in die fokussierte Anwendung durchrutscht.
-    # Dasselbe Muster nutzt z.B. der SPL Assistant (StationPlaylist).
+    # Mechanics: inputCore.manager._captureFunc intercepts the next input
+    # before NVDA resolves it as a command; returning False swallows the key
+    # so it does not slip through to the focused application. The SPL
+    # Assistant (StationPlaylist) uses the same pattern.
     # ------------------------------------------------------------------
-    _FAV_LAYER_IDLE_MS = 15000  # Sicherheitsnetz: Ebene ohne Eingabe beenden
+    _FAV_LAYER_IDLE_MS = 15000  # safety net: end the layer without input
 
     @scriptHandler.script(
         # Translators: Description of the favorites layer script in the
         # NVDA input gestures dialog.
-        # Kurz halten: Der Dialog Tastenbefehle zeigt eine Liste, in der
-        # jeder Eintrag am Stück vorgelesen wird. Details stehen im
-        # Handbuch und sagt in der Ebene die Taste 0 an.
-        description=_("Favorit per Ziffer wählen (einmal drücken sagt den "
-                      "Status an, zweimal drücken schaltet)"),
-        # BEWUSST OHNE Standard-Belegung - wie alle frei belegbaren Befehle
-        # dieser Erweiterung. Eine mitgelieferte Vorgabe kann man nicht
-        # verlässlich kollisionsfrei wählen: NVDAs eigene Quelltexte sind nur
-        # die halbe Wahrheit, dazu kommen Tastaturlayout (Desktop/Laptop),
-        # andere Add-ons und eigene Zuweisungen des Nutzers. Ein Kürzel, das
-        # eine bestehende Belegung überschreibt, ist schlimmer als gar keins.
-        # Der Nutzer vergibt es unter NVDA-Menü -> Optionen -> Tastenbefehle
-        # -> Kategorie "Smart Home Control".
+        # Keep it short: the input gestures dialog shows a list in which
+        # every entry is read out in one go. Details are in the manual and
+        # are announced in the layer by key 0.
+        description=_("Choose a favorite by digit (a digit announces its "
+                      "status, the same digit again toggles it)"),
+        # DELIBERATELY without a default gesture - like every assignable
+        # command of this add-on. A shipped default cannot be chosen free of
+        # collisions with any confidence: NVDA's own sources are only half
+        # the truth, plus keyboard layout (desktop/laptop), other add-ons and
+        # the user's own assignments. A shortcut that overrides an existing
+        # binding is worse than none. It is assigned under NVDA menu ->
+        # Preferences -> Input gestures -> category "Smart Home Control".
     )
     def script_favoritesLayer(self, gesture):
-        """Öffnet die Favoriten-Ebene (nächste Ziffer wählt den Favoriten)."""
+        """Opens the favorites layer (the next digit picks the favorite)."""
         if not self.is_logged_in:
-            ui.message(_("Nicht angemeldet"))
+            ui.message(_("Not logged in"))
             return
         from .favorites import get_favorites
         if not get_favorites().get_count():
-            # Translators (bestehende msgid aus dem Favoriten-Tab)
-            ui.message(_("Noch keine Favoriten – im Geräte-Tab mit Strg+B hinzufügen"))
+            # Translators (existing msgid from the favorites tab)
+            ui.message(_("No favorites yet – add them in the devices tab with "
+                         "Ctrl+B"))
             return
         self._fav_layer_active = True
-        self._fav_layer_pending = None  # (Platz, wx.CallLater) während des Doppeldruck-Fensters
+        # last chosen digit; pressing it again switches
+        self._fav_layer_last_digit = None
         inputCore.manager._captureFunc = self._fav_layer_capture
         self._fav_layer_watchdog = wx.CallLater(
             self._FAV_LAYER_IDLE_MS, self._fav_layer_idle_timeout)
         _beep(BEEP_ACTION)
-        # "Favoriten" allein war irreführend - es klang nach einer
-        # erledigten Aktion statt nach einer Rückfrage. Der Text sagt
-        # jetzt, dass die Erweiterung wartet und was sie erwartet.
+        # "Favorites" alone was misleading - it sounded like a completed
+        # action instead of a prompt. The text now says that the add-on is
+        # waiting and what it expects.
         # Translators: Announced when the favorites layer opens and waits
         # for a digit. Keep it short - it is spoken on every use.
-        ui.message(_("Favorit wählen: Ziffer 1 bis 9"))
+        ui.message(_("Choose a favorite: digit 1 to 9"))
 
     def _fav_layer_exit(self):
-        """Verlässt die Ebene und räumt Abfang-Funktion und Timer ab."""
+        """Leaves the layer and tears down capture function and timer."""
         self._fav_layer_active = False
         if inputCore.manager._captureFunc == self._fav_layer_capture:
             inputCore.manager._captureFunc = None
-        # getattr: terminate() ruft auch auf, wenn die Ebene nie offen war
-        pending = getattr(self, '_fav_layer_pending', None)
-        self._fav_layer_pending = None
-        if pending:
-            pending[1].Stop()
+        self._fav_layer_last_digit = None
+        # getattr: terminate() also calls this if the layer was never open
         watchdog = getattr(self, '_fav_layer_watchdog', None)
         self._fav_layer_watchdog = None
         if watchdog:
             watchdog.Stop()
 
     def _fav_layer_capture(self, gesture):
-        """Wertet die nächste Eingabe innerhalb der Ebene aus.
+        """Evaluates the next input inside the layer.
 
-        ACHTUNG - LÄUFT AUF NVDAs EINGABE-THREAD, NICHT im wx-Hauptthread:
-        inputCore ruft die Abfang-Funktion direkt aus ``executeGesture``
-        auf. wx-Timer dürfen dort nicht angefasst werden; ``Start()`` wirft
-        sonst "wxAssertionError: timer can only be started from the main
-        thread" und inputCore schaltet die Abfang-Funktion daraufhin ab -
-        die Ebene wäre mitten in der Bedienung tot.
+        CAUTION - RUNS ON NVDA's INPUT THREAD, not on the wx main thread:
+        inputCore calls the capture function straight from ``executeGesture``.
+        wx timers must not be touched there; ``Start()`` would raise
+        "wxAssertionError: timer can only be started from the main thread"
+        and inputCore would then disable the capture function - leaving the
+        layer dead in the middle of use.
 
-        Deshalb entscheidet diese Funktion nur das, was sie SOFORT
-        entscheiden muss - ob die Taste geschluckt wird - und schiebt jede
-        weitere Arbeit per ``wx.CallAfter`` (thread-sicher) in den
-        Hauptthread. Angenehmer Nebeneffekt: der gesamte Zustand der Ebene
-        wird damit ausschließlich im Hauptthread verändert, Sperren sind
-        nicht nötig.
+        This function therefore only decides what it must decide AT ONCE -
+        whether the key is swallowed - and defers all further work to the
+        main thread via ``wx.CallAfter`` (thread-safe). Pleasant side effect:
+        the layer's whole state is thus only ever changed on the main thread,
+        so no locks are needed.
 
-        Rückgabe False schluckt die Geste (inputCore bricht die
-        Verarbeitung ab), True lässt sie normal weiterlaufen.
+        Returning False swallows the gesture (inputCore aborts processing),
+        True lets it continue normally.
         """
         try:
-            # Modifier-Tasten (Umschalt, NVDA, ...) durchlassen und in der
-            # Ebene bleiben - sie kommen als eigene "Gesten" an.
+            # Let modifier keys (shift, NVDA, ...) through and stay in the
+            # layer - they arrive as gestures of their own.
             if getattr(gesture, 'isModifier', False):
                 return True
             if not isinstance(gesture, KeyboardInputGesture):
-                # Braille-/Touch-Eingabe o.ä.: Ebene beenden, normal
-                # weiterreichen.
+                # Braille/touch input and the like: end the layer and pass
+                # it on normally.
                 wx.CallAfter(self._fav_layer_exit)
                 return True
             key = gesture.mainKeyName
-            # Nummernblock-Ziffern gleichbehandeln (Desktop-Layout)
+            # Treat numpad digits the same (desktop layout)
             if key.startswith('numpad') and key[6:].isdigit():
                 key = key[6:]
             if key == 'escape':
@@ -1222,92 +1275,75 @@ class GlobalPlugin(_CredentialsMixin, _SchedulerMixin, _ChangeDetectionMixin,
             if len(key) == 1 and key.isdigit():  # '1'..'9'
                 wx.CallAfter(self._fav_layer_digit, int(key))
                 return False
-            # Jede andere Taste: Ebene beenden, Fehlerton. Die Taste wird
-            # geschluckt, damit z.B. kein Buchstabe in ein Eingabefeld der
-            # fokussierten Anwendung rutscht.
+            # Any other key: end the layer, error tone. The key is
+            # swallowed so no letter slips into an input field of the
+            # focused application.
             wx.CallAfter(self._fav_layer_reject)
             return False
         except Exception:
-            # inputCore würde die Abfang-Funktion bei einer Ausnahme selbst
-            # deaktivieren - unsere Timer/Flags müssen trotzdem weg.
+            # inputCore would disable the capture function itself on an
+            # exception - our timers/flags still have to go.
             wx.CallAfter(self._fav_layer_exit)
             raise
 
     def _fav_layer_cancel(self):
-        """Escape: Ebene verlassen und das ansagen (im Hauptthread)."""
+        """Escape: leave the layer and announce it (on the main thread)."""
         if not getattr(self, '_fav_layer_active', False):
             return
         self._fav_layer_exit()
-        ui.message(_("Abgebrochen"))
+        ui.message(_("Cancelled"))
 
     def _fav_layer_reject(self):
-        """Unerwartete Taste: Ebene verlassen, Fehlerton (im Hauptthread)."""
+        """Unexpected key: leave the layer, error tone (on the main thread)."""
         if not getattr(self, '_fav_layer_active', False):
             return
         self._fav_layer_exit()
         _beep(BEEP_ERROR)
 
     def _fav_layer_digit(self, number):
-        """Ziffer 1-9 in der Ebene: Status ansagen, bei Doppeldruck schalten.
+        """Digit 1-9 in the layer: announce the status, switch on a repeat.
 
-        Einmal drücken ist die harmlose Auskunft und passiert SOFORT -
-        dasselbe Muster wie NVDAs eigene Doppeldruck-Befehle (NVDA+T sagt
-        den Titel sofort, zweimal buchstabiert ihn). Das folgenreiche
-        Schalten verlangt bewusst den zweiten Druck; es gibt deshalb auch
-        keine Rücknahme-Frist mehr - der Doppeldruck IST die Bestätigung.
+        The second press is deliberately NOT bound to NVDA's short
+        double-press window. That is exactly where the first version failed
+        in practice: press the digit, listen to the status - and while it is
+        spoken (a good second) the half-second window expires. Switching was
+        effectively unreachable. Unlike NVDA's own double-press commands you
+        do not even know beforehand whether you want to switch; you decide
+        that only after hearing the status.
 
-        Läuft immer im wx-Hauptthread (per CallAfter aus der
-        Abfang-Funktion) - nur dort dürfen die Timer angefasst werden.
+        The layer therefore stays open until Escape, another key or the idle
+        timeout ends it. While it is open, pressing the SAME digit again
+        switches. Another digit announces its status and becomes the
+        remembered one, so "1, 2, 1" switches nothing.
+
+        Always runs on the wx main thread (via CallAfter from the capture
+        function) - only there may the timers be touched.
         """
         if not getattr(self, '_fav_layer_active', False):
-            return  # Ebene wurde zwischenzeitlich verlassen
+            return  # the layer was left in the meantime
         watchdog = getattr(self, '_fav_layer_watchdog', None)
         if watchdog:
             watchdog.Start(self._FAV_LAYER_IDLE_MS)
 
-        pending = self._fav_layer_pending
-        if pending and pending[0] == number:
-            # Zweiter Druck derselben Ziffer: schalten. Die laufende
-            # Status-Ansage wird dabei von der Schalt-Rückmeldung abgelöst.
-            pending[1].Stop()
-            self._fav_layer_pending = None
+        if getattr(self, '_fav_layer_last_digit', None) == number:
+            # Same digit pressed again: switch and end the layer.
             self._fav_layer_exit()
             self._favorite_toggle(number)
             return
-        if pending:
-            # Andere Ziffer: das Doppeldruck-Fenster der vorherigen gilt
-            # nicht mehr (sonst schaltete "1, 2, 1" versehentlich Favorit 1).
-            pending[1].Stop()
-            self._fav_layer_pending = None
 
         from .favorites import get_favorites
         if get_favorites().get_by_slot(number) is None:
+            self._fav_layer_last_digit = None
             # Translators (bestehende msgid)
-            ui.message(_("Favorit {number} ist nicht belegt").format(number=number))
-            return  # in der Ebene bleiben - der Nutzer kann neu wählen
-        # Erster Druck: Status sofort ansagen, dann auf einen möglichen
-        # zweiten Druck warten.
+            ui.message(_("Favorite {number} is not assigned").format(number=number))
+            return  # stay in the layer - another digit can be chosen
+        self._fav_layer_last_digit = number
         self._favorite_status(number)
-        timer = wx.CallLater(
-            int(config.conf["keyboard"]["multiPressTimeout"]),
-            self._fav_layer_window_expired)
-        self._fav_layer_pending = (number, timer)
-
-    def _fav_layer_window_expired(self):
-        """Kein zweiter Druck: Der Status ist angesagt, die Ebene endet.
-
-        Bewusst ohne Ton oder Ansage - die Auskunft war die Aktion, ein
-        zusätzliches "Ebene beendet" wäre nur Lärm.
-        """
-        if not getattr(self, '_fav_layer_active', False):
-            return  # bereits verlassen (Escape, andere Taste, Beenden)
-        self._fav_layer_pending = None
-        self._fav_layer_exit()
 
     def _fav_layer_announce_overview(self):
-        """Sagt an, welche Ziffer welchen Favoriten schaltet (Taste 0).
+        """Announces which digit switches which favorite (key 0).
 
-        Läuft im wx-Hauptthread (per CallAfter aus der Abfang-Funktion).
+        Runs on the wx main thread (via CallAfter from the capture function).
         """
         if not getattr(self, '_fav_layer_active', False):
             return
@@ -1323,28 +1359,27 @@ class GlobalPlugin(_CredentialsMixin, _SchedulerMixin, _ChangeDetectionMixin,
                 parts.append(f"{n}: {fav.get('name', '')}")
         # Translators: Usage hint at the end of the favorites layer
         # overview (announced after pressing 0 in the layer).
-        parts.append(_("Ziffer sagt den Status an, zweimal drücken schaltet, "
-                       "Escape bricht ab"))
+        parts.append(_("A digit announces the status, the same digit again "
+                       "toggles, Escape cancels"))
         ui.message(". ".join(parts))
 
     def _fav_layer_idle_timeout(self):
-        """Sicherheitsnetz: Ebene nach längerer Untätigkeit beenden.
+        """Safety net: end the layer after a longer idle period.
 
-        Ohne dieses Netz bliebe die Abfang-Funktion beliebig lange aktiv
-        und würde Minuten später einen völlig zusammenhanglosen
-        Tastendruck verschlucken.
+        Without it the capture function would stay active indefinitely and
+        swallow a completely unrelated key press minutes later.
         """
         if not getattr(self, '_fav_layer_active', False):
             return
         self._fav_layer_exit()
-        ui.message(_("Abgebrochen"))
+        ui.message(_("Cancelled"))
 
     def _get_favorite_device(self, number):
-        """Liefert (favorit, device) für den Ebenen-Platz ``number`` (1-9).
+        """Returns (favorite, device) for layer slot ``number`` (1-9).
 
-        device kann None sein (z.B. noch nicht geladen/offline entfernt).
-        Der Platz ist die feste, in der Favoriten-Datei gespeicherte Nummer
-        des Geräts (favorites._assign_slots) - nicht seine Listenposition.
+        device can be None (not loaded yet, removed while offline, ...). The
+        slot is the device's fixed number stored in the favorites file
+        (favorites._assign_slots), not its position in the list.
         """
         from .favorites import get_favorites
         fav = get_favorites().get_by_slot(number)
@@ -1361,128 +1396,181 @@ class GlobalPlugin(_CredentialsMixin, _SchedulerMixin, _ChangeDetectionMixin,
         return fav, None
 
     def _favorite_toggle(self, number):
-        """Schaltet Favorit Nr. ``number`` um (für die Direktgesten)."""
+        """Toggles favorite no. ``number`` (for the direct gestures)."""
         if not self.is_logged_in:
-            ui.message(_("Nicht angemeldet"))
+            ui.message(_("Not logged in"))
             return
         fav, device = self._get_favorite_device(number)
         if fav is None:
             # Translators: Message when the favorite slot is empty.
-            ui.message(_("Favorit {number} ist nicht belegt").format(number=number))
+            ui.message(_("Favorite {number} is not assigned").format(number=number))
             return
         if device is None:
             # Translators: Message when the favorite's device is not loaded.
-            ui.message(_("{name}: Gerät nicht verfügbar").format(
+            ui.message(_("{name}: device not available").format(
                 name=fav.get('name', '?')))
             return
         if getattr(device, 'is_netatmo', False) or getattr(device, 'is_sensor', False):
-            # Nicht schaltbare Geräte: Sensoren (Meross MS100/MS400 ...) und
-            # alle Netatmo-Geräte - Thermostate lassen sich zwar verstellen,
-            # aber nicht ein-/ausschalten; Wetterstationen sind reine Anzeige.
-            # Früher sagte dieser Zweig einfach nochmal den Status an. Nach
-            # dem Doppeldruck wirkte das, als sei nichts passiert. Jetzt
-            # nennt die Ansage den Grund; der Status kam beim ersten Druck
-            # ohnehin schon.
+            # Devices that cannot be switched: sensors (Meross MS100/MS400
+            # ...) and all Netatmo devices - thermostats can be adjusted but
+            # not switched on/off, weather stations only display. This branch
+            # used to simply announce the status again, which after the
+            # second press looked as if nothing had happened. The
+            # announcement now names the reason; the status already came with
+            # the first press.
             _beep(BEEP_ERROR)
             # Translators: Message when the user tries to switch a device
             # that cannot be switched on/off (sensors, Netatmo devices).
-            ui.message(_("{name}: nicht schaltbar – im Geräte-Menü einstellbar").format(
+            ui.message(_("{name}: cannot be switched – adjustable in the "
+                         "device menu").format(
                 name=device.name))
+            return
+        if getattr(device, 'is_offline', False):
+            # Without this check the attempt would go to the cloud and come
+            # back as a "switching error" - correct but uninformative. The
+            # reason is known, so it is named (same wording as in the device
+            # menu).
+            _beep(BEEP_ERROR)
+            # Translators: Message when the device is offline.
+            ui.message(_("{name}: offline").format(name=device.name))
             return
 
         def task():
             try:
                 result = self.toggle_device(device.uuid)
-                _beep(BEEP_SUCCESS)
+                # Pitch as in the device menu: high = switched on, low =
+                # switched off. The same success tone used to play in both
+                # directions here, so the sound did not tell which way it
+                # went - unlike in the dialog. The state is read from the
+                # device after switching, not guessed from the return
+                # value.
+                _beep(BEEP_ON if getattr(device, 'is_on', False) else BEEP_OFF)
                 wx.CallAfter(ui.message, result)
             except Exception as e:
                 _beep(BEEP_ERROR)
-                _safe_log_error("Favoriten-Toggle fehlgeschlagen", e)
+                _safe_log_error("Favorite toggle failed", e)
                 # Translators: Error message when toggling a favorite fails.
-                wx.CallAfter(ui.message, _("Schalten fehlgeschlagen: {error}").format(
+                wx.CallAfter(ui.message, _("Switching failed: {error}").format(
                     error=str(e)[:80]))
         threading.Thread(target=task, daemon=True).start()
 
     def _favorite_status(self, number):
-        """Sagt den Status von Favorit Nr. ``number`` an."""
+        """Announces the status of favorite no. ``number``."""
         if not self.is_logged_in:
-            ui.message(_("Nicht angemeldet"))
+            ui.message(_("Not logged in"))
             return
         fav, device = self._get_favorite_device(number)
         if fav is None:
-            ui.message(_("Favorit {number} ist nicht belegt").format(number=number))
+            ui.message(_("Favorite {number} is not assigned").format(number=number))
             return
         if device is None:
-            ui.message(_("{name}: Gerät nicht verfügbar").format(
+            ui.message(_("{name}: device not available").format(
                 name=fav.get('name', '?')))
             return
         parts = [device.name]
         if getattr(device, 'is_offline', False):
             # Translators: Status announcement for an offline device.
             parts.append(_("offline"))
-        elif getattr(device, 'is_netatmo', False) and hasattr(device, 'get_status_summary'):
+        elif hasattr(device, 'get_status_summary'):
+            # Netatmo, VeSync and Cozytouch bring their full summary
+            # themselves - the same one the device menu shows. It used to be
+            # used for Netatmo only, so a Levoit purifier just reported "on"
+            # instead of mode, fan level, air quality and filter life, and
+            # the Cozytouch heat pump was missing its current heating
+            # target.
             parts.append(device.get_status_summary())
         else:
+            # Meross has no summary - assemble it here.
+            parts.extend(self._meross_status_parts(device))
+        ui.message(", ".join(str(p) for p in parts if p))
+
+    @staticmethod
+    def _meross_status_parts(device):
+        """Status parts of a Meross device for the favorites announcement.
+
+        Sensors have no on/off: their ``is_on`` is always False, which is why
+        the announcement used to simply say "off" - wrong information for a
+        temperature sensor. They now report their readings.
+        """
+        parts = []
+        if getattr(device, 'is_temperature_sensor', False):
+            temp = device.get_temperature() if hasattr(device, 'get_temperature') else None
+            if temp is not None:
+                parts.append(_("{temp}°C").format(temp=f"{temp:.1f}"))
+            hum = device.get_humidity() if hasattr(device, 'get_humidity') else None
+            if hum is not None:
+                # Translators: Relative humidity in the status announcement.
+                parts.append(_("{value}% humidity").format(value=f"{hum:g}"))
+        elif getattr(device, 'is_water_sensor', False):
+            wet = device.is_water_detected() if hasattr(device, 'is_water_detected') else None
+            if wet is not None:
+                # Translators: Water leak sensor state in the status
+                # announcement.
+                parts.append(_("water detected") if wet else _("dry"))
+        elif getattr(device, 'is_hub', False):
+            # A hub itself has no switchable state.
+            # Translators: Status announcement for a Meross hub (it only
+            # relays its sensors). {count} = number of connected sensors.
+            parts.append(_("hub with {count} sensors").format(
+                count=len(device.get_channels() or [])))
+        else:
             if hasattr(device, 'is_on'):
-                parts.append(_("ein") if device.is_on else _("aus"))
+                parts.append(_("on") if device.is_on else _("off"))
             power = device.get_power() if hasattr(device, 'get_power') else None
             if power is not None:
                 # Translators: Current power draw in the status announcement.
-                parts.append(_("{watt} Watt").format(
+                parts.append(_("{watt} watts").format(
                     watt=f"{power:g}".replace(".", ",")))
-            if getattr(device, 'is_cozytouch', False):
-                tt = device.target_temperature
-                if tt is not None:
-                    # Translators: Target temperature in the status
-                    # announcement.
-                    parts.append(_("Ziel {temp} Grad").format(
-                        temp=f"{tt:g}".replace(".", ",")))
-                parts.append(device.mode_name)
-        ui.message(", ".join(str(p) for p in parts if p))
+        battery = (device.get_battery_percent()
+                   if hasattr(device, 'get_battery_percent') else None)
+        if battery is not None:
+            # Translators: Battery level in the status announcement.
+            parts.append(_("battery {percent}%").format(percent=battery))
+        return parts
 
     @scriptHandler.script(
         # Translators: Description of the script in the NVDA input gestures
         # dialog.
-        description=_("Sagt den Status aller Smart Home Geräte an"),
+        description=_("Announces the status of all smart home devices"),
         gesture="kb:NVDA+control+shift+p",
     )
     def script_announceStatus(self, gesture):
         """Announces the status of all devices - FAST, from the cache"""
         
-        log.debug("script_announceStatus aufgerufen")
+        log.debug("script_announceStatus called")
         
         if not self.is_logged_in:
-            ui.message(_("Nicht angemeldet"))
+            ui.message(_("Not logged in"))
             log.debug("Nicht angemeldet - Abbruch")
             return
         
         # OPTIMIZED: with a fresh cache, announce immediately WITHOUT waiting
-        # (Snapshot unter dem Lock - Konvention aus __init__, Z. 149 ff.)
+        # (snapshot under the lock - convention from __init__, line 149 ff.)
         with self._devices_lock:
             cached_devices = list(self.devices)
         if self.is_cache_fresh() and cached_devices:
-            log.debug(f"Cache frisch - sofortige Ansage von {len(cached_devices)} Geräten")
+            log.debug(f"Cache fresh - announcing {len(cached_devices)} devices immediately")
             # No beep needed - immediate output
             self._announce_devices_status(cached_devices)
             return
         
         # Cache not fresh - short update in the background
-        log.debug("Cache nicht frisch - aktualisiere im Hintergrund")
+        log.debug("Cache not fresh - refreshing in the background")
         
         # Start the periodic beep
         self._start_status_beep()
         
         def task():
             try:
-                log.debug("Starte Statusaktualisierung...")
+                log.debug("Starting status update...")
 
                 # Use the cached devices, only update the status (faster!)
-                # (Leseschnappschuss unter dem Lock)
+                # (read snapshot under the lock)
                 with self._devices_lock:
                     have_devices = bool(self.devices)
                 if not have_devices:
-                    log.debug("Keine gecachten Geräte - hole neue Geräteliste")
-                    wx.CallAfter(ui.message, _("Lade Geräte..."))
+                    log.debug("No cached devices - fetching a new device list")
+                    wx.CallAfter(ui.message, _("Loading devices..."))
                     all_devs = []
                     if self.api and self.use_meross:
                         meross_devs = self.api.get_devices()
@@ -1494,12 +1582,12 @@ class GlobalPlugin(_CredentialsMixin, _SchedulerMixin, _ChangeDetectionMixin,
                         try:
                             all_devs.extend(self.vesync_api.get_devices())
                         except Exception as e:
-                            log.debug(f"VeSync Geräte konnten nicht geladen werden: {e}")
+                            log.debug(f"VeSync devices could not be loaded: {e}")
                     if self.cozytouch_api and self.use_cozytouch:
                         try:
                             all_devs.extend(self.cozytouch_api.get_devices())
                         except Exception as e:
-                            log.debug(f"Cozytouch Geräte konnten nicht geladen werden: {e}")
+                            log.debug(f"Cozytouch devices could not be loaded: {e}")
                     # Assign under the lock - the scheduler thread reads the
                     # same list in parallel (consistent with all other write
                     # sites).
@@ -1507,7 +1595,7 @@ class GlobalPlugin(_CredentialsMixin, _SchedulerMixin, _ChangeDetectionMixin,
                         self.devices = all_devs
                     self._last_refresh_time = time.time()
                 else:
-                    log.debug(f"Verwende {len(self.devices)} gecachte Geräte - aktualisiere nur Status")
+                    log.debug(f"Using {len(self.devices)} cached devices - only updating the status")
                     # Update Meross, VeSync and Cozytouch status (Netatmo has
                     # rate limits)
                     try:
@@ -1521,13 +1609,13 @@ class GlobalPlugin(_CredentialsMixin, _SchedulerMixin, _ChangeDetectionMixin,
                             try:
                                 self.vesync_api.update_device_status(vesync_devs)
                             except Exception as e:
-                                log.debug(f"VeSync Status-Update fehlgeschlagen: {e}")
+                                log.debug(f"VeSync status update failed: {e}")
                         cozytouch_devs = by_platform['cozytouch']
                         if cozytouch_devs and self.cozytouch_api:
                             try:
                                 self.cozytouch_api.update_device_status(cozytouch_devs)
                             except Exception as e:
-                                log.debug(f"Cozytouch Status-Update fehlgeschlagen: {e}")
+                                log.debug(f"Cozytouch status update failed: {e}")
                         self._last_refresh_time = time.time()
                     except TimeoutError:
                         log.warning("Status-Update Timeout - verwende gecachte Daten")
@@ -1536,9 +1624,9 @@ class GlobalPlugin(_CredentialsMixin, _SchedulerMixin, _ChangeDetectionMixin,
                 with self._devices_lock:
                     devs_for_status = list(self.devices)
                 if not devs_for_status:
-                    log.warning("Keine Geräte gefunden")
+                    log.warning("No devices found")
                     self._stop_status_beep()
-                    wx.CallAfter(ui.message, _("Keine Geräte gefunden"))
+                    wx.CallAfter(ui.message, _("No devices found"))
                     return
 
                 # Stop the beep and play the success sound
@@ -1547,16 +1635,16 @@ class GlobalPlugin(_CredentialsMixin, _SchedulerMixin, _ChangeDetectionMixin,
                 wx.CallAfter(self._announce_devices_status, devs_for_status)
 
             except Exception as e:
-                _safe_log_error("Fehler beim Abrufen des Status", e)
+                _safe_log_error("Failed to fetch the status", e)
                 self._stop_status_beep()
                 wx.CallAfter(_beep, BEEP_ERROR)
                 error_msg = str(e)
                 if len(error_msg) > 50:
                     error_msg = error_msg[:50] + "..."
                 # Translators: Generic error message with detail text.
-                wx.CallAfter(ui.message, _("Fehler: {error}").format(error=error_msg))
+                wx.CallAfter(ui.message, _("Error: {error}").format(error=error_msg))
         
-        log.debug("Starte Thread für Statusabfrage")
+        log.debug("Starting the status query thread")
         threading.Thread(target=task, daemon=True).start()
     
     def _announce_devices_status(self, devices):
@@ -1573,18 +1661,18 @@ class GlobalPlugin(_CredentialsMixin, _SchedulerMixin, _ChangeDetectionMixin,
             for name, devs in by_platform.items() if devs
         ]
         # Translators: Placeholder when no devices are listed per platform.
-        detail = ", ".join(parts) if parts else _("keine")
+        detail = ", ".join(parts) if parts else _("none")
         # Translators: Introduction of the status announcement. {count} =
         # total, {detail} = breakdown per platform.
-        msg = _("{count} Geräte ({detail}). ").format(
+        msg = _("{count} devices ({detail}). ").format(
             count=len(sorted_devices),
             detail=detail,
         )
-        log.debug(f"Erstelle Statusnachricht für {len(sorted_devices)} Geräte")
+        log.debug(f"Building the status message for {len(sorted_devices)} devices")
         
         # Translators: Announced when a device currently provides no
         # sensor/status data.
-        no_data = _("Keine Daten")
+        no_data = _("No data")
         # Translators: Announced when a device is currently unreachable.
         offline_text = _("offline")
 
@@ -1625,7 +1713,7 @@ class GlobalPlugin(_CredentialsMixin, _SchedulerMixin, _ChangeDetectionMixin,
                         msg += f"{device.name}: {temp:.1f}°C"
                         if humidity is not None:
                             # Translators: Relative humidity in percent.
-                            msg += _(", {humidity:.1f}% Luftfeuchtigkeit").format(humidity=humidity)
+                            msg += _(", {humidity:.1f}% humidity").format(humidity=humidity)
                         msg += ". "
                     else:
                         msg += f"{device.name}: {no_data}. "
@@ -1635,7 +1723,8 @@ class GlobalPlugin(_CredentialsMixin, _SchedulerMixin, _ChangeDetectionMixin,
                     alarm = device.is_water_detected()
                     # Translators: Meross water sensor: water was detected
                     # (alarm).
-                    status = _("Wasseralarm!") if alarm else _("kein Wasser erkannt")
+                    status = _("Water alarm!") if alarm else _("no water "
+                                                               "detected")
                     msg += f"{device.name}: {status}. "
 
                 # Hub (MSH300, MSH450)
@@ -1656,7 +1745,7 @@ class GlobalPlugin(_CredentialsMixin, _SchedulerMixin, _ChangeDetectionMixin,
 
                 # Normal devices (plugs, lamps)
                 else:
-                    status = _("ein") if device.is_on else _("aus")
+                    status = _("on") if device.is_on else _("off")
                     msg += f"{device.name}: {status}"
 
                     # Power consumption for MSS310/MSS315 (with voltage and
@@ -1670,25 +1759,25 @@ class GlobalPlugin(_CredentialsMixin, _SchedulerMixin, _ChangeDetectionMixin,
                             if power is not None:
                                 # Translators: Current power consumption in
                                 # watts.
-                                msg += _(", {power} Watt").format(power=power)
+                                msg += _(", {power} watts").format(power=power)
                             if voltage is not None:
                                 # Translators: Current voltage in volts.
-                                msg += _(", {voltage} Volt").format(voltage=voltage)
+                                msg += _(", {voltage} volts").format(voltage=voltage)
                             if current is not None:
                                 # Translators: Current amperage in amps.
-                                msg += _(", {current} Ampere").format(current=current)
+                                msg += _(", {current} amps").format(current=current)
                         except Exception as e:
-                            log.debug(f"Strommessung nicht verfügbar für {device.name}: {e}")
+                            log.debug(f"Power metering not available for {device.name}: {e}")
 
                     msg += ". "
 
             except Exception as e:
-                log.warning(f"Fehler beim Abrufen der Daten für {device.name}: {e}")
+                log.warning(f"Failed to fetch the data of {device.name}: {e}")
                 # Translators: Generic fallback when the status query for a
                 # single device fails.
-                msg += f"{device.name}: {_('Fehler')}. "
+                msg += f"{device.name}: {_('Error')}. "
         
-        log.debug(f"Statusnachricht fertig: {msg[:100]}...")
+        log.debug(f"Status message ready: {msg[:100]}...")
         ui.message(msg)
     
     def _start_status_beep(self):
@@ -1710,7 +1799,29 @@ class GlobalPlugin(_CredentialsMixin, _SchedulerMixin, _ChangeDetectionMixin,
         self._status_beep_active = False
     
     def refresh_devices(self):
-        """Refreshes the device list (for the dialog) - status update ONLY, no discovery!"""
+        """Refreshes the device list (for the dialog) - status update ONLY, no discovery!
+
+        Coalesced: if the scheduler (or another caller) is already refreshing,
+        this waits for that pass and returns its result instead of sending the
+        same cloud queries a second time.
+        """
+        if not self._refresh_lock.acquire(blocking=False):
+            log.debug("Refresh already running - waiting for it instead of polling again")
+            self._refresh_lock.acquire()
+            self._refresh_lock.release()
+            with self._devices_lock:
+                return list(self.devices)
+        try:
+            return self._refresh_devices_impl()
+        finally:
+            self._refresh_lock.release()
+
+    def _mark_platform_refreshed(self, name):
+        """Notes that ``name`` was just refreshed (see _platform_last_refresh)."""
+        self._platform_last_refresh[name] = time.time()
+
+    def _refresh_devices_impl(self):
+        """The actual refresh - only called while holding ``_refresh_lock``."""
         try:
             with self._devices_lock:
                 by_platform = split_by_platform(self.devices)
@@ -1722,66 +1833,72 @@ class GlobalPlugin(_CredentialsMixin, _SchedulerMixin, _ChangeDetectionMixin,
             # Update the Meross status
             if self.api and self.is_logged_in and self.use_meross:
                 if meross_devs:
-                    log.debug(f"Aktualisiere Status von {len(meross_devs)} Meross-Geräten...")
+                    log.debug(f"Updating the status of {len(meross_devs)} Meross devices...")
                     self.api.update_device_status(meross_devs)
                 else:
-                    log.debug("Keine Meross-Geräte vorhanden - führe Discovery aus...")
+                    log.debug("No Meross devices present - running a discovery...")
                     meross_devs = self.api.get_devices()
                     self.api.set_wrapped_devices(meross_devs)
+                self._mark_platform_refreshed('meross')
 
             # Update Netatmo (fetch new data)
             if self.netatmo_api and self.use_netatmo:
-                log.debug("Aktualisiere Netatmo-Geräte...")
+                log.debug("Updating the Netatmo devices...")
                 try:
                     netatmo_devs = self.netatmo_api.get_devices()
+                    self._mark_platform_refreshed('netatmo')
                 except Exception as e:
                     # Do not escalate Netatmo errors - use the last known
                     # devices
-                    log.debug(f"Netatmo Refresh fehlgeschlagen: {e}")
+                    log.debug(f"Netatmo refresh failed: {e}")
 
             # Update VeSync (status of the existing devices; discovery if
             # needed)
             if self.vesync_api and self.use_vesync:
                 if vesync_devs:
-                    log.debug(f"Aktualisiere Status von {len(vesync_devs)} VeSync-Geräten...")
+                    log.debug(f"Updating the status of {len(vesync_devs)} VeSync devices...")
                     try:
                         self.vesync_api.update_device_status(vesync_devs)
                         # Update the snapshots (no "external" trigger, since
                         # done at the user's explicit request)
                         for vd in vesync_devs:
                             self._previous_vesync_states[vd.uuid] = self._snapshot_vesync_state(vd)
+                        self._mark_platform_refreshed('vesync')
                     except Exception as e:
-                        log.debug(f"VeSync Status-Refresh fehlgeschlagen: {e}")
+                        log.debug(f"VeSync status refresh failed: {e}")
                 else:
-                    log.debug("Keine VeSync-Geräte vorhanden - führe Discovery aus...")
+                    log.debug("No VeSync devices present - running a discovery...")
                     try:
                         vesync_devs = self.vesync_api.get_devices()
                         for vd in vesync_devs:
                             self._previous_vesync_states[vd.uuid] = self._snapshot_vesync_state(vd)
+                        self._mark_platform_refreshed('vesync')
                     except Exception as e:
-                        log.debug(f"VeSync Discovery fehlgeschlagen: {e}")
+                        log.debug(f"VeSync discovery failed: {e}")
 
             # Update Cozytouch (status of the existing devices; discovery if
             # needed)
             if self.cozytouch_api and self.use_cozytouch:
                 if cozytouch_devs:
-                    log.debug(f"Aktualisiere Status von {len(cozytouch_devs)} Cozytouch-Geräten...")
+                    log.debug(f"Updating the status of {len(cozytouch_devs)} Cozytouch devices...")
                     try:
                         self.cozytouch_api.update_device_status(cozytouch_devs)
                         # Update the snapshots (no "external" trigger, since
                         # done at the user's explicit request)
                         for cd in cozytouch_devs:
                             self._previous_cozytouch_states[cd.uuid] = self._snapshot_cozytouch_state(cd)
+                        self._mark_platform_refreshed('cozytouch')
                     except Exception as e:
-                        log.debug(f"Cozytouch Status-Refresh fehlgeschlagen: {e}")
+                        log.debug(f"Cozytouch status refresh failed: {e}")
                 else:
-                    log.debug("Keine Cozytouch-Geräte vorhanden - führe Discovery aus...")
+                    log.debug("No Cozytouch devices present - running a discovery...")
                     try:
                         cozytouch_devs = self.cozytouch_api.get_devices()
                         for cd in cozytouch_devs:
                             self._previous_cozytouch_states[cd.uuid] = self._snapshot_cozytouch_state(cd)
+                        self._mark_platform_refreshed('cozytouch')
                     except Exception as e:
-                        log.debug(f"Cozytouch Discovery fehlgeschlagen: {e}")
+                        log.debug(f"Cozytouch discovery failed: {e}")
 
             with self._devices_lock:
                 new_list = meross_devs + netatmo_devs + vesync_devs + cozytouch_devs
@@ -1794,33 +1911,35 @@ class GlobalPlugin(_CredentialsMixin, _SchedulerMixin, _ChangeDetectionMixin,
                         new_list.append(d)
                 self.devices = new_list
             self._last_refresh_time = time.time()
-            log.debug(f"Geräte-Refresh abgeschlossen: {len(self.devices)} Geräte")
+            log.debug(f"Device refresh finished: {len(self.devices)} devices")
             return self.devices
         except Exception as e:
-            log.error(f"Fehler beim Aktualisieren der Geräte: {e}")
+            log.error(f"Failed to update the devices: {e}")
             raise
     
     def _log_toggle(self, target, new_state):
-        """Schreibt einen Schaltvorgang in den Verlauf.
+        """Writes a switching action to the history.
 
-        Bewusst hier und nicht in den aufrufenden Oberflächen: toggle_device()
-        ist der gemeinsame Engpass BEIDER Bedienwege (Geräte-Dialog und
-        Favoriten-Direktgesten). Früher protokollierte nur der Dialog - über
-        eine Favoriten-Geste geschaltete Geräte tauchten im Verlauf gar nicht
-        auf, obwohl dasselbe Gerät über das Menü geschaltet dort erschien.
+        Deliberately here and not in the calling interfaces: toggle_device()
+        is the shared bottleneck of BOTH ways of operating (device dialog and
+        favorites gestures). Only the dialog used to log - devices switched
+        via a favorites gesture did not appear in the history at all, while
+        the same device switched from the menu did.
         """
         try:
             from .history import get_history, SOURCE_LOCAL
             get_history().log_action(
                 target,
                 'toggle_on' if new_state else 'toggle_off',
-                # Translators: Detail column of a switch action in the history.
-                _('Ein') if new_state else _('Aus'),
+                # No detail: the action already says on/off. Anything stored
+                # here would be text in the language of the day (see
+                # _detail_is_redundant in history.py).
+                "",
                 source=SOURCE_LOCAL,
             )
         except Exception as e:
-            # Der Verlauf darf das Schalten nie verhindern.
-            log.debug(f"Verlaufseintrag fehlgeschlagen: {e}")
+            # The history must never prevent the switching.
+            log.debug(f"History entry failed: {e}")
 
     def toggle_device(self, device_uuid, channel=None):
         """
@@ -1835,8 +1954,8 @@ class GlobalPlugin(_CredentialsMixin, _SchedulerMixin, _ChangeDetectionMixin,
             # refresh)
             with self._devices_lock:
                 # Check whether it is a channel UUID (format: "uuid_chX").
-                # Nur als Kanal behandeln, wenn nach "_ch" wirklich eine Zahl
-                # folgt - eine Geräte-UUID kann selbst "_ch" enthalten.
+                # Only treat it as a channel if a number really follows
+                # "_ch" - a device UUID can contain "_ch" itself.
                 parts = device_uuid.rsplit("_ch", 1) if channel is None else None
                 if parts and len(parts) == 2 and parts[1].isdigit():
                     parent_uuid = parts[0]
@@ -1848,13 +1967,13 @@ class GlobalPlugin(_CredentialsMixin, _SchedulerMixin, _ChangeDetectionMixin,
             if not device:
                 # Translators: Error message when a device can no longer be
                 # found in the device list via its UUID (e.g. after a reload).
-                raise ValueError(_("Gerät nicht gefunden"))
+                raise ValueError(_("Device not found"))
 
             # VeSync devices: their own toggle logic
             if getattr(device, 'is_vesync', False):
                 new_state = not device.is_on
                 device.toggle_switch(new_state)
-                status = _("ein") if new_state else _("aus")
+                status = _("on") if new_state else _("off")
                 self._record_local_toggle(device_uuid, new_state)
                 # Also mark the local action for the push detection so the next
                 # background refresh does not announce the user's own switching
@@ -1870,8 +1989,8 @@ class GlobalPlugin(_CredentialsMixin, _SchedulerMixin, _ChangeDetectionMixin,
                 if not device.set_dhw(new_state):
                     # Translators: Error message when toggling hot water
                     # production fails.
-                    raise RuntimeError(_("Warmwasser konnte nicht umgeschaltet werden"))
-                status = _("ein") if new_state else _("aus")
+                    raise RuntimeError(_("Hot water could not be toggled"))
+                status = _("on") if new_state else _("off")
                 self._record_local_toggle(device_uuid, new_state)
                 self._record_local_cozytouch_action(device_uuid)
                 self._log_toggle(device, new_state)
@@ -1885,10 +2004,10 @@ class GlobalPlugin(_CredentialsMixin, _SchedulerMixin, _ChangeDetectionMixin,
                 current_state = device.is_on
 
             new_state = not current_state
-            # self.api kann None sein (Meross deaktiviert, Gerät aber noch in
-            # der Liste) - dann saubere Meldung statt AttributeError.
+            # self.api can be None (Meross disabled but the device still in
+            # the list) - then report cleanly instead of an AttributeError.
             if not self.api:
-                raise RuntimeError(_("Nicht angemeldet"))
+                raise RuntimeError(_("Not logged in"))
             self.api.set_device_state(device.uuid, new_state, channel=channel)
             
             # Update the status
@@ -1904,16 +2023,16 @@ class GlobalPlugin(_CredentialsMixin, _SchedulerMixin, _ChangeDetectionMixin,
                         break
                 else:
                     # Translators: Fallback display name for a device channel.
-                    device_name = _("{name} Kanal {number}").format(
+                    device_name = _("{name} channel {number}").format(
                         name=device.name, number=channel)
             else:
                 device._is_on = new_state
                 device_name = device.name
 
-            status = _("ein") if new_state else _("aus")
+            status = _("on") if new_state else _("off")
             self._record_local_toggle(device_uuid, new_state)
-            # Bei Kanälen das Kanal-Objekt protokollieren, damit im Verlauf
-            # "Garten: Ausgang Pumpe" steht und nicht nur "Garten".
+            # For channels log the channel object so the history shows
+            # "garden: pump" and not just "garden".
             self._log_toggle(log_target if channel is not None else device,
                              new_state)
             return _("{name}: {status}").format(name=device_name, status=status)
@@ -1921,10 +2040,10 @@ class GlobalPlugin(_CredentialsMixin, _SchedulerMixin, _ChangeDetectionMixin,
         except (TimeoutError, ConnectionError, OSError) as e:
             # Network/timeout errors: only WARNING (not ERROR) - the dialog
             # shows a message
-            log.warning(f"Fehler beim Umschalten: {e}")
+            log.warning(f"Toggling failed: {e}")
             raise
         except Exception as e:
-            log.error(f"Fehler beim Umschalten: {e}")
+            log.error(f"Toggling failed: {e}")
             raise
     
     def set_diffuser_mode(self, device_uuid, mode_action):
@@ -1940,12 +2059,12 @@ class GlobalPlugin(_CredentialsMixin, _SchedulerMixin, _ChangeDetectionMixin,
                 device = next((d for d in self.devices if d.uuid == device_uuid), None)
 
             if not device:
-                raise ValueError(_("Gerät nicht gefunden"))
+                raise ValueError(_("Device not found"))
 
             if not device.is_diffuser:
                 # Translators: Error message when a diffuser action is
                 # accidentally executed on another device type.
-                raise ValueError(_("Gerät ist kein Diffuser"))
+                raise ValueError(_("Device is not a diffuser"))
 
             # Convert the action to a spray mode
             from meross_iot.model.enums import DiffuserSprayMode
@@ -1957,7 +2076,7 @@ class GlobalPlugin(_CredentialsMixin, _SchedulerMixin, _ChangeDetectionMixin,
 
             if mode_action not in mode_map:
                 # Translators: Error message for an unknown diffuser action.
-                raise ValueError(_("Ungültige Diffuser-Aktion: {action}").format(action=mode_action))
+                raise ValueError(_("Invalid diffuser action: {action}").format(action=mode_action))
 
             spray_mode = mode_map[mode_action]
 
@@ -1967,29 +2086,28 @@ class GlobalPlugin(_CredentialsMixin, _SchedulerMixin, _ChangeDetectionMixin,
             # Update the status
             device._update_status()
 
-            # Verlauf: wie beim Schalten am gemeinsamen Engpass, damit auch
-            # ein Aufruf außerhalb des Dialogs protokolliert wird.
+            # History: at the shared bottleneck as with switching, so a
+            # call from outside the dialog is logged too.
             try:
                 from .history import get_history, SOURCE_LOCAL
-                from .constants import DIFFUSER_MODE_NAMES
                 get_history().log_action(
-                    device, mode_action,
-                    DIFFUSER_MODE_NAMES.get(mode_action, mode_action),
+                    # Mode key, not its label - the display translates it.
+                    device, mode_action, mode_action,
                     source=SOURCE_LOCAL)
             except Exception as e:
-                log.debug(f"Verlaufseintrag fehlgeschlagen: {e}")
+                log.debug(f"History entry failed: {e}")
 
             # Translators: Success feedback after a diffuser mode change.
-            return _("{name}: Modus gesetzt").format(name=device.name)
+            return _("{name}: mode set").format(name=device.name)
             
         except Exception as e:
-            log.error(f"Fehler beim Setzen des Diffuser-Modus: {e}")
+            log.error(f"Failed to set the diffuser mode: {e}")
             raise
 
 
 
-# Hinweis: Die früheren 18 Einzel-Skripte ("Favorit N umschalten" /
-# "Status von Favorit N ansagen") sind durch die Favoriten-Ebene ersetzt
-# (script_favoritesLayer in der Klasse): eine Geste, dann Ziffer 1-9.
-# Verwaiste gestures.ini-Einträge auf die alten Skriptnamen sind harmlos -
-# NVDA ignoriert Bindungen an nicht existierende Skripte.
+# Note: the former 18 individual scripts ("toggle favorite N" / "announce
+# the status of favorite N") are replaced by the favorites layer
+# (script_favoritesLayer in the class): one gesture, then a digit 1-9.
+# Orphaned gestures.ini entries pointing at the old script names are
+# harmless - NVDA ignores bindings to scripts that do not exist.

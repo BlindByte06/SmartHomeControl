@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
-Smart Home Control - Verschluesselte Passwort-Properties des Plugins
-Ausgelagert aus __init__.py (Modul-Aufteilung, Verhalten unverändert).
+Smart Home Control - the plugin's encrypted password properties.
+Split out of __init__.py; behaviour unchanged.
 """
 
 from logHandler import log
@@ -10,13 +10,13 @@ import addonHandler
 try:
     addonHandler.initTranslation()
 except Exception as e:
-    log.debug(f"initTranslation fehlgeschlagen: {e}")
+    log.debug(f"initTranslation failed: {e}")
 
 from .security import encrypt_dpapi, decrypt_dpapi, is_encrypted
 
 
 class _CredentialsMixin:
-    """Passwort-Properties: verschluesselt im Speicher, on-demand entschluesselt."""
+    """Password properties: encrypted in memory, decrypted on demand."""
 
     @property
     def password(self):

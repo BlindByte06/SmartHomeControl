@@ -1,19 +1,19 @@
 # -*- coding: utf-8 -*-
 """
-Smart Home Control - Energie-Auswertung für Messsteckdosen.
+Smart Home Control - energy report for metering plugs.
 
-Sammelt Leistungs-Stichproben (Watt) der Meross-Messsteckdosen
-(MSS310/MSS315, MOP320) im Hintergrund und berechnet daraus
-Tages-/Wochen-Energiemengen (kWh) per Zeitintegration.
+Collects power samples (watts) from the Meross metering plugs
+(MSS310/MSS315, MOP320) in the background and integrates them over time
+into daily and weekly energy figures (kWh).
 
-Eigene, kompakte Ablage getrennt vom Aktions-Verlauf (history.py):
-Leistungs-Stichproben fallen deutlich häufiger an als Schalt-Aktionen
-und würden dessen 5000-Einträge-Limit binnen Tagen verdrängen.
+Kept separate from the action history (history.py): power samples arrive
+far more often than switching actions and would push everything else out
+of its 5000-entry limit within days.
 
-Speicherformat (JSON, im NVDA-addons-Ordner wie Favoriten/Verlauf):
+Storage format (JSON, in the NVDA addons folder like favourites/history):
 {
     "<device_uuid>": {
-        "name": "Steckdose Server",
+        "name": "Server plug",
         "samples": [[ts, watt], [ts, watt], ...]
     }, ...
 }
@@ -24,70 +24,66 @@ import json
 import time
 import datetime
 
-# NVDA-Logger (siehe favorites.py); Fallback für Nutzung außerhalb von NVDA.
+# NVDA logger (see favorites.py); fallback for use outside NVDA.
 try:
     from logHandler import log
 except ImportError:
     import logging
     log = logging.getLogger(__name__)
 
-# Ablage neben Favoriten/Verlauf im addons-Ordner (übersteht Updates).
+# Next to favourites/history in the addons folder (survives updates).
 _ADDON_DIR = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
 _ADDONS_DIR = os.path.dirname(_ADDON_DIR)
 ENERGY_FILE = os.path.join(_ADDONS_DIR, "SmartHomeControl_energy.json")
 
-# Mindestabstand zwischen zwei gespeicherten Stichproben pro Gerät. Der
-# Meross-Metrik-Abruf läuft ohnehin höchstens alle 120 s (siehe
-# MEROSS_METRICS_MIN_INTERVAL); 60 s hier ist nur eine Untergrenze.
+# Minimum spacing between two stored samples per device. The Meross metrics
+# call runs at most every 120 s anyway (MEROSS_METRICS_MIN_INTERVAL).
 SAMPLE_MIN_INTERVAL = 60.0
-# Stichproben älter als 8 Tage werden beim Speichern verworfen (für die
-# 7-Tage-Auswertung reicht das inkl. Puffer).
+# Samples older than 8 days are dropped on save (7-day report plus buffer).
 RETENTION_SECONDS = 8 * 86400
-# Lücken größer als dieser Wert (Gerät offline, NVDA aus) werden bei der
-# Integration NICHT als Verbrauch gezählt - lieber ehrlich zu wenig als
-# erfundene kWh.
+# Gaps larger than this (device offline, NVDA closed) are NOT counted as
+# consumption - better honestly too little than invented kWh.
 MAX_GAP_SECONDS = 900.0
-# Speichern gesammelt (analog history.py).
+# Batched saving (same approach as history.py).
 SAVE_DEBOUNCE_SECONDS = 120
 SAVE_DEBOUNCE_MAX_SAMPLES = 20
 
 
 def _local_midnight(ts):
-    """Zeitstempel der letzten lokalen Mitternacht vor ``ts``.
+    """Timestamp of the last local midnight before ``ts``.
 
-    Bewusst NICHT ``ts - (Stunde*3600 + Minute*60 + Sekunde)``: diese Formel
-    unterstellt, dass seit Mitternacht genau so viele Epoch-Sekunden vergangen
-    sind, wie die Uhr anzeigt. An den Zeitumstellungstagen stimmt das nicht -
-    gemessen mit TZ=Europe/Berlin am 25.10.2026 um 12:00 landete sie auf
-    01:00 statt 00:00 (Tagesverbrauch ohne die erste Stunde), am 29.03.2026
-    auf 23:00 des Vortags (eine Stunde zu viel). ``replace()`` auf einem
-    lokalen ``datetime`` rechnet die Umstellung korrekt heraus.
+    Deliberately NOT ``ts - (hour*3600 + minute*60 + second)``: that formula
+    assumes as many epoch seconds have passed since midnight as the clock
+    shows, which breaks on daylight saving changeover days (measured with
+    TZ=Europe/Berlin it landed on 01:00 instead of 00:00, and once on 23:00
+    of the previous day). ``replace()`` on a local ``datetime`` handles the
+    changeover correctly.
     """
     return datetime.datetime.fromtimestamp(ts).replace(
         hour=0, minute=0, second=0, microsecond=0).timestamp()
 
 
 class EnergyLog:
-    """Verwaltet Leistungs-Stichproben und berechnet Energiemengen."""
+    """Keeps power samples and derives energy figures from them."""
 
     def __init__(self):
         self._data = {}
         self._dirty = False
         self._last_save_time = 0.0
         self._unsaved_count = 0
-        self._last_sample_time = {}  # device_uuid -> ts der letzten Stichprobe
+        self._last_sample_time = {}  # device_uuid -> ts of the last sample
         self._load()
 
-    # ---------------- Persistenz ----------------
+    # ---------------- Persistence ----------------
     def _load(self):
         try:
             if os.path.exists(ENERGY_FILE):
                 with open(ENERGY_FILE, 'r', encoding='utf-8') as f:
                     self._data = json.load(f)
                 total = sum(len(d.get('samples', [])) for d in self._data.values())
-                log.debug(f"Energie-Log geladen: {len(self._data)} Geräte, {total} Stichproben")
+                log.debug(f"Energy log loaded: {len(self._data)} devices, {total} samples")
         except Exception as e:
-            log.error(f"Energie-Log konnte nicht geladen werden: {e}")
+            log.error(f"Could not load energy log: {e}")
             self._data = {}
 
     def _save(self):
@@ -105,15 +101,15 @@ class EnergyLog:
             self._last_save_time = time.time()
             self._unsaved_count = 0
         except Exception as e:
-            log.error(f"Energie-Log konnte nicht gespeichert werden: {e}")
+            log.error(f"Could not save energy log: {e}")
 
     def flush(self):
-        """Erzwingt sofortiges Speichern (z.B. beim NVDA-Beenden)."""
+        """Forces an immediate save (e.g. when NVDA shuts down)."""
         self._save()
 
-    # ---------------- Erfassung ----------------
+    # ---------------- Collection ----------------
     def add_sample(self, device_uuid, device_name, watts):
-        """Nimmt eine Leistungs-Stichprobe auf (gedrosselt, debounced)."""
+        """Records one power sample (throttled, debounced)."""
         if watts is None:
             return
         now = time.time()
@@ -122,7 +118,7 @@ class EnergyLog:
             return
         self._last_sample_time[device_uuid] = now
         rec = self._data.setdefault(device_uuid, {'name': device_name, 'samples': []})
-        rec['name'] = device_name  # Namensänderungen mitnehmen
+        rec['name'] = device_name  # pick up renames
         rec['samples'].append([round(now, 1), round(float(watts), 1)])
         self._dirty = True
         self._unsaved_count += 1
@@ -130,34 +126,34 @@ class EnergyLog:
                 or (now - self._last_save_time) >= SAVE_DEBOUNCE_SECONDS):
             self._save()
 
-    # ---------------- Auswertung ----------------
+    # ---------------- Reporting ----------------
     @staticmethod
     def _integrate(samples, since_ts, until_ts):
-        """Trapez-Integration der Leistung über die Zeit -> kWh.
+        """Trapezoidal integration of power over time -> kWh.
 
-        Lücken > MAX_GAP_SECONDS werden übersprungen (kein erfundener
-        Verbrauch während Offline-Phasen). Die letzte Stichprobe wird bis
-        ``until_ts`` fortgeschrieben, ebenfalls gedeckelt.
+        Gaps > MAX_GAP_SECONDS are skipped (no invented consumption while
+        offline). The last sample is carried forward to ``until_ts``, capped
+        the same way.
         """
         pts = [(t, w) for t, w in samples if since_ts <= t <= until_ts]
         if not pts:
             return 0.0
-        ws = 0.0  # Wattsekunden
+        ws = 0.0  # watt-seconds
         for (t1, w1), (t2, w2) in zip(pts, pts[1:]):
             dt = t2 - t1
             if 0 < dt <= MAX_GAP_SECONDS:
                 ws += (w1 + w2) / 2.0 * dt
-        # Tail: letzte Stichprobe bis until_ts (gedeckelt)
+        # Tail: last sample up to until_ts (capped)
         t_last, w_last = pts[-1]
         tail = min(max(until_ts - t_last, 0.0), MAX_GAP_SECONDS)
         ws += w_last * tail
         return ws / 3_600_000.0  # Ws -> kWh
 
     def summary(self):
-        """Liefert [(uuid, name, kwh_heute, kwh_7tage, letzte_leistung_watt), ...].
+        """Returns [(uuid, name, kwh_today, kwh_7days, last_watts), ...].
 
-        Nur Geräte mit mindestens einer Stichprobe in den letzten 7 Tagen;
-        sortiert nach Tagesverbrauch (absteigend).
+        Only devices with at least one sample in the last 7 days, sorted by
+        today's consumption (descending).
         """
         now = time.time()
         midnight = _local_midnight(now)
@@ -181,7 +177,7 @@ _instance = None
 
 
 def get_energy_log():
-    """Liefert die globale EnergyLog-Instanz (Singleton)."""
+    """Returns the global EnergyLog instance (singleton)."""
     global _instance
     if _instance is None:
         _instance = EnergyLog()
@@ -189,6 +185,6 @@ def get_energy_log():
 
 
 def flush_pending():
-    """Speichert Ungesichertes, ohne eine Instanz neu zu erzeugen."""
+    """Saves anything pending without creating a new instance."""
     if _instance is not None:
         _instance.flush()

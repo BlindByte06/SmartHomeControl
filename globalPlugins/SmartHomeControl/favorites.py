@@ -13,10 +13,10 @@ import json
 
 from .platform_utils import platform_of
 
-# NVDA-Logger verwenden, damit Meldungen (z.B. Speicherfehler) im NVDA-Log
-# landen. NVDA hängt seine Handler an den "nvda"-Logger, nicht an den
-# Root-Logger – logging.getLogger(__name__) würde ins Leere loggen.
-# Fallback auf Standard-Logging für Nutzung außerhalb von NVDA (z.B. Tests).
+# Use NVDA's logger so messages (e.g. save errors) reach the NVDA log.
+# NVDA attaches its handlers to the "nvda" logger, not to the root logger,
+# so logging.getLogger(__name__) would go nowhere. Falls back to standard
+# logging for use outside NVDA (e.g. tests).
 try:
     from logHandler import log
 except ImportError:
@@ -56,14 +56,14 @@ def _migrate_legacy_file():
             backup = _LEGACY_FAVORITES_FILE + ".migrated.bak"
             try:
                 os.replace(_LEGACY_FAVORITES_FILE, backup)
-                log.info(f"Favoriten: Legacy-Datei nach Migration archiviert: {backup}")
+                log.info(f"Favourites: legacy file archived after migration: {backup}")
             except Exception as e:
-                log.debug(f"Ignorierter Fehler in _migrate_legacy_file: {e}")
+                log.debug(f"Ignored error in _migrate_legacy_file: {e}")
             return
         os.replace(_LEGACY_FAVORITES_FILE, FAVORITES_FILE)
-        log.info(f"Favoriten von {_LEGACY_FAVORITES_FILE} nach {FAVORITES_FILE} migriert")
+        log.info(f"Favourites migrated from {_LEGACY_FAVORITES_FILE} to {FAVORITES_FILE}")
     except Exception as e:
-        log.warning(f"Favoriten-Migration fehlgeschlagen: {e}")
+        log.warning(f"Favourites migration failed: {e}")
 
 
 class DeviceFavorites:
@@ -93,13 +93,13 @@ class DeviceFavorites:
             if os.path.exists(FAVORITES_FILE):
                 with open(FAVORITES_FILE, 'r', encoding='utf-8') as f:
                     self._favorites = json.load(f)
-                log.debug(f"Favoriten geladen: {len(self._favorites)} Geräte")
+                log.debug(f"Favourites loaded: {len(self._favorites)} devices")
                 self._migrate_platform_fields()
                 self._assign_slots()
             else:
                 self._favorites = []
         except Exception as e:
-            log.error(f"Favoriten-Datei konnte nicht geladen werden: {e}")
+            log.error(f"Could not load the favourites file: {e}")
             self._favorites = []
     
     def _migrate_platform_fields(self):
@@ -118,26 +118,24 @@ class DeviceFavorites:
                 fav['device_type'] = 'water_heater'
                 changed = True
         if changed:
-            log.info("Favoriten: Cozytouch-Einträge auf korrekte Plattform migriert")
+            log.info("Favourites: Cozytouch entries migrated to the correct platform")
             self._save()
 
     def _assign_slots(self):
-        """Vergibt die festen Ebenen-Plätze 1-9 ("slot").
+        """Hands out the fixed layer slots 1-9.
 
-        Der Platz gehört dem Gerät, nicht seiner Listenposition: einmal
-        vergeben, bleibt er beim Entfernen anderer Favoriten unverändert -
-        ein gemerktes "2 schaltet die Stehlampe" stimmt also dauerhaft.
-        (Die frühere Nummerierung über die Anzeige-Reihenfolge verschob
-        sich bei jeder Änderung an der Favoritenliste.)
+        The slot belongs to the device, not to its list position: once
+        given, it survives the removal of other favourites, so a memorised
+        "2 switches the floor lamp" keeps holding. (The earlier numbering
+        by display order shifted on every change to the list.)
 
-        Beim ersten Laden nach dem Update bekommen bestehende Favoriten
-        ihre Plätze in der bisherigen Anzeige-Reihenfolge - für den Nutzer
-        ändert sich dadurch nichts. Ungültige oder doppelte Plätze (z.B.
-        von Hand editierte Datei) werden bereinigt; frei werdende Plätze
-        gehen an Favoriten ohne Platz (ab dem zehnten Favoriten).
+        On the first load after the update, existing favourites get their
+        slots in the previous display order, so nothing moves for the user.
+        Invalid or duplicate slots (e.g. a hand-edited file) are cleaned up;
+        freed slots go to favourites without one.
 
         Returns:
-            True, wenn sich etwas geändert hat (dann wurde gespeichert).
+            True if anything changed (in which case it was saved).
         """
         changed = False
         seen = set()
@@ -149,8 +147,8 @@ class DeviceFavorites:
                 fav['slot'] = None
                 changed = True
         free = sorted(set(range(1, 10)) - seen)
-        # Anzeige-Reihenfolge, damit die Erstvergabe der bisherigen
-        # Nummerierung entspricht
+        # Display order, so the first assignment matches the previous
+        # numbering
         for fav in self.get_ordered():
             if not free:
                 break
@@ -162,7 +160,7 @@ class DeviceFavorites:
         return changed
 
     def get_by_slot(self, number):
-        """Liefert den Favoriten mit Ebenen-Platz ``number`` (oder None)."""
+        """Returns the favourite with layer slot ``number`` (or None)."""
         for fav in self._favorites:
             if fav.get('slot') == number:
                 return fav
@@ -180,9 +178,9 @@ class DeviceFavorites:
             with open(tmp_path, 'w', encoding='utf-8') as f:
                 json.dump(self._favorites, f, ensure_ascii=False, indent=2)
             os.replace(tmp_path, FAVORITES_FILE)
-            log.debug(f"Favoriten gespeichert: {len(self._favorites)} Geräte")
+            log.debug(f"Favourites saved: {len(self._favorites)} devices")
         except Exception as e:
-            log.error(f"Favoriten konnten nicht gespeichert werden: {e}")
+            log.error(f"Could not save the favourites: {e}")
     
     def add(self, device):
         """Adds a device to the favorites.
@@ -191,10 +189,10 @@ class DeviceFavorites:
             device: device wrapper (Meross/Netatmo/VeSync/Cozytouch)
 
         Returns:
-            Die vergebene Ebenen-Platznummer (1-9), True bei Aufnahme ohne
-            freien Platz (ab dem zehnten Favoriten), False wenn bereits
-            vorhanden. Beide Erfolgsfälle sind wahrheitswertig - bestehende
-            ``if add(...)``-Aufrufer funktionieren unverändert.
+            The assigned layer slot (1-9), True when added without a free
+            slot (from the tenth favourite on), False if already present.
+            Both success cases are truthy, so existing ``if add(...)``
+            callers keep working.
         """
         uid = device.unique_id if hasattr(device, 'unique_id') else device.uuid
         if self.is_favorite(uid):
@@ -213,11 +211,11 @@ class DeviceFavorites:
             "slot": None,
         }
         self._favorites.append(entry)
-        # _assign_slots speichert selbst, wenn ein Platz vergeben wurde;
-        # ohne freien Platz muss der neue Eintrag trotzdem gesichert werden.
+        # _assign_slots saves by itself once it hands out a slot; with no
+        # free slot the new entry still has to be persisted.
         if not self._assign_slots():
             self._save()
-        log.info(f"Favorit hinzugefügt: {device.name} ({platform}), Platz {entry['slot']}")
+        log.info(f"Favourite added: {device.name} ({platform}), slot {entry['slot']}")
         return entry['slot'] if entry['slot'] else True
     
     def remove(self, uuid):
@@ -233,11 +231,11 @@ class DeviceFavorites:
         self._favorites = [f for f in self._favorites if f.get('uuid') != uuid]
         if len(self._favorites) < before:
             self._save()
-            # Der frei gewordene Platz geht sofort an einen Favoriten ohne
-            # Platz (existiert nur ab dem zehnten Favoriten). Bereits
-            # vergebene Plätze verschieben sich dabei NICHT.
+            # The freed slot goes straight to a favourite without one
+            # (only exists from the tenth favourite on). Slots already
+            # handed out do NOT move.
             self._assign_slots()
-            log.info(f"Favorit entfernt: {uuid}")
+            log.info(f"Favourite removed: {uuid}")
             return True
         return False
     
@@ -250,12 +248,10 @@ class DeviceFavorites:
         return list(self._favorites)
     
     def get_ordered(self):
-        """Favoriten in der ANZEIGE-Reihenfolge des Favoriten-Tabs.
+        """Favourites in the display order of the favourites tab.
 
-        Gruppiert nach Plattform in fester Reihenfolge (Meross, Netatmo,
-        VeSync, Cozytouch); innerhalb jeder Plattform in der Reihenfolge, in
-        der die Favoriten hinzugefügt wurden. So entspricht "Favorit N" genau
-        dem N-ten Eintrag von oben im Favoriten-Tab.
+        Grouped by platform in a fixed order (Meross, Netatmo, VeSync,
+        Cozytouch), and within each platform by slot.
         """
         from .platform_utils import PLATFORMS
         ordered = []
@@ -266,9 +262,8 @@ class DeviceFavorites:
     def get_by_platform(self, platform):
         """Returns the favorites of one platform.
 
-        Sortiert nach Ebenen-Platz (1-9), Favoriten ohne Platz dahinter in
-        Aufnahme-Reihenfolge - so liest sich der Favoriten-Tab als "1: ...,
-        2: ..." statt in zufällig wirkender Nummernfolge.
+        Sorted by layer slot (1-9), favourites without one after them in
+        the order they were added, so the tab reads "1: ..., 2: ...".
 
         Args:
             platform: 'meross', 'netatmo', 'vesync' or 'cozytouch'
@@ -312,29 +307,25 @@ class DeviceFavorites:
         return False
 
     def sync_names(self, devices):
-        """Gleicht die gespeicherten Anzeigenamen mit der Geräteliste ab.
+        """Brings the stored display names in line with the device list.
 
-        Der Name eines Favoriten wurde bisher beim Anlegen eingefroren. Wird
-        das Gerät später in der Meross-/Levoit-/Netatmo-App umbenannt, zeigte
-        der Favoriten-Tab weiter den alten Namen - sichtbar überall dort, wo
-        auf den gespeicherten Namen zurückgegriffen wird: in der Zeile
-        "{name} (nicht verfügbar)" und in den Ansagen der Favoriten-Gesten.
-        Zwei verschiedene Namen für dasselbe Gerät sind ohne Blickkontakt
-        besonders unangenehm, weil man sie nicht nebeneinanderlegen kann.
+        A favourite's name used to be frozen when it was added, so renaming
+        the device in the manufacturer app left the old name showing - in
+        the "{name} (unavailable)" row and in the favourites announcements.
+        Two names for one device are especially awkward without sight.
 
-        Läuft über Geräte UND deren Kanäle (Favoriten können einzelne
-        Ausgänge einer Steckdosenleiste sein). Gespeichert wird höchstens
-        einmal, auch wenn sich mehrere Namen geändert haben.
+        Covers devices AND their channels (a favourite can be a single
+        outlet). Saves at most once, however many names changed.
 
         Args:
-            devices: aktuelle Geräteliste (``plugin.devices``)
+            devices: current device list (``plugin.devices``)
 
         Returns:
-            Anzahl der aktualisierten Einträge
+            Number of updated entries
         """
         if not devices or not self._favorites:
             return 0
-        # Aktuelle Namen einsammeln: unique_id -> name
+        # Collect current names: unique_id -> name
         current = {}
         for dev in devices:
             try:
@@ -348,14 +339,14 @@ class DeviceFavorites:
                     if ch_uid and ch_name:
                         current[ch_uid] = ch_name
             except Exception as e:
-                log.debug(f"Ignorierter Fehler in sync_names: {e}")
+                log.debug(f"Ignored error in sync_names: {e}")
 
         changed = 0
         for fav in self._favorites:
             new_name = current.get(fav.get('uuid'))
             if new_name and new_name != fav.get('name'):
                 log.info(
-                    f"Favorit umbenannt: '{fav.get('name')}' -> '{new_name}'")
+                    f"Favourite renamed: '{fav.get('name')}' -> '{new_name}'")
                 fav['name'] = new_name
                 changed += 1
         if changed:

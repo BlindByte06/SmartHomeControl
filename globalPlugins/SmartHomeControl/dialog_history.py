@@ -1,17 +1,16 @@
 # -*- coding: utf-8 -*-
 """
-Smart Home Control - Verlaufs-Dialog
+Smart Home Control - history dialog.
 
-Zwei Ansichten statt einer flachen Liste:
+Two views instead of one flat list:
 
-* **Ereignisse** - das, wofuer man einen Verlauf aufschlaegt. Eine Zeile je
-  Schaltvorgang, mit der Herkunft ("ich" / "extern" / "automatisch"). Nach
-  Tagen gruppiert, damit nicht in jeder Zeile dasselbe Datum vorgelesen wird.
-* **Messwerte** - verdichtet zu Min/Max/Mittelwert je Geraet und Groesse. Eine
-  Zeile beantwortet damit, wofuer man vorher hundert Einzelzeilen durchgehen
-  musste.
+* **Events** - what a history is opened for. One row per switching action
+  with its origin ("me" / "external" / "automatic"), grouped by day so the
+  same date is not read out on every line.
+* **Readings** - condensed to min/max/average per device and quantity, so
+  one row answers what used to need a hundred.
 
-Ausgelagert aus device_dialog.py (Modul-Aufteilung).
+Split out of device_dialog.py.
 """
 
 import os
@@ -25,10 +24,10 @@ import addonHandler
 try:
     addonHandler.initTranslation()
 except Exception as e:
-    log.debug(f"initTranslation fehlgeschlagen: {e}")
-if "_" not in globals():  # Fallback, falls initTranslation() scheitert
-    # Ohne diesen Fallback bleibt `_` undefiniert und der erste `_()`-Aufruf
-    # wirft einen NameError mitten im Dialogaufbau statt beim Import.
+    log.debug(f"initTranslation failed: {e}")
+if "_" not in globals():  # fallback if initTranslation() fails
+    # Without this fallback `_` stays undefined and the first `_()` call
+    # raises a NameError mid-dialog instead of at import time.
     def _(s):
         return s
 
@@ -39,25 +38,60 @@ from .history import (
 from .dialog_helpers import _beep
 from .constants import BEEP_ON, BEEP_OFF, BEEP_ERROR
 
-# Ansichten
+# Views
 VIEW_EVENTS = 0
 VIEW_MEASUREMENTS = 1
 
 
 def _day_label(dt):
-    """Überschrift für eine Tagesgruppe: Heute / Gestern / Wochentag, Datum."""
+    """Heading for a day group: today / yesterday / weekday, date."""
     today = datetime.now().date()
     day = dt.date()
     if day == today:
         # Translators: Group heading in the history for the current day.
-        return _("Heute")
+        return _("Today")
     if day == today - timedelta(days=1):
         # Translators: Group heading in the history for the previous day.
-        return _("Gestern")
+        return _("Yesterday")
     # Translators: Group heading in the history: weekday and date,
     # e.g. "Freitag, 24.07.2026".
     return _("{weekday}, {date}").format(
         weekday=dt.strftime('%A'), date=dt.strftime('%d.%m.%Y'))
+
+
+class _DetailDialog(wx.Dialog):
+    """Detail view in a read-only text box instead of a message box.
+
+    A wx.MessageDialog hands its whole text to the screen reader as ONE
+    utterance - twenty lines of readings then arrive as a single block that
+    cannot be navigated, repeated or copied in parts. A read-only multi-line
+    text field can be walked line by line with the arrow keys, follows on the
+    braille display and allows Ctrl+C.
+    """
+
+    def __init__(self, parent, title, text):
+        super().__init__(parent, title=title, size=(620, 460))
+        sizer = wx.BoxSizer(wx.VERTICAL)
+        self.text_ctrl = wx.TextCtrl(
+            self, value=text,
+            style=wx.TE_MULTILINE | wx.TE_READONLY | wx.TE_RICH2)
+        self.text_ctrl.SetName(title)
+        sizer.Add(self.text_ctrl, 1, wx.EXPAND | wx.ALL, 8)
+        buttons = self.CreateStdDialogButtonSizer(wx.OK)
+        sizer.Add(buttons, 0, wx.ALIGN_CENTER | wx.BOTTOM, 8)
+        self.SetSizer(sizer)
+        self.Bind(wx.EVT_CHAR_HOOK, self._on_char)
+        # The focus belongs in the text, not on the OK button: that is where
+        # reading starts.
+        self.text_ctrl.SetFocus()
+        self.text_ctrl.SetInsertionPoint(0)
+        self.CenterOnParent()
+
+    def _on_char(self, event):
+        if event.GetKeyCode() == wx.WXK_ESCAPE:
+            self.EndModal(wx.ID_CANCEL)
+        else:
+            event.Skip()
 
 
 class HistoryDialog(wx.Dialog):
@@ -71,41 +105,40 @@ class HistoryDialog(wx.Dialog):
         super(HistoryDialog, self).__init__(
             parent,
             # Translators: Window title of the history dialog.
-            title=_("Geräteverlauf"),
+            title=_("Device history"),
             style=wx.DEFAULT_DIALOG_STYLE | wx.RESIZE_BORDER | wx.MAXIMIZE_BOX,
             size=(760, 520),
         )
         self.plugin = plugin
         self.history = get_history()
-        # Je Zeile der Liste der zugehörige Eintrag - None bei einer
-        # Tagesüberschrift. Nötig, weil die Überschriften die Indizes
-        # gegenüber der Eintragsliste verschieben.
+        # Per list row the matching entry - None for a day heading. Needed
+        # because the headings shift the indices against the entry list.
         self._row_data = []
         self._current_entries = []
 
         self._init_ui()
-        # Beim Öffnen NICHT ansagen: das Fenster meldet sich ohnehin, und die
-        # Zahl der Einträge steht in der Statuszeile.
+        # Do NOT announce on opening: the window announces itself and the
+        # number of entries is in the status line.
         self._apply_filters(speak=False)
 
         # Focus on the history list
         self.list_ctrl.SetFocus()
 
     # ------------------------------------------------------------------
-    # Aufbau
+    # Construction
     # ------------------------------------------------------------------
     def _init_ui(self):
         """Builds the dialog interface"""
         main_sizer = wx.BoxSizer(wx.VERTICAL)
 
-        # === Ansicht ===
+        # === View ===
         view_sizer = wx.BoxSizer(wx.HORIZONTAL)
         # Translators: Label of the view selector in the history dialog.
-        view_sizer.Add(wx.StaticText(self, label=_("&Ansicht:")), 0,
+        view_sizer.Add(wx.StaticText(self, label=_("&View:")), 0,
                        wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 4)
         # Translators: The two views of the history dialog.
         self.view_choice = wx.Choice(self, choices=[
-            _("Ereignisse"), _("Messwerte")])
+            _("Events"), _("Measurements")])
         self.view_choice.SetSelection(VIEW_EVENTS)
         self.view_choice.Bind(wx.EVT_CHOICE, self._on_view_changed)
         view_sizer.Add(self.view_choice, 0, wx.ALIGN_CENTER_VERTICAL)
@@ -117,7 +150,7 @@ class HistoryDialog(wx.Dialog):
         filter_sizer = wx.StaticBoxSizer(filter_box, wx.HORIZONTAL)
 
         # Device filter
-        filter_sizer.Add(wx.StaticText(self, label=_("&Gerät:")), 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 4)
+        filter_sizer.Add(wx.StaticText(self, label=_("&Device:")), 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 4)
         self.device_filter = wx.Choice(self)
         # Load the devices from the history (separately, so it can be refreshed
         # via F5)
@@ -125,18 +158,18 @@ class HistoryDialog(wx.Dialog):
         filter_sizer.Add(self.device_filter, 1, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 8)
 
         # Platform filter
-        filter_sizer.Add(wx.StaticText(self, label=_("&Plattform:")), 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 4)
+        filter_sizer.Add(wx.StaticText(self, label=_("&Platform:")), 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 4)
         # Translators: Filter option "All" (platform names are brand names).
-        self.platform_filter = wx.Choice(self, choices=[_("Alle"), "Meross", "Netatmo", "VeSync", "Cozytouch"])
+        self.platform_filter = wx.Choice(self, choices=[_("All"), "Meross", "Netatmo", "VeSync", "Cozytouch"])
         self.platform_filter.SetSelection(0)
         filter_sizer.Add(self.platform_filter, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 8)
 
         # Time range filter
-        filter_sizer.Add(wx.StaticText(self, label=_("&Zeitraum:")), 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 4)
+        filter_sizer.Add(wx.StaticText(self, label=_("&Period:")), 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 4)
         # Translators: Time range filter options in the history dialog.
         self.time_filter = wx.Choice(self, choices=[
-            _("Alles"), _("Letzte Stunde"), _("Letzte 24 Stunden"),
-            _("Letzte 7 Tage"), _("Letzte 30 Tage")
+            _("All time"), _("Last hour"), _("Last 24 hours"),
+            _("Last 7 days"), _("Last 30 days")
         ])
         self.time_filter.SetSelection(0)
         filter_sizer.Add(self.time_filter, 0, wx.ALIGN_CENTER_VERTICAL)
@@ -145,7 +178,7 @@ class HistoryDialog(wx.Dialog):
 
         # Filter button
         # Translators: Button for applying the filters.
-        filter_btn = wx.Button(self, label=_("&Filtern"))
+        filter_btn = wx.Button(self, label=_("&Filter"))
         filter_btn.Bind(wx.EVT_BUTTON, self._on_apply_filter)
         main_sizer.Add(filter_btn, 0, wx.LEFT | wx.BOTTOM, 8)
 
@@ -165,17 +198,17 @@ class HistoryDialog(wx.Dialog):
         btn_sizer = wx.BoxSizer(wx.HORIZONTAL)
 
         # Translators: Button for the CSV export of the history.
-        export_btn = wx.Button(self, label=_("Als &CSV exportieren"))
+        export_btn = wx.Button(self, label=_("Export as &CSV"))
         export_btn.Bind(wx.EVT_BUTTON, self._on_export_csv)
         btn_sizer.Add(export_btn, 0, wx.RIGHT, 8)
 
         # Translators: Button for deleting the history.
-        clear_btn = wx.Button(self, label=_("Verlauf &löschen"))
+        clear_btn = wx.Button(self, label=_("De&lete history"))
         clear_btn.Bind(wx.EVT_BUTTON, self._on_clear_history)
         btn_sizer.Add(clear_btn, 0, wx.RIGHT, 8)
 
         # Translators: Button for closing the dialog.
-        close_btn = wx.Button(self, wx.ID_CLOSE, label=_("Sc&hließen"))
+        close_btn = wx.Button(self, wx.ID_CLOSE, label=_("C&lose"))
         close_btn.Bind(wx.EVT_BUTTON, lambda e: self.EndModal(wx.ID_CLOSE))
         btn_sizer.Add(close_btn, 0)
 
@@ -192,20 +225,24 @@ class HistoryDialog(wx.Dialog):
         return self.view_choice.GetSelection()
 
     def _build_columns(self):
-        """Setzt die Spalten passend zur aktuellen Ansicht neu."""
+        """Rebuilds the columns to match the current view."""
         self.list_ctrl.ClearAll()
         if self._current_view() == VIEW_MEASUREMENTS:
+            # Deliberately only four columns: a screen reader reads EVERY
+            # column of the focused row on each arrow key, so eight of them
+            # became one long sentence per row. Lowest, highest, average and
+            # the number of readings are one Enter away in the detail view,
+            # where they can be read line by line.
             # Translators: Column headers of the measurement view.
             columns = [
-                (_("Gerät"), 170), (_("Größe"), 110), (_("Kleinster"), 100),
-                (_("Größter"), 100), (_("Mittelwert"), 100),
-                (_("Aktuell"), 100), (_("Punkte"), 70),
+                (_("Device"), 200), (_("Quantity"), 130),
+                (_("Latest value"), 110), (_("Latest reading"), 140),
             ]
         else:
             # Translators: Column headers of the event view.
             columns = [
-                (_("Zeitpunkt"), 90), (_("Gerät"), 170), (_("Plattform"), 90),
-                (_("Ereignis"), 240), (_("Herkunft"), 90),
+                (_("Time"), 90), (_("Device"), 170), (_("Platform"), 90),
+                (_("Event"), 240), (_("Source"), 90),
             ]
         for index, (label, width) in enumerate(columns):
             self.list_ctrl.InsertColumn(index, label, width=width)
@@ -224,7 +261,7 @@ class HistoryDialog(wx.Dialog):
 
         self.device_filter.Clear()
         # Translators: Filter option: show all devices.
-        self.device_filter.Append(_("Alle Geräte"), "")
+        self.device_filter.Append(_("All devices"), "")
         restore_index = 0
         for dev in self.history.get_unique_devices():
             plat = dev.get('platform', '').capitalize()
@@ -235,7 +272,7 @@ class HistoryDialog(wx.Dialog):
         self.device_filter.SetSelection(restore_index)
 
     # ------------------------------------------------------------------
-    # Tastatur / Ansicht
+    # Keyboard / view
     # ------------------------------------------------------------------
     def _on_char(self, event):
         """Keyboard handler"""
@@ -247,7 +284,7 @@ class HistoryDialog(wx.Dialog):
             self._populate_device_filter()
             self._apply_filters()
             # Translators: Message after refreshing the history list.
-            ui.message(_("Verlauf aktualisiert"))
+            ui.message(_("History refreshed"))
         else:
             event.Skip()
 
@@ -296,14 +333,14 @@ class HistoryDialog(wx.Dialog):
             self._populate_events(speak=speak)
 
     # ------------------------------------------------------------------
-    # Ansicht: Ereignisse
+    # View: events
     # ------------------------------------------------------------------
     def _populate_events(self, speak=True):
-        """Füllt die Liste mit Ereignissen, nach Tagen gruppiert.
+        """Fills the list with events, grouped by day.
 
-        Die Tagesüberschriften ersparen das Datum in jeder einzelnen Zeile -
-        bei Sprachausgabe der größte Einzelgewinn, weil sonst vor jedem
-        Ereignis dasselbe Datum steht.
+        The day headings save the date on every single row - the biggest win
+        for speech output, which would otherwise repeat it before every
+        event.
         """
         self.list_ctrl.DeleteAllItems()
         self._row_data = []
@@ -326,7 +363,7 @@ class HistoryDialog(wx.Dialog):
 
             time_str = dt.strftime('%H:%M:%S') if dt else ''
             # Translators: Placeholder for an unknown device name.
-            device_name = entry.get('device_name', _('Unbekannt'))
+            device_name = entry.get('device_name', _("Unknown"))
             platform = entry.get('platform', '').capitalize()
             action_text = _format_action_text(entry.get('action', ''),
                                               entry.get('details', ''))
@@ -345,22 +382,48 @@ class HistoryDialog(wx.Dialog):
         # Translators: Status line of the event view. {count} = shown,
         # {total} = total number of events.
         self.status_text.SetLabel(
-            _("{count} Ereignisse angezeigt (gesamt: {total})").format(
+            _("{count} events shown (total: {total})").format(
                 count=count, total=total))
         if not speak:
             return
         if count > 0:
             # Translators: Message after loading the event list.
-            ui.message(_("{count} Ereignisse").format(count=count))
+            ui.message(_("{count} events").format(count=count))
         else:
             # Translators: Message when no events match the filter.
-            ui.message(_("Keine Ereignisse gefunden"))
+            ui.message(_("No events found"))
 
     # ------------------------------------------------------------------
-    # Ansicht: Messwerte
+    # View: readings
     # ------------------------------------------------------------------
+    @staticmethod
+    def _short_time(ts):
+        """Time of a reading: time of day for today, otherwise with the date."""
+        if not ts:
+            return ''
+        moment = datetime.fromtimestamp(ts)
+        if moment.date() == datetime.now().date():
+            return moment.strftime('%H:%M')
+        return moment.strftime('%d.%m.%Y %H:%M')
+
+    def _period_text(self, records):
+        """Covered period across all series, e.g. "12.08. 08:00 - 13.08. 22:15".
+
+        Answers the question the bare numbers cannot: WHEN was this measured.
+        """
+        starts = [r['first_ts'] for r in records if r.get('first_ts')]
+        ends = [r['last_ts'] for r in records if r.get('last_ts')]
+        if not starts or not ends:
+            return ''
+        first = datetime.fromtimestamp(min(starts))
+        last = datetime.fromtimestamp(max(ends))
+        fmt = '%d.%m.%Y %H:%M'
+        # Translators: Period of the readings. {start}/{end} = date and time.
+        return _("{start} to {end}").format(
+            start=first.strftime(fmt), end=last.strftime(fmt))
+
     def _populate_measurements(self, speak=True):
-        """Füllt die Liste mit verdichteten Messwerten."""
+        """Fills the list with condensed readings."""
         self.list_ctrl.DeleteAllItems()
         self._row_data = []
         labels = _measurement_labels()
@@ -369,28 +432,32 @@ class HistoryDialog(wx.Dialog):
             quantity = rec['quantity']
             idx = self.list_ctrl.InsertItem(row, rec['device_name'])
             self.list_ctrl.SetItem(idx, 1, labels.get(quantity, quantity))
-            self.list_ctrl.SetItem(idx, 2, format_measurement(quantity, rec['min']))
-            self.list_ctrl.SetItem(idx, 3, format_measurement(quantity, rec['max']))
-            self.list_ctrl.SetItem(idx, 4, format_measurement(quantity, rec['avg']))
-            self.list_ctrl.SetItem(idx, 5, format_measurement(quantity, rec['last']))
-            self.list_ctrl.SetItem(idx, 6, str(rec['count']))
+            self.list_ctrl.SetItem(idx, 2, format_measurement(quantity, rec['last']))
+            self.list_ctrl.SetItem(idx, 3, self._short_time(rec.get('last_ts')))
             self._row_data.append(rec)
 
         count = len(self._current_entries)
         total = self.history.get_measurement_count()
-        # Translators: Status line of the measurement view. {count} = number of
-        # summarized rows, {total} = number of stored change points.
-        self.status_text.SetLabel(
-            _("{count} Messreihen (aus {total} Änderungspunkten)").format(
-                count=count, total=total))
+        period = self._period_text(self._current_entries)
+        if period:
+            # Translators: Status line of the measurement view. {count} =
+            # number of rows, {total} = stored readings, {period} = covered
+            # period.
+            label = _("{count} measurement series from {total} readings, "
+                      "{period}").format(count=count, total=total, period=period)
+        else:
+            # Translators: Status line of the measurement view without data.
+            label = _("{count} measurement series from {total} readings").format(
+                count=count, total=total)
+        self.status_text.SetLabel(label)
         if not speak:
             return
         if count > 0:
             # Translators: Message after loading the measurement view.
-            ui.message(_("{count} Messreihen").format(count=count))
+            ui.message(_("{count} measurement series").format(count=count))
         else:
             # Translators: Message when no measurements match the filter.
-            ui.message(_("Keine Messwerte gefunden"))
+            ui.message(_("No measurements found"))
 
     def _on_apply_filter(self, event):
         """Filter button handler"""
@@ -404,28 +471,23 @@ class HistoryDialog(wx.Dialog):
             return
         record = self._row_data[idx]
         if record is None:
-            return  # Tagesüberschrift - nichts zu zeigen
+            return  # Day heading - nothing to show
 
         if self._current_view() == VIEW_MEASUREMENTS:
             detail_text = self._measurement_detail(record)
         else:
             detail_text = self.history.format_entry_for_display(record)
 
-        dlg = wx.MessageDialog(
-            self,
-            detail_text,
-            # Translators: Title of the detail dialog of a history entry.
-            _("Verlaufseintrag Details"),
-            wx.OK | wx.ICON_INFORMATION,
-        )
+        # Translators: Title of the detail dialog of a history entry.
+        dlg = _DetailDialog(self, _("History entry details"), detail_text)
         dlg.ShowModal()
         dlg.Destroy()
 
     def _measurement_detail(self, rec):
-        """Detailtext einer verdichteten Messreihe.
+        """Detail text of a condensed series of readings.
 
-        Zeigt die Verdichtung und darunter die letzten Änderungspunkte - das
-        ist das "Aufklappen" der Zeile, ohne die Liste zu überfrachten.
+        Shows the summary and below it the most recent change points - the
+        row's "expansion" without overloading the list.
         """
         quantity = rec['quantity']
         labels = _measurement_labels()
@@ -443,18 +505,23 @@ class HistoryDialog(wx.Dialog):
                 quantity=labels.get(quantity, quantity)),
             "",
             # Translators: Summary lines in the measurement detail dialog.
-            _("Kleinster Wert: {value}").format(
+            _("Lowest value: {value}").format(
                 value=format_measurement(quantity, rec['min'])),
-            _("Größter Wert: {value}").format(
+            _("Highest value: {value}").format(
                 value=format_measurement(quantity, rec['max'])),
             # Translators: Time-weighted mean of a measurement series.
-            _("Mittelwert (zeitgewichtet): {value}").format(
+            _("Average (time-weighted): {value}").format(
                 value=format_measurement(quantity, rec['avg'])),
-            _("Aktuell: {value}").format(
+            _("Current: {value}").format(
                 value=format_measurement(quantity, rec['last'])),
+            # Translators: Period and number of readings in the detail dialog.
+            # {period} = from-to, {count} = number of stored readings.
+            _("Period: {period}").format(
+                period=self._period_text([rec]) or "-"),
+            _("Readings stored: {count}").format(count=rec['count']),
             "",
             # Translators: Heading of the change point list.
-            _("Letzte Änderungen:"),
+            _("Latest changes:"),
         ]
         for entry in points:
             value = (entry.get('sensor_data') or {}).get(quantity)
@@ -466,21 +533,31 @@ class HistoryDialog(wx.Dialog):
         if not points:
             # Translators: Shown when a measurement series has no change
             # points in the selected period.
-            lines.append("  " + _("Keine Änderungen im gewählten Zeitraum"))
+            lines.append("  " + _("No changes in the selected period"))
         return "\n".join(lines)
 
     # ------------------------------------------------------------------
-    # Export / Löschen
+    # Export / delete
     # ------------------------------------------------------------------
     def _on_export_csv(self, event):
         """Exports the current history as CSV"""
         dlg = wx.FileDialog(
             self,
             # Translators: Title of the file dialog for the CSV export.
-            _("Verlauf als CSV exportieren"),
-            defaultFile="smart_home_verlauf.csv",
+            _("Export history as CSV"),
+            # The suggested name says WHICH of the two views is exported -
+            # the button is the same in both, so without it one cannot tell
+            # from the file whether events or readings are inside.
+            defaultFile=(
+                # Translators: Suggested file name for the CSV export of the
+                # readings.
+                _("smart-home-readings.csv")
+                if self._current_view() == VIEW_MEASUREMENTS
+                # Translators: Suggested file name for the CSV export of the
+                # events.
+                else _("smart-home-events.csv")),
             # Translators: File type filter in the file dialog.
-            wildcard=_("CSV-Dateien (*.csv)|*.csv"),
+            wildcard=_("CSV files (*.csv)|*.csv"),
             style=wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT,
         )
 
@@ -490,9 +567,8 @@ class HistoryDialog(wx.Dialog):
 
             try:
                 device_uuid, platform, since_hours = self._get_filter_values()
-                # In der Messwert-Ansicht die Änderungspunkte exportieren
-                # (nicht die Verdichtung): eine Tabelle ist zum Weiterrechnen
-                # da, und dafür braucht man die Punkte.
+                # In the readings view export the change points, not the
+                # summary: a table is there to compute with.
                 event_type = ('sensor' if self._current_view() == VIEW_MEASUREMENTS
                               else 'action')
                 self.history.export_csv(
@@ -505,26 +581,26 @@ class HistoryDialog(wx.Dialog):
                 _beep(BEEP_ON)  # formerly 800,80
                 # Translators: Confirmation after the CSV export of the
                 # history.
-                ui.message(_("Verlauf exportiert nach {filename}").format(
+                ui.message(_("History exported to {filename}").format(
                     filename=os.path.basename(filepath)))
 
                 export_msg = wx.MessageDialog(
                     self,
                     # Translators: Success message in the export dialog.
                     # {path} = file.
-                    _("Verlauf erfolgreich exportiert.\n\nDatei: {path}").format(
+                    _("History exported successfully.\n\nFile: {path}").format(
                         path=filepath),
                     # Translators: Title of the export success dialog.
-                    _("Export erfolgreich"),
+                    _("Export successful"),
                     wx.OK | wx.ICON_INFORMATION,
                 )
                 export_msg.ShowModal()
                 export_msg.Destroy()
             except Exception as e:
                 _beep(BEEP_ERROR)
-                log.error(f"CSV-Export fehlgeschlagen: {e}")
+                log.error(f"CSV export failed: {e}")
                 # Translators: Error message on CSV export.
-                ui.message(_("Export fehlgeschlagen: {error}").format(error=str(e)[:60]))
+                ui.message(_("Export failed: {error}").format(error=str(e)[:60]))
         else:
             dlg.Destroy()
 
@@ -538,12 +614,11 @@ class HistoryDialog(wx.Dialog):
             # Translators: Confirmation prompt before deleting the history.
             # {events} = number of events, {measurements} = number of
             # measurement change points.
-            _("Möchten Sie wirklich den gesamten Verlauf löschen?\n\n"
-              "Es werden {events} Ereignisse und {measurements} Messwerte "
-              "unwiderruflich gelöscht.").format(
+            _("Really delete the entire history?\n\n{events} events and "
+              "{measurements} readings will be deleted permanently.").format(
                   events=events, measurements=measurements),
             # Translators: Title of the confirmation prompt.
-            _("Verlauf löschen"),
+            _("Delete history"),
             wx.YES_NO | wx.NO_DEFAULT | wx.ICON_WARNING,
         )
 
@@ -553,5 +628,5 @@ class HistoryDialog(wx.Dialog):
             self._apply_filters(speak=False)
             _beep(BEEP_OFF)  # formerly 600,80 = success
             # Translators: Confirmation after deleting the history.
-            ui.message(_("Verlauf gelöscht"))
+            ui.message(_("History deleted"))
         dlg.Destroy()

@@ -21,12 +21,12 @@ hr { border: none; border-top: 1px solid #ddd; margin: 1.8em 0; }
 <li>License: GNU General Public License, version 2</li>
 <li><a href="https://github.com/BlindByte06/SmartHomeControl">Website and source code</a></li>
 </ul>
-<p>Control your smart home devices directly from NVDA – through a simple menu.
+<p>Controls smart home devices directly from NVDA – through a simple menu.
 On/off, brightness, colour, heating, air purifiers, sensors and more, without
 the sometimes hard-to-use manufacturer apps.</p>
-<p>You sign in once with the credentials of your manufacturer account – no
-additional server or background setup required. Your credentials are stored
-encrypted locally on your computer.</p>
+<p>Signing in happens once, with the credentials of the manufacturer account
+– no additional server and no background setup required. The credentials are
+stored encrypted, locally on the computer.</p>
 <hr />
 <h2 id="contents">Contents</h2>
 <ul>
@@ -35,11 +35,13 @@ encrypted locally on your computer.</p>
 <li><a href="#setup">Setup</a></li>
 <li><a href="#netatmo-redirect-uri-and-port">Netatmo: redirect URI and port</a></li>
 <li><a href="#usage">Usage</a></li>
+<li><a href="#device-history">Device history</a></li>
 <li><a href="#change-announcements">Change announcements</a></li>
 <li><a href="#cloud-limits">Notes on cloud limits</a></li>
 <li><a href="#maturity-and-notes">Maturity and notes</a></li>
 <li><a href="#privacy-and-security">Privacy and security</a></li>
 <li><a href="#troubleshooting">Troubleshooting</a></li>
+<li><a href="#reporting-a-problem">Reporting a problem</a></li>
 <li><a href="#license-and-bundled-components">License and bundled components</a></li>
 </ul>
 <hr />
@@ -50,8 +52,19 @@ encrypted locally on your computer.</p>
 </ul>
 <p>The settings dialog is available through the "Settings (Alt+E)" button in
 the device menu.</p>
-<p>You can assign your own shortcuts to all commands or change the default
-ones: <strong>NVDA menu → Options → Input gestures → category "Smart Home
+<p>Inside the open device menu these keys work as well:</p>
+<ul>
+<li><strong>Ctrl + H</strong>: device history (see below)</li>
+<li><strong>Ctrl + T</strong>: repeat the status line</li>
+<li><strong>Ctrl + F</strong>: search for a device</li>
+<li><strong>Ctrl + B</strong>: add the selected device or outlet to the
+favourites, or remove it</li>
+<li><strong>F1</strong>: help for the selected device, listing what it can
+do</li>
+<li><strong>F5</strong>: refresh the device list</li>
+</ul>
+<p>All commands can be given custom shortcuts, and the defaults can be
+changed: <strong>NVDA menu → Preferences → Input gestures → category "Smart Home
 Control"</strong>.</p>
 <p>The following commands deliberately have <strong>no default gesture</strong>
 and can be assigned there when needed:</p>
@@ -72,33 +85,62 @@ and can be assigned there when needed:</p>
   everyday use.</li>
 </ul>
 <h3 id="favorites-layer">Favorites layer</h3>
-<p>After the shortcut you assigned, the add-on prompts with “Choose a
-favorite: digit 1 to 9” and waits. Digits <strong>1 to 9</strong> then
-immediately announce the status of the favorite with that number.
-<strong>The same digit a second time</strong> shortly after
-<strong>toggles</strong> it. <strong>0</strong> reads which digit is assigned
-to which device, <strong>Escape</strong> cancels.</p>
+<p>After the assigned shortcut, the add-on prompts with “Choose a
+favorite: digit 1 to 9” and waits for a digit.</p>
+<ul>
+<li><strong>Digits 1 to 9</strong> immediately announce the status of the
+  favorite with that number.</li>
+<li><strong>The same digit again</strong> toggles it. There is no time limit
+  for this – the layer stays open until a decision is made, so the whole
+  status announcement can be heard first and only then switched.</li>
+<li><strong>A different digit</strong> announces its status and becomes the
+  remembered one, so "1, 2, 1" switches nothing.</li>
+<li><strong>0</strong> reads out which digit belongs to which device.</li>
+<li><strong>Escape</strong> leaves the layer, and so does any other key.
+  After a longer pause it closes by itself.</li>
+</ul>
 <p>The split is deliberate: the harmless enquiry happens at once, while the
-consequential switching requires a deliberate second press. A mistyped digit
+consequential switching requires a second, deliberate press. A mistyped digit
 therefore only announces something instead of switching a device.</p>
-<p>Not every favorite can be switched: sensors and Netatmo devices
-(thermostats, weather stations) report "cannot be switched – adjustable in the
-device menu" on the second press. Their status comes on the first press as
-usual; thermostats are adjusted in the device menu.</p>
-<p>The number is assigned once when a device is added to the favorites and
-announced at that moment ("added as favorite 3"); in the favorites tab it is
-shown in front of the device name. It stays with the device permanently, even
-when other favorites are removed.</p>
-<p>You add favorites in the device menu: select a device and activate the
-"Add to favorites" entry.</p>
+<h4 id="what-can-be-switched">What can be switched</h4>
+<p>Pressing a digit twice on a device that cannot be switched reports "cannot
+be switched – adjustable in the device menu".</p>
+<ul>
+<li><strong>Switchable:</strong> Meross plugs, lights and LED strips, aroma
+  diffusers; Levoit air purifiers and tower fans; the Cozytouch hot water
+  heat pump (hot water production on/off).</li>
+<li><strong>On multi-outlet strips</strong> (MSS425/E/F, MSS620, MOP320)
+  either <strong>a single outlet</strong> or <strong>the whole
+  device</strong> can become a favorite – each with its own digit. The outlet
+  switches only itself, the device switches all outlets together. For a
+  single outlet, expand the strip in the device menu, select the outlet
+  and press <strong>Ctrl+B</strong>. This works while the device is
+  <strong>offline</strong> too – the digit stays the same once it is
+  reachable again.</li>
+<li><strong>Not switchable:</strong> Meross sensors (temperature/humidity,
+  water leak) and Meross hubs; every Netatmo device. Thermostats and radiator
+  valves can be adjusted but not switched on and off; the weather station and
+  the indoor air monitor are display only. Their status is announced on the
+  first press as usual – they are adjusted in the device menu.</li>
+</ul>
+<h4 id="adding-favorites">Adding favorites and the digits</h4>
+<p>In the device menu, select the device and press <strong>Ctrl+B</strong> –
+or activate the "Add to favorites" entry. <strong>Ctrl+B</strong> removes a
+favorite again as well.</p>
+<p>When it is added, the device gets its fixed digit, announced right
+away, for example "living room lamp: added to favorites, digit 3". In the
+favorites tab the digit is shown in front of the device name. It stays with
+the device permanently, even when other favorites are removed. From the tenth
+favorite on, the digits are used up; those devices remain reachable through
+the device menu and move up as soon as a digit becomes free.</p>
 <hr />
 <h2 id="supported-platforms-and-devices">Supported platforms and devices</h2>
 <p>The add-on supports four smart home platforms. Each can be enabled
-individually; you only need the ones you actually use.
+individually; only the ones actually in use are needed.
 <strong>Cozytouch/Atlantic is experimental</strong> – only a single device
 model has been tested there so far.</p>
 <h3 id="meross">Meross</h3>
-<p>Sign in with the email address and password of your Meross account.
+<p>Sign in with the email address and password of the Meross account.
 External changes (e.g. switching through the Meross app, Alexa or the
 physical button on the device) are announced as well.</p>
 <h4 id="plugs-and-power-strips">Plugs and power strips</h4>
@@ -133,7 +175,7 @@ which hub accepts which sensor is defined by Meross and shown in the Meross app.
 <li><strong>MS400</strong>, <strong>MS405</strong> – water leak sensors</li>
 </ul>
 <h3 id="netatmo">Netatmo</h3>
-<p>Heating control and weather station display through your Netatmo account.</p>
+<p>Heating control and weather station display through the Netatmo account.</p>
 <h4 id="heating">Heating</h4>
 <ul>
 <li><strong>NATherm1</strong> – room thermostat</li>
@@ -159,7 +201,7 @@ the NRV smart radiator valve, not on the room thermostat).</p>
 <p>Displayed: temperature, humidity, CO₂, noise, air pressure, rain and wind –
 display only, no control.</p>
 <h3 id="vesync-levoit">VeSync / Levoit</h3>
-<p>Sign in with the email address, password and country code of your VeSync
+<p>Sign in with the email address, password and country code of the VeSync
 account.</p>
 <h4 id="air-purifiers-levoit-core">Air purifiers (Levoit Core)</h4>
 <ul>
@@ -186,7 +228,7 @@ so far. Other Cozytouch device types may be detected or presented
 incorrectly, and individual functions can stop working if Atlantic changes
 its cloud interface. Details under
 <a href="#maturity-and-notes">Maturity and notes</a>.</p>
-<p>Sign in with the email address and password of your Cozytouch/Atlantic
+<p>Sign in with the email address and password of the Cozytouch/Atlantic
 account.</p>
 <ul>
 <li><strong>Hot water heat pump</strong> (tested: Austria Email Revolution Evo 3;
@@ -215,34 +257,34 @@ the settings.</p>
 <h2 id="setup">Setup</h2>
 <p>Prerequisite: the devices must have been set up once with the respective
 manufacturer app (Meross, Netatmo, VeSync, Cozytouch) – the add-on then
-picks them up from your account.</p>
-<p>Open the menu with <strong>NVDA + Shift + H</strong>. If you are not signed in
-yet, the settings dialog opens automatically. Enable the platforms you use
+picks them up from the account.</p>
+<p>Open the menu with <strong>NVDA + Shift + H</strong>. Without a sign-in
+yet, the settings dialog opens automatically. Enable the platforms in use
 and enter the credentials – details per platform in the following sections.
 Finally: optionally enable "Automatic login" (the connection is then
 established at every NVDA start) and save. The devices are loaded and
 immediately available in the menu – no NVDA restart required.</p>
 <h3 id="set-up-meross">Set up Meross</h3>
-<p>Enter the email address and password of your Meross account – done.</p>
+<p>Enter the email address and password of the Meross account – done.</p>
 <h3 id="set-up-netatmo">Set up Netatmo</h3>
 <p>Netatmo uses a browser sign-in (OAuth2) instead of email/password inside
 the add-on. Required once:</p>
 <ol>
-<li>Create your own (free) app on <code>dev.netatmo.com</code>; you receive a
+<li>Create a (free) app on <code>dev.netatmo.com</code>; it provides a
   <strong>client ID</strong> and a <strong>client secret</strong>.</li>
 <li>Enter both in the Netatmo tab of the add-on.</li>
-<li>Register the <strong>redirect URI</strong> shown in the tab with your Netatmo
+<li>Register the <strong>redirect URI</strong> shown in the tab with the Netatmo
   app – details, and what the port is about, are explained in the section
   <a href="#netatmo-redirect-uri-and-port">Netatmo: redirect URI and port</a>.</li>
 <li>Choose "Connect with Netatmo (OAuth2)", sign in in the browser and
   confirm.</li>
 </ol>
 <h3 id="set-up-vesync">Set up VeSync / Levoit</h3>
-<p>Enter the email address, password and country code of your VeSync
+<p>Enter the email address, password and country code of the VeSync
 account.</p>
 <h3 id="set-up-cozytouch">Set up Cozytouch / Atlantic (experimental)</h3>
-<p>Enter the email address and password of your Cozytouch account (the same
-as in the Cozytouch app). Optional: the rated capacity of your hot water
+<p>Enter the email address and password of the Cozytouch account (the same
+as in the Cozytouch app). Optional: the rated capacity of the hot water
 tank in litres, so the available hot water is additionally estimated in
 litres. The tab is labelled “experimental” in the settings dialog – see
 <a href="#maturity-and-notes">Maturity and notes</a>.</p>
@@ -253,7 +295,7 @@ litres. The tab is labelled “experimental” in the settings dialog – see
 previously registered address – the redirect URI. The add-on shows it in the
 Netatmo tab. By default it is <strong>exactly</strong>:</p>
 <p><code>http://localhost:8474/callback</code></p>
-<p>You must enter exactly this address in the "redirect URI" field of your
+<p>Exactly this address has to be entered in the "redirect URI" field of the
 Netatmo app on <code>dev.netatmo.com</code> – best copied unchanged from the
 add-on.</p>
 <h3 id="why-exact">Why does the address have to match exactly?</h3>
@@ -262,13 +304,13 @@ the one actually used. Even a difference in scheme (<code>http</code>), host
 (<code>localhost</code> is not the same as <code>127.0.0.1</code>), port or path
 leads to the error <code>redirect_uri mismatch</code>.</p>
 <h3 id="why-the-port">What is the port for, and why 8474?</h3>
-<p>During sign-in, the add-on briefly starts a small local web server on your
-own computer that receives the authorisation from Netatmo. The port (default
+<p>During sign-in, the add-on briefly starts a small local web server on the
+user's own computer that receives the authorisation from Netatmo. The port (default
 <strong>8474</strong>) determines the "channel" this local server listens on. It
 is only used locally and only for the moment of signing in; nothing is
 opened to the outside. 8474 was chosen as an inconspicuous, rarely used
 port.</p>
-<p>If the port is already taken on your computer (the sign-in fails with a
+<p>If the port is already taken on the computer (the sign-in fails with a
 port message), simply change the <strong>redirect port</strong> in the Netatmo
 tab to a free value – and register the newly shown redirect URI with
 <code>dev.netatmo.com</code> again so both sides match.</p>
@@ -278,19 +320,72 @@ tab to a free value – and register the newly shown redirect URI with
 view. Navigate with the arrow keys; switch or change values with Enter or
 Space. Frequently used devices can be marked as favourites (via "Add to
 favorites" on a device); they then also appear in the favorites tab. In the
-settings you can choose which tab (all devices or favorites) is shown first
-when the menu opens.</p>
+settings it can be chosen which tab (all devices or favorites) is shown
+first when the menu opens.</p>
 <p>Every action gives immediate speech and tone feedback. While the menu is
 open the devices are refreshed more frequently so the values stay
 up to date.</p>
 <hr />
+<h2 id="device-history">Device history</h2>
+<p><strong>Ctrl + H</strong> in the device menu opens the history. It answers
+two different questions, and the "View" combo box switches between them.</p>
+<p><strong>Events</strong> – one row per action, newest first and grouped by
+day ("Today", "Yesterday", then weekday and date). The columns are time,
+device, platform, event and source. The source column names where the action
+came from: "you" for an action through this add-on, "external" for the
+manufacturer app, a voice assistant or the button on the device, and
+"automatic" for entries the add-on records by itself, such as a water
+alarm.</p>
+<p><strong>Measurements</strong> – one row per device and quantity instead of
+thousands of single values: device, quantity, latest value and time of the
+latest reading. Enter on a row opens the details – lowest and highest value,
+the time-weighted average, the period covered, the number of stored readings
+and the most recent changes. The detail window is a read-only text field, so it
+can be read line by line and copied with Ctrl+C.</p>
+<p>The filters above the list narrow it down by device, platform and period
+(all time, last hour, last 24 hours, last 7 days, last 30 days); the "Filter"
+button applies them.</p>
+<h3 id="what-is-recorded">What is recorded</h3>
+<p>Readings are kept as change points, not as a complete series: a value is
+stored when it differs from the last stored one by more than a threshold –
+0.3 K for temperature, 2 % for humidity, 50 ppm for CO2, 1 mbar for air
+pressure, 3 µg/m³ for particulates and 5 dB for noise. Regardless of that, one
+value per hour is kept, so an unchanged reading does not look like a gap and
+the averages stay correct. Recorded are temperature, humidity, CO2, air
+pressure, PM2.5 and PM10 of the Levoit air purifiers, the noise level of the
+Netatmo indoor module and the temperature measured by the Levoit tower
+fans.</p>
+<p>Events are kept for one year or 2000 entries, readings for 90 days or 20000
+change points – whichever limit is reached first. Both files live in the NVDA
+configuration folder next to the add-on, as
+<code>SmartHomeControl_history.json</code> and
+<code>SmartHomeControl_measurements.json</code>. "Delete history" empties both
+after a confirmation prompt.</p>
+<h3 id="csv-export">CSV export</h3>
+<p>"Export as CSV" writes what the current view shows, with the active filters.
+The columns follow the content: a file of events carries no measurement
+columns, and a file of readings only the quantities that actually occur.</p>
+<p>Timestamps are written in ISO 8601 with the "T"
+(<code>2026-08-14T22:20:49</code>). That is not cosmetic: with a space instead,
+a spreadsheet recognises a date, reformats the cell and then shows nothing but
+"##########" because the column is too narrow – which is exactly what a screen
+reader reads out. List and decimal separators follow the regional settings, so
+numbers arrive as numbers. Without that, a German Excel reads the temperature
+"28.5" as the date "28 May".</p>
+<hr />
 <h2 id="change-announcements">Change announcements</h2>
 <p>External changes are announced as well – for example when a device is
 switched through the manufacturer app, Alexa or the button on the device. In
-the "Notifications" tab you configure per platform and event type what is
-announced (e.g. switching, mode, fan level, air quality, filter, thermostat
-setpoint, boiler status). Your own actions in the dialog are not reported
+the "Notifications" tab, what is announced can be set per platform and
+event type (e.g. switching, mode, fan level, air quality, filter, thermostat
+setpoint, boiler status). Own actions in the dialog are not reported
 twice.</p>
+<p>The water sensors are a special case: an MS400 or MS405 reports a state, not
+a measured value. A change is announced with an error tone and recorded in the
+history as an event ("water alarm" or "no water detected any more"). Since a
+leak sensor that stays silent is pointless, this is on by default; it can be
+switched off under Notifications → Meross → "Announce water alarm of the water
+sensors".</p>
 <hr />
 <h2 id="cloud-limits">Notes on cloud limits</h2>
 <p>Meross limits its cloud to <strong>200 messages per hour and device</strong> –
@@ -327,7 +422,7 @@ temporarily fail when the manufacturers change their servers.</p>
 <hr />
 <h2 id="privacy-and-security">Privacy and security</h2>
 <ul>
-<li>Your credentials are stored exclusively <strong>locally on your
+<li>The credentials are stored exclusively <strong>locally on the
   computer</strong> and <strong>encrypted</strong>. Passwords are never stored in
   plain text in the configuration.</li>
 <li>Communication goes directly to the respective manufacturer clouds – no
@@ -345,6 +440,29 @@ temporarily fail when the manufacturers change their servers.</p>
   cloud/network issue – the add-on reconnects automatically and announces
   when the platform is connected again.</li>
 </ul>
+<h2 id="reporting-a-problem">Reporting a problem</h2>
+<p>Problem reports are welcome – please open an issue at
+<a href="https://github.com/BlindByte06/SmartHomeControl/issues">github.com/BlindByte06/SmartHomeControl/issues</a>.</p>
+<p>What helps most is the NVDA log. To produce a useful one:</p>
+<ol>
+<li><strong>NVDA menu → Preferences → Settings → General → Logging level:
+  "Debug"</strong>, then restart NVDA. Without this level the add-on's own
+  entries are missing.</li>
+<li>Reproduce the problem.</li>
+<li><strong>NVDA menu → Tools → View log</strong>, then save the text
+  (Ctrl+S) or copy the part around the problem.</li>
+</ol>
+<p>Please include in the report:</p>
+<ul>
+<li>what was done, what was expected and what happened instead</li>
+<li>the platform and, if known, the device model (e.g. Meross MSS425F)</li>
+<li>the add-on version (NVDA menu → Tools → Add-on store → installed add-ons)
+  and the NVDA version</li>
+</ul>
+<p><strong>Before sending, please check the log for personal data.</strong> It
+contains device names and home names as given in the manufacturer app. The add-on itself logs neither passwords nor tokens nor the email
+address – but error messages passed through from the manufacturer libraries
+are beyond its control, so a quick look is worth it.</p>
 <h2 id="license-and-bundled-components">License and bundled components</h2>
 <p>Smart Home Control is licensed under the <strong>GNU General Public License,
 version 2</strong> (see the <code>LICENSE</code> file).</p>

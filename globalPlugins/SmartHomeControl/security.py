@@ -40,7 +40,7 @@ try:
     _HAS_AES = True
 except ImportError:
     _HAS_AES = False
-    log.warning("PyCryptodome nicht verfügbar – AES-Fallback deaktiviert")
+    log.warning("PyCryptodome unavailable - AES fallback disabled")
 
 
 # ============================================================
@@ -69,7 +69,7 @@ def _salt_path_candidates():
         if cfg_dir:
             paths.append(os.path.join(cfg_dir, _SALT_FILE_NAME))
     except Exception:
-        log.debug("globalVars.appArgs.configPath nicht verfügbar")
+        log.debug("globalVars.appArgs.configPath unavailable")
     paths.append(os.path.join(os.path.expanduser("~"), "." + _SALT_FILE_NAME))
     return paths
 
@@ -78,10 +78,9 @@ def _restrict_file_acl(path):
     """Restrict the Windows ACL to the current user – best effort."""
     try:
         import subprocess
-        # CREATE_NO_WINDOW: ohne dieses Flag blitzt unter Windows kurz ein
-        # Konsolenfenster auf und zieht den Fokus - für Screenreader-Nutzer
-        # besonders störend, weil NVDA dann den Fenstertitel ansagt. Das Flag
-        # gibt es nur unter Windows, deshalb getattr mit Default 0.
+        # CREATE_NO_WINDOW: without this flag a console window flashes up
+        # on Windows and steals the focus - NVDA then announces its title.
+        # Windows-only, hence getattr with a default of 0.
         no_window = getattr(subprocess, 'CREATE_NO_WINDOW', 0)
         subprocess.run(
             ['icacls', path, '/inheritance:r', '/grant:r',
@@ -90,7 +89,7 @@ def _restrict_file_acl(path):
             creationflags=no_window,
         )
     except Exception as e:
-        log.debug(f"ACL-Einschränkung für Salt-Datei fehlgeschlagen: {e}")
+        log.debug(f"Restricting the ACL of the salt file failed: {e}")
 
 
 def _load_or_create_salt():
@@ -111,9 +110,9 @@ def _load_or_create_salt():
                     salt = f.read()
                 if len(salt) >= 16:
                     return salt
-                log.warning(f"Salt-Datei zu kurz, wird neu erzeugt: {path}")
+                log.warning(f"Salt file too short, regenerating: {path}")
         except Exception as e:
-            log.warning(f"Salt-Datei konnte nicht gelesen werden: {e}")
+            log.warning(f"Could not read the salt file: {e}")
 
     # 2. Create a new one and store it at the first writable location
     salt = os.urandom(32)
@@ -124,12 +123,12 @@ def _load_or_create_salt():
             _restrict_file_acl(path)
             return salt
         except Exception as e:
-            log.warning(f"Salt-Datei konnte nicht nach {path} geschrieben werden: {e}")
+            log.warning(f"Could not write the salt file to {path}: {e}")
 
     log.error(
-        "Salt konnte an keinem Ort gespeichert werden! AES-verschlüsselte "
-        "Credentials (AESV2-Fallback ohne DPAPI) überleben damit KEINEN "
-        "NVDA-Neustart und müssen dann neu eingegeben werden."
+        "Salt could not be stored anywhere. AES-encrypted credentials "
+        "(AESV2 fallback without DPAPI) will NOT survive an NVDA restart "
+        "and have to be entered again."
     )
     return salt
 
@@ -177,7 +176,8 @@ def _encrypt_aes_v2(plaintext):
     Format: AESV2:<base64(nonce + tag + ciphertext)>
     """
     if not _HAS_AES:
-        raise RuntimeError(_("AES-Verschlüsselung nicht verfügbar (PyCryptodome fehlt)"))
+        raise RuntimeError(_("AES encryption not available (PyCryptodome "
+                             "missing)"))
     key = _derive_machine_key_v2()
     nonce = os.urandom(12)  # 96-bit nonce for GCM
     cipher = AES.new(key, AES.MODE_GCM, nonce=nonce)
@@ -190,7 +190,8 @@ def _encrypt_aes_v2(plaintext):
 def _decrypt_aes_v2(encrypted_b64):
     """Decrypts the AESV2 format (per-installation salt, AAD)."""
     if not _HAS_AES:
-        raise RuntimeError(_("AES-Entschlüsselung nicht verfügbar (PyCryptodome fehlt)"))
+        raise RuntimeError(_("AES decryption not available (PyCryptodome "
+                             "missing)"))
     raw = base64.b64decode(encrypted_b64)
     nonce = raw[:12]
     tag = raw[12:28]
@@ -204,7 +205,8 @@ def _decrypt_aes_v2(encrypted_b64):
 def _decrypt_aes_legacy(encrypted_b64):
     """Decrypts the legacy AES: format (no AAD, constant salt)."""
     if not _HAS_AES:
-        raise RuntimeError(_("AES-Entschlüsselung nicht verfügbar (PyCryptodome fehlt)"))
+        raise RuntimeError(_("AES decryption not available (PyCryptodome "
+                             "missing)"))
     raw = base64.b64decode(encrypted_b64)
     nonce = raw[:12]
     tag = raw[12:28]
@@ -272,7 +274,7 @@ def encrypt_dpapi(plaintext):
 
     except Exception as e:
         # No stack traces – the error repr may contain sensitive data
-        log.warning(f"DPAPI Verschlüsselung fehlgeschlagen, verwende AES-Fallback: {type(e).__name__}")
+        log.warning(f"DPAPI encryption failed, using AES fallback: {type(e).__name__}")
         return _encrypt_aes_v2(plaintext)
 
 
@@ -320,26 +322,25 @@ def decrypt_dpapi(encrypted):
             return _decrypt_aes_v2(encrypted[6:])
 
         elif encrypted.startswith("AES:"):
-            log.warning("Legacy AES-Credentials gelesen – werden beim nächsten Speichern auf AESV2/DPAPI migriert")
+            log.warning("Legacy AES credentials read - will migrate to AESV2/DPAPI on the next save")
             return _decrypt_aes_legacy(encrypted[4:])
 
         elif encrypted.startswith("B64:"):
-            log.warning("Legacy B64-Credentials gelesen – werden beim nächsten Speichern verschlüsselt")
+            log.warning("Legacy B64 credentials read - will be encrypted on the next save")
             return base64.b64decode(encrypted[4:]).decode('utf-8')
 
         else:
-            # Kein bekanntes Prefix: Wert stammt aus einer Vor-Release-Version.
-            # Die frühere Heuristik ("sieht wie Base64 aus -> dekodieren") ist
-            # abgekündigt: ein echtes Klartext-Passwort, das zufällig gültiges
-            # Base64 ist, würde still verfälscht. Der Wert wird unverändert
-            # als Klartext übernommen und beim nächsten Speichern
-            # verschlüsselt.
-            log.warning("Credentials ohne bekanntes Format gelesen – werden beim nächsten Speichern verschlüsselt")
+            # No known prefix: value comes from a pre-release version. The
+            # old "looks like base64 -> decode it" guess is retired, because a
+            # real plain-text password that happens to be valid base64 would
+            # be silently mangled. The value is taken as plain text and gets
+            # encrypted on the next save.
+            log.warning("Credentials without a known format read - will be encrypted on the next save")
             return encrypted
 
     except Exception as e:
         # No exc_info: could leak sensitive data
-        log.error(f"Entschlüsselung fehlgeschlagen: {type(e).__name__}")
+        log.error(f"Decryption failed: {type(e).__name__}")
         # Return an empty string instead of the ciphertext: the caller would
         # otherwise send the ciphertext as the "password" to the cloud logins
         # and get cryptic API errors instead of a clear "no credentials"

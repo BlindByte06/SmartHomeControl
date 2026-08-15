@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
-Smart Home Control - Favoriten-Ansicht des Geraete-Dialogs
-Ausgelagert aus device_dialog.py (Modul-Aufteilung, Verhalten unverändert).
+Smart Home Control - favorites view of the device dialog.
+Split out of device_dialog.py; behaviour unchanged.
 """
 
 import wx
@@ -13,10 +13,10 @@ import addonHandler
 try:
     addonHandler.initTranslation()
 except Exception as e:
-    log.debug(f"initTranslation fehlgeschlagen: {e}")
-if "_" not in globals():  # Fallback, falls initTranslation() scheitert
-    # Ohne diesen Fallback bleibt `_` undefiniert und der erste `_()`-Aufruf
-    # wirft einen NameError mitten im Dialogaufbau statt beim Import.
+    log.debug(f"initTranslation failed: {e}")
+if "_" not in globals():  # fallback if initTranslation() fails
+    # Without this fallback `_` stays undefined and the first `_()` call
+    # raises a NameError mid-dialog instead of at import time.
     def _(s):
         return s
 
@@ -27,7 +27,7 @@ from .platform_utils import split_by_platform
 
 
 class _FavoritesTreeMixin:
-    """Methoden fuer den Favoriten-Baum (zweiter Tab des Dialogs)."""
+    """Methods for the favorites tree (second tab of the dialog)."""
 
     def _add_favorite_action(self, device_item, device, is_favorite_view=False):
         """Adds a favorite action as the last child of a device node.
@@ -37,37 +37,79 @@ class _FavoritesTreeMixin:
             device: device object
             is_favorite_view: True -> shows 'remove from favorites'
         """
-        favorites = get_favorites()
-        is_fav = favorites.is_favorite(device.unique_id)
-        
-        if is_favorite_view or is_fav:
-            # Translators: Action entry in the device tree.
-            fav_text = _("Aus Favoriten entfernen - Enter")
-            fav_action = 'favorite_remove'
-        else:
-            # Translators: Action entry in the device tree.
-            fav_text = _("Zu Favoriten hinzufügen - Enter")
-            fav_action = 'favorite_add'
-        
+        is_fav = get_favorites().is_favorite(device.unique_id)
+        # One source for label and action, so the rebuild and the later
+        # relabelling (_update_favorite_row) cannot drift apart.
+        fav_text, fav_action = self._favorite_action_label(is_favorite_view or is_fav)
+
         fav_item = self.tree.AppendItem(device_item, fav_text)
         self.tree.SetItemData(fav_item, {
             'type': 'action', 'device': device, 'action': fav_action
         })
     
+    @staticmethod
+    def _favorite_action_label(is_fav):
+        """Label of the favorites row for the current state."""
+        if is_fav:
+            # Translators: Action entry in the device tree.
+            return _("Remove from favorites - Enter"), 'favorite_remove'
+        # Translators: Action entry in the device tree.
+        return _("Add to favorites - Enter"), 'favorite_add'
+
+    def _update_favorite_row(self, row_item):
+        """Rewrites label AND action of a favorites row.
+
+        Without this the device tree kept saying "add to favorites" long
+        after the device had become one: the tree was only refreshed in the
+        favorites tab, never in place. Another Enter would then have
+        triggered "add" again and merely reported "already in favorites".
+
+        Deliberately just this one row instead of rebuilding the children:
+        the focus sits exactly on it, and a rebuild would destroy it.
+        """
+        if not row_item or not row_item.IsOk():
+            return
+        data = self.tree.GetItemData(row_item)
+        if not data or data.get('action') not in ('favorite_add', 'favorite_remove'):
+            return
+        target = data.get('device')
+        if target is None:
+            return
+        text, action = self._favorite_action_label(
+            get_favorites().is_favorite(target.unique_id))
+        self.tree.SetItemText(row_item, text)
+        data['action'] = action
+        self.tree.SetItemData(row_item, data)
+
+    def _find_favorite_row(self, node):
+        """Returns the favorites row below ``node`` (or None)."""
+        if not node or not node.IsOk():
+            return None
+        child, cookie = self.tree.GetFirstChild(node)
+        while child.IsOk():
+            data = self.tree.GetItemData(child)
+            if data and data.get('action') in ('favorite_add', 'favorite_remove'):
+                return child
+            child, cookie = self.tree.GetNextChild(node, cookie)
+        return None
+
     def _toggle_favorite_for_selected(self):
         """Ctrl+B: toggle the favorite status of the currently selected device"""
         item = self.tree.GetSelection()
         if not item.IsOk():
             # Translators: Message when no tree entry is selected.
-            ui.message(_("Kein Gerät ausgewählt"))
+            ui.message(_("No device selected"))
             return
         
-        # Determine the device from the selected item or its parents
+        # Determine the device from the selected item or its parents.
+        # A channel entry carries BOTH ('device' = parent, 'channel' = the
+        # outlet); the outlet is what is meant - otherwise Ctrl+B on
+        # "garden: outlet 1" made the whole power strip a favorite.
         data = self.tree.GetItemData(item)
         device = None
         if data:
-            device = data.get('device')
-        
+            device = data.get('channel') or data.get('device')
+
         # If on a category node: do nothing
         if device is None:
             # Try the parent node
@@ -75,11 +117,11 @@ class _FavoritesTreeMixin:
             if parent.IsOk():
                 parent_data = self.tree.GetItemData(parent)
                 if parent_data:
-                    device = parent_data.get('device')
+                    device = parent_data.get('channel') or parent_data.get('device')
         
         if device is None:
             # Translators: Message when the entry belongs to no device.
-            ui.message(_("Kein Gerät unter Auswahl"))
+            ui.message(_("No device under selection"))
             return
         
         favorites = get_favorites()
@@ -87,23 +129,31 @@ class _FavoritesTreeMixin:
             favorites.remove(device.unique_id)
             tones.beep(500, 50)
             # Translators: Confirmation after removing from the favorites.
-            ui.message(_("{name}: Aus Favoriten entfernt").format(name=device.name))
+            ui.message(_("{name}: removed from favorites").format(name=device.name))
         else:
             slot = favorites.add(device)
             _beep(BEEP_ON)
             if isinstance(slot, int):
-                # Translators: Confirmation after adding to the favorites,
-                # including the digit that toggles it in the favorites layer.
-                ui.message(_("{name}: Als Favorit {number} hinzugefügt").format(
+                # Translators: Confirmation after adding to the favorites.
+                # {number} = the digit that selects it in the favorites layer.
+                ui.message(_("{name}: added to favorites, digit {number}").format(
                     name=device.name, number=slot))
             else:
-                # Kein freier Platz 1-9 mehr (ab dem zehnten Favoriten)
+                # No free slot 1-9 left (from the tenth favorite on)
                 # Translators: Confirmation after adding to the favorites.
-                ui.message(_("{name}: Zu Favoriten hinzugefügt").format(name=device.name))
+                ui.message(_("{name}: added to favorites").format(name=device.name))
         
+        # Relabel the favorites row of the affected device. Ctrl+B can be
+        # pressed on the device/channel node itself or on one of its rows,
+        # so search both levels.
+        row = self._find_favorite_row(item)
+        if row is None:
+            row = self._find_favorite_row(self.tree.GetItemParent(item))
+        self._update_favorite_row(row)
+
         # Refresh the favorites tree view
         wx.CallAfter(self._refresh_favorites_tree)
-    
+
     def _execute_favorite_action(self, item, data):
         """Executes a favorite action (add/remove)"""
         device = data.get('device')
@@ -119,27 +169,27 @@ class _FavoritesTreeMixin:
             if slot:
                 _beep(BEEP_ON)
                 if isinstance(slot, int):
-                    # Translators: Confirmation after adding to the
-                    # favorites, including the digit that toggles it in the
-                    # favorites layer.
-                    ui.message(_("{name}: Als Favorit {number} hinzugefügt").format(
+                    # Translators: Confirmation after adding to the favorites.
+                    # {number} = the digit that selects it in the favorites
+                    # layer.
+                    ui.message(_("{name}: added to favorites, digit {number}").format(
                         name=device.name, number=slot))
                 else:
-                    # Kein freier Platz 1-9 mehr (ab dem zehnten Favoriten)
+                    # No free slot 1-9 left (from the tenth favorite on)
                     # Translators: Confirmation after adding to the favorites.
-                    ui.message(_("{name}: Zu Favoriten hinzugefügt").format(name=device.name))
+                    ui.message(_("{name}: added to favorites").format(name=device.name))
             else:
                 # Translators: Hint when the device is already a favorite.
-                ui.message(_("{name}: Bereits in Favoriten").format(name=device.name))
+                ui.message(_("{name}: already in favorites").format(name=device.name))
         
         elif action == 'favorite_remove':
             if favorites.remove(device.unique_id):
                 tones.beep(500, 50)
                 # Translators: Confirmation after removing from the favorites.
-                ui.message(_("{name}: Aus Favoriten entfernt").format(name=device.name))
+                ui.message(_("{name}: removed from favorites").format(name=device.name))
             else:
                 # Translators: Hint when the device was not a favorite.
-                ui.message(_("{name}: War nicht in Favoriten").format(name=device.name))
+                ui.message(_("{name}: was not in favorites").format(name=device.name))
         
         if is_fav_context:
             # In the favorites tree: after resetting self.tree, refresh + set
@@ -147,6 +197,9 @@ class _FavoritesTreeMixin:
             # hence schedule with CallAfter
             wx.CallAfter(self._refresh_and_focus_fav_tree)
         else:
+            # Relabel the activated row itself, otherwise it keeps the
+            # old action (see _update_favorite_row).
+            self._update_favorite_row(item)
             # In the main tree: only refresh the favorites tree in the
             # background (no focus!)
             wx.CallAfter(self._refresh_favorites_tree)
@@ -154,14 +207,53 @@ class _FavoritesTreeMixin:
     # ----------------------------------------------------------
     # Favorites tree view: construction and event handlers
     # ----------------------------------------------------------
-    def _prefix_fav_slot(self, platform_node, fav_entry):
-        """Stellt dem zuletzt eingefügten Eintrag seine Platznummer voran.
+    @staticmethod
+    def _find_meross_favorite(all_meross, fav_uuid):
+        """Finds the device OR the outlet for a favorite UUID.
 
-        Aus "Wohnzimmerlampe: ein" wird "3: Wohnzimmerlampe: ein" - so
-        steht im Favoriten-Tab sichtbar, welche Ziffer das Gerät in der
-        Favoriten-Ebene schaltet. Der Platz ist die feste Nummer aus der
-        Favoriten-Datei (favorites._assign_slots), nicht die Position.
-        Favoriten ohne Platz (ab dem zehnten) bleiben ohne Präfix.
+        Single outlets are favorites in their own right (UUID
+        ``parent_uuid_chN``). Without the channel search they would show as
+        "not available" in the favorites tab although the favorites layer
+        switches them fine.
+
+        Returns:
+            (device, channel) - channel is None for a whole device,
+            (None, None) if nothing matches.
+        """
+        for dev in all_meross:
+            if dev.unique_id == fav_uuid:
+                return dev, None
+            for ch in (dev.get_channels() or []):
+                if ch.unique_id == fav_uuid:
+                    return dev, ch
+        return None, None
+
+    def _add_favorite_channel(self, parent_node, device, channel):
+        """Adds a single outlet as a favorites node.
+
+        Built like in the device tree: the node carries device AND channel
+        and the same shared builder creates the children, so the outlet
+        behaves in the favorites tab exactly as in the device tab.
+        """
+        if getattr(device, 'is_offline', False):
+            # Translators: Favorite outlet label when its device is offline.
+            label = _("{name} - offline").format(name=channel.name)
+        else:
+            label = channel.name
+        item = self.fav_tree.AppendItem(parent_node, label)
+        self.fav_tree.SetItemData(
+            item, {'type': 'device', 'device': device, 'channel': channel})
+        self.fav_tree.SetItemHasChildren(item, True)  # lazy: built on expand
+        self.fav_tree.Collapse(item)
+
+    def _prefix_fav_slot(self, platform_node, fav_entry):
+        """Prefixes the slot number to the entry inserted last.
+
+        "living room lamp: on" becomes "3: living room lamp: on", so the
+        favorites tab shows which digit switches the device in the
+        favorites layer. The slot is the fixed number from the favorites
+        file (favorites._assign_slots), not the position. Favorites without
+        a slot (from the tenth on) stay unprefixed.
         """
         slot = fav_entry.get('slot')
         if not slot:
@@ -192,12 +284,12 @@ class _FavoritesTreeMixin:
         try:
             self.fav_tree.DeleteAllItems()
             # Translators: Invisible root node of the favorites tree.
-            fav_root = self.fav_tree.AddRoot(_("Geräte-Favoriten"))
+            fav_root = self.fav_tree.AddRoot(_("Device favorites"))
             
             favorites_obj = get_favorites()
-            # Umbenennungen aus den Hersteller-Apps übernehmen, BEVOR die
-            # Namen gelesen werden - sonst zeigt der Favoriten-Tab bei
-            # nicht verfügbaren Geräten weiter den Namen von damals.
+            # Pick up renames from the vendor apps BEFORE the names are
+            # read, otherwise unavailable devices keep their old name in
+            # the favorites tab.
             favorites_obj.sync_names(self.plugin.devices or [])
             fav_meross = favorites_obj.get_by_platform("meross")
             fav_netatmo = favorites_obj.get_by_platform("netatmo")
@@ -208,7 +300,10 @@ class _FavoritesTreeMixin:
 
             if total_favs == 0:
                 # Translators: Hint in the empty favorites tab.
-                hint = self.fav_tree.AppendItem(fav_root, _("Noch keine Favoriten – im Geräte-Tab mit Strg+B hinzufügen"))
+                hint = self.fav_tree.AppendItem(fav_root, _("No favorites yet "
+                                                            "– add them in "
+                                                            "the devices tab "
+                                                            "with Ctrl+B"))
                 self.fav_tree.SetItemData(hint, {'type': 'info'})
                 # No SelectItem - the focus stays with the main tree
                 return
@@ -231,18 +326,24 @@ class _FavoritesTreeMixin:
                 if fav_meross:
                     # Translators: Favorites group. Brand name, do not
                     # translate.
-                    meross_node = self.fav_tree.AppendItem(fav_root, _("Meross-Favoriten ({count})").format(count=len(fav_meross)))
+                    meross_node = self.fav_tree.AppendItem(fav_root, _("Meross "
+                                                                       "favorites "
+                                                                       "({count})").format(count=len(fav_meross)))
                     self.fav_tree.SetItemData(meross_node, None)
                     
                     for fav_entry in fav_meross:
                         fav_uuid = fav_entry.get('uuid', '')
-                        real_device = next((d for d in all_meross if d.unique_id == fav_uuid), None)
-                        
-                        if real_device:
+                        real_device, real_channel = self._find_meross_favorite(
+                            all_meross, fav_uuid)
+
+                        if real_channel is not None:
+                            self._add_favorite_channel(
+                                meross_node, real_device, real_channel)
+                        elif real_device:
                             self._add_single_meross_device(meross_node, real_device, is_favorite_view=True)
                         else:
                             offline_item = self.fav_tree.AppendItem(
-                                meross_node, _("{name} (nicht verfügbar)").format(name=fav_entry.get('name', _("Unbekannt"))))
+                                meross_node, _("{name} (not available)").format(name=fav_entry.get('name', _("Unknown"))))
                             self.fav_tree.SetItemData(offline_item, {
                                 'type': 'info', 'fav_uuid': fav_uuid
                             })
@@ -252,7 +353,9 @@ class _FavoritesTreeMixin:
                 if fav_netatmo:
                     # Translators: Favorites group. Brand name, do not
                     # translate.
-                    netatmo_node = self.fav_tree.AppendItem(fav_root, _("Netatmo-Favoriten ({count})").format(count=len(fav_netatmo)))
+                    netatmo_node = self.fav_tree.AppendItem(fav_root, _("Netatmo "
+                                                                        "favorites "
+                                                                        "({count})").format(count=len(fav_netatmo)))
                     self.fav_tree.SetItemData(netatmo_node, None)
 
                     for fav_entry in fav_netatmo:
@@ -263,7 +366,7 @@ class _FavoritesTreeMixin:
                             self._add_single_netatmo_device(netatmo_node, real_device, is_favorite_view=True)
                         else:
                             offline_item = self.fav_tree.AppendItem(
-                                netatmo_node, _("{name} (nicht verfügbar)").format(name=fav_entry.get('name', _("Unbekannt"))))
+                                netatmo_node, _("{name} (not available)").format(name=fav_entry.get('name', _("Unknown"))))
                             self.fav_tree.SetItemData(offline_item, {
                                 'type': 'info', 'fav_uuid': fav_uuid
                             })
@@ -273,7 +376,9 @@ class _FavoritesTreeMixin:
                 if fav_vesync:
                     # Translators: Favorites group. Brand name, do not
                     # translate.
-                    vesync_node = self.fav_tree.AppendItem(fav_root, _("VeSync-Favoriten ({count})").format(count=len(fav_vesync)))
+                    vesync_node = self.fav_tree.AppendItem(fav_root, _("VeSync "
+                                                                       "favorites "
+                                                                       "({count})").format(count=len(fav_vesync)))
                     self.fav_tree.SetItemData(vesync_node, None)
 
                     for fav_entry in fav_vesync:
@@ -284,7 +389,7 @@ class _FavoritesTreeMixin:
                             self._add_single_vesync_device(vesync_node, real_device, is_favorite_view=True)
                         else:
                             offline_item = self.fav_tree.AppendItem(
-                                vesync_node, _("{name} (nicht verfügbar)").format(name=fav_entry.get('name', _("Unbekannt"))))
+                                vesync_node, _("{name} (not available)").format(name=fav_entry.get('name', _("Unknown"))))
                             self.fav_tree.SetItemData(offline_item, {
                                 'type': 'info', 'fav_uuid': fav_uuid
                             })
@@ -295,7 +400,7 @@ class _FavoritesTreeMixin:
                     # Translators: Favorites group. Brand name, do not
                     # translate.
                     cozytouch_node = self.fav_tree.AppendItem(
-                        fav_root, _("Cozytouch-Favoriten ({count})").format(count=len(fav_cozytouch)))
+                        fav_root, _("Cozytouch favorites ({count})").format(count=len(fav_cozytouch)))
                     self.fav_tree.SetItemData(cozytouch_node, None)
 
                     for fav_entry in fav_cozytouch:
@@ -306,7 +411,7 @@ class _FavoritesTreeMixin:
                             self._add_single_cozytouch_device(cozytouch_node, real_device, is_favorite_view=True)
                         else:
                             offline_item = self.fav_tree.AppendItem(
-                                cozytouch_node, _("{name} (nicht verfügbar)").format(name=fav_entry.get('name', _("Unbekannt"))))
+                                cozytouch_node, _("{name} (not available)").format(name=fav_entry.get('name', _("Unknown"))))
                             self.fav_tree.SetItemData(offline_item, {
                                 'type': 'info', 'fav_uuid': fav_uuid
                             })
@@ -437,16 +542,16 @@ class _FavoritesTreeMixin:
             # Translators: F1 help text of the favorites view (keyboard
             # shortcuts).
             ui.message(
-                _("Geräte-Favoriten - Tastaturkürzel: ") +
-                _("Pfeiltasten: Navigation, ") +
-                _("Enter oder Leertaste: Aktion ausführen, ") +
-                _("Strg+B: Favorit entfernen, ") +
-                _("F5: Aktualisieren, ") +
-                _("Strg+H: Verlauf anzeigen, ") +
-                _("Strg+Tab: Zum Geräte-Tab wechseln, ") +
-                _("Strg+T: Status ansagen, ") +
-                _("F1: Kontexthilfe, ") +
-                _("Esc: Dialog schließen")
+                _("Device favorites - keyboard shortcuts: ") +
+                _("Arrow keys: navigate, ") +
+                _("Enter or Space: execute action, ") +
+                _("Ctrl+B: remove favorite, ") +
+                _("F5: refresh, ") +
+                _("Ctrl+H: show history, ") +
+                _("Ctrl+Tab: switch to devices tab, ") +
+                _("Ctrl+T: announce status, ") +
+                _("F1: context help, ") +
+                _("Esc: close dialog")
             )
             return
         
@@ -457,7 +562,7 @@ class _FavoritesTreeMixin:
         item = self.fav_tree.GetSelection()
         if not item.IsOk():
             # Translators: Message when no tree entry is selected.
-            ui.message(_("Kein Gerät ausgewählt"))
+            ui.message(_("No device selected"))
             return
         
         data = self.fav_tree.GetItemData(item)
@@ -475,7 +580,7 @@ class _FavoritesTreeMixin:
         
         if device is None:
             # Translators: Message when the entry belongs to no device.
-            ui.message(_("Kein Gerät unter Auswahl"))
+            ui.message(_("No device under selection"))
             return
         
         favorites = get_favorites()
@@ -498,13 +603,13 @@ class _FavoritesTreeMixin:
             favorites.remove(device.unique_id)
             tones.beep(500, 50)
             # Translators: Confirmation after removing from the favorites.
-            ui.message(_("{name}: Aus Favoriten entfernt").format(name=device.name))
+            ui.message(_("{name}: removed from favorites").format(name=device.name))
             # Rebuild + focus in the fav tree (the user is here)
             self._refresh_favorites_tree()
             self._focus_fav_tree_item(next_focus_name)
         else:
             # Translators: Hint when the device is not a favorite.
-            ui.message(_("{name}: Ist kein Favorit").format(name=device.name))
+            ui.message(_("{name}: is not a favorite").format(name=device.name))
     
     # ----------------------------------------------------------
     # History dialog

@@ -11,10 +11,10 @@ import addonHandler
 try:
     addonHandler.initTranslation()
 except Exception as e:
-    _nvda_log.debug(f"initTranslation fehlgeschlagen: {e}")
-if "_" not in globals():  # Fallback, falls initTranslation() scheitert
-    # Ohne diesen Fallback bleibt `_` undefiniert und der erste `_()`-Aufruf
-    # wirft einen NameError mitten im Dialogaufbau statt beim Import.
+    _nvda_log.debug(f"initTranslation failed: {e}")
+if "_" not in globals():  # fallback if initTranslation() fails
+    # Without this fallback `_` stays undefined and the first `_()` call
+    # raises a NameError mid-dialog instead of at import time.
     def _(s):
         return s
 
@@ -47,18 +47,18 @@ class _MerossDialogMixin:
         # Known colors with tolerance (+-15 for each channel)
         # Translators: Color names for announcing the current lamp color.
         color_definitions = [
-            ((255, 0, 0), _("Rot")),
-            ((0, 255, 0), _("Grün")),
-            ((0, 0, 255), _("Blau")),
-            ((255, 255, 0), _("Gelb")),
+            ((255, 0, 0), _("Red")),
+            ((0, 255, 0), _("Green")),
+            ((0, 0, 255), _("Blue")),
+            ((255, 255, 0), _("Yellow")),
             ((255, 165, 0), _("Orange")),
-            ((128, 0, 128), _("Lila")),
+            ((128, 0, 128), _("Purple")),
             ((255, 105, 180), _("Pink")),
             ((0, 255, 255), _("Cyan")),
-            ((255, 255, 255), _("Weiß")),
-            ((0, 0, 0), _("Aus")),
-            ((255, 200, 100), _("Warmweiß")),
-            ((200, 200, 255), _("Kaltweiß")),
+            ((255, 255, 255), _("White")),
+            ((0, 0, 0), _("Off")),
+            ((255, 200, 100), _("Warm white")),
+            ((200, 200, 255), _("Cool white")),
         ]
         
         tolerance = 30  # tolerance for color comparison
@@ -72,21 +72,21 @@ class _MerossDialogMixin:
         # Try to detect the color group
         # Translators: Approximate color group names for the announcement.
         if r > 200 and g < 100 and b < 100:
-            return _("Rötlich")
+            return _("Reddish")
         elif r < 100 and g > 200 and b < 100:
-            return _("Grünlich")
+            return _("Greenish")
         elif r < 100 and g < 100 and b > 200:
-            return _("Bläulich")
+            return _("Bluish")
         elif r > 200 and g > 200 and b < 100:
-            return _("Gelblich")
+            return _("Yellowish")
         elif r > 200 and g < 150 and b > 150:
-            return _("Rosa")
+            return _("Rose")
         elif r < 100 and g > 200 and b > 200:
-            return _("Türkis")
+            return _("Turquoise")
         elif r > 200 and g > 100 and b < 100:
-            return _("Orange-Töne")
+            return _("Orange tones")
         elif r > 200 and g > 200 and b > 200:
-            return _("Weißtöne")
+            return _("White tones")
         
         # No recognized color
         return None
@@ -104,9 +104,9 @@ class _MerossDialogMixin:
             device: MerossDevice object
             is_favorite_view: True when in the favorites view
         """
-        # Main device node. Offline-Geräte werden schon im Knoten-Label
-        # gekennzeichnet (wie bei Netatmo/Cozytouch), damit der Offline-Zustand
-        # sofort hörbar ist - auch bei Mehrkanalgeräten.
+        # Main device node. Offline devices are marked in the label itself
+        # (as with Netatmo/Cozytouch) so the offline state is audible right
+        # away, multi-channel devices included.
         if getattr(device, 'is_offline', False):
             # Translators: Meross device label when the device is offline.
             label = _("{name} ({type}) - offline").format(
@@ -140,15 +140,15 @@ class _MerossDialogMixin:
         # Format: (name, RGB value, description)
         # Translators: Color names and descriptions in the color picker dialog.
         color_presets = [
-            (_("Rot"), (255, 0, 0), _("Kräftiges Rot")),
-            (_("Grün"), (0, 255, 0), _("Kräftiges Grün")),
-            (_("Blau"), (0, 0, 255), _("Kräftiges Blau")),
-            (_("Gelb"), (255, 255, 0), _("Helles Gelb")),
-            (_("Orange"), (255, 165, 0), _("Warmes Orange")),
-            (_("Lila"), (128, 0, 128), _("Dunkles Lila")),
-            (_("Pink"), (255, 105, 180), _("Helles Pink")),
-            (_("Cyan"), (0, 255, 255), _("Helles Türkis")),
-            (_("Weiß"), (255, 255, 255), _("Neutrales Weiß")),
+            (_("Red"), (255, 0, 0), _("Strong red")),
+            (_("Green"), (0, 255, 0), _("Strong green")),
+            (_("Blue"), (0, 0, 255), _("Strong blue")),
+            (_("Yellow"), (255, 255, 0), _("Bright yellow")),
+            (_("Orange"), (255, 165, 0), _("Warm orange")),
+            (_("Purple"), (128, 0, 128), _("Dark purple")),
+            (_("Pink"), (255, 105, 180), _("Bright pink")),
+            (_("Cyan"), (0, 255, 255), _("Bright turquoise")),
+            (_("White"), (255, 255, 255), _("Neutral white")),
         ]
         
         # Check whether the current color matches a preset
@@ -177,30 +177,31 @@ class _MerossDialogMixin:
         if is_custom_color and current_rgb:
             # Translators: List entry for a custom color with the current RGB
             # value.
-            choices.append(_("Benutzerdefiniert (aktuell: RGB {r}, {g}, {b})").format(
+            choices.append(_("Custom (current: RGB {r}, {g}, {b})").format(
                 r=current_rgb[0], g=current_rgb[1], b=current_rgb[2]))
         else:
             # Translators: List entry for entering custom RGB values.
-            choices.append(_("Benutzerdefiniert - RGB-Werte eingeben"))
+            choices.append(_("Custom - enter RGB values"))
 
         # Help text for the dialog
         # Translators: Help text in the color picker dialog. {name} = device
         # name.
-        help_text = _("Wählen Sie eine Farbe für {name}.\n").format(name=device.name)
+        help_text = _("Choose a color for {name}.\n").format(name=device.name)
         if current_rgb:
             # Translators: Display of the current color in the color picker
             # dialog.
-            help_text += _("Aktuelle Farbe: RGB({r}, {g}, {b})\n").format(
+            help_text += _("Current color: RGB({r}, {g}, {b})\n").format(
                 r=current_rgb[0], g=current_rgb[1], b=current_rgb[2])
         # Translators: Usage hint in the color picker dialog.
-        help_text += _("Mit Pfeiltasten navigieren, Enter zum Bestätigen, Escape zum Abbrechen.")
+        help_text += _("Navigate with arrow keys, Enter to confirm, Escape to "
+                       "cancel.")
 
         dlg = wx.SingleChoiceDialog(
             self,
             help_text,
             # Translators: Title of the color picker dialog. {name} = device
             # name.
-            _("Farbe für {name} einstellen").format(name=device.name),
+            _("Set color for {name}").format(name=device.name),
             choices
         )
         
@@ -245,22 +246,21 @@ class _MerossDialogMixin:
         # Detailed help text for screen readers
         # Translators: Help text in the custom RGB values dialog.
         help_text = _(
-            "Geben Sie RGB-Werte ein (Rot, Grün, Blau).\n"
-            "Format: R,G,B (Beispiele: 255,0,0 für Rot, 0,255,0 für Grün)\n"
-            "Jeder Wert muss zwischen 0 und 255 liegen.\n"
-            "0 = keine Farbe, 255 = volle Intensität"
+            "Enter RGB values (red, green, blue).\nFormat: R,G,B (examples: "
+            "255,0,0 for red, 0,255,0 for green)\nEach value must be between "
+            "0 and 255.\n0 = no color, 255 = full intensity"
         )
         if current_rgb:
             # Translators: Display of the current RGB values in the input
             # dialog.
-            help_text += _("\n\nAktuelle Werte: Rot={r}, Grün={g}, Blau={b}").format(
+            help_text += _("\n\nCurrent values: red={r}, green={g}, blue={b}").format(
                 r=current_rgb[0], g=current_rgb[1], b=current_rgb[2])
 
         rgb_dlg = wx.TextEntryDialog(
             self,
             help_text,
             # Translators: Title of the custom RGB values dialog.
-            _("Benutzerdefinierte RGB-Farbe"),
+            _("Custom RGB color"),
             default_value
         )
         
@@ -273,7 +273,8 @@ class _MerossDialogMixin:
                 if len(parts) != 3:
                     tones.beep(300, 100)
                     # Translators: Error message for a wrong RGB input format.
-                    ui.message(_("Ungültiges Format. Drei Werte mit Komma getrennt eingeben, z.B. 255,128,0"))
+                    ui.message(_("Invalid format. Enter three comma-separated "
+                                 "values, e.g. 255,128,0"))
                     return
 
                 red = int(parts[0].strip())
@@ -284,13 +285,13 @@ class _MerossDialogMixin:
                 errors = []
                 if not (0 <= red <= 255):
                     # Translators: Validation error for the red value.
-                    errors.append(_("Rot {value} ungültig (0–255)").format(value=red))
+                    errors.append(_("Red {value} invalid (0–255)").format(value=red))
                 if not (0 <= green <= 255):
                     # Translators: Validation error for the green value.
-                    errors.append(_("Grün {value} ungültig (0–255)").format(value=green))
+                    errors.append(_("Green {value} invalid (0–255)").format(value=green))
                 if not (0 <= blue <= 255):
                     # Translators: Validation error for the blue value.
-                    errors.append(_("Blau {value} ungültig (0–255)").format(value=blue))
+                    errors.append(_("Blue {value} invalid (0–255)").format(value=blue))
 
                 if errors:
                     tones.beep(300, 100)
@@ -298,12 +299,13 @@ class _MerossDialogMixin:
                     return
 
                 # Apply the color
-                self._apply_rgb_color(device, tree_item, red, green, blue, _("Benutzerdefiniert"))
+                self._apply_rgb_color(device, tree_item, red, green, blue, _("Custom"))
 
             except ValueError:
                 tones.beep(300, 100)
                 # Translators: Error message on non-numeric RGB input.
-                ui.message(_("Ungültige Eingabe. Nur Zahlen mit Komma getrennt, z.B. 255,128,0"))
+                ui.message(_("Invalid input. Only comma-separated numbers, "
+                             "e.g. 255,128,0"))
         else:
             rgb_dlg.Destroy()
 
@@ -333,16 +335,15 @@ class _MerossDialogMixin:
             
             # Success feedback
             _beep(BEEP_ON)
-            if color_name == _("Benutzerdefiniert"):
+            if color_name == _("Custom"):
                 # Translators: Confirmation after setting a custom RGB color.
-                ui.message(_("{name}: Farbe auf RGB({r}, {g}, {b}) eingestellt").format(
+                ui.message(_("{name}: color set to RGB({r}, {g}, {b})").format(
                     name=device.name, r=red, g=green, b=blue))
             else:
                 # Translators: Confirmation after setting a predefined color.
-                ui.message(_("{name}: {color} eingestellt").format(name=device.name, color=color_name))
-            # Translators: History detail: lamp color that was set.
-            get_history().log_action(device, 'light_rgb', _('Farbe: {color} (RGB {r},{g},{b})').format(
-                color=color_name, r=red, g=green, b=blue))
+                ui.message(_("{name}: {color} set").format(name=device.name, color=color_name))
+            get_history().log_action(
+                device, 'light_rgb', f"RGB {red},{green},{blue}")
             
             # Update the tree (in a separate try block so errors here are not
             # reported as color errors)
@@ -353,31 +354,31 @@ class _MerossDialogMixin:
                 self._update_device_item(parent, {'device': device}, skip_status_update=True)
                 self.tree.Expand(parent)
             except Exception as e:
-                log.debug(f"Fehler beim Aktualisieren des Baums nach Farbänderung: {e}")
+                log.debug(f"Failed to refresh the tree after a colour change: {e}")
                 # No error sound - the color was set successfully!
             
         except TimeoutError:
             _beep(BEEP_ERROR)
             # Translators: Error message on timeout while setting the color.
-            ui.message(_("{name}: Zeitüberschreitung – Lampe erreichbar?").format(name=device.name))
+            ui.message(_("{name}: timeout – is the lamp reachable?").format(name=device.name))
         except ConnectionError:
             _beep(BEEP_ERROR)
             # Translators: Error message when there is no connection.
-            ui.message(_("{name}: Keine Verbindung").format(name=device.name))
+            ui.message(_("{name}: no connection").format(name=device.name))
         except RuntimeError as e:
             _beep(BEEP_ERROR)
             error_msg = str(e).lower()
             if "offline" in error_msg:
                 # Translators: Message when the device is offline.
-                ui.message(_("{name}: Offline").format(name=device.name))
+                ui.message(_("{name}: offline").format(name=device.name))
             else:
                 # Translators: Generic error message with detail text.
-                ui.message(_("{name}: Fehler – {error}").format(name=device.name, error=str(e)))
+                ui.message(_("{name}: error – {error}").format(name=device.name, error=str(e)))
         except Exception as e:
             _beep(BEEP_ERROR)
-            log.error(f"Fehler beim Setzen der RGB-Farbe für {device.name}: {type(e).__name__}: {e}")
+            log.error(f"Failed to set the RGB colour of {device.name}: {type(e).__name__}: {e}")
             # Translators: Error message when the RGB color cannot be set.
-            ui.message(_("{name}: Farbe nicht einstellbar").format(name=device.name))
+            ui.message(_("{name}: color cannot be set").format(name=device.name))
 
     def _init_meross_in_background(self):
         """Initializes the Meross API in the background and loads devices afterwards.
@@ -417,22 +418,22 @@ class _MerossDialogMixin:
                         if dev.uuid not in existing_uuids:
                             plugin.devices.append(dev)
                             added += 1
-                log.info(f"Meross nachträglich initialisiert: {added} neue Geräte")
+                log.info(f"Meross initialised late: {added} new devices")
 
                 # Update the dialog on the UI thread
                 wx.CallAfter(self._refresh_after_meross_init, len(devices))
             except Exception as e:
-                log.error(f"Meross nachträgliche Initialisierung fehlgeschlagen: {type(e).__name__}: {e}")
+                log.error(f"Late Meross initialisation failed: {type(e).__name__}: {e}")
                 wx.CallAfter(
                     ui.message,
                     # Translators: Error message for the deferred Meross login.
-                    _("Meross-Login fehlgeschlagen: {error}").format(error=str(e)[:80])
+                    _("Meross login failed: {error}").format(error=str(e)[:80])
                 )
 
         threading.Thread(target=_login_and_refresh, daemon=True).start()
         # Translators: Note that the Meross connection is being established in
         # the background.
-        ui.message(_("Meross wird verbunden..."))
+        ui.message(_("Connecting to Meross..."))
 
     def _refresh_after_meross_init(self, count):
         """Updates the tree after Meross was connected afterwards."""
@@ -443,7 +444,7 @@ class _MerossDialogMixin:
             self._refresh_favorites_tree()
             # Translators: Confirmation after loading the Meross devices
             # afterwards.
-            ui.message(_("Meross: {count} Gerät(e) geladen").format(count=count))
+            ui.message(_("Meross: {count} device(s) loaded").format(count=count))
         except Exception as e:
-            log.debug(f"Refresh nach Meross-Init fehlgeschlagen: {e}")
+            log.debug(f"Refresh after the Meross init failed: {e}")
 

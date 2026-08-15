@@ -29,10 +29,10 @@ import addonHandler
 try:
     addonHandler.initTranslation()
 except Exception as e:
-    log.debug(f"Ignorierter Fehler in <module>: {e}")
-if "_" not in globals():  # Fallback, falls initTranslation() scheitert
-    # Ohne diesen Fallback bleibt `_` undefiniert und der erste `_()`-Aufruf
-    # wirft einen NameError mitten im Dialogaufbau statt beim Import.
+    log.debug(f"Ignored error during translation setup: {e}")
+if "_" not in globals():  # fallback if initTranslation() fails
+    # Without this fallback `_` stays undefined and the first `_()` call
+    # raises a NameError mid-dialog instead of at import time.
     def _(s):
         return s
 
@@ -86,9 +86,9 @@ def _hash_password(password):
     return hashlib.md5(password.encode("utf-8")).hexdigest()
 
 
-# itertools.count ist atomar (C-Implementierung) - bis zu 4 parallele
-# bypassV2-Worker holen sich hier IDs; das frühere mutierbare
-# Default-Argument mit `counter[0] += 1` konnte doppelte traceIds liefern.
+# itertools.count is atomic (C implementation) - up to 4 parallel bypassV2
+# workers take IDs here; the former mutable default argument with
+# `counter[0] += 1` could hand out duplicate traceIds.
 _trace_counter = itertools.count(1)
 
 
@@ -126,12 +126,12 @@ class VeSyncAPI:
         self.time_zone = DEFAULT_TZ
         self._devices = []
 
-        # Requests-Session für Connection-Reuse: Ohne Session baut jeder Call
-        # eine neue TLS-Verbindung auf – beim Schnell-Poll (bis 4 parallele
-        # bypassV2-Calls alle 4 s) unnötige Latenz und Handshake-Last.
-        # requests.Session ist für parallele .post()-Aufrufe aus mehreren
-        # Threads in der Praxis sicher (urllib3-Pool darunter ist thread-safe);
-        # der Pool wird auf die Parallelität des Update-Ticks dimensioniert.
+        # Requests session for connection reuse: without one every call
+        # opens a new TLS connection - needless latency and handshake load
+        # during the fast poll (up to 4 parallel bypassV2 calls every 4 s).
+        # requests.Session is safe in practice for parallel .post() calls
+        # from several threads (the urllib3 pool below is thread-safe); the
+        # pool is sized to the parallelism of the update tick.
         self._session = requests.Session()
         _adapter = requests.adapters.HTTPAdapter(
             pool_connections=2, pool_maxsize=max(4, BYPASS_CONCURRENCY))
@@ -214,14 +214,14 @@ class VeSyncAPI:
                 log.error(f"{context}: {exception}")
                 self._last_network_error_time = now
             else:
-                log.debug(f"{context} (Wiederholung #{self._network_error_count}): {exception}")
+                log.debug(f"{context} (retry #{self._network_error_count}): {exception}")
         else:
             log.error(f"{context}: {exception}")
 
     def _reset_network_error_state(self):
         """Resets the network error counters"""
         if self._network_error_count > 0:
-            log.info(f"VeSync: Netzwerk wieder verfügbar (nach {self._network_error_count} fehlgeschlagenen Versuchen)")
+            log.info(f"VeSync: network available again (after {self._network_error_count} failed attempts)")
         self._network_error_count = 0
 
     # ----------------------------------------------------------
@@ -259,7 +259,7 @@ class VeSyncAPI:
         except (requests.ConnectionError, requests.Timeout) as e:
             if _is_retry or fast:
                 raise
-            log.debug(f"VeSync: Netzwerkfehler ({type(e).__name__}), 1x Retry in 1s...")
+            log.debug(f"VeSync: network error ({type(e).__name__}), one retry in 1 s...")
             time.sleep(1)
             resp = self._session.post(url, headers=headers, json=body, timeout=timeout)
 
@@ -273,7 +273,7 @@ class VeSyncAPI:
         try:
             data = resp.json()
         except ValueError as e:
-            raise RuntimeError(_("VeSync API: Ungültige JSON-Antwort: {error}").format(error=e))
+            raise RuntimeError(_("VeSync API: invalid JSON response: {error}").format(error=e))
 
         # Detect token expiry -> attempt reauth (thread-safe)
         code = data.get("code") if isinstance(data, dict) else None
@@ -289,14 +289,14 @@ class VeSyncAPI:
                 # release the lock immediately and retry with the fresh token.
                 with self._reauth_lock:
                     pass
-                log.debug("VeSync: Reauth wurde parallel durchgeführt – retry mit neuem Token")
+                log.debug("VeSync: reauth happened in parallel - retrying with the new token")
             else:
                 try:
-                    log.info(f"VeSync: Token abgelaufen (code={code}), versuche Re-Auth...")
+                    log.info(f"VeSync: token expired (code={code}), trying re-auth...")
                     try:
                         ok = bool(self._reauth_callback(self))
                     except Exception as e:
-                        log.warning(f"VeSync Re-Auth fehlgeschlagen: {e}")
+                        log.warning(f"VeSync re-auth failed: {e}")
                         ok = False
                     if not ok:
                         return data
@@ -368,9 +368,9 @@ class VeSyncAPI:
         """
         if not email or not password:
             # Translators: Validation error during VeSync login.
-            raise ValueError(_("E-Mail und Passwort erforderlich"))
+            raise ValueError(_("Email and password required"))
 
-        log.info(f"VeSync API: Starte Login (Region: {self.region})...")
+        log.info(f"VeSync API: starting login (region: {self.region})...")
 
         # ---- Step 1: authByPWDOrOTM ----
         auth_body = {
@@ -406,10 +406,10 @@ class VeSyncAPI:
         if auth_resp.get("code") != 0:
             # Translators: Placeholder when VeSync does not provide an error
             # text.
-            msg = auth_resp.get("msg") or _("Unbekannter Fehler")
+            msg = auth_resp.get("msg") or _("Unknown error")
             # Translators: VeSync login error, with the server message as
             # {msg}.
-            raise RuntimeError(_("VeSync Anmeldung fehlgeschlagen: {msg}").format(msg=msg))
+            raise RuntimeError(_("VeSync login failed: {msg}").format(msg=msg))
 
         result = auth_resp.get("result") or {}
         authorize_code = result.get("authorizeCode")
@@ -417,12 +417,12 @@ class VeSyncAPI:
             # Translators: Login error when VeSync does not return an
             # authorization code.
             raise RuntimeError(_(
-                "VeSync Anmeldung fehlgeschlagen: Kein authorizeCode erhalten"))
+                "VeSync login failed: no authorizeCode received"))
         self.account_id = result.get("accountID", "")
 
         # ---- Step 2: loginByAuthorizeCode4Vesync ----
         self._exchange_authorize_code(authorize_code)
-        log.info("VeSync API: Login erfolgreich")
+        log.info("VeSync API: login successful")
         return True
 
     def _exchange_authorize_code(self, authorize_code, biz_token=None):
@@ -461,14 +461,14 @@ class VeSyncAPI:
             new_country = result.get("countryCode")
             new_region = result.get("currentRegion")
             if cross_region_token and new_region:
-                log.info(f"VeSync: Cross-Region-Login → wechsle zu {new_region}")
+                log.info(f"VeSync: cross-region login - switching to {new_region}")
                 self.country_code = (new_country or self.country_code).upper()
                 self.region = new_region.upper()
                 self.base_url = _region_to_base_url(self.region)
                 return self._exchange_authorize_code(authorize_code, cross_region_token)
-            msg = login_resp.get("msg") or _("Unbekannter Fehler")
+            msg = login_resp.get("msg") or _("Unknown error")
             # Translators: Error in the second step of the VeSync login.
-            raise RuntimeError(_("VeSync Login fehlgeschlagen: {msg}").format(msg=msg))
+            raise RuntimeError(_("VeSync login failed: {msg}").format(msg=msg))
 
         result = login_resp.get("result") or {}
         self.token = result.get("token")
@@ -489,9 +489,9 @@ class VeSyncAPI:
         if not self.is_authenticated():
             # Translators: Error message when a VeSync API call happens before
             # the user has logged in.
-            raise RuntimeError(_("Nicht angemeldet"))
+            raise RuntimeError(_("Not logged in"))
 
-        log.debug("VeSync API: Rufe Geräteliste ab...")
+        log.debug("VeSync API: fetching the device list...")
 
         list_body = {
             "acceptLanguage": DEFAULT_LANGUAGE,
@@ -513,13 +513,13 @@ class VeSyncAPI:
                 list_body,
             )
         except Exception as e:
-            self._log_network_error("VeSync Geräteliste-Fehler", e)
+            self._log_network_error("VeSync device list error", e)
             raise
 
         if resp.get("code") != 0:
-            msg = resp.get("msg") or _("Unbekannter Fehler")
+            msg = resp.get("msg") or _("Unknown error")
             # Translators: Error while fetching the VeSync device list.
-            raise RuntimeError(_("VeSync Geräteliste fehlgeschlagen: {msg}").format(msg=msg))
+            raise RuntimeError(_("VeSync device list failed: {msg}").format(msg=msg))
 
         result = resp.get("result") or {}
         raw_devices = result.get("list", []) or []
@@ -535,11 +535,11 @@ class VeSyncAPI:
             try:
                 self._update_device_details(dev)
             except Exception as e:
-                log.debug(f"VeSync: Status-Update für {dev.name} fehlgeschlagen: {e}")
+                log.debug(f"VeSync: status update for {dev.name} failed: {e}")
 
         self._reset_network_error_state()
         self._devices = devices
-        log.info(f"VeSync API: {len(devices)} Gerät(e) gefunden")
+        log.info(f"VeSync API: {len(devices)} device(s) found")
         return devices
 
     def _wrap_device(self, raw):
@@ -558,7 +558,7 @@ class VeSyncAPI:
         if config is not None:
             return VeSyncTowerFan(raw, self, config)
 
-        log.debug(f"VeSync: Gerätetyp {device_type} wird nicht unterstützt")
+        log.debug(f"VeSync: device type {device_type} is not supported")
         return None
 
     # ----------------------------------------------------------
@@ -580,7 +580,7 @@ class VeSyncAPI:
         if not self.is_authenticated():
             # Translators: Error message when a VeSync API call happens before
             # the user has logged in.
-            raise RuntimeError(_("Nicht angemeldet"))
+            raise RuntimeError(_("Not logged in"))
 
         body = self._common_body()
         body.update({
@@ -603,7 +603,7 @@ class VeSyncAPI:
                 fast=fast,
             )
         except Exception as e:
-            self._log_network_error(f"VeSync BypassV2 ({payload_method}) Fehler", e)
+            self._log_network_error(f"VeSync bypassV2 ({payload_method}) error", e)
             raise
 
     def _update_device_details(self, device, fast=False):
@@ -620,7 +620,7 @@ class VeSyncAPI:
             device._consecutive_status_failures = 0
             return True
         except Exception as e:
-            log.debug(f"VeSync: Details für {device.name} nicht abrufbar: {e}")
+            log.debug(f"VeSync: details for {device.name} not retrievable: {e}")
             device._consecutive_status_failures = (
                 getattr(device, '_consecutive_status_failures', 0) + 1
             )
@@ -655,7 +655,7 @@ class VeSyncAPI:
         if not self.is_authenticated():
             # Translators: Error message when a VeSync API call happens before
             # the user has logged in.
-            raise RuntimeError(_("Nicht angemeldet"))
+            raise RuntimeError(_("Not logged in"))
 
         devicelist_ok = True
         # 1) Query the device list (fresh cloud snapshot, with TTL cache)
@@ -663,7 +663,7 @@ class VeSyncAPI:
             self._refresh_devicelist_state(devices, fast=fast)
         except Exception as e:
             devicelist_ok = False
-            log.debug(f"VeSync: Device-Liste konnte nicht aktualisiert werden: {e}")
+            log.debug(f"VeSync: could not refresh the device list: {e}")
 
         # 2) Detail status in parallel via bypassV2 (mode/level/sensors)
         vesync_devs = [d for d in devices if getattr(d, "is_vesync", False)]
@@ -732,7 +732,7 @@ class VeSyncAPI:
         }
         resp = self._post("/cloud/v1/deviceManaged/devices", list_body, fast=fast)
         if resp.get("code") != 0:
-            log.debug(f"VeSync Device-Liste Fehler: {resp.get('msg')}")
+            log.debug(f"VeSync device list error: {resp.get('msg')}")
             return []
         raw = (resp.get("result") or {}).get("list") or []
         with self._devicelist_cache_lock:
@@ -780,7 +780,7 @@ class VeSyncAPI:
             try:
                 dev.apply_devicelist_extension(raw)
             except Exception as e:
-                log.debug(f"VeSync: extension-Auswertung für {dev.name} fehlgeschlagen: {e}")
+                log.debug(f"VeSync: parsing the extension for {dev.name} failed: {e}")
             # IMPORTANT: some devices (e.g. Levoit tower fans) provide NO
             # deviceStatus/connectionStatus in the device list - the fields are
             # simply ``None`` there. An empty string would not equal ``"on"``,
@@ -808,8 +808,8 @@ class VeSyncAPI:
             in_local_window = (now_ts - last_toggle) < local_toggle_window
             if in_local_window and old_is_on != new_is_on:
                 log.debug(
-                    f"VeSync Geräteliste: {dev.name} is_on={new_is_on} "
-                    f"(noch im Schutzfenster nach lokalem Toggle, ignoriert)"
+                    f"VeSync device list: {dev.name} is_on={new_is_on} "
+                    f"(still in the guard window after a local toggle, ignored)"
                 )
                 # Still update is_offline (connection loss is independent of
                 # the toggle action).
@@ -819,7 +819,7 @@ class VeSyncAPI:
             dev._is_on = new_is_on
             if old_is_on != new_is_on or old_is_offline != new_is_offline:
                 log.info(
-                    f"VeSync Geräteliste: {dev.name} "
+                    f"VeSync device list: {dev.name} "
                     f"is_on {old_is_on}→{new_is_on}, "
                     f"is_offline {old_is_offline}→{new_is_offline} "
                     f"(deviceStatus={device_status!r}, connectionStatus={connection_status!r})"
@@ -839,11 +839,11 @@ class VeSyncAPI:
         if device is None:
             # Translators: Error when a VeSync device can no longer be found in
             # the API cache via its UUID.
-            raise ValueError(_("VeSync-Gerät nicht gefunden"))
+            raise ValueError(_("VeSync device not found"))
         if expected_type is not None and not isinstance(device, expected_type):
             # Translators: Error when a VeSync action is to be executed on a
             # device of the wrong type (e.g. a purifier action on a tower fan).
-            raise ValueError(_("VeSync-Gerät hat den falschen Typ"))
+            raise ValueError(_("VeSync device has the wrong type"))
         return device
 
     def set_device_state(self, uuid_str, state):
@@ -908,4 +908,4 @@ class VeSyncAPI:
         try:
             self._session.close()
         except Exception as e:
-            log.debug(f"Ignorierter Fehler beim Schließen der Session: {e}")
+            log.debug(f"Ignored error while closing the session: {e}")

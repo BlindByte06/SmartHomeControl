@@ -21,7 +21,7 @@ import addonHandler
 try:
     addonHandler.initTranslation()
 except Exception as e:
-    log.debug(f"initTranslation fehlgeschlagen: {e}")
+    log.debug(f"initTranslation failed: {e}")
 if "_" not in globals():  # fallback outside of NVDA
     def _(s):
         return s
@@ -322,8 +322,8 @@ def resolve_device_config(device_type, table):
         for key, cfg in table.items():
             if _model_family(key).lower() == family:
                 log.info(
-                    f"VeSync: {device_type} nicht namentlich bekannt - nutze "
-                    f"Profil von {key} (gleiche Modellreihe)")
+                    f"VeSync: {device_type} not known by name - using "
+                    f"the profile of {key} (same model series)")
                 return cfg, key
 
     return None, None
@@ -341,7 +341,7 @@ class _VeSyncBaseDevice:
         self._feature_map = feature_map
 
         # Base fields from the device list
-        self.device_name = raw_data.get("deviceName", "VeSync-Gerät")
+        self.device_name = raw_data.get("deviceName", "VeSync device")
         self.cid = raw_data.get("cid", "")
         self.config_module = raw_data.get("configModule", "")
         self.device_type_raw = raw_data.get("deviceType", "")
@@ -487,7 +487,7 @@ class _VeSyncBaseDevice:
         try:
             self._api._update_device_details(self)
         except Exception as e:
-            log.debug(f"VeSync: _update_status fehlgeschlagen für {self.name}: {e}")
+            log.debug(f"VeSync: _update_status failed for {self.name}: {e}")
 
     # ------ Per-field protection window ------
     def _protect(self, *fields):
@@ -599,34 +599,34 @@ class VeSyncPurifier(_VeSyncBaseDevice):
 
         parts = []
         # Translators: Device state on/off (short).
-        parts.append(_("ein") if self._is_on else _("aus"))
+        parts.append(_("on") if self._is_on else _("off"))
 
         if self._is_on:
             if self.mode:
                 # Translators: Operating mode names of a VeSync air purifier.
                 mode_de = {
                     "auto": _("Auto"),
-                    "manual": _("Manuell"),
-                    "sleep": _("Schlafmodus"),
+                    "manual": _("Manual"),
+                    "sleep": _("Sleep mode"),
                     "turbo": _("Turbo"),
-                    "pet": _("Haustier"),
+                    "pet": _("Pet"),
                 }.get(self.mode, self.mode)
                 # Translators: Status announcement: current operating mode.
-                parts.append(_("Modus: {mode}").format(mode=mode_de))
+                parts.append(_("Mode: {mode}").format(mode=mode_de))
             if self.fan_level is not None:
                 # Translators: Status announcement: current fan level.
-                parts.append(_("Stufe {level}").format(level=self.fan_level))
+                parts.append(_("Level {level}").format(level=self.fan_level))
 
         if self.air_quality is not None:
             # Translators: Air quality levels (1=best, 4=worst).
-            aq_de = {1: _("ausgezeichnet"), 2: _("gut"), 3: _("mäßig"), 4: _("schlecht")}.get(
+            aq_de = {1: _("excellent"), 2: _("good"), 3: _("moderate"), 4: _("poor")}.get(
                 self.air_quality, str(self.air_quality)
             )
             # Translators: Status announcement: air quality level.
-            parts.append(_("Luftqualität: {level}").format(level=aq_de))
+            parts.append(_("Air quality: {level}").format(level=aq_de))
         if self.air_quality_value is not None:
             # Translators: Status announcement: particulate matter PM2.5.
-            parts.append(_("PM2.5: {value} Mikrogramm pro Kubikmeter").format(
+            parts.append(_("PM2.5: {value} micrograms per cubic meter").format(
                 value=self.air_quality_value))
         if self.pm1 is not None:
             parts.append(f"PM1.0: {self.pm1}")
@@ -637,10 +637,10 @@ class VeSyncPurifier(_VeSyncBaseDevice):
             parts.append(_("Filter: {value}%").format(value=self.filter_life))
         if self.child_lock is True:
             # Translators: Status announcement: child lock is active.
-            parts.append(_("Kindersicherung aktiv"))
+            parts.append(_("Child lock active"))
         if self.nightlight_status and self.nightlight_status != "off":
             # Translators: Status announcement: night light state.
-            parts.append(_("Nachtlicht: {mode}").format(mode=self.nightlight_status))
+            parts.append(_("Night light: {mode}").format(mode=self.nightlight_status))
 
         return ", ".join(parts)
 
@@ -788,7 +788,7 @@ class VeSyncPurifier(_VeSyncBaseDevice):
         data = {"enabled": bool(on), "id": 0}
         resp = self._api.call_bypass_v2(self, "setSwitch", data)
         if not self._bypass_call_succeeded(resp):
-            raise RuntimeError(_("VeSync: Schaltbefehl fehlgeschlagen"))
+            raise RuntimeError(_("VeSync: switch command failed"))
         with self._lock:
             self._is_on = bool(on)
             self._last_local_toggle_ts = time.time()
@@ -802,7 +802,7 @@ class VeSyncPurifier(_VeSyncBaseDevice):
         Other modes via setPurifierMode.
         """
         if mode not in self.modes:
-            raise ValueError(_("Modus '{mode}' wird vom Gerät nicht unterstützt").format(mode=mode))
+            raise ValueError(_("Mode '{mode}' is not supported by this device").format(mode=mode))
 
         if mode == PURIFIER_MODE_MANUAL:
             # In the fallback to set_fan_speed: if both level caches are empty,
@@ -816,7 +816,7 @@ class VeSyncPurifier(_VeSyncBaseDevice):
         data = {"mode": mode}
         resp = self._api.call_bypass_v2(self, "setPurifierMode", data)
         if not self._bypass_call_succeeded(resp):
-            raise RuntimeError(_("VeSync: Modus '{mode}' konnte nicht gesetzt werden").format(mode=mode))
+            raise RuntimeError(_("VeSync: mode '{mode}' could not be set").format(mode=mode))
         with self._lock:
             self.mode = mode
             self._is_on = True
@@ -831,14 +831,14 @@ class VeSyncPurifier(_VeSyncBaseDevice):
         try:
             speed_int = int(speed)
         except (TypeError, ValueError):
-            raise ValueError(_("Ungültige Lüfterstufe"))
+            raise ValueError(_("Invalid fan level"))
         if speed_int not in self.fan_levels:
-            raise ValueError(_("Lüfterstufe {level} wird nicht unterstützt").format(level=speed_int))
+            raise ValueError(_("Fan level {level} is not supported").format(level=speed_int))
 
         data = {"id": 0, "level": speed_int, "type": "wind"}
         resp = self._api.call_bypass_v2(self, "setLevel", data)
         if not self._bypass_call_succeeded(resp):
-            raise RuntimeError(_("VeSync: Lüfterstufe {level} konnte nicht gesetzt werden").format(level=speed_int))
+            raise RuntimeError(_("VeSync: fan level {level} could not be set").format(level=speed_int))
         with self._lock:
             self.fan_level = speed_int
             self.fan_set_level = speed_int
@@ -853,11 +853,12 @@ class VeSyncPurifier(_VeSyncBaseDevice):
         BypassV2 setDisplay: {'state': bool}
         """
         if not self.supports_display:
-            raise RuntimeError(_("Display-Steuerung wird vom Gerät nicht unterstützt"))
+            raise RuntimeError(_("Display control is not supported by this "
+                                 "device"))
         data = {"state": bool(on)}
         resp = self._api.call_bypass_v2(self, "setDisplay", data)
         if not self._bypass_call_succeeded(resp):
-            raise RuntimeError(_("VeSync: Display-Schaltbefehl fehlgeschlagen"))
+            raise RuntimeError(_("VeSync: display switch command failed"))
         # Optimistically update both the desired and the displayed state so the
         # status line in the dialog is correct immediately.
         with self._lock:
@@ -872,11 +873,11 @@ class VeSyncPurifier(_VeSyncBaseDevice):
         BypassV2 setChildLock: {'child_lock': bool}
         """
         if not self.supports_child_lock:
-            raise RuntimeError(_("Kindersicherung wird vom Gerät nicht unterstützt"))
+            raise RuntimeError(_("Child lock is not supported by this device"))
         data = {"child_lock": bool(on)}
         resp = self._api.call_bypass_v2(self, "setChildLock", data)
         if not self._bypass_call_succeeded(resp):
-            raise RuntimeError(_("VeSync: Kindersicherung konnte nicht geschaltet werden"))
+            raise RuntimeError(_("VeSync: child lock could not be toggled"))
         with self._lock:
             self.child_lock = bool(on)
             self._protect('child_lock')
@@ -889,13 +890,13 @@ class VeSyncPurifier(_VeSyncBaseDevice):
         Allowed values: 'on', 'off', 'dim'
         """
         if not self.supports_nightlight:
-            raise RuntimeError(_("Nachtlicht wird vom Gerät nicht unterstützt"))
+            raise RuntimeError(_("Night light is not supported by this device"))
         if mode not in self.nightlight_modes:
-            raise ValueError(_("Nachtlicht-Modus '{mode}' wird nicht unterstützt").format(mode=mode))
+            raise ValueError(_("Night light mode '{mode}' is not supported").format(mode=mode))
         data = {"night_light": mode}
         resp = self._api.call_bypass_v2(self, "setNightLight", data)
         if not self._bypass_call_succeeded(resp):
-            raise RuntimeError(_("VeSync: Nachtlicht konnte nicht gesetzt werden"))
+            raise RuntimeError(_("VeSync: night light could not be set"))
         with self._lock:
             self.nightlight_status = mode
             self._protect('nightlight')
@@ -908,15 +909,15 @@ class VeSyncPurifier(_VeSyncBaseDevice):
         Allowed types: 'default', 'efficient', 'quiet'
         """
         if not self.supports_auto_preference:
-            raise RuntimeError(_("Auto-Profil wird vom Gerät nicht unterstützt"))
+            raise RuntimeError(_("Auto profile is not supported by this device"))
         if preference not in self.auto_preferences:
-            raise ValueError(_("Auto-Profil '{value}' wird nicht unterstützt").format(value=preference))
+            raise ValueError(_("Auto profile '{value}' is not supported").format(value=preference))
         if room_size is None:
             room_size = self.auto_room_size or 600
         data = {"type": preference, "room_size": int(room_size)}
         resp = self._api.call_bypass_v2(self, "setAutoPreference", data)
         if not self._bypass_call_succeeded(resp):
-            raise RuntimeError(_("VeSync: Auto-Profil konnte nicht gesetzt werden"))
+            raise RuntimeError(_("VeSync: auto profile could not be set"))
         with self._lock:
             self.auto_preference_type = preference
             self.auto_room_size = int(room_size)
@@ -929,10 +930,10 @@ class VeSyncPurifier(_VeSyncBaseDevice):
         BypassV2 resetFilter: {} (empty payload)
         """
         if not self.supports_reset_filter:
-            raise RuntimeError(_("Filter-Reset wird vom Gerät nicht unterstützt"))
+            raise RuntimeError(_("Filter reset is not supported by this device"))
         resp = self._api.call_bypass_v2(self, "resetFilter", {})
         if not self._bypass_call_succeeded(resp):
-            raise RuntimeError(_("VeSync: Filter-Reset fehlgeschlagen"))
+            raise RuntimeError(_("VeSync: filter reset failed"))
         with self._lock:
             self.filter_life = 100
             # The cloud cache still returns the old filter value after the
@@ -986,7 +987,7 @@ class VeSyncTowerFan(_VeSyncBaseDevice):
 
         parts = []
         # Translators: Device state on/off (short).
-        parts.append(_("ein") if self._is_on else _("aus"))
+        parts.append(_("on") if self._is_on else _("off"))
 
         if self._is_on:
             if self.mode:
@@ -995,24 +996,25 @@ class VeSyncTowerFan(_VeSyncBaseDevice):
                     "normal": _("Normal"),
                     "turbo": _("Turbo"),
                     "auto": _("Auto"),
-                    "advancedSleep": _("Schlafmodus"),
+                    "advancedSleep": _("Sleep mode"),
                 }.get(self.mode, self.mode)
                 # Translators: Status announcement: current operating mode.
-                parts.append(_("Modus: {mode}").format(mode=mode_de))
+                parts.append(_("Mode: {mode}").format(mode=mode_de))
             if self.fan_level is not None:
                 # Translators: Status announcement: current fan level.
-                parts.append(_("Stufe {level}").format(level=self.fan_level))
+                parts.append(_("Level {level}").format(level=self.fan_level))
             if self.oscillation_on is not None:
                 # Translators: Status announcement: oscillation on/off.
-                parts.append(_("Oszillation: ein") if self.oscillation_on else _("Oszillation: aus"))
+                parts.append(_("Oscillation: on") if self.oscillation_on else _("Oscillation: "
+                                                                                 "off"))
             if self.mute_on is True:
                 # Translators: Status announcement: device sounds muted.
-                parts.append(_("Stumm"))
+                parts.append(_("Muted"))
 
         if self.temperature is not None:
             try:
                 # Translators: Status announcement: measured temperature.
-                parts.append(_("Temperatur: {value:.1f}°C").format(value=float(self.temperature)))
+                parts.append(_("Temperature: {value:.1f}°C").format(value=float(self.temperature)))
             except (TypeError, ValueError):
                 pass
 
@@ -1141,7 +1143,7 @@ class VeSyncTowerFan(_VeSyncBaseDevice):
         data = {"powerSwitch": int(bool(on)), "switchIdx": 0}
         resp = self._api.call_bypass_v2(self, "setSwitch", data)
         if not self._bypass_call_succeeded(resp):
-            raise RuntimeError(_("VeSync: Schaltbefehl fehlgeschlagen"))
+            raise RuntimeError(_("VeSync: switch command failed"))
         with self._lock:
             self._is_on = bool(on)
             self._last_local_toggle_ts = time.time()
@@ -1154,13 +1156,13 @@ class VeSyncTowerFan(_VeSyncBaseDevice):
         BypassV2 setTowerFanMode: {'workMode': str}
         """
         if mode not in self.modes and mode not in self._reverse_modes:
-            raise ValueError(_("Modus '{mode}' wird vom Gerät nicht unterstützt").format(mode=mode))
+            raise ValueError(_("Mode '{mode}' is not supported by this device").format(mode=mode))
         # Map a logical value to the API value if needed
         api_mode = self.modes.get(mode, mode)
         data = {"workMode": api_mode}
         resp = self._api.call_bypass_v2(self, "setTowerFanMode", data)
         if not self._bypass_call_succeeded(resp):
-            raise RuntimeError(_("VeSync: Modus '{mode}' konnte nicht gesetzt werden").format(mode=mode))
+            raise RuntimeError(_("VeSync: mode '{mode}' could not be set").format(mode=mode))
         with self._lock:
             self.mode = api_mode
             self._is_on = True
@@ -1182,14 +1184,14 @@ class VeSyncTowerFan(_VeSyncBaseDevice):
         try:
             speed_int = int(speed)
         except (TypeError, ValueError):
-            raise ValueError(_("Ungültige Lüfterstufe"))
+            raise ValueError(_("Invalid fan level"))
         if speed_int not in self.fan_levels:
-            raise ValueError(_("Lüfterstufe {level} wird nicht unterstützt").format(level=speed_int))
+            raise ValueError(_("Fan level {level} is not supported").format(level=speed_int))
 
         data = {"manualSpeedLevel": speed_int, "levelType": "wind", "levelIdx": 0}
         resp = self._api.call_bypass_v2(self, "setLevel", data)
         if not self._bypass_call_succeeded(resp):
-            raise RuntimeError(_("VeSync: Lüfterstufe {level} konnte nicht gesetzt werden").format(level=speed_int))
+            raise RuntimeError(_("VeSync: fan level {level} could not be set").format(level=speed_int))
         with self._lock:
             self.fan_level = speed_int
             self.fan_set_level = speed_int
@@ -1205,7 +1207,7 @@ class VeSyncTowerFan(_VeSyncBaseDevice):
         data = {"oscillationSwitch": int(bool(on))}
         resp = self._api.call_bypass_v2(self, "setOscillationSwitch", data)
         if not self._bypass_call_succeeded(resp):
-            raise RuntimeError(_("VeSync: Oszillation konnte nicht geschaltet werden"))
+            raise RuntimeError(_("VeSync: oscillation could not be toggled"))
         with self._lock:
             self.oscillation_on = bool(on)
             self.oscillation_set_on = bool(on)
@@ -1220,7 +1222,7 @@ class VeSyncTowerFan(_VeSyncBaseDevice):
         data = {"muteSwitch": int(bool(on))}
         resp = self._api.call_bypass_v2(self, "setMuteSwitch", data)
         if not self._bypass_call_succeeded(resp):
-            raise RuntimeError(_("VeSync: Stummschaltung fehlgeschlagen"))
+            raise RuntimeError(_("VeSync: mute toggle failed"))
         with self._lock:
             self.mute_on = bool(on)
             self.mute_set_on = bool(on)
@@ -1235,7 +1237,7 @@ class VeSyncTowerFan(_VeSyncBaseDevice):
         data = {"screenSwitch": int(bool(on))}
         resp = self._api.call_bypass_v2(self, "setDisplay", data)
         if not self._bypass_call_succeeded(resp):
-            raise RuntimeError(_("VeSync: Display-Schaltbefehl fehlgeschlagen"))
+            raise RuntimeError(_("VeSync: display switch command failed"))
         # Optimistically update both the desired and the displayed state so the
         # status line in the dialog is correct immediately.
         with self._lock:

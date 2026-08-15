@@ -16,7 +16,7 @@ import addonHandler
 try:
     addonHandler.initTranslation()
 except Exception as e:
-    log.debug(f"initTranslation fehlgeschlagen: {e}")
+    log.debug(f"initTranslation failed: {e}")
 if "_" not in globals():  # fallback outside of NVDA
     def _(s):
         return s
@@ -137,31 +137,30 @@ def _outlets_from_raw_channels(raw_channels, device_type):
         return []
 
     if count == fallback:
-        # Genau so viele Einträge, wie das Modell Ausgänge hat: die Cloud hat
-        # den Master-Eintrag weggelassen, die Einträge SIND die Ausgänge.
-        # Diesen Fall gibt es bei manchen Firmware-Ständen - früher fielen
-        # dabei beide Ausgänge aus dem Menü, weil meross_iot Kanal 0 immer
-        # als Master markiert und der Filter darauf danach nur einen Kanal
-        # übrig ließ.
+        # Exactly as many entries as the model has outlets: the cloud left
+        # out the master entry, so the entries ARE the outlets. Some firmware
+        # versions do this - both outlets used to drop out of the menu here,
+        # because meross_iot always marks channel 0 as master and the filter
+        # on that then left a single channel.
         log.warning(
-            f"Meross {device_type}: Kanalliste ohne Master-Eintrag "
-            f"({count} Einträge) - werte sie als {count} Ausgänge")
+            f"Meross {device_type}: channel list without a master entry "
+            f"({count} entries) - treating them as {count} outlets")
         return list(range(0, count))
 
     # The cloud sent an incomplete/missing channel list for a model we
     # know to have several outlets. Assume the usual layout
     # (index 0 = master, 1..n = outlets) so the outlets stay reachable.
     log.warning(
-        f"Meross {device_type}: Kanalliste der Cloud unbrauchbar "
-        f"({count} Einträge) - nehme {fallback} Ausgänge an")
+        f"Meross {device_type}: unusable channel list from the cloud "
+        f"({count} entries) - assuming {fallback} outlets")
     return list(range(1, fallback + 1))
 
 
 def _clean_outlet_name(val):
-    """Bereinigt einen Ausgangsnamen aus der Meross-Cloud.
+    """Cleans an outlet name coming from the Meross cloud.
 
-    Der meross_iot-Platzhalter "Main channel"/"master" und leere Werte
-    gelten NICHT als echter Name. Rückgabe: bereinigter Name oder None.
+    The meross_iot placeholders "Main channel"/"master" and empty values do
+    NOT count as a real name. Returns the cleaned name or None.
     """
     if not val:
         return None
@@ -172,11 +171,11 @@ def _clean_outlet_name(val):
 
 
 def _outlet_name_from_raw_channels(raw_channels, index):
-    """Liest den Ausgangsnamen (devName) aus den HTTP-Rohkanaldaten.
+    """Reads the outlet name (devName) from the raw HTTP channel data.
 
-    ``raw_channels`` ist die ``channels``-Liste aus der HTTP-Geräteliste
-    (Liste von dicts). Rückgabe: Name oder None. Funktioniert online wie
-    offline, da diese Daten schon bei der Geräteliste geliefert werden.
+    ``raw_channels`` is the ``channels`` list of the HTTP device list (a list
+    of dicts). Returns the name or None. Works online and offline, since this
+    data already comes with the device list.
     """
     try:
         if raw_channels and 0 <= index < len(raw_channels):
@@ -184,7 +183,7 @@ def _outlet_name_from_raw_channels(raw_channels, index):
             if isinstance(raw, dict):
                 return _clean_outlet_name(raw.get('devName'))
     except Exception as e:
-        log.debug(f"Ausgangsname aus Rohdaten fehlgeschlagen: {e}")
+        log.debug(f"Reading the outlet name from the raw data failed: {e}")
     return None
 
 
@@ -220,45 +219,44 @@ class MerossErrorFilter(logging.Filter):
         'ENROLLEMENT: Failed to enroll device',
         'It must be offline',
         'Device is unreachable',
-        # Gerätetyp aus der eingebauten Tabelle erkannt - reine Information.
+        # Device type recognised from the built-in table - information only.
         'was built statically via known types',
-        # ---- Wiederverbindung der MQTT-Sitzung ----
-        # Bricht die MQTT-Verbindung ab, setzt meross_iot ALLE Geräte auf
-        # OnlineStatus.UNKNOWN (_notify_connection_drop schickt status -1).
-        # Kommt die Verbindung zurück, ermittelt die Bibliothek den Status neu
-        # und meldet für JEDES Gerät zwei Zeilen: "Updating status for device
-        # X" und "X changed its online status ... (was UNKNOWN, now is
-        # ONLINE)". Bei zehn Geräten sind das zwanzig Zeilen pro
-        # Wiederverbindung - und der MQTT-Keepalive steht auf 30 Sekunden,
-        # also reicht ein kurzer WLAN-Wechsel.
+        # ---- Reconnect of the MQTT session ----
+        # When the MQTT connection drops, meross_iot sets ALL devices to
+        # OnlineStatus.UNKNOWN (_notify_connection_drop sends status -1).
+        # Once it is back the library re-determines the status and reports two
+        # lines for EVERY device: "Updating status for device X" and "X
+        # changed its online status ... (was UNKNOWN, now is ONLINE)". With
+        # ten devices that is twenty lines per reconnect - and the MQTT
+        # keepalive is 30 seconds, so a brief Wi-Fi switch is enough.
         #
-        # Das ist keine Störung, sondern die Reparatur: genau dadurch stimmt
-        # der Status nach einer Netzlücke wieder. Die erste der beiden Zeilen
-        # ist im Bibliothekscode erkennbar eine Debug-Ausgabe, die
-        # versehentlich als warning deklariert wurde.
+        # This is not a fault but the repair: it is exactly what makes the
+        # status correct again after a network gap. The first of the two
+        # lines is clearly a debug output in the library code that was
+        # declared as a warning by accident.
         'Updating status for device',
         'changed its online status while manager was offline',
-        # Beim Beenden von NVDA/Abmelden: Antworten treffen ein, nachdem der
-        # Event-Loop schon zu ist.
+        # On NVDA shutdown/logout: responses arrive after the event loop
+        # has already closed.
         'as the event loop has been closed already',
-        # Nicht implementierte Namespaces - dieselbe Klasse wie die schon
-        # gefilterten "is not currently handled"-Meldungen.
+        # Unimplemented namespaces - the same class as the already
+        # filtered "is not currently handled" messages.
         'Uncaught push notification',
         'does not handle messages received on topic',
-        # Hub-Meldungen: Sensordaten treffen ein, bevor das Unterzubehör
-        # registriert ist. Betrifft vor allem MS100/MS130 am MSH300/MSH450.
+        # Hub messages: sensor data arrives before the subdevice is
+        # registered. Mostly MS100/MS130 on an MSH300/MSH450.
         'that has not yet been',
         'which has not been registered with this',
     ]
 
-    # BEWUSST NICHT gefiltert, obwohl sie ebenfalls aus meross_iot kommen -
-    # sie können auf ein echtes Problem hinweisen und sollen sichtbar bleiben:
-    #   'Failed to subscribe to topics'          - Verbindung wirklich kaputt
-    #   'Invalid signature received'             - sicherheitsrelevant
-    #   'Unhandled message method'               - Bibliothek bittet um Meldung
-    #   'not available in the local registry'    - unsere Geräteliste ist alt
-    #   'This future is already done'            - interner Fehler
-    #   'Please invoke async_update()'           - Programmierfehler
+    # DELIBERATELY not filtered although they also come from meross_iot -
+    # they can point at a real problem and must stay visible:
+    #   'Failed to subscribe to topics'          - connection really broken
+    #   'Invalid signature received'             - security relevant
+    #   'Unhandled message method'               - library asks for a report
+    #   'not available in the local registry'    - our device list is stale
+    #   'This future is already done'            - internal error
+    #   'Please invoke async_update()'           - programming error
 
     def filter(self, record):
         """Filters ERROR messages and downgrades known harmless ones to DEBUG"""
@@ -283,7 +281,7 @@ def _install_error_filter():
     for logger_name in logger_names:
         logger = logging.getLogger(logger_name)
         logger.addFilter(filter_instance)
-    log.info("Meross Error-Filter installiert (unterdrückt bekannte harmlose Fehler)")
+    log.info("Meross error filter installed (suppresses known harmless errors)")
 
 
 # ============================================================
@@ -320,9 +318,9 @@ try:
                     super().__init__(*args, **kwargs)
 
         _meross_http_api.ClientSession = _CertifiClientSession
-        log.info(f"SSL-Fix aktiv: meross_iot nutzt certifi CA-Bundle ({certifi.where()})")
+        log.info(f"SSL fix active: meross_iot uses the certifi CA bundle ({certifi.where()})")
     except Exception as _ssl_fix_err:
-        log.warning(f"SSL-Fix konnte nicht angewendet werden: {_ssl_fix_err}")
+        log.warning(f"SSL fix could not be applied: {_ssl_fix_err}")
 
 except ImportError:
     MEROSS_AVAILABLE = False
@@ -330,7 +328,7 @@ except ImportError:
     MerossManager = None  # noqa: N816
     GenericSubDevice = None
     OnlineStatus = None
-    log.warning("meross_iot nicht installiert!")
+    log.warning("meross_iot is not installed")
 
 
 # ============================================================
@@ -442,7 +440,7 @@ def register_hub_subdevice(hub_uuid, subdev_id):
             _MS130_HUB_TO_SUBDEVS[hub_uuid] = []
         if subdev_id not in _MS130_HUB_TO_SUBDEVS[hub_uuid]:
             _MS130_HUB_TO_SUBDEVS[hub_uuid].append(subdev_id)
-            log.debug(f"MS130 Mapping: Hub {hub_uuid} → Subdevice {subdev_id}")
+            log.debug(f"MS130 mapping: hub {hub_uuid} -> subdevice {subdev_id}")
 
 
 def check_and_update_logged(subdev_id, current_key):
@@ -521,9 +519,9 @@ def _patch_ms130_event_handler():
                     temp_val = data.get('temperature', {}).get('latest', '?')
                     hum_val = data.get('humidity', {}).get('latest', '?')
                     if check_and_update_logged(subdev_id, (temp_val, hum_val)):
-                        log.debug(f"MS130 Event: ID={subdev_id}, Temp={temp_val}, Hum={hum_val}")
+                        log.debug(f"MS130 event: id={subdev_id}, temp={temp_val}, hum={hum_val}")
         except Exception as e:
-            log.debug(f"MS130 Event-Interceptor Fehler: {e}")
+            log.debug(f"MS130 event interceptor error: {e}")
 
         return await original_handler(self, namespace, data)
 
@@ -532,9 +530,9 @@ def _patch_ms130_event_handler():
     if reinstall:
         # Happens after an NVDA module reload: the handler now points to the
         # current module globals again (fresh _MS130_SENSOR_DATA).
-        log.info("MS130 Event Handler nach Reload neu installiert!")
+        log.info("MS130 event handler reinstalled after the reload")
     else:
-        log.info("MS130 Event Handler gepatcht!")
+        log.info("MS130 event handler patched")
 
 
 # Run patch and filter at import time
@@ -556,26 +554,27 @@ class MerossChannel:
 
     @staticmethod
     def _resolve_outlet_name(parent_device, channel_info):
-        """Ermittelt den in der Meross-App vergebenen Ausgangsnamen.
+        """Determines the outlet name given in the Meross app.
 
-        Quellen in dieser Reihenfolge:
-          1. channel_info.name (aus meross_iot; = devName der Cloud)
-          2. Rohdaten der HTTP-Geräteliste (_cached_http_info.channels[i].devName),
-             falls meross_iot den Namen nicht durchgereicht hat.
+        Sources in this order:
+          1. channel_info.name (from meross_iot; = devName of the cloud)
+          2. raw data of the HTTP device list
+             (_cached_http_info.channels[i].devName), in case meross_iot did
+             not pass the name through.
 
-        Der meross_iot-Platzhalter "Main channel" und leere Werte gelten NICHT
-        als echter Name. Rückgabe: der Name (str) oder None.
+        The meross_iot placeholder "Main channel" and empty values do NOT
+        count as a real name. Returns the name (str) or None.
 
-        Hinweis: Nicht jedes Meross-Modell liefert die Ausgangsnamen über die
-        Cloud-API - manche speichern sie nur app-lokal. Ist hier None, hat die
-        Cloud schlicht keinen Namen geliefert (im NVDA-Log als DEBUG sichtbar).
+        Note: not every Meross model exposes the outlet names via the cloud
+        API - some store them app-locally only. None here simply means the
+        cloud sent no name (visible as DEBUG in the NVDA log).
         """
-        # 1. Aus dem geparsten ChannelInfo
+        # 1. From the parsed ChannelInfo
         name = _clean_outlet_name(getattr(channel_info, 'name', None))
         if name:
             return name
 
-        # 2. Rohdaten der HTTP-Geräteliste als Fallback
+        # 2. Raw data of the HTTP device list as a fallback
         dev = getattr(parent_device, '_device', None)
         http_info = getattr(dev, '_cached_http_info', None)
         raw_channels = getattr(http_info, 'channels', None)
@@ -584,8 +583,8 @@ class MerossChannel:
             return name
 
         log.debug(
-            f"Kein Ausgangsname von der Meross-Cloud für {parent_device.name} "
-            f"Kanal {channel_info.index} - verwende Nummer")
+            f"No outlet name from the Meross cloud for {parent_device.name} "
+            f"channel {channel_info.index} - using the number")
         return None
 
     def __init__(self, parent_device, channel_info, display_position=None):
@@ -596,19 +595,18 @@ class MerossChannel:
         self.uuid = f"{parent_device.uuid}_ch{channel_info.index}"
 
         ausgang_nr = display_position if display_position is not None else (channel_info.index + 1)
-        # Kurzes Ausgangs-Label: der in der Meross-App vergebene Ausgangsname,
-        # falls vorhanden - sonst "Ausgang N". Ein eigener Name ersetzt das
-        # generische "Ausgang N" komplett (z.B. "Pumpe" statt "Ausgang 1").
+        # Short outlet label: the name given in the Meross app if there is
+        # one, otherwise the generic numbered label. A custom name replaces
+        # the numbered one completely.
         outlet_name = self._resolve_outlet_name(parent_device, channel_info)
         if outlet_name:
             self.outlet_label = outlet_name
         else:
             # Translators: Compact outlet label with the outlet number.
-            self.outlet_label = _("Ausgang {number}").format(number=ausgang_nr)
-        # Vollständiger Name inkl. Gerät: "Garten: Pumpe" (benannter Ausgang)
-        # bzw. "Garten: Ausgang 1" (ohne Namen) - überall dort verwendet, wo
-        # der Kontext (das Elterngerät) nicht ohnehin klar ist (Ansagen,
-        # Favoriten, Toggle-Aktion).
+            self.outlet_label = _("Outlet {number}").format(number=ausgang_nr)
+        # Full name including the device ("garden: pump") - used wherever
+        # the context (the parent device) is not obvious anyway:
+        # announcements, favorites, toggle action.
         # Translators: Full channel name: device name plus outlet label.
         self.name = _("{device}: {outlet}").format(
             device=parent_device.name, outlet=self.outlet_label)
@@ -673,7 +671,7 @@ class MerossChannel:
             if hasattr(device, 'is_on'):
                 self._is_on = device.is_on(channel=self.channel_index)
         except Exception as e:
-            log.debug(f"Channel-Status-Update fehlgeschlagen für {self.name}: {e}")
+            log.debug(f"Channel status update failed for {self.name}: {e}")
 
     @property
     def is_on(self):
@@ -694,7 +692,7 @@ class MerossChannel:
                     return round(metrics.power, 1)
             return None
         except Exception as e:
-            log.debug(f"Konnte Stromverbrauch nicht abrufen für {self.name}: {e}")
+            log.debug(f"Could not fetch the power consumption of {self.name}: {e}")
             return None
 
 
@@ -770,36 +768,36 @@ class MerossDevice:
         try:
             self._update_status()
         except Exception as e:
-            log.debug(f"Ignorierter Fehler in __init__: {e}")
+            log.debug(f"Ignored error in __init__: {e}")
 
     def _setup_channels(self, device):
-        """Ermittelt die Ausgänge eines Mehrfachgeräts - wie im Offline-Pfad.
+        """Determines the outlets of a multi-outlet device - as offline does.
 
-        Früher stand hier::
+        This used to read::
 
             non_master = [ch for ch in device.channels
                           if not ch.is_master_channel]
             if len(non_master) > 1: ...
 
-        ``meross_iot`` setzt ``is_master_channel = (index == 0)`` IMMER
-        (``lib/meross_iot/controller/device.py``), unabhängig davon, ob Kanal 0
-        wirklich ein Master ist. Meldet die Cloud für ein MSS620 nur
-        ``[Pumpe, Licht]`` statt ``[Master, Pumpe, Licht]``, bleibt nach dem
-        Filter ein Kanal übrig, ``is_multi_channel`` wird False - und BEIDE
-        Ausgänge verschwinden aus dem Menü.
+        ``meross_iot`` ALWAYS sets ``is_master_channel = (index == 0)``
+        (``lib/meross_iot/controller/device.py``), no matter whether channel 0
+        really is a master. If the cloud reports only ``[pump, light]``
+        instead of ``[master, pump, light]`` for an MSS620, one channel is
+        left after the filter, ``is_multi_channel`` becomes False - and BOTH
+        outlets vanish from the menu.
 
-        Jetzt läuft die Ermittlung über dieselbe Hilfsfunktion wie offline
-        (``_outlets_from_raw_channels``), die bei unbrauchbarer Kanalliste auf
-        ``MULTI_OUTLET_FALLBACK`` zurückfällt. Der eigentliche Gewinn ist
-        nicht der Einzelfall, sondern dass Online- und Offline-Pfad
-        per Konstruktion dieselben Kanalindizes liefern: gleiche Indizes =
-        gleiche Kanal-UUIDs = Favoriten überleben einen Offline-Zeitraum.
+        The lookup now goes through the same helper as offline
+        (``_outlets_from_raw_channels``), which falls back to
+        ``MULTI_OUTLET_FALLBACK`` on an unusable channel list. The real gain
+        is not that single case but that online and offline path yield the
+        same channel indices by construction: same indices = same channel
+        UUIDs = favorites survive an offline period.
         """
         channels = getattr(device, 'channels', None) or []
         raw_channels = getattr(
             getattr(device, '_cached_http_info', None), 'channels', None)
-        # Rohdaten bevorzugen; fehlen sie, die geparste Liste als Ersatz -
-        # sie stammt aus derselben Quelle und hat dieselbe Länge.
+        # Prefer the raw data; without it the parsed list stands in - it
+        # comes from the same source and has the same length.
         indices = _outlets_from_raw_channels(raw_channels or channels, self.type)
         if not indices:
             return
@@ -814,21 +812,21 @@ class MerossDevice:
         for position, index in enumerate(indices, start=1):
             ch_info = by_index.get(index)
             if ch_info is None:
-                # Die Cloud kennt den Index nicht (Fallback-Fall). Ohne
-                # ChannelInfo lässt sich kein MerossChannel bauen - der
-                # Offline-Pfad übernimmt diesen Fall.
+                # The cloud does not know the index (fallback case).
+                # Without a ChannelInfo no MerossChannel can be built - the
+                # offline path takes this case.
                 log.debug(
-                    f"Meross {self.name}: Kanal {index} nicht in der "
-                    f"Kanalliste - übersprungen")
+                    f"Meross {self.name}: channel {index} not in the channel "
+                    f"list - skipped")
                 continue
             self._channels.append(MerossChannel(self, ch_info, position))
 
         if self._channels:
             self.is_multi_channel = True
             log.info(
-                f"Multi-Channel Gerät erkannt: {self.name} mit "
-                f"{len(self._channels)} Kanälen "
-                f"(Indizes {[c.channel_index for c in self._channels]})")
+                f"Multi-channel device detected: {self.name} with "
+                f"{len(self._channels)} channels "
+                f"(indices {[c.channel_index for c in self._channels]})")
 
     def _setup_ms130_handler(self):
         """Registers the event handler for MS130 HUB_SENSOR_ALL events"""
@@ -840,7 +838,7 @@ class MerossDevice:
                     if 'temperature' in payload or 'humidity' in payload:
                         self._last_event_data = payload
                         log.debug(
-                            f"MS130 Event empfangen für {self.name}: "
+                            f"MS130 event received for {self.name}: "
                             f"Temp={payload.get('temperature', {}).get('latest', '?') / 100.0 if 'temperature' in payload else '?'}°C"
                         )
                     if original_handler:
@@ -848,13 +846,13 @@ class MerossDevice:
 
                 self._device.async_handle_subdevice_notification = custom_handler
         except Exception as e:
-            log.debug(f"MS130 Handler-Setup fehlgeschlagen: {e}")
+            log.debug(f"MS130 handler setup failed: {e}")
 
     def update_from_hub_event(self, event_data):
         """Manual update method for hub events (fallback)"""
         if 'temperature' in event_data or 'humidity' in event_data:
             self._last_event_data = event_data
-            log.debug(f"MS130 manuelle Event-Update für {self.name}")
+            log.debug(f"MS130 manual event update for {self.name}")
 
     def get_subdevices(self):
         """Returns the subdevices (hubs only)"""
@@ -867,7 +865,7 @@ class MerossDevice:
                 return self._device.get_subdevices
             return []
         except Exception as e:
-            log.debug(f"Konnte Subdevices nicht abrufen: {e}")
+            log.debug(f"Could not fetch the subdevices: {e}")
             return []
 
     def get_channels(self):
@@ -880,7 +878,7 @@ class MerossDevice:
             for ch in self._channels:
                 ch._update_status()
         except Exception as e:
-            log.debug(f"Channel-Status-Update fehlgeschlagen für {self.name}: {e}")
+            log.debug(f"Channel status update failed for {self.name}: {e}")
 
     def _update_status(self):
         """Updates the status (without power - that is loaded asynchronously)"""
@@ -894,7 +892,7 @@ class MerossDevice:
                 from meross_iot.model.enums import DiffuserSprayMode
                 current_mode = self._device.get_current_spray_mode()
                 self._is_on = (current_mode != DiffuserSprayMode.OFF)
-                log.debug(f"Diffuser {self.name} Status: Mode={current_mode}, is_on={self._is_on}")
+                log.debug(f"Diffuser {self.name} status: mode={current_mode}, is_on={self._is_on}")
             elif hasattr(self._device, 'is_on'):
                 if callable(self._device.is_on):
                     self._is_on = self._device.is_on()
@@ -906,7 +904,7 @@ class MerossDevice:
             self._update_channels_status()
 
         except Exception as e:
-            log.debug(f"Status-Update fehlgeschlagen für {self.name}: {e}")
+            log.debug(f"Status update failed for {self.name}: {e}")
 
     @property
     def is_on(self):
@@ -935,18 +933,18 @@ class MerossDevice:
                 mode = self._device.get_current_spray_mode()
                 if mode == DiffuserSprayMode.OFF:
                     # Translators: Diffuser spray mode (off).
-                    return _("Aus")
+                    return _("Off")
                 elif mode == DiffuserSprayMode.LIGHT:
                     # Translators: Diffuser spray mode (light).
-                    return _("Schwaches Sprühen")
+                    return _("Light spray")
                 elif mode == DiffuserSprayMode.STRONG:
                     # Translators: Diffuser spray mode (strong).
-                    return _("Starkes Sprühen")
+                    return _("Strong spray")
                 else:
                     # Translators: Unknown diffuser spray mode.
-                    return _("Unbekannt ({mode})").format(mode=mode)
+                    return _("Unknown ({mode})").format(mode=mode)
         except Exception as e:
-            log.debug(f"Fehler beim Auslesen des Spray-Mode: {e}")
+            log.debug(f"Failed to read the spray mode: {e}")
         return "Unbekannt"
 
     # ---- Power metering ----
@@ -983,9 +981,15 @@ class MerossDevice:
             return None
         try:
             if self.type.lower() == 'ms130':
-                return self._get_ms130_value('temperature', scale=100.0)
+                # Push data first - it is the freshest. But NOT return here:
+                # right after a start no event has arrived yet, and the value
+                # may well be readable from the subdevice already. Returning
+                # early left such a sensor without any readings at all.
+                value = self._get_ms130_value('temperature', scale=100.0)
+                if value is not None:
+                    return value
 
-            # MS100: default method
+            # MS100 (and MS130 without push data yet): default method
             if hasattr(self._device, 'get_subdevices'):
                 try:
                     subdevices = list(self._device.get_subdevices())
@@ -1001,7 +1005,7 @@ class MerossDevice:
                                 if temp is not None:
                                     return round(temp, 1)
                 except Exception as e:
-                    log.error(f"MS100 {self.name}: Fehler beim Lesen der Subdevices: {e}")
+                    log.error(f"MS100 {self.name}: failed to read the subdevices: {e}")
 
             if hasattr(self._device, 'last_sampled_temperature'):
                 temp = self._device.last_sampled_temperature
@@ -1017,7 +1021,7 @@ class MerossDevice:
 
             return None
         except Exception as e:
-            log.error(f"Fehler beim Abrufen der Temperatur für {self.name}: {e}", exc_info=True)
+            log.error(f"Failed to fetch the temperature of {self.name}: {e}", exc_info=True)
             return None
 
     def get_humidity(self):
@@ -1026,7 +1030,10 @@ class MerossDevice:
             return None
         try:
             if self.type.lower() == 'ms130':
-                return self._get_ms130_value('humidity', scale=10.0)
+                # See get_temperature(): push data first, generic paths after.
+                value = self._get_ms130_value('humidity', scale=10.0)
+                if value is not None:
+                    return value
 
             if hasattr(self._device, 'get_subdevices'):
                 try:
@@ -1043,7 +1050,7 @@ class MerossDevice:
                                 if humidity is not None:
                                     return round(humidity, 1)
                 except Exception as e:
-                    log.error(f"MS100 {self.name}: Fehler beim Lesen der Subdevice-Feuchtigkeit: {e}")
+                    log.error(f"MS100 {self.name}: failed to read the subdevice humidity: {e}")
 
             if hasattr(self._device, 'last_sampled_humidity'):
                 humidity = self._device.last_sampled_humidity
@@ -1059,7 +1066,7 @@ class MerossDevice:
 
             return None
         except Exception as e:
-            log.error(f"Fehler beim Abrufen der Luftfeuchtigkeit für {self.name}: {e}", exc_info=True)
+            log.error(f"Failed to fetch the humidity of {self.name}: {e}", exc_info=True)
             return None
 
     def _get_ms130_value(self, field, scale):
@@ -1078,9 +1085,8 @@ class MerossDevice:
                     return round(raw['latest'] / scale, 1)
         else:
             log.debug(
-                f"MS130 {self.name}: Subdevice-ID '{subdev_id}' nicht in Event-Daten. "
-                f"Verfügbar: {get_sensor_data_keys()}"
-            )
+                f"MS130 {self.name}: no subdevice ID resolvable yet "
+                f"(known event data: {get_sensor_data_keys()})")
         return None
 
     def _resolve_subdevice_id(self):
@@ -1106,7 +1112,7 @@ class MerossDevice:
                 return self._device.is_triggered
             return None
         except Exception as e:
-            log.debug(f"Konnte Wasserstatus nicht abrufen: {e}")
+            log.debug(f"Could not fetch the water status: {e}")
             return None
 
     # ==================== Lamp functions ====================
@@ -1126,7 +1132,7 @@ class MerossDevice:
                 return True
             return False
         except Exception as e:
-            log.debug(f"Fehler beim Prüfen der RGB-Unterstützung für {self.name}: {e}")
+            log.debug(f"Failed to check the RGB support of {self.name}: {e}")
             return False
 
     def supports_luminance(self, channel=0):
@@ -1142,7 +1148,7 @@ class MerossDevice:
                 return True
             return False
         except Exception as e:
-            log.debug(f"Fehler beim Prüfen der Helligkeits-Unterstützung für {self.name}: {e}")
+            log.debug(f"Failed to check the brightness support of {self.name}: {e}")
             return False
 
     def supports_temperature(self, channel=0):
@@ -1160,7 +1166,7 @@ class MerossDevice:
                 return False
             return False
         except Exception as e:
-            log.debug(f"Fehler beim Prüfen der Farbtemperatur-Unterstützung für {self.name}: {e}")
+            log.debug(f"Failed to check the colour temperature support of {self.name}: {e}")
             return False
 
     def get_rgb_color(self, channel=0):
@@ -1175,7 +1181,7 @@ class MerossDevice:
                     return rgb
             return None
         except Exception as e:
-            log.debug(f"Fehler beim Abrufen der RGB-Farbe für {self.name}: {e}")
+            log.debug(f"Failed to fetch the RGB colour of {self.name}: {e}")
             return None
 
     def get_luminance(self, channel=0):
@@ -1188,7 +1194,7 @@ class MerossDevice:
                     return luminance
             return None
         except Exception as e:
-            log.debug(f"Fehler beim Abrufen der Helligkeit für {self.name}: {e}")
+            log.debug(f"Failed to fetch the brightness of {self.name}: {e}")
             return None
 
     def get_color_temperature(self, channel=0):
@@ -1201,7 +1207,7 @@ class MerossDevice:
                     return temp
             return None
         except Exception as e:
-            log.debug(f"Fehler beim Abrufen der Farbtemperatur für {self.name}: {e}")
+            log.debug(f"Failed to fetch the colour temperature of {self.name}: {e}")
             return None
 
     def is_in_rgb_mode(self, channel=0):
@@ -1245,7 +1251,7 @@ class MerossDevice:
                         if is_rgb:
                             return True
         except Exception as e:
-            log.debug(f"Fehler beim Lesen des capacity für {self.name}: {e}")
+            log.debug(f"Failed to read the capacity of {self.name}: {e}")
 
         # Heuristic
         try:
@@ -1256,7 +1262,7 @@ class MerossDevice:
                     if ci is not None:
                         temperature = ci._temperature
             except Exception as e:
-                log.debug(f"Ignorierter Fehler in is_in_rgb_mode: {e}")
+                log.debug(f"Ignored error in is_in_rgb_mode: {e}")
 
             if temperature is None:
                 temperature = self.get_color_temperature(channel)
@@ -1274,7 +1280,7 @@ class MerossDevice:
             return color_difference > 50
 
         except Exception as e:
-            log.debug(f"Fehler beim Prüfen des Lichtmodus für {self.name}: {e}")
+            log.debug(f"Failed to check the light mode of {self.name}: {e}")
             return None
 
     def set_light_mode(self, mode, rgb=None, temperature=None):
@@ -1282,7 +1288,7 @@ class MerossDevice:
         if mode in ('rgb', 'white'):
             self._light_mode = mode
             set_light_mode_cache(self.uuid, mode)
-            log.debug(f"{self.name}: Lichtmodus auf '{mode}' gesetzt (lokal + global)")
+            log.debug(f"{self.name}: light mode set to '{mode}' (local + global)")
 
             if mode == 'rgb' and rgb is not None:
                 self._cached_rgb = rgb
@@ -1324,7 +1330,7 @@ class MerossOfflineChannel:
         self.index = channel_index
         self.display_position = display_position
         self.outlet_label = outlet_label
-        # Same naming scheme as online: "Garten: Pumpe" / "Garten: Ausgang 1".
+        # Same naming scheme as online: "<device>: <outlet>".
         # Translators: Full channel name: device name plus outlet label.
         self.name = _("{device}: {outlet}").format(
             device=parent_device.name, outlet=outlet_label)
@@ -1407,7 +1413,7 @@ class MerossOfflineDevice(MerossDevice):
         (2 outlets) but wrong for the whole MSS425 series: an MSS425F has
         4 sockets + 1 USB group, so with 6 raw channels the offset became 4 and
         the device showed 2 outlets with the indices 4 and 5, labelled
-        "Ausgang 1" and "Ausgang 2". Outlets disappeared, the remaining ones
+        outlet 1 and outlet 2. Outlets disappeared, the remaining ones
         were mislabelled (what was announced as outlet 1 was physically
         outlet 4), and favorites broke because the channel UUIDs no longer
         matched the online ones.
@@ -1419,9 +1425,9 @@ class MerossOfflineDevice(MerossDevice):
         try:
             dump = [(i, c.get('devName') if isinstance(c, dict) else None)
                     for i, c in enumerate(raw_channels)]
-            log.debug(f"Meross {self.name}: Rohkanäle (Index, devName) = {dump}")
+            log.debug(f"Meross {self.name}: raw channels (index, devName) = {dump}")
         except Exception as e:
-            log.debug(f"Rohkanal-Dump fehlgeschlagen: {e}")
+            log.debug(f"Raw channel dump failed: {e}")
 
         outlet_indices = _outlets_from_raw_channels(raw_channels, self.type)
         if not outlet_indices:
@@ -1430,25 +1436,25 @@ class MerossOfflineDevice(MerossDevice):
         self.is_multi_channel = True
         named = 0
         for position, raw_idx in enumerate(outlet_indices, start=1):
-            # Outlet name exactly as online: the name given in the Meross app
-            # if the cloud provides one, otherwise "Ausgang N".
+            # Outlet name exactly as online: the name given in the Meross
+            # app if the cloud provides one, otherwise the numbered label.
             outlet_name = _outlet_name_from_raw_channels(raw_channels, raw_idx)
             if outlet_name:
                 outlet_label = outlet_name
                 named += 1
             else:
                 # Translators: Compact outlet label with the outlet number.
-                outlet_label = _("Ausgang {number}").format(number=position)
+                outlet_label = _("Outlet {number}").format(number=position)
             self._channels.append(
                 MerossOfflineChannel(self, raw_idx, position, outlet_label))
 
         log.info(
-            f"Offline Multi-Channel Gerät: {self.name} ({self.type}) mit "
-            f"{len(self._channels)} Ausgängen, {named} davon mit eigenem Namen")
+            f"Offline multi-channel device: {self.name} ({self.type}) with "
+            f"{len(self._channels)} outlets, {named} of them named")
 
     def _raise_offline_error(self):
         # Translators: Error message: action on an offline device.
-        raise RuntimeError(_("Gerät '{name}' ist offline oder nicht erreichbar").format(name=self.name))
+        raise RuntimeError(_("Device '{name}' is offline or unreachable").format(name=self.name))
 
     @property
     def is_on(self):

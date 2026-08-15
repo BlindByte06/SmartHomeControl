@@ -16,6 +16,7 @@ from .constants import (
     MEROSS_METRICS_MIN_INTERVAL,
     MEROSS_HOURLY_BUDGET,
     MEROSS_BUDGET_BURST,
+    MEROSS_BUDGET_RESERVE,
     MEROSS_THROTTLE_NOTIFY_COOLDOWN,
     MEROSS_BATTERY_POLL_INTERVAL,
     MEROSS_BATTERY_RETRY_INTERVAL,
@@ -25,10 +26,10 @@ import addonHandler
 try:
     addonHandler.initTranslation()
 except Exception as e:
-    log.debug(f"Ignorierter Fehler in <module>: {e}")
-if "_" not in globals():  # Fallback, falls initTranslation() scheitert
-    # Ohne diesen Fallback bleibt `_` undefiniert und der erste `_()`-Aufruf
-    # wirft einen NameError mitten im Dialogaufbau statt beim Import.
+    log.debug(f"Ignored error during translation setup: {e}")
+if "_" not in globals():  # fallback if initTranslation() fails
+    # Without this fallback `_` stays undefined and the first `_()` call
+    # raises a NameError mid-dialog instead of at import time.
     def _(s):
         return s
 
@@ -55,8 +56,8 @@ class MerossAPI:
     def __init__(self):
         if not MEROSS_AVAILABLE:
             raise ImportError(
-                "meross_iot ist nicht installiert!\n"
-                "Bitte installieren Sie es mit: pip install meross-iot"
+                "meross_iot is not installed.\n"
+                "Install it with: pip install meross-iot"
             )
         
         self.http_client = None
@@ -70,8 +71,8 @@ class MerossAPI:
         self._on_device_state_changed_callback = None
         self._device_state_cache = {}  # cache for status comparison: {uuid: is_on}
         self._wrapped_devices = []  # reference to MerossDevice wrappers (for channel updates)
-        # Schützt _wrapped_devices: gesetzt aus dem Haupt-/Dialog-Thread,
-        # gelesen aus dem MQTT-Push-Thread.
+        # Protects _wrapped_devices: set from the main/dialog thread, read
+        # from the MQTT push thread.
         self._wrapped_devices_lock = threading.Lock()
 
         # ---- Meross cloud rate limit protection (200 messages/h per device)
@@ -82,7 +83,7 @@ class MerossAPI:
         # Timestamp of the last power metric query per device (decoupled from
         # the status poll).
         self._last_metrics_fetch = {}
-        # Cache der consumptionX-Tageswerte: {uuid: (timestamp, data)}
+        # Cache of the daily consumptionX values: {uuid: (timestamp, data)}
         self._consumption_cache = {}
         # Callback that informs the user when throttling kicks in (set by the
         # plugin).
@@ -107,9 +108,14 @@ class MerossAPI:
         """
         self._on_throttle_callback = callback
 
-    def _consume_budget(self, uuid, cost=1):
+    def _consume_budget(self, uuid, cost=1, reserve=0):
         """Token bucket per device. Returns True if ``cost`` tokens were
         available (and consumes them), otherwise False (skip the query).
+
+        ``reserve`` keeps that many tokens untouched: routine background polls
+        pass MEROSS_BUDGET_RESERVE so they can never use up the last tokens,
+        while user-initiated queries (consumption, switching) pass 0 and
+        therefore always get through.
 
         Runs exclusively on the event loop thread; since there is no
         ``await`` between reading and writing, the access is atomic with
@@ -126,10 +132,19 @@ class MerossAPI:
         # Refill the tokens based on the elapsed time (capped at the burst)
         st['tokens'] = min(MEROSS_BUDGET_BURST, st['tokens'] + (now - st['last']) * rate)
         st['last'] = now
-        if st['tokens'] >= cost:
+        if st['tokens'] >= cost + reserve:
             st['tokens'] -= cost
             return True
         return False
+
+    def _budget_exhausted(self, uuid, cost=1):
+        """True when the bucket is REALLY empty, not merely down to the reserve.
+
+        Only then is the throttle announcement warranted: a poll stopped by the
+        reserve is intended behaviour and must not be reported to the user.
+        """
+        st = self._msg_budget.get(uuid)
+        return bool(st) and st['tokens'] < cost
 
     def _notify_throttle(self, device_name=None):
         """Informs the user at most every MEROSS_THROTTLE_NOTIFY_COOLDOWN
@@ -149,7 +164,7 @@ class MerossAPI:
             try:
                 cb(device_name)
             except Exception as e:
-                log.debug(f"Ignorierter Fehler in _notify_throttle: {e}")
+                log.debug(f"Ignored error in _notify_throttle: {e}")
 
     def set_device_state_changed_callback(self, callback):
         """
@@ -165,16 +180,16 @@ class MerossAPI:
                      device_uuid: UUID of the device (str)
         """
         self._on_device_state_changed_callback = callback
-        log.info("Push-Notification Callback registriert")
+        log.info("Push notification callback registered")
     
     def set_wrapped_devices(self, devices):
         """
         Sets the reference to MerossDevice wrappers for channel updates on push notifications.
 
-        Unter demselben Lock wie der Lesezugriff in
-        ``_process_toggle_notification``: die Liste wird an mehreren Stellen
-        neu gesetzt (Login, Reload, Geräte-Aktualisierung), und ein Push, der
-        in dieses Fenster fällt, sah sonst eine leere oder veraltete Liste.
+        Under the same lock as the read in
+        ``_process_toggle_notification``: the list is replaced in several
+        places (login, reload, device refresh), and a push falling into that
+        window used to see an empty or stale list.
 
         Args:
             devices: list of MerossDevice wrapper objects
@@ -214,13 +229,13 @@ class MerossAPI:
                 self._process_toggle_notification(originating_device_uuid, raw_data, target_devices)
             
         except Exception as e:
-            log.debug(f"Fehler beim Verarbeiten der Push-Notification: {e}")
+            log.debug(f"Failed to process the push notification: {e}")
     
     def _process_toggle_notification(self, device_uuid, raw_data, target_devices=None):
         """Processes toggle notifications (on/off)"""
         try:
             if not self._on_device_state_changed_callback:
-                log.debug("Kein Callback registriert - überspringe")
+                log.debug("No callback registered - skipping")
                 return
             
             # Extract the new status and channel info from raw_data. Format:
@@ -252,13 +267,14 @@ class MerossAPI:
             # Find the device name - use target_devices if available (faster!)
             # Translators: Placeholder when the device name cannot be
             # determined.
-            device_name = _("Unbekanntes Gerät")
+            device_name = _("Unknown device")
             actual_uuid = device_uuid
             raw_device_obj = None  # the meross_iot device object
             
             if target_devices and len(target_devices) > 0:
                 raw_device_obj = target_devices[0]
-                device_name = raw_device_obj.name if hasattr(raw_device_obj, 'name') else _("Unbekanntes Gerät")
+                device_name = raw_device_obj.name if hasattr(raw_device_obj, 'name') else _("Unknown "
+                                                                                            "device")
                 actual_uuid = raw_device_obj.uuid if hasattr(raw_device_obj, 'uuid') else device_uuid
             elif device_uuid and self.manager:
                 devices = self.manager.find_devices(device_uuids=[device_uuid])
@@ -268,15 +284,15 @@ class MerossAPI:
                     actual_uuid = raw_device_obj.uuid
             
             if not actual_uuid:
-                log.debug("Keine Geräte-UUID gefunden - überspringe")
+                log.debug("No device UUID found - skipping")
                 return
             
             # Find the MerossDevice wrapper for multi-channel devices.
-            # Unter demselben Lock wie set_wrapped_devices(), damit hier nie
-            # eine halb ersetzte Liste gesehen wird (früher konnte ein Push in
-            # genau dem Fenster nach Login/Reload durch den Einkanal-Zweig
-            # laufen: alle Kanäle teilten sich dann den Cache-Key und die
-            # Ansage nutzte den Gerätenamen statt des Ausgangsnamens).
+            # Under the same lock as set_wrapped_devices() so a half
+            # replaced list is never seen here (a push falling into exactly
+            # that window after login/reload used to run through the
+            # single-channel branch: all channels then shared the cache key
+            # and the announcement used the device instead of outlet name).
             wrapped_device = None
             with self._wrapped_devices_lock:
                 for wd in (self._wrapped_devices or []):
@@ -291,22 +307,21 @@ class MerossAPI:
             if is_multi_channel and hasattr(wrapped_device, 'get_channels'):
                 channels = wrapped_device.get_channels() or []
 
-            # Zweitquelle: mehr als ein togglex-Eintrag heißt mehrkanalig,
-            # auch wenn (noch) kein Wrapper gefunden wurde. Damit stimmt
-            # wenigstens der Cache-Key pro Kanal und der zweite Kanal
-            # überschreibt nicht den Zustand des ersten.
+            # Second source: more than one togglex entry means
+            # multi-channel even if no wrapper was found (yet). At least the
+            # cache key per channel is then right and the second channel does
+            # not overwrite the state of the first.
             if not is_multi_channel and len(channel_states) > 1:
                 log.debug(
-                    f"Push für {actual_uuid}: {len(channel_states)} Kanäle, "
-                    f"aber kein Wrapper - behandle als mehrkanalig")
+                    f"Push for {actual_uuid}: {len(channel_states)} channels but no "
+                    f"wrapper - treating it as multi-channel")
                 is_multi_channel = True
 
-            # Bekannte Kanalindizes des Wrappers. Damit wird nicht mehr auf
-            # die NUMMER 0 geprüft, sondern auf Zugehörigkeit: meross_iot
-            # markiert Kanal 0 immer als Master, auch wenn er in Wahrheit ein
-            # echter Ausgang ist - dessen Änderung wurde dadurch stillschweigend
-            # geschluckt. Ist die Menge leer (kein Wrapper), wird nichts
-            # gefiltert.
+            # Known channel indices of the wrapper. This tests membership
+            # instead of the NUMBER 0: meross_iot always marks channel 0 as
+            # master even when it really is an outlet, whose change was then
+            # silently swallowed. An empty set (no wrapper) filters
+            # nothing.
             known_indices = {
                 idx for idx in (getattr(ch, 'channel_index', None) for ch in channels)
                 if idx is not None
@@ -317,8 +332,8 @@ class MerossAPI:
             changed_channels = []  # list of (channel_name, new_state, channel_index)
 
             for ch_num, (ch_state, lm_time) in channel_states.items():
-                # Master-Kanal überspringen - erkannt an der Zugehörigkeit zu
-                # den Ausgängen des Wrappers, nicht an der Nummer.
+                # Skip the master channel - recognised by membership in
+                # the wrapper's outlets, not by its number.
                 if is_multi_channel and known_indices and ch_num not in known_indices:
                     continue
 
@@ -371,7 +386,7 @@ class MerossAPI:
             
         except Exception as e:
             # No exc_info: could leak tokens/headers in the stack trace.
-            log.error(f"Fehler beim Verarbeiten der Toggle-Notification: {type(e).__name__}: {e}")
+            log.error(f"Failed to process the toggle notification: {type(e).__name__}: {e}")
     
     def _start_event_loop(self):
         """Starts the event loop in a separate thread"""
@@ -381,12 +396,12 @@ class MerossAPI:
         # Install a thread excepthook: catches the "Event loop is closed" crash
         # from the paho-mqtt thread that occurs when MQTT messages arrive after
         # the event loop cleanup (known meross_iot issue).
-        # ACHTUNG: threading.excepthook ist PROZESSWEIT - der Austausch wirkt
-        # auf ganz NVDA und alle Add-ons, solange der Loop läuft. Der Hook
-        # filtert deshalb strikt (nur RuntimeError "Event loop is closed" aus
-        # paho-mqtt-Threads) und reicht alles andere an den Original-Hook
-        # weiter; zurückgetauscht wird nur, wenn unser Hook noch installiert
-        # ist (siehe finally unten).
+        # CAUTION: threading.excepthook is PROCESS-WIDE - swapping it
+        # affects all of NVDA and every add-on while the loop runs. The hook
+        # therefore filters strictly (only RuntimeError "Event loop is
+        # closed" from paho-mqtt threads) and passes everything else to the
+        # original hook; it is swapped back only if it is still installed
+        # (see the finally below).
         original_excepthook = getattr(threading, 'excepthook', None)
         
         def _mqtt_safe_excepthook(args):
@@ -394,7 +409,7 @@ class MerossAPI:
             if (isinstance(args.exc_value, RuntimeError) and 
                 "Event loop is closed" in str(args.exc_value) and
                 args.thread and 'paho-mqtt' in (args.thread.name or '')):
-                log.debug("MQTT-Thread: Event Loop bereits geschlossen (harmlos, wird ignoriert)")
+                log.debug("MQTT thread: event loop already closed (harmless, ignored)")
                 return
             # Handle all other exceptions normally
             if original_excepthook:
@@ -419,13 +434,13 @@ class MerossAPI:
                 if pending:
                     self.loop.run_until_complete(asyncio.gather(*pending, return_exceptions=True))
             except Exception as e:
-                log.debug(f"Event Loop Cleanup Fehler: {e}")
+                log.debug(f"Event loop cleanup error: {e}")
             finally:
                 try:
                     self.loop.close()
-                    log.info("Event Loop sauber beendet")
+                    log.info("Event loop shut down cleanly")
                 except Exception as e:
-                    log.debug(f"Event Loop Close Fehler: {e}")
+                    log.debug(f"Event loop close error: {e}")
                 # Only restore the excepthook if OURS is still installed -
                 # otherwise a hook set by another party in the meantime would
                 # be silently overwritten.
@@ -442,7 +457,7 @@ class MerossAPI:
         resources.
         """
         if not self.loop or self.loop.is_closed():
-            raise RuntimeError(_("Event Loop nicht verfügbar"))
+            raise RuntimeError(_("Event loop not available"))
 
         import concurrent.futures
         future = asyncio.run_coroutine_threadsafe(coro, self.loop)
@@ -451,7 +466,7 @@ class MerossAPI:
         except concurrent.futures.TimeoutError:
             future.cancel()  # do not let the coroutine keep running
             raise TimeoutError(
-                f"Meross-Operation nach {timeout}s abgebrochen (Timeout)")
+                f"Meross operation aborted after {timeout}s (timeout)")
     
     def login(self, email, password, api_base_url="https://iotx-eu.meross.com"):
         """
@@ -468,18 +483,18 @@ class MerossAPI:
         """
         if not email or not password:
             # Translators: Validation error when email or password is missing.
-            raise ValueError(_("Email und Passwort erforderlich"))
+            raise ValueError(_("Email and password required"))
 
         self.api_base_url = api_base_url
         self.email = email
 
-        log.info(f"Meross API: Starte Login (Server: {api_base_url})...")
+        log.info(f"Meross API: starting login (server: {api_base_url})...")
 
         # Set the running flag BEFORE the thread start
         self._running = True
 
-        # Start the event loop thread (threading/time sind Modulimporte;
-        # _i statt _, damit gettext-_ nicht verdeckt wird)
+        # Start the event loop thread (threading/time are module imports;
+        # _i instead of _ so the gettext _ is not shadowed)
         self.loop_thread = threading.Thread(target=self._start_event_loop, daemon=True)
         self.loop_thread.start()
 
@@ -492,16 +507,16 @@ class MerossAPI:
             self._running = False
             # Translators: Error message when the Meross event loop does not
             # start.
-            raise RuntimeError(_("Event Loop konnte nicht gestartet werden"))
+            raise RuntimeError(_("Event loop could not be started"))
 
         try:
             self._run_async(self._login(password))
         except (ConnectionError, TimeoutError, OSError) as e:
-            log.error(f"Login fehlgeschlagen - Netzwerkfehler: {e}")
+            log.error(f"Login failed - network error: {e}")
             self._cleanup()
             raise ConnectionError(f"Verbindungsfehler: {e}")
         except Exception as e:
-            log.error(f"Login fehlgeschlagen: {e}")
+            log.error(f"Login failed: {e}")
             self._cleanup()
             raise
         finally:
@@ -526,7 +541,7 @@ class MerossAPI:
             
             return None
         except Exception as e:
-            log.debug(f"Fehler beim Extrahieren der Power-Daten: {e}")
+            log.debug(f"Failed to extract the power data: {e}")
             return None
         
     async def _login(self, password):
@@ -550,7 +565,7 @@ class MerossAPI:
         self.manager.register_push_notification_handler_coroutine(
             self._async_push_notification_handler
         )
-        log.info("Meross API: Login erfolgreich, Push-Notifications aktiviert")
+        log.info("Meross API: login successful, push notifications enabled")
     
     async def _async_push_notification_handler(self, push_notification, target_devices=None, manager=None):
         """
@@ -564,7 +579,7 @@ class MerossAPI:
         try:
             self._handle_device_push_notification(push_notification, target_devices)
         except Exception as e:
-            log.debug(f"Push-Notification Handler Fehler: {e}")
+            log.debug(f"Push notification handler error: {e}")
 
         # If the push is for a device that is not in the registry (typically a
         # device that was offline at login and just came back online), enroll it
@@ -576,7 +591,7 @@ class MerossAPI:
                 uuid = getattr(push_notification, 'originating_device_uuid', None)
                 await self._enroll_unknown_device_if_needed(uuid)
         except Exception as e:
-            log.debug(f"Ignorierter Fehler beim Nachmelden eines Geräts: {e}")
+            log.debug(f"Ignored error while registering a device late: {e}")
 
     async def _enroll_unknown_device_if_needed(self, uuid):
         """Enrolls a device that sent a push but is not in the local registry.
@@ -594,7 +609,7 @@ class MerossAPI:
             if self.manager.find_devices(device_uuids=[uuid]):
                 return
         except Exception as e:
-            log.debug(f"Ignorierter Fehler in _enroll_unknown_device_if_needed: {e}")
+            log.debug(f"Ignored error in _enroll_unknown_device_if_needed: {e}")
 
         now = time.time()
         last = self._unknown_device_discovery_ts.get(uuid, 0.0)
@@ -605,11 +620,11 @@ class MerossAPI:
         self._unknown_device_discovery_ts[uuid] = now
 
         try:
-            log.info(f"Meross: Gerät {uuid} nicht registriert – starte gezielte Discovery")
+            log.info(f"Meross: device {uuid} not registered - starting a targeted discovery")
             await self.manager.async_device_discovery(meross_device_uuid=uuid)
-            log.info(f"Meross: Gerät {uuid} nachträglich registriert")
+            log.info(f"Meross: device {uuid} registered late")
         except Exception as e:
-            log.debug(f"Gezielte Discovery für {uuid} fehlgeschlagen: {type(e).__name__}: {e}")
+            log.debug(f"Targeted discovery for {uuid} failed: {type(e).__name__}: {e}")
     
     def get_devices(self):
         """
@@ -619,19 +634,19 @@ class MerossAPI:
             list of MerossDevice and MerossOfflineDevice objects
         """
         if not self._running:
-            raise RuntimeError(_("Nicht angemeldet"))
+            raise RuntimeError(_("Not logged in"))
         
-        log.debug("Meross API: Rufe Geräte ab...")
+        log.debug("Meross API: fetching the devices...")
         
         async def _get_devices():
             # 1. Fetch ALL devices from the HTTP API (incl. offline)
             all_http_devices = await self.http_client.async_list_devices()
-            log.debug(f"HTTP API listet {len(all_http_devices)} Gerät(e) (inkl. offline)")
+            log.debug(f"HTTP API lists {len(all_http_devices)} device(s) (offline included)")
             
             # 2. Perform the normal discovery (enrolls only online devices)
             await self.manager.async_device_discovery()
             online_devices = self.manager.find_devices()
-            log.info(f"Meross API: {len(online_devices)} online Gerät(e) gefunden - starte paralleles Update...")
+            log.info(f"Meross API: {len(online_devices)} online device(s) found - starting the parallel update...")
             
             # 3. Update the status of all ONLINE devices IN PARALLEL (with
             # optimized timeouts). IMPORTANT: hubs (MSH300, MSH450) need LONGER
@@ -659,9 +674,9 @@ class MerossAPI:
                             await asyncio.sleep(0.5)
                             subdevices = list(device.get_subdevices()) if callable(device.get_subdevices) else []
                             if subdevices:
-                                log.debug(f"Hub {device.name}: {len(subdevices)} Subdevice(s) gefunden")
+                                log.debug(f"Hub {device.name}: {len(subdevices)} subdevice(s) found")
                         except Exception as e:
-                            log.debug(f"Hub {device.name}: Subdevice-Abfrage fehlgeschlagen: {e}")
+                            log.debug(f"Hub {device.name}: subdevice query failed: {e}")
                     
                     # For ElectricityMixin devices: also load instant metrics
                     # (power consumption)
@@ -675,19 +690,19 @@ class MerossAPI:
                                 timeout=1.5
                             )
                         except asyncio.TimeoutError:
-                            log.debug(f"Metrics-Timeout für {device.name} (1.5s) - überspringe")
+                            log.debug(f"Metrics timeout for {device.name} (1.5s) - skipping")
                         except Exception as e:
-                            log.debug(f"Electricity-Daten für {device.name} nicht verfügbar: {e}")
+                            log.debug(f"Electricity data not available for {device.name}: {e}")
                     
                     return (device, True, metrics)  # device + success status + metrics
                     
                 except asyncio.TimeoutError:
                     is_hub = hasattr(device, 'get_subdevices') or 'msh' in (device.type.lower() if hasattr(device, 'type') else '')
                     timeout_used = 10.0 if is_hub else 4.0
-                    log.warning(f"Update-Timeout für {device.name} ({timeout_used}s) - Gerät wird trotzdem hinzugefügt")
+                    log.warning(f"Update timed out for {device.name} ({timeout_used}s) - adding the device anyway")
                     return (device, False, None)  # keep the device, but without complete data
                 except Exception as e:
-                    log.debug(f"Update fehlgeschlagen für {device.name}: {e}")
+                    log.debug(f"Update failed for {device.name}: {e}")
                     return (device, False, None)
             
             update_tasks = [update_device(d) for d in online_devices]
@@ -695,7 +710,7 @@ class MerossAPI:
             
             # Filter only successful updates (but keep all devices!)
             successful = sum(1 for result in results if isinstance(result, tuple) and len(result) >= 2 and result[1])
-            log.info(f"Geräte-Update abgeschlossen: {successful}/{len(online_devices)} erfolgreich")
+            log.info(f"Device update finished: {successful}/{len(online_devices)} successful")
             
             # 4. Create MerossDevice wrappers for ALL ONLINE devices (even with
             # timeout)
@@ -718,9 +733,9 @@ class MerossAPI:
                             hub_devices.append(device)
                         
                         if not success:
-                            log.info(f"Gerät {wrapper.name} ohne vollständigen Status hinzugefügt (Timeout)")
+                            log.info(f"Device {wrapper.name} added without a complete status (timeout)")
                     except Exception as e:
-                        log.error(f"Fehler beim Erstellen von MerossDevice-Wrapper für {device.name}: {e}")
+                        log.error(f"Failed to create the MerossDevice wrapper for {device.name}: {e}")
             
             # 4b. IMPORTANT: explicitly fetch all subdevices of hubs and add
             # them. This fixes the problem that sensors (MS100, MS130) are
@@ -746,7 +761,7 @@ class MerossAPI:
                             try:
                                 wrapper = MerossDevice(subdev)
                             except Exception as e:
-                                log.debug(f"Subdevice-Wrapper-Erstellung fehlgeschlagen: {e}")
+                                log.debug(f"Creating the subdevice wrapper failed: {e}")
                                 continue
 
                             # DUPLICATE CHECK via the stable, unique unique_id
@@ -755,13 +770,13 @@ class MerossAPI:
 
                             subdevice_wrappers.append(wrapper)
                             existing_ids.add(wrapper.unique_id)
-                            log.info(f"Sensor-Subdevice nachträglich hinzugefügt: {wrapper.name} ({wrapper.type})")
+                            log.info(f"Sensor subdevice added late: {wrapper.name} ({wrapper.type})")
                 except Exception as e:
-                    log.debug(f"Subdevice-Abfrage für Hub {hub_device.name} fehlgeschlagen: {e}")
+                    log.debug(f"Subdevice query for hub {hub_device.name} failed: {e}")
             
             # Add subdevices found afterwards to the list
             if subdevice_wrappers:
-                log.info(f"{len(subdevice_wrappers)} Sensor(en) nachträglich von Hubs hinzugefügt")
+                log.info(f"{len(subdevice_wrappers)} sensor(s) added late from hubs")
                 online_device_wrappers.extend(subdevice_wrappers)
             
             online_uuids = {d.uuid for d in online_device_wrappers}
@@ -788,11 +803,11 @@ class MerossAPI:
                         # MOD150 (diffuser) that are slow/problematic during
                         # enrollment
                         enrollment_failed_devices.append(http_dev)
-                        log.warning(f"Enrollment-Failed aber ONLINE: {http_dev.dev_name} ({http_dev.device_type}) - UUID: {http_dev.uuid}")
+                        log.warning(f"Enrollment failed but ONLINE: {http_dev.dev_name} ({http_dev.device_type}) - UUID: {http_dev.uuid}")
                     else:
                         # The device is really offline
                         truly_offline_devices.append(http_dev)
-                        log.debug(f"Offline-Gerät gefunden: {http_dev.dev_name} ({http_dev.device_type})")
+                        log.debug(f"Offline device found: {http_dev.dev_name} ({http_dev.device_type})")
             
             # 6. Create MerossOfflineDevice wrappers ONLY for REALLY OFFLINE
             # devices
@@ -804,7 +819,7 @@ class MerossAPI:
             retry_failed_devices = []
             
             if enrollment_failed_devices:
-                log.info(f"Versuche Enrollment-Retry für {len(enrollment_failed_devices)} online Gerät(e) mit vorherigem Timeout...")
+                log.info(f"Retrying enrollment for {len(enrollment_failed_devices)} online device(s) that timed out before...")
                 
                 async def retry_single_device(http_dev):
                     try:
@@ -816,12 +831,12 @@ class MerossAPI:
                             device = enrolled_devices[0]
                             try:
                                 await asyncio.wait_for(device.async_update(), timeout=6.0)
-                                log.info(f"Retry erfolgreich (bereits enrolled): {http_dev.dev_name}")
+                                log.info(f"Retry successful (already enrolled): {http_dev.dev_name}")
                                 return (MerossDevice(device), True)
                             except (asyncio.TimeoutError, asyncio.CancelledError):
-                                log.debug(f"Retry-Update Timeout für {http_dev.dev_name}")
+                                log.debug(f"Retry update timed out for {http_dev.dev_name}")
                     except Exception as e:
-                        log.debug(f"Retry fehlgeschlagen für {http_dev.dev_name}: {e}")
+                        log.debug(f"Retry failed for {http_dev.dev_name}: {e}")
                     return (MerossOfflineDevice(http_dev), False)
                 
                 retry_tasks = [retry_single_device(dev) for dev in enrollment_failed_devices]
@@ -843,7 +858,7 @@ class MerossAPI:
                           retry_failed_devices)
             
             if offline_device_wrappers or retry_success_devices or retry_failed_devices:
-                log.info(f"Gesamtanzahl: {len(online_device_wrappers)} enrolled + {len(retry_success_devices)} retry-ok + {len(retry_failed_devices)} retry-fail + {len(offline_device_wrappers)} offline = {len(all_devices)} Gerät(e)")
+                log.info(f"Total: {len(online_device_wrappers)} enrolled + {len(retry_success_devices)} retry-ok + {len(retry_failed_devices)} retry-fail + {len(offline_device_wrappers)} offline = {len(all_devices)} device(s)")
             
             # 8b. FINAL CHECK: look for missing sensors (MS100, MS130). Hubs
             # may have new subdevices after the update that we missed. Call
@@ -868,7 +883,7 @@ class MerossAPI:
                     try:
                         wrapper = MerossDevice(device)
                     except Exception as e:
-                        log.debug(f"Sensor-Wrapper-Erstellung fehlgeschlagen für {device.name}: {e}")
+                        log.debug(f"Creating the sensor wrapper failed for {device.name}: {e}")
                         continue
 
                     # DUPLICATE CHECK via the stable, unique unique_id
@@ -877,13 +892,13 @@ class MerossAPI:
 
                     missing_sensors.append(wrapper)
                     final_device_ids.add(wrapper.unique_id)
-                    log.info(f"Fehlender Sensor nachträglich gefunden: {wrapper.name} ({wrapper.type})")
+                    log.info(f"Missing sensor found later: {wrapper.name} ({wrapper.type})")
                 
                 if missing_sensors:
-                    log.info(f"{len(missing_sensors)} fehlende(r) Sensor(en) nachträglich zur Liste hinzugefügt")
+                    log.info(f"{len(missing_sensors)} missing sensor(s) added to the list later")
                     all_devices.extend(missing_sensors)
             except Exception as e:
-                log.debug(f"Finale Sensor-Prüfung fehlgeschlagen: {e}")
+                log.debug(f"Final sensor check failed: {e}")
             
             # 9. Auto-configuration for known devices with custom names
             _auto_configure_custom_names(all_devices)
@@ -895,7 +910,7 @@ class MerossAPI:
             # plus enrollment retries for problematic devices
             return self._run_async(_get_devices(), timeout=120)
         except TimeoutError:
-            log.warning("Timeout beim Abrufen der Geräte - versuche Fallback...")
+            log.warning("Timeout while fetching the devices - trying the fallback...")
             # Fallback: try to use already enrolled devices from the manager
             # PLUS the HTTP API for missing/offline devices
             try:
@@ -912,10 +927,10 @@ class MerossAPI:
                                 enrolled_devices.append(wrapper)
                                 enrolled_uuids.add(device.uuid)
                             except Exception as e:
-                                log.debug(f"Fallback: Wrapper-Erstellung fehlgeschlagen für {device.name}: {e}")
-                        log.info(f"Fallback: {len(enrolled_devices)} bereits enrolled Gerät(e) vom Manager")
+                                log.debug(f"Fallback: creating the wrapper failed for {device.name}: {e}")
+                        log.info(f"Fallback: {len(enrolled_devices)} already enrolled device(s) from the manager")
                     except Exception as e:
-                        log.debug(f"Fallback: Manager find_devices fehlgeschlagen: {e}")
+                        log.debug(f"Fallback: manager find_devices failed: {e}")
                     
                     # 2. Extract subdevices from hubs (sensors MS100/MS130!)
                     subdev_wrappers = []
@@ -939,14 +954,14 @@ class MerossAPI:
                                     subdev_wrappers.append(sw)
                                     existing_ids.add(sw.unique_id)
                             except Exception as e:
-                                log.debug(f"Ignorierter Fehler in _get_devices_fallback: {e}")
+                                log.debug(f"Ignored error in _get_devices_fallback: {e}")
                     if subdev_wrappers:
-                        log.info(f"Fallback: {len(subdev_wrappers)} Sensor(en) von Hubs hinzugefügt")
+                        log.info(f"Fallback: {len(subdev_wrappers)} sensor(s) added from hubs")
                         enrolled_devices.extend(subdev_wrappers)
                     
                     # 3. HTTP API for missing/offline devices
                     all_http_devices = await self.http_client.async_list_devices()
-                    log.info(f"Fallback: {len(all_http_devices)} Geräte von HTTP-API")
+                    log.info(f"Fallback: {len(all_http_devices)} devices from the HTTP API")
                     
                     # Only add non-enrolled devices as offline
                     offline_devices = []
@@ -955,21 +970,22 @@ class MerossAPI:
                             offline_devices.append(MerossOfflineDevice(http_dev))
                     
                     devices = enrolled_devices + offline_devices
-                    log.info(f"Fallback: {len(enrolled_devices)} online + {len(offline_devices)} offline = {len(devices)} Gerät(e)")
+                    log.info(f"Fallback: {len(enrolled_devices)} online + {len(offline_devices)} offline = {len(devices)} device(s)")
                     
                     _auto_configure_custom_names(devices)
                     return devices
                 
                 devices = self._run_async(_get_devices_fallback(), timeout=30)
-                log.info(f"Fallback erfolgreich: {len(devices)} Gerät(e) geladen")
+                log.info(f"Fallback successful: {len(devices)} device(s) loaded")
                 return devices
             except Exception as fallback_error:
-                log.error(f"Auch Fallback fehlgeschlagen: {fallback_error}")
+                log.error(f"The fallback failed too: {fallback_error}")
                 # Translators: Error message on timeout of the Meross device
                 # query.
-                raise TimeoutError(_("Geräte-Abfrage dauert zu lange - möglicherweise sind zu viele Geräte offline"))
+                raise TimeoutError(_("Device query is taking too long - "
+                                     "possibly too many devices are offline"))
         except Exception as e:
-            log.error(f"Fehler beim Abrufen der Geräte: {e}")
+            log.error(f"Failed to fetch the devices: {e}")
             raise
     
     @staticmethod
@@ -994,8 +1010,9 @@ class MerossAPI:
         Queries the whole hub ONCE via Appliance.Hub.Battery with an EMPTY list
         ({'battery': []}). This is important: the per-subdevice query used by
         meross_iot's async_get_battery_life ({'battery': [{'id': X}]}) returns a
-        stub WITHOUT a 'value' on several hub firmwares (that was the 'kein Wert
-        in der Antwort' log). The empty-list query returns the real values for
+        stub WITHOUT a 'value' on several hub firmwares (that was the 'no
+        value in the response' log). The empty-list query returns the real
+        values for
         all subdevices in one call - which is also easier on the hourly budget.
 
         After the first success per hub we back off to
@@ -1011,14 +1028,15 @@ class MerossAPI:
             try:
                 subdevices = list(hub_device.get_subdevices()) if hasattr(hub_device, 'get_subdevices') else []
             except Exception as e:
-                log.debug(f"Konnte Subdevices für Batterie-Abfrage nicht lesen: {e}")
+                log.debug(f"Could not read the subdevices for the battery query: {e}")
                 subdevices = []
             if not subdevices:
                 return
 
             # One cloud message to the hub -> respect its hourly budget.
-            if not self._consume_budget(hub_uuid, 1):
-                log.debug(f"Batterie-Abfrage übersprungen (Budget) für Hub {hub_uuid}")
+            # Routine background work, so the reserve applies.
+            if not self._consume_budget(hub_uuid, 1, reserve=MEROSS_BUDGET_RESERVE):
+                log.debug(f"Battery query skipped (budget) for hub {hub_uuid}")
                 mark_hub_battery_attempt(hub_uuid, False)
                 return
 
@@ -1029,16 +1047,16 @@ class MerossAPI:
                         method='GET', namespace=Namespace.HUB_BATTERY, payload={'battery': []}),
                     timeout=8.0)
             except (asyncio.TimeoutError, asyncio.CancelledError):
-                log.debug(f"Batterie-Abfrage Timeout für Hub {getattr(hub_device, 'name', '?')}")
+                log.debug(f"Battery query timed out for hub {getattr(hub_device, 'name', '?')}")
                 mark_hub_battery_attempt(hub_uuid, False)
                 return
             except Exception as e:
-                log.debug(f"Batterie-Abfrage fehlgeschlagen für Hub {getattr(hub_device, 'name', '?')}: {type(e).__name__}: {e}")
+                log.debug(f"Battery query failed for hub {getattr(hub_device, 'name', '?')}: {type(e).__name__}: {e}")
                 mark_hub_battery_attempt(hub_uuid, False)
                 return
 
             # Raw response logged so any unexpected format is visible in the log.
-            log.debug(f"HUB_BATTERY Rohantwort für {getattr(hub_device, 'name', '?')}: {resp}")
+            log.debug(f"HUB_BATTERY raw response for {getattr(hub_device, 'name', '?')}: {resp}")
 
             entries = resp.get('battery', []) if isinstance(resp, dict) else []
             id_to_value = {}
@@ -1056,13 +1074,13 @@ class MerossAPI:
                     polled_any = True
                     log.debug(f"Batterie {getattr(subdev, 'name', '?')}: {id_to_value[sid]}%")
                 else:
-                    log.debug(f"Batterie {getattr(subdev, 'name', '?')} (id={sid}): kein Wert in der Antwort")
+                    log.debug(f"Battery {getattr(subdev, 'name', '?')} (id={sid}): no value in the response")
 
             # Record the attempt; the full-interval back-off only kicks in once
             # at least one battery value was obtained (see hub_battery_poll_due).
             mark_hub_battery_attempt(hub_uuid, polled_any)
         except Exception as e:
-            log.debug(f"Ignorierter Fehler in _poll_hub_batteries: {e}")
+            log.debug(f"Ignored error in _poll_hub_batteries: {e}")
             mark_hub_battery_attempt(hub_uuid, False)
 
     def update_device_status(self, devices):
@@ -1073,9 +1091,9 @@ class MerossAPI:
             devices: list of MerossDevice objects to update
         """
         if not self._running:
-            raise RuntimeError(_("Nicht angemeldet"))
+            raise RuntimeError(_("Not logged in"))
         
-        log.debug(f"Meross API: Aktualisiere Status von {len(devices)} Geräten...")
+        log.debug(f"Meross API: updating the status of {len(devices)} devices...")
         
         async def _update_status():
             # Import for specific exception types
@@ -1093,8 +1111,10 @@ class MerossAPI:
                 # Rate limit protection: status poll (1 cloud message) only
                 # when the device's hourly budget allows it. Otherwise skip and
                 # inform the user (throttled) - prevents the 24-hour ban.
-                if not self._consume_budget(meross_device.uuid, 1):
-                    self._notify_throttle(getattr(meross_device, 'name', None))
+                if not self._consume_budget(meross_device.uuid, 1,
+                                            reserve=MEROSS_BUDGET_RESERVE):
+                    if self._budget_exhausted(meross_device.uuid, 1):
+                        self._notify_throttle(getattr(meross_device, 'name', None))
                     return (False, None)
 
                 try:
@@ -1122,7 +1142,8 @@ class MerossAPI:
                         if meross_device.has_power_meter and hasattr(orig_device, 'async_get_instant_metrics'):
                             now = time.time()
                             last = self._last_metrics_fetch.get(meross_device.uuid, 0.0)
-                            if (now - last) >= MEROSS_METRICS_MIN_INTERVAL and self._consume_budget(meross_device.uuid, 1):
+                            if (now - last) >= MEROSS_METRICS_MIN_INTERVAL and self._consume_budget(
+                                    meross_device.uuid, 1, reserve=MEROSS_BUDGET_RESERVE):
                                 try:
                                     metrics = await asyncio.wait_for(
                                         orig_device.async_get_instant_metrics(),
@@ -1136,7 +1157,7 @@ class MerossAPI:
                                 except (asyncio.TimeoutError, asyncio.CancelledError):
                                     pass  # a timeout for metrics is OK
                                 except Exception as e:
-                                    log.debug(f"Ignorierter Fehler in update_single_device: {e}")
+                                    log.debug(f"Ignored error in update_single_device: {e}")
 
                         # Update the wrapper object
                         meross_device._device = orig_device
@@ -1164,7 +1185,7 @@ class MerossAPI:
                     # Only log unknown errors (as DEBUG, not ERROR)
                     error_str = str(e).lower()
                     if 'timeout' not in error_str and 'cancelled' not in error_str:
-                        log.debug(f"Status-Update fehlgeschlagen für {meross_device.name}: {type(e).__name__}")
+                        log.debug(f"Status update failed for {meross_device.name}: {type(e).__name__}")
                     return (False, None)
                 
                 return (False, None)
@@ -1202,7 +1223,7 @@ class MerossAPI:
                             sibling._device = rep_dev
                         sibling._update_status()
                     except Exception as e:
-                        log.debug(f"Ignorierter Fehler in _update_status: {e}")
+                        log.debug(f"Ignored error in _update_status: {e}")
             
             # Count the successes and collect the hubs
             updated = 0
@@ -1223,7 +1244,7 @@ class MerossAPI:
             
             # Update all hubs for fresh subdevice data (important for MS130!)
             if hubs:
-                log.debug(f"Aktualisiere {len(hubs)} Hub(s) für Subdevice-Daten...")
+                log.debug(f"Updating {len(hubs)} hub(s) for subdevice data...")
                 
                 async def update_single_hub(hub_device):
                     updated_ok = False
@@ -1231,7 +1252,7 @@ class MerossAPI:
                         # Hub update with its own timeout (hubs are often
                         # slower)
                         await asyncio.wait_for(hub_device.async_update(), timeout=8.0)
-                        log.debug(f"Hub {hub_device.name} aktualisiert")
+                        log.debug(f"Hub {hub_device.name} updated")
                         updated_ok = True
                     except asyncio.TimeoutError:
                         # A timeout is normal for slow hubs - no log
@@ -1242,7 +1263,7 @@ class MerossAPI:
                         # Only log unknown errors
                         error_str = str(e).lower()
                         if 'timeout' not in error_str and 'cancelled' not in error_str and 'subdevice' not in error_str:
-                            log.debug(f"Hub-Update fehlgeschlagen für {hub_device.name}: {type(e).__name__}")
+                            log.debug(f"Hub update failed for {hub_device.name}: {type(e).__name__}")
 
                     # Poll battery levels INDEPENDENTLY of the (often timing-out)
                     # full hub update: the HUB_BATTERY GET is a small separate
@@ -1251,7 +1272,7 @@ class MerossAPI:
                     try:
                         await self._poll_hub_batteries(hub_device)
                     except Exception as e:
-                        log.debug(f"Ignorierter Fehler beim Batterie-Poll: {e}")
+                        log.debug(f"Ignored error during the battery poll: {e}")
 
                     return updated_ok
                 
@@ -1259,7 +1280,7 @@ class MerossAPI:
                 hub_tasks = [update_single_hub(hub_device) for hub_device in hubs.values()]
                 await asyncio.gather(*hub_tasks, return_exceptions=True)
             
-            log.debug(f"Status-Update abgeschlossen: {updated} erfolgreich, {failed} fehlgeschlagen")
+            log.debug(f"Status update finished: {updated} successful, {failed} failed")
         
         try:
             # PARALLEL updates are MUCH faster - aggressive timeout! Only
@@ -1268,18 +1289,18 @@ class MerossAPI:
             online_devices = [d for d in devices if not (hasattr(d, 'is_offline') and d.is_offline)]
             # OPTIMIZED: 10s minimum (hubs need up to 8s), plus 0.2s per device
             timeout = max(10, len(online_devices) * 0.2)
-            log.debug(f"Paralleles Update ({len(online_devices)} online von {len(devices)}) mit Timeout: {timeout:.1f}s")
+            log.debug(f"Parallel update ({len(online_devices)} online of {len(devices)}) with timeout: {timeout:.1f}s")
             self._run_async(_update_status(), timeout=timeout)
         except TimeoutError:
-            log.debug(f"Status-Update Timeout nach {timeout:.0f}s - einige Geräte haben nicht rechtzeitig geantwortet")
+            log.debug(f"Status update timed out after {timeout:.0f}s - some devices did not answer in time")
             # No raise - partial updates are OK
         except Exception as e:
-            log.error(f"Fehler beim Aktualisieren: {type(e).__name__}: {e}")
+            log.error(f"Update failed: {type(e).__name__}: {e}")
             raise
     
     @staticmethod
     def summarize_daily_consumption(data):
-        """(kwh_heute, kwh_7tage) aus consumptionX-Daten berechnen."""
+        """Computes (kwh_today, kwh_7days) from consumptionX data."""
         import datetime as _dt
         today = _dt.date.today()
         week_start = today - _dt.timedelta(days=6)
@@ -1291,46 +1312,46 @@ class MerossAPI:
             if week_start <= e['date'].date() <= today)
         return kwh_today, kwh_week
 
-    # TTL des Verbrauchs-Caches: Die Tageswerte ändern sich nur langsam;
-    # 15 Minuten halten die Cloud-Last bei maximal 4 Nachrichten pro Stunde
-    # und Gerät - unkritisch fürs 200er-Stundenbudget, auch wenn der Dialog
-    # oft geöffnet/aktualisiert wird.
+    # TTL of the consumption cache: the daily values change slowly, and
+    # 15 minutes keep the cloud load at 4 messages per hour and device at
+    # most - harmless for the 200/hour budget even when the dialog is opened
+    # and refreshed often.
     CONSUMPTION_CACHE_TTL = 900.0
 
     def peek_daily_consumption(self, device_uuid):
-        """Liefert die zuletzt abgerufenen Tagesverbräuche aus dem Cache.
+        """Returns the last fetched daily consumption from the cache.
 
-        KEIN Netzwerkzugriff - für die Anzeige im Dialog. Liefert auch
-        leicht veraltete Daten (besser als nichts); None, wenn noch nie
-        abgerufen wurde.
+        NO network access - for the display in the dialog. Slightly stale
+        data is returned too (better than nothing); None if nothing has ever
+        been fetched.
         """
         cached = self._consumption_cache.get(device_uuid)
         return cached[1] if cached else None
 
     def get_daily_consumption(self, device_uuid):
-        """Liest die vom GERÄT selbst gezählten Tagesverbräuche (consumptionX).
+        """Reads the daily consumption counted by the DEVICE (consumptionX).
 
-        Die Messsteckdosen (MSS310/315, MOP320) zählen ihren Verbrauch
-        intern weiter - auch wenn NVDA/das Add-on nicht läuft. Diese Werte
-        sind daher vollständiger als die eigenen Leistungs-Stichproben.
+        The metering outlets (MSS310/315, MOP320) keep counting internally,
+        even while NVDA or the add-on is not running. These values are
+        therefore more complete than our own power samples.
 
-        Cloud-schonend: Ergebnisse werden CONSUMPTION_CACHE_TTL Sekunden
-        gecacht; innerhalb der TTL kostet der Aufruf KEINE Cloud-Nachricht.
-        Zusätzlich greift das normale Pro-Gerät-Budget.
+        Gentle on the cloud: results are cached for CONSUMPTION_CACHE_TTL
+        seconds; within the TTL the call costs NO cloud message. The normal
+        per-device budget applies on top.
 
         Returns:
-            Liste von {'date': datetime, 'total_consumption_kwh': float}
-            oder None, wenn das Gerät die Abfrage nicht unterstützt oder das
-            Cloud-Budget sie gerade nicht erlaubt.
+            list of {'date': datetime, 'total_consumption_kwh': float}, or
+            None if the device does not support the query or the cloud budget
+            currently forbids it.
         """
         if not self._running:
             return None
-        # Frischer Cache -> keine Cloud-Nachricht
+        # Fresh cache -> no cloud message
         cached = self._consumption_cache.get(device_uuid)
         if cached and (time.time() - cached[0]) < self.CONSUMPTION_CACHE_TTL:
             return cached[1]
         if not self._consume_budget(device_uuid, 1):
-            log.debug(f"Verbrauchsabfrage übersprungen (Budget): {device_uuid}")
+            log.debug(f"Consumption query skipped (budget): {device_uuid}")
             return cached[1] if cached else None
         try:
             orig_devices = self.manager.find_devices(device_uuids=[device_uuid])
@@ -1344,14 +1365,80 @@ class MerossAPI:
                 return await asyncio.wait_for(
                     orig.async_get_daily_power_consumption(), timeout=6.0)
 
-            data = self._run_async(_fetch(), timeout=10)
+            # 20 s and not 10: the inner wait_for already bounds the actual
+            # cloud call at 6 s, so the outer timeout only has to cover the
+            # queueing on the event loop. A status round occupies it for up to
+            # ~10 s, and with the old value the query died in the queue -
+            # exactly the "the cache does not work reliably" case.
+            data = self._run_async(_fetch(), timeout=20)
             if data is not None:
                 self._consumption_cache[device_uuid] = (time.time(), data)
             return data
         except Exception as e:
-            log.debug(f"Tagesverbrauch nicht abrufbar für {device_uuid}: {type(e).__name__}")
-            # Bei Fehlern lieber veraltete Cache-Daten als gar nichts
+            log.debug(f"Daily consumption not retrievable for {device_uuid}: {type(e).__name__}")
+            # On errors, stale cache data beats nothing at all
             return cached[1] if cached else None
+
+    def get_daily_consumption_bulk(self, device_uuids):
+        """Daily consumption for SEVERAL devices - one pass on the event loop.
+
+        The per-device variant blocks once per device, so the queueing time
+        behind a running status round was paid again for every plug and the
+        later ones ran into the timeout. Here the cloud calls run in parallel
+        in a single ``gather``, so the wait is paid once.
+
+        Returns:
+            dict uuid -> data (or None). Cached devices are answered without a
+            cloud message; devices whose query fails keep their cached value.
+        """
+        result = {}
+        pending = []
+        now = time.time()
+        for uuid in device_uuids:
+            cached = self._consumption_cache.get(uuid)
+            if cached and (now - cached[0]) < self.CONSUMPTION_CACHE_TTL:
+                result[uuid] = cached[1]
+                continue
+            result[uuid] = cached[1] if cached else None
+            pending.append(uuid)
+        if not pending or not self._running:
+            return result
+
+        targets = []
+        for uuid in pending:
+            if not self._consume_budget(uuid, 1):
+                log.debug(f"Consumption query skipped (budget): {uuid}")
+                continue
+            try:
+                found = self.manager.find_devices(device_uuids=[uuid])
+            except Exception as e:
+                log.debug(f"Consumption: device {uuid} not resolvable: {e}")
+                continue
+            if not found or not hasattr(found[0], 'async_get_daily_power_consumption'):
+                continue
+            targets.append((uuid, found[0]))
+        if not targets:
+            return result
+
+        async def _fetch_all():
+            async def _one(orig):
+                return await asyncio.wait_for(
+                    orig.async_get_daily_power_consumption(), timeout=6.0)
+            return await asyncio.gather(
+                *[_one(orig) for _uuid, orig in targets], return_exceptions=True)
+
+        try:
+            answers = self._run_async(_fetch_all(), timeout=25)
+        except Exception as e:
+            log.debug(f"Bulk consumption query failed: {type(e).__name__}: {e}")
+            return result
+
+        for (uuid, _orig), data in zip(targets, answers):
+            if isinstance(data, BaseException) or data is None:
+                continue
+            self._consumption_cache[uuid] = (time.time(), data)
+            result[uuid] = data
+        return result
 
     def set_device_state(self, uuid, state, channel=None):
         """
@@ -1363,10 +1450,10 @@ class MerossAPI:
             channel: channel index (optional, for multi-channel devices)
         """
         if not self._running:
-            raise RuntimeError(_("Nicht angemeldet"))
+            raise RuntimeError(_("Not logged in"))
         
         channel_info = f" Channel {channel}" if channel is not None else ""
-        log.info(f"Meross API: Setze Gerät {uuid}{channel_info} auf {state}")
+        log.info(f"Meross API: setting device {uuid}{channel_info} to {state}")
         
         async def _set_state():
             devices = self.manager.find_devices(device_uuids=[uuid])
@@ -1375,7 +1462,8 @@ class MerossAPI:
                 # The device was not found - probably offline or no longer
                 # connected
                 # Translators: Error message: Meross device unreachable.
-                raise RuntimeError(_("Gerät nicht erreichbar - möglicherweise offline oder Verbindung unterbrochen"))
+                raise RuntimeError(_("Device unreachable - possibly offline "
+                                     "or connection lost"))
             
             device = devices[0]
             
@@ -1391,7 +1479,7 @@ class MerossAPI:
                             device.async_set_spray_mode(mode=DiffuserSprayMode.LIGHT, channel=channel or 0), 
                             timeout=10.0
                         )
-                        log.info(f"Diffuser {device.name} eingeschaltet (LIGHT mode)")
+                        log.info(f"Diffuser {device.name} switched on (LIGHT mode)")
                     else:
                         # Turn off: set to OFF
                         from meross_iot.model.enums import DiffuserSprayMode
@@ -1399,19 +1487,21 @@ class MerossAPI:
                             device.async_set_spray_mode(mode=DiffuserSprayMode.OFF, channel=channel or 0), 
                             timeout=10.0
                         )
-                        log.info(f"Diffuser {device.name} ausgeschaltet")
+                        log.info(f"Diffuser {device.name} switched off")
                     return  # switched successfully
                 except asyncio.TimeoutError:
                     # Translators: Error message when a diffuser does not
                     # respond to the on/off command.
-                    raise TimeoutError(_("Diffuser nicht erreichbar - antwortet nicht auf Schaltbefehl"))
+                    raise TimeoutError(_("Diffuser unreachable - does not "
+                                         "respond to the switch command"))
             
             # Default: ToggleMixin (async_turn_on/async_turn_off)
             if not hasattr(device, 'async_turn_on') or not hasattr(device, 'async_turn_off'):
                 # Translators: Placeholder for an unknown device type.
-                device_type = device.type if hasattr(device, 'type') else _('Unbekannt')
+                device_type = device.type if hasattr(device, 'type') else _("Unknown")
                 # Translators: Error message: device type is not switchable.
-                raise ValueError(_("Gerät {name} ({type}) kann nicht geschaltet werden (z.B. Hub oder Sensor)").format(
+                raise ValueError(_("Device {name} ({type}) cannot be switched "
+                                   "(e.g. hub or sensor)").format(
                     name=device.name, type=device_type))
             
             # Switch (with or without channel) - with timeout handling
@@ -1419,26 +1509,27 @@ class MerossAPI:
                 if state:
                     if channel is not None:
                         await asyncio.wait_for(device.async_turn_on(channel=channel), timeout=10.0)
-                        log.debug(f"Gerät {device.name} Channel {channel} eingeschaltet")
+                        log.debug(f"Device {device.name} channel {channel} switched on")
                     else:
                         await asyncio.wait_for(device.async_turn_on(), timeout=10.0)
-                        log.debug(f"Gerät {device.name} eingeschaltet")
+                        log.debug(f"Device {device.name} switched on")
                 else:
                     if channel is not None:
                         await asyncio.wait_for(device.async_turn_off(channel=channel), timeout=10.0)
-                        log.debug(f"Gerät {device.name} Channel {channel} ausgeschaltet")
+                        log.debug(f"Device {device.name} channel {channel} switched off")
                     else:
                         await asyncio.wait_for(device.async_turn_off(), timeout=10.0)
-                        log.debug(f"Gerät {device.name} ausgeschaltet")
+                        log.debug(f"Device {device.name} switched off")
             except asyncio.TimeoutError:
                 # Translators: Error message: device does not respond to the
                 # switch command.
-                raise TimeoutError(_("Gerät nicht erreichbar - antwortet nicht auf Schaltbefehl"))
+                raise TimeoutError(_("Device unreachable - not responding to "
+                                     "switch command"))
         
         try:
             self._run_async(_set_state())
         except Exception as e:
-            log.error(f"Fehler beim Schalten: {e}")
+            log.error(f"Switching failed: {e}")
             raise
     
     def set_diffuser_spray_mode(self, uuid, spray_mode):
@@ -1450,39 +1541,41 @@ class MerossAPI:
             spray_mode: DiffuserSprayMode (LIGHT, STRONG, OFF)
         """
         if not self._running:
-            raise RuntimeError(_("Nicht angemeldet"))
+            raise RuntimeError(_("Not logged in"))
         
-        log.info(f"Meross API: Setze Diffuser {uuid} auf Mode {spray_mode}")
+        log.info(f"Meross API: setting diffuser {uuid} to mode {spray_mode}")
         
         async def _set_spray():
             devices = self.manager.find_devices(device_uuids=[uuid])
             
             if not devices:
                 # Translators: Error message: diffuser unreachable.
-                raise RuntimeError(_("Diffuser nicht erreichbar - möglicherweise offline"))
+                raise RuntimeError(_("Diffuser not reachable - possibly "
+                                     "offline"))
             
             device = devices[0]
             
             if not hasattr(device, 'async_set_spray_mode'):
                 # Translators: Error message: device does not support diffuser
                 # functions.
-                raise RuntimeError(_("Gerät {name} ist kein Diffuser").format(name=device.name))
+                raise RuntimeError(_("Device {name} is not a diffuser").format(name=device.name))
             
             try:
                 await asyncio.wait_for(
                     device.async_set_spray_mode(mode=spray_mode, channel=0), 
                     timeout=10.0
                 )
-                log.info(f"Diffuser {device.name} auf Mode {spray_mode} gesetzt")
+                log.info(f"Diffuser {device.name} set to mode {spray_mode}")
             except asyncio.TimeoutError:
                 # Translators: Error message when a diffuser does not respond
                 # to the mode command.
-                raise TimeoutError(_("Diffuser nicht erreichbar - antwortet nicht auf Befehl"))
+                raise TimeoutError(_("Diffuser unreachable - does not respond "
+                                     "to the command"))
         
         try:
             self._run_async(_set_spray())
         except Exception as e:
-            log.error(f"Fehler beim Setzen des Spray-Modus: {e}")
+            log.error(f"Failed to set the spray mode: {e}")
             raise
     
     # ==================== Lamp functions (MSL450, MSL610, MSL320)
@@ -1503,23 +1596,24 @@ class MerossAPI:
             RGB and color temperature cannot be set at the same time!
         """
         if not self._running:
-            raise RuntimeError(_("Nicht angemeldet"))
+            raise RuntimeError(_("Not logged in"))
         
-        log.info(f"Meross API: Setze Lichtfarbe für {uuid} - RGB={rgb}, Luminance={luminance}, Temp={temperature}, OnOff={onoff}")
+        log.info(f"Meross API: setting the light colour of {uuid} - RGB={rgb}, luminance={luminance}, temp={temperature}, onoff={onoff}")
         
         async def _set_light():
             devices = self.manager.find_devices(device_uuids=[uuid])
             
             if not devices:
                 # Translators: Error message: lamp unreachable.
-                raise RuntimeError(_("Lampe nicht erreichbar - möglicherweise offline"))
+                raise RuntimeError(_("Lamp unreachable - possibly offline"))
             
             device = devices[0]
             
             if not hasattr(device, 'async_set_light_color'):
                 # Translators: Error message: device is not a (color-capable)
                 # lamp.
-                raise RuntimeError(_("Gerät {name} ist keine Lampe oder unterstützt keine Farbsteuerung").format(name=device.name))
+                raise RuntimeError(_("Device {name} is not a lamp or does not "
+                                     "support color control").format(name=device.name))
             
             try:
                 await asyncio.wait_for(
@@ -1532,16 +1626,17 @@ class MerossAPI:
                     ),
                     timeout=10.0
                 )
-                log.info(f"Lampe {device.name} erfolgreich konfiguriert")
+                log.info(f"Lamp {device.name} configured successfully")
             except asyncio.TimeoutError:
                 # Translators: Error message when a lamp does not respond to
                 # the command.
-                raise TimeoutError(_("Lampe nicht erreichbar - antwortet nicht auf Befehl"))
+                raise TimeoutError(_("Lamp unreachable - does not respond to "
+                                     "the command"))
         
         try:
             self._run_async(_set_light())
         except Exception as e:
-            log.error(f"Fehler beim Setzen der Lichtfarbe: {e}")
+            log.error(f"Failed to set the light colour: {e}")
             raise
     
     def set_light_rgb(self, uuid, red, green, blue, channel=0):
@@ -1556,7 +1651,7 @@ class MerossAPI:
         """
         if not (0 <= red <= 255 and 0 <= green <= 255 and 0 <= blue <= 255):
             # Translators: Error message for invalid RGB values.
-            raise ValueError(_("RGB-Werte müssen zwischen 0 und 255 liegen"))
+            raise ValueError(_("RGB values must be between 0 and 255"))
         
         self.set_light_color(uuid=uuid, channel=channel, rgb=(red, green, blue))
     
@@ -1570,7 +1665,7 @@ class MerossAPI:
         """
         if not (0 <= luminance <= 100):
             # Translators: Error message for an invalid brightness value.
-            raise ValueError(_("Helligkeit muss zwischen 0 und 100 liegen"))
+            raise ValueError(_("Brightness must be between 0 and 100"))
         
         self.set_light_color(uuid=uuid, channel=channel, luminance=luminance)
     
@@ -1585,7 +1680,7 @@ class MerossAPI:
         if not (0 <= temperature <= 100):
             # Translators: Error message for an invalid color temperature
             # value.
-            raise ValueError(_("Farbtemperatur muss zwischen 0 und 100 liegen"))
+            raise ValueError(_("Color temperature must be between 0 and 100"))
         
         self.set_light_color(uuid=uuid, channel=channel, temperature=temperature)
     
@@ -1594,9 +1689,9 @@ class MerossAPI:
 
         Args:
             uuid: device UUID
-            white_type: white tone type - "warm" or "warmweiss" (2700K ~ 0)
-                                      - "tageslicht" or "neutral" (4000K ~ 50)
-                                      - "kalt" or "kaltweiss" (6500K ~ 100)
+            white_type: "warm" (2700K ~ 0), "daylight" (4000K ~ 50) or
+                "cool" (6500K ~ 100). The German names of earlier versions
+                are still accepted.
             channel: channel (default: 0)
         """
         white_type = white_type.lower().strip()
@@ -1604,34 +1699,35 @@ class MerossAPI:
         # Mapping of white tone names to temperature values (0-100)
         white_presets = {
             "warm": 0,
+            "daylight": 50,
+            "neutral": 50,
+            "cool": 100,
+            # Names of versions up to 26.7.3 - kept so a favorite or history
+            # entry stored back then still switches correctly.
             "warmweiss": 0,
             "warmweiß": 0,
-            "warmwhite": 0,
             "tageslicht": 50,
-            "neutral": 50,
             "neutralweiss": 50,
             "neutralweiß": 50,
-            "daylight": 50,
             "kalt": 100,
             "kaltweiss": 100,
             "kaltweiß": 100,
-            "coldwhite": 100,
-            "cool": 100
         }
         
         if white_type not in white_presets:
             valid_types = ", ".join(sorted(set(white_presets.keys())))
             # Translators: Error message for an invalid white tone name.
-            raise ValueError(_("Ungültiger Weißton '{value}'. Gültige Werte: {valid}").format(
+            raise ValueError(_("Invalid white tone '{value}'. Valid values: "
+                               "{valid}").format(
                 value=white_type, valid=valid_types))
         
         temperature = white_presets[white_type]
-        log.info(f"Setze Lampe {uuid} auf Weißton '{white_type}' (Temperatur={temperature})")
+        log.info(f"Setting lamp {uuid} to white tone '{white_type}' (temperature={temperature})")
         self.set_light_color(uuid=uuid, channel=channel, temperature=temperature)
     
     def _cleanup(self):
         """Cleans up resources"""
-        log.debug("Meross API: Starte Cleanup...")
+        log.debug("Meross API: starting cleanup...")
         
         # Close the manager
         if self.manager:
@@ -1642,7 +1738,7 @@ class MerossAPI:
                 if self.loop and self.loop.is_running():
                     self._run_async(_close_manager(), timeout=5)
             except Exception as e:
-                log.debug(f"Manager-Close Fehler: {e}")
+                log.debug(f"Manager close error: {e}")
         
         # HTTP client logout
         if self.http_client:
@@ -1653,7 +1749,7 @@ class MerossAPI:
                 if self.loop and self.loop.is_running():
                     self._run_async(_logout(), timeout=5)
             except Exception as e:
-                log.debug(f"HTTP-Logout Fehler: {e}")
+                log.debug(f"HTTP logout error: {e}")
         
         # Stop the event loop (set the flag FIRST!)
         self._running = False
@@ -1662,27 +1758,27 @@ class MerossAPI:
             try:
                 self.loop.call_soon_threadsafe(self.loop.stop)
             except Exception as e:
-                log.debug(f"Loop-Stop Fehler: {e}")
+                log.debug(f"Loop stop error: {e}")
 
         # Wait for the thread to end - a bit more generous than 2 s so slow
         # network cleanups (TLS close, MQTT disconnect) are not cut off.
         if self.loop_thread and self.loop_thread.is_alive():
-            log.debug("Warte auf Event-Loop-Thread...")
+            log.debug("Waiting for the event loop thread...")
             self.loop_thread.join(timeout=5.0)
             if self.loop_thread.is_alive():
                 # Close the loop hard so hanging tasks can be released, and try
                 # to join a second time.
-                log.warning("Event-Loop-Thread reagiert nicht – versuche Hard-Close")
+                log.warning("Event loop thread not responding - trying a hard close")
                 try:
                     if self.loop and not self.loop.is_closed():
                         self.loop.call_soon_threadsafe(self.loop.stop)
                 except Exception as e:
-                    log.debug(f"Ignorierter Fehler in _cleanup: {e}")
+                    log.debug(f"Ignored error in _cleanup: {e}")
                 self.loop_thread.join(timeout=2.0)
                 if self.loop_thread.is_alive():
-                    log.warning("Event-Loop-Thread konnte nicht sauber beendet werden")
+                    log.warning("Event loop thread could not be stopped cleanly")
             else:
-                log.debug("Event-Loop-Thread erfolgreich beendet")
+                log.debug("Event loop thread stopped successfully")
 
         log.debug("Meross API: Cleanup abgeschlossen")
     

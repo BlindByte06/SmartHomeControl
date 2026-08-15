@@ -4,7 +4,7 @@
 Follows the same structure as dialog_vesync.py: _compute_*_items as the
 single source of truth for the tree items, _fill/_live_update/_rebuild for
 the tree and one handler per action. Actions use the combined info+action
-label ("Zieltemperatur: 55 Grad - Enter zum Ändern").
+label ("target temperature: 55 degrees - Enter to change").
 
 """
 
@@ -18,10 +18,10 @@ import addonHandler
 try:
     addonHandler.initTranslation()
 except Exception as e:
-    _nvda_log.debug(f"initTranslation fehlgeschlagen: {e}")
-if "_" not in globals():  # Fallback, falls initTranslation() scheitert
-    # Ohne diesen Fallback bleibt `_` undefiniert und der erste `_()`-Aufruf
-    # wirft einen NameError mitten im Dialogaufbau statt beim Import.
+    _nvda_log.debug(f"initTranslation failed: {e}")
+if "_" not in globals():  # fallback if initTranslation() fails
+    # Without this fallback `_` stays undefined and the first `_()` call
+    # raises a NameError mid-dialog instead of at import time.
     def _(s):
         return s
 
@@ -41,7 +41,7 @@ class _CozytouchDialogMixin:
     def _cozytouch_choose_from_list(self, title, prompt, values, label_map, current_value):
         if not values:
             # Translators: Message when a selection list has no options.
-            ui.message(_("Keine Auswahl verfügbar"))
+            ui.message(_("No selection available"))
             return None
         labels = [label_map.get(v, str(v)) for v in values]
         dlg = wx.SingleChoiceDialog(self, prompt, title, labels)
@@ -64,15 +64,15 @@ class _CozytouchDialogMixin:
 
     # ---------------- Handlers ----------------
     def _run_cozytouch_cloud_action(self, action_call, on_success, failure_message):
-        """Führt einen Cozytouch-Cloud-Aufruf im Hintergrund aus.
+        """Runs a Cozytouch cloud call in the background.
 
-        Die ``device.set_*``-Methoden blockieren durch das
-        Verifikations-Polling in cozytouch_api bis zu ~15 s; im wx-Thread
-        ausgeführt fror dabei der Dialog (und NVDA) ein. Deshalb Thread +
-        _safe_call_after wie bei den Favoriten-Gesten (_favorite_toggle in
-        __init__.py). ``action_call`` (ohne Argumente) liefert True/False;
-        ``on_success`` läuft danach im UI-Thread (Ansage, Verlauf,
-        Baum-Umbau), ``failure_message`` wird bei False angesagt.
+        The ``device.set_*`` methods block for up to ~15 s because of the
+        value verification in cozytouch_api; on the wx thread that froze the
+        dialog and NVDA. Hence a thread plus _safe_call_after, the same
+        pattern as _favorite_toggle in __init__.py. ``action_call`` takes no
+        arguments and returns True/False; ``on_success`` then runs on the UI
+        thread (announcement, history, tree rebuild), ``failure_message`` is
+        announced on False.
         """
         if not self._begin_cloud_action():
             return
@@ -82,12 +82,12 @@ class _CozytouchDialogMixin:
                 ok = action_call()
             except Exception as e:
                 _beep(BEEP_ERROR)
-                log.error(f"Cozytouch-Fehler: {e}")
+                log.error(f"Cozytouch error: {e}")
                 # Translators: Generic Cozytouch error message with detail
                 # text.
                 self._safe_call_after(
                     ui.message,
-                    _("Cozytouch-Fehler: {error}").format(error=str(e)[:80]))
+                    _("Cozytouch error: {error}").format(error=str(e)[:80]))
                 return
             finally:
                 self._cloud_action_running = False
@@ -106,13 +106,13 @@ class _CozytouchDialogMixin:
         current = device.target_temperature
         # Translators: Input prompt for the target temperature. {lo}/{hi} =
         # bounds.
-        prompt = _("Zieltemperatur in Grad ({lo} bis {hi}):").format(
+        prompt = _("Target temperature in degrees ({lo} to {hi}):").format(
             lo=_fmt_temp(lo), hi=_fmt_temp(hi))
         default = _fmt_temp(current) if current is not None else ""
         # Translators: Title of the target temperature dialog. {name} = device
         # name.
         dlg = wx.TextEntryDialog(
-            self, prompt, _("{name}: Zieltemperatur").format(name=device.name), default)
+            self, prompt, _("{name}: target temperature").format(name=device.name), default)
         previous = getattr(self, '_suppress_live_updates', False)
         self._suppress_live_updates = True
         chosen = None
@@ -129,13 +129,13 @@ class _CozytouchDialogMixin:
         except ValueError:
             _beep(BEEP_ERROR)
             # Translators: Message on non-numeric temperature input.
-            ui.message(_("Ungültige Eingabe"))
+            ui.message(_("Invalid input"))
             return
         def on_success():
             _beep(BEEP_ACTION)
             # Translators: Confirmation after setting the target
             # temperature.
-            ui.message(_("{name}: Zieltemperatur {temp} Grad").format(
+            ui.message(_("{name}: target temperature {temp} degrees").format(
                 name=device.name, temp=_fmt_temp(device.target_temperature)))
             self.plugin._record_local_cozytouch_action(device.uuid)
             get_history().log_action(device, 'set_target_temp', f"{_fmt_temp(device.target_temperature)}°C")
@@ -145,7 +145,7 @@ class _CozytouchDialogMixin:
             lambda: device.set_target_temperature(temp),
             on_success,
             # Translators: Error message when the API rejects the setting.
-            _("Zieltemperatur konnte nicht gesetzt werden"))
+            _("Target temperature could not be set"))
 
     def _handle_cozytouch_mode(self, device, item):
         """Lets the user choose the operating mode."""
@@ -153,9 +153,9 @@ class _CozytouchDialogMixin:
         chosen = self._cozytouch_choose_from_list(
             # Translators: Title of the mode selection dialog. {name} = device
             # name.
-            _("{name}: Modus wählen").format(name=device.name),
+            _("{name}: choose mode").format(name=device.name),
             # Translators: Prompt in the mode selection dialog.
-            _("Wählen Sie den Betriebsmodus:"),
+            _("Choose the operating mode:"),
             values, COZYTOUCH_HEATING_MODE_NAMES, device.mode_value,
         )
         if chosen is None:
@@ -165,16 +165,17 @@ class _CozytouchDialogMixin:
             _beep(BEEP_ACTION)
             # Translators: Confirmation after a mode change. {mode} = mode
             # name.
-            ui.message(_("{name}: Modus {mode}").format(name=device.name, mode=mode_de))
+            ui.message(_("{name}: mode {mode}").format(name=device.name, mode=mode_de))
             self.plugin._record_local_cozytouch_action(device.uuid)
-            get_history().log_action(device, 'set_mode', mode_de)
+            # Mode key, not its label - the display translates it.
+            get_history().log_action(device, 'set_mode', str(chosen))
             self._rebuild_cozytouch_device_children(item, device)
 
         self._run_cozytouch_cloud_action(
             lambda: device.set_mode(chosen),
             on_success,
             # Translators: Error message when the mode change fails.
-            _("Modus konnte nicht gesetzt werden"))
+            _("Mode could not be set"))
 
     def _handle_cozytouch_boost_time(self, device, item):
         """Lets the user change the boost duration (minutes). Experimental:
@@ -182,13 +183,13 @@ class _CozytouchDialogMixin:
         layer reports that honestly."""
         current = device.boost_total_time
         # Translators: Input prompt for the boost duration in minutes.
-        prompt = _("Boost-Laufzeit in Minuten (z. B. 60):")
+        prompt = _("Boost duration in minutes (e.g. 60):")
         default = str(int(current)) if current else ""
         dlg = wx.TextEntryDialog(
             self, prompt,
             # Translators: Title of the boost duration dialog. {name} =
             # device name.
-            _("{name}: Boost-Laufzeit").format(name=device.name), default)
+            _("{name}: boost duration").format(name=device.name), default)
         previous = getattr(self, '_suppress_live_updates', False)
         self._suppress_live_updates = True
         chosen = None
@@ -207,18 +208,19 @@ class _CozytouchDialogMixin:
         except ValueError:
             _beep(BEEP_ERROR)
             # Translators: Message on invalid boost duration input.
-            ui.message(_("Ungültige Eingabe - bitte Minuten zwischen 1 und 1440 angeben"))
+            ui.message(_("Invalid input - please enter minutes between 1 and "
+                         "1440"))
             return
         def on_success():
             _beep(BEEP_ACTION)
             # Translators: Confirmation after changing the boost duration.
-            ui.message(_("{name}: Boost-Laufzeit {minutes} Minuten").format(
+            ui.message(_("{name}: boost duration {minutes} minutes").format(
                 name=device.name, minutes=minutes))
             self.plugin._record_local_cozytouch_action(device.uuid)
+            # Bare number - the display adds the unit in the current
+            # language.
             get_history().log_action(
-                device, 'set_boost_duration',
-                # Translators: History detail for the boost duration.
-                _("{minutes} Minuten").format(minutes=minutes))
+                device, 'set_boost_duration', str(minutes))
             self._rebuild_cozytouch_device_children(item, device)
 
         self._run_cozytouch_cloud_action(
@@ -226,8 +228,8 @@ class _CozytouchDialogMixin:
             on_success,
             # Translators: Error when the cloud rejects the boost duration
             # write (the capability may be read-only on some models).
-            _("Boost-Laufzeit konnte nicht gesetzt werden - "
-              "das Gerät akzeptiert diese Änderung möglicherweise nicht"))
+            _("Boost duration could not be set - the device may not accept "
+              "this change"))
 
     def _handle_cozytouch_boost(self, device, item):
         """Toggles boost mode."""
@@ -235,21 +237,19 @@ class _CozytouchDialogMixin:
 
         def on_success():
             _beep(BEEP_ON if new_state else BEEP_OFF)
-            status = _("ein") if new_state else _("aus")
+            status = _("on") if new_state else _("off")
             # Translators: Confirmation after toggling boost.
-            ui.message(_("{name}: Boost {status}").format(name=device.name, status=status))
+            ui.message(_("{name}: boost {status}").format(name=device.name, status=status))
             self.plugin._record_local_cozytouch_action(device.uuid)
             get_history().log_action(
-                device, 'boost_on' if new_state else 'boost_off',
-                # Translators: History detail: boost switched on/off.
-                _("Boost {status}").format(status=status))
+                device, 'boost_on' if new_state else 'boost_off', "")
             self._rebuild_cozytouch_device_children(item, device)
 
         self._run_cozytouch_cloud_action(
             lambda: device.set_boost(new_state),
             on_success,
             # Translators: Error message when toggling boost fails.
-            _("Boost konnte nicht umgeschaltet werden"))
+            _("Boost could not be toggled"))
 
     def _handle_cozytouch_toggle(self, device, item):
         """Switches hot water production on/off (CAP_DHW_ON)."""
@@ -257,16 +257,14 @@ class _CozytouchDialogMixin:
 
         def on_success():
             _beep(BEEP_ON if new_state else BEEP_OFF)
-            status = _("ein") if new_state else _("aus")
+            status = _("on") if new_state else _("off")
             # Translators: Confirmation after switching hot water
             # production on/off.
-            ui.message(_("{name}: Betrieb {status}").format(name=device.name, status=status))
+            ui.message(_("{name}: operation {status}").format(name=device.name, status=status))
             self.plugin._record_local_toggle(device.uuid, new_state)
             self.plugin._record_local_cozytouch_action(device.uuid)
             get_history().log_action(
-                device, 'toggle_on' if new_state else 'toggle_off',
-                # Translators: History detail: device switched on/off.
-                _('Ein') if new_state else _('Aus'))
+                device, 'toggle_on' if new_state else 'toggle_off', "")
             self._rebuild_cozytouch_device_children(item, device)
 
         self._run_cozytouch_cloud_action(
@@ -274,7 +272,7 @@ class _CozytouchDialogMixin:
             on_success,
             # Translators: Error message when toggling hot water production
             # fails.
-            _("Warmwasser konnte nicht umgeschaltet werden"))
+            _("Hot water could not be toggled"))
 
     def _handle_cozytouch_away(self, device, item):
         """Turns away mode off directly, or opens the scheduling dialog."""
@@ -283,25 +281,25 @@ class _CozytouchDialogMixin:
             def on_success_off():
                 _beep(BEEP_OFF)
                 # Translators: Confirmation after toggling away mode.
-                ui.message(_("{name}: Abwesenheit {status}").format(
-                    name=device.name, status=_("aus")))
+                ui.message(_("{name}: away mode {status}").format(
+                    name=device.name, status=_("off")))
                 self.plugin._record_local_cozytouch_action(device.uuid)
                 # Translators: History detail: away mode switched off.
-                get_history().log_action(device, 'away_off', _("Abwesenheit aus"))
+                get_history().log_action(device, 'away_off', "")
                 self._rebuild_cozytouch_device_children(item, device)
 
             self._run_cozytouch_cloud_action(
                 lambda: device.set_away(False),
                 on_success_off,
                 # Translators: Error message when toggling away mode fails.
-                _("Abwesenheit konnte nicht umgeschaltet werden"))
+                _("Away mode could not be toggled"))
             return
 
         # Turn on: let the user schedule the period first.
         window = self._prompt_away_schedule(device)
         if window is None:
             # Translators: Message when the user cancels an action.
-            ui.message(_("Abgebrochen"))
+            ui.message(_("Cancelled"))
             return
         start_ts, end_ts = window
 
@@ -311,18 +309,17 @@ class _CozytouchDialogMixin:
             end_str = time.strftime("%d.%m.%Y %H:%M", time.localtime(end_ts))
             # Translators: Confirmation after scheduling away mode.
             # {start}/{end} = date and time.
-            ui.message(_("{name}: Abwesenheit von {start} bis {end}").format(
+            ui.message(_("{name}: away from {start} until {end}").format(
                 name=device.name, start=start_str, end=end_str))
             self.plugin._record_local_cozytouch_action(device.uuid)
-            # Translators: History detail: scheduled away period.
-            get_history().log_action(device, 'away_on', _("von {start} bis {end}").format(
-                start=start_str, end=end_str))
+            get_history().log_action(
+                device, 'away_on', f"{start_str} - {end_str}")
             self._rebuild_cozytouch_device_children(item, device)
 
         self._run_cozytouch_cloud_action(
             lambda: device.set_away(True, start_ts, end_ts),
             on_success_on,
-            _("Abwesenheit konnte nicht umgeschaltet werden"))
+            _("Away mode could not be toggled"))
 
     def _prompt_away_schedule(self, device):
         """Accessible dialog for scheduling the away period.
@@ -340,23 +337,23 @@ class _CozytouchDialogMixin:
         end_default = (now + _dt.timedelta(days=2)).strftime(fmt)
 
         # Translators: Title of the away scheduling dialog. {name} = device name.
-        dlg = wx.Dialog(self, title=_("Abwesenheit planen – {name}").format(name=device.name))
+        dlg = wx.Dialog(self, title=_("Schedule absence – {name}").format(name=device.name))
         sizer = wx.BoxSizer(wx.VERTICAL)
         # Translators: Help text in the away scheduling dialog.
-        intro = _("Zeitraum der Abwesenheit festlegen. Während der Abwesenheit "
-                  "wird die Warmwasser-Erzeugung reduziert.")
+        intro = _("Set the absence period. During the absence, hot water "
+                  "production is reduced.")
         # Translators: Date format hint in the away scheduling dialog.
-        intro += "\n" + _("Format: TT.MM.JJJJ HH:MM (z.B. {example})").format(
+        intro += "\n" + _("Format: DD.MM.YYYY HH:MM (e.g. {example})").format(
             example=start_default)
         sizer.Add(wx.StaticText(dlg, label=intro), 0, wx.ALL, 8)
 
         grid = wx.FlexGridSizer(2, 2, 6, 6)
         # Translators: Label of the start field in the away scheduling dialog.
-        grid.Add(wx.StaticText(dlg, label=_("&Beginn:")), 0, wx.ALIGN_CENTER_VERTICAL)
+        grid.Add(wx.StaticText(dlg, label=_("&Start:")), 0, wx.ALIGN_CENTER_VERTICAL)
         start_ctrl = wx.TextCtrl(dlg, value=start_default)
         grid.Add(start_ctrl, 1, wx.EXPAND)
         # Translators: Label of the end field in the away scheduling dialog.
-        grid.Add(wx.StaticText(dlg, label=_("&Ende:")), 0, wx.ALIGN_CENTER_VERTICAL)
+        grid.Add(wx.StaticText(dlg, label=_("&End:")), 0, wx.ALIGN_CENTER_VERTICAL)
         end_ctrl = wx.TextCtrl(dlg, value=end_default)
         grid.Add(end_ctrl, 1, wx.EXPAND)
         grid.AddGrowableCol(1)
@@ -375,14 +372,16 @@ class _CozytouchDialogMixin:
             except ValueError:
                 _beep(BEEP_ERROR)
                 # Translators: Error message for an invalid date/time input.
-                ui.message(_("Ungültiges Format. Erwartet: TT.MM.JJJJ HH:MM (z.B. {example})").format(
+                ui.message(_("Invalid format. Expected: DD.MM.YYYY HH:MM "
+                             "(e.g. {example})").format(
                     example=start_default))
                 start_ctrl.SetFocus()
                 return
             if end <= start or end.timestamp() <= _dt.datetime.now().timestamp():
                 _beep(BEEP_ERROR)
                 # Translators: Validation error in the away scheduling dialog.
-                ui.message(_("Das Ende muss nach dem Beginn und in der Zukunft liegen"))
+                ui.message(_("The end must be after the start and in the "
+                             "future"))
                 end_ctrl.SetFocus()
                 return
             result["window"] = (int(start.timestamp()), int(end.timestamp()))
@@ -405,22 +404,22 @@ class _CozytouchDialogMixin:
             # Translators: Tree label of a device without connection.
             return _("{name} ({type}) - offline").format(name=device.name, type=type_display)
         tt = device.target_temperature
-        # Weicht das tatsächliche Heizziel (z.B. Eco+-Absenkung oder Boost)
-        # vom eingestellten Soll ab, wird BEIDES schon im eingeklappten Label
-        # gezeigt - sonst wirkt das Soll (z.B. 58°C) irreführend, während das
-        # Gerät real auf 53,2°C heizt (gleiche Logik wie im aufgeklappten
-        # Eintrag "Aktuelles Heizziel").
+        # If the actual heating target (Eco+ reduction or boost) differs
+        # from the setpoint, the collapsed label shows BOTH - otherwise the
+        # setpoint (say 58°C) is misleading while the device really heats to
+        # 53.2°C. Same logic as the expanded "current heating target" row.
         at = device.active_target
         if tt is not None and at is not None and abs(at - tt) >= 0.5:
             # Translators: Tree label when the actual heating target differs
             # from the setpoint. {active} = actual target, {temp} = setpoint.
-            return _("{name} ({type}) - Ziel {temp}°C, aktuelles Heizziel {active}°C").format(
+            return _("{name} ({type}) - target {temp}°C, current heating "
+                     "target {active}°C").format(
                 name=device.name, type=type_display,
                 temp=_fmt_temp(tt), active=_fmt_temp(at))
         if tt is not None:
             # Translators: Tree label with target temperature. {temp} =
             # temperature.
-            return _("{name} ({type}) - Ziel {temp}°C").format(
+            return _("{name} ({type}) - target {temp}°C").format(
                 name=device.name, type=type_display, temp=_fmt_temp(tt))
         return f"{device.name} ({type_display})"
 
@@ -429,16 +428,16 @@ class _CozytouchDialogMixin:
         is_fav = favorites.is_favorite(device.unique_id)
         if is_favorite_view or is_fav:
             # Translators: Action entry in the device tree.
-            return {'text': _("Aus Favoriten entfernen - Enter"), 'kind': 'action', 'action': 'favorite_remove'}
+            return {'text': _("Remove from favorites - Enter"), 'kind': 'action', 'action': 'favorite_remove'}
         # Translators: Action entry in the device tree.
-        return {'text': _("Zu Favoriten hinzufügen - Enter"), 'kind': 'action', 'action': 'favorite_add'}
+        return {'text': _("Add to favorites - Enter"), 'kind': 'action', 'action': 'favorite_add'}
 
     def _compute_cozytouch_items(self, device, is_favorite_view=False):
         """Single source of truth for the tree items of a Cozytouch device."""
         items = []
         if getattr(device, 'is_offline', False):
             # Translators: Status entry in the device tree.
-            items.append({'text': _("Status: Offline"), 'kind': 'info', 'action': None})
+            items.append({'text': _("Status: offline"), 'kind': 'info', 'action': None})
             items.append(self._compute_cozytouch_favorite_item(device, is_favorite_view))
             return items
 
@@ -448,39 +447,40 @@ class _CozytouchDialogMixin:
         hw = device.hot_water_percent
         if hw is not None:
             # Translators: Fill level of the hot water tank in percent.
-            text = _("Warmwasservorrat: {percent} Prozent").format(percent=hw)
+            text = _("Hot water supply: {percent} percent").format(percent=hw)
             # Rated capacity (liters) optionally configured in the settings ->
             # rough liter estimate (V40 equivalent, hence "approx.").
             capacity = getattr(self.plugin, 'cozytouch_capacity_liters', 0) or 0
             if capacity > 0:
                 liters = round(hw / 100.0 * capacity)
                 # Translators: Liter estimate after the percentage.
-                text += _(" (ca. {liters} Liter)").format(liters=liters)
+                text += _(" (approx. {liters} liters)").format(liters=liters)
             items.append({'text': text, 'kind': 'info', 'action': None})
         items.append({
             # Translators: Operating state in the device tree.
-            'text': _("Betrieb: Ein") if device.is_on else _("Betrieb: Aus"),
+            'text': _("Operation: on") if device.is_on else _("Operation: off"),
             'kind': 'info', 'action': None,
         })
         if device.offpeak_active:
             # Translators: Note that off-peak electricity is currently used.
-            items.append({'text': _("Niedertarif aktiv"), 'kind': 'info', 'action': None})
+            items.append({'text': _("Off-peak tariff active"), 'kind': 'info', 'action': None})
         if device.resistance_on:
             # Translators: Note that the electric heating element is currently
             # heating.
-            items.append({'text': _("Elektro-Heizstab aktiv (heizt gerade)"), 'kind': 'info', 'action': None})
+            items.append({'text': _("Electric heating element active "
+                                    "(currently heating)"), 'kind': 'info', 'action': None})
         sched = device.today_schedule_text
         if sched:
             # Translators: Today's heating time windows. {schedule} = window
             # text.
-            items.append({'text': _("Heizzeiten heute: {schedule}").format(schedule=sched),
+            items.append({'text': _("Today's heating times: {schedule}").format(schedule=sched),
                           'kind': 'info', 'action': None})
         kwh = device.energy_total_kwh
         if kwh is not None:
             items.append({
                 # Translators: Total energy consumption. {kwh} = kilowatt
                 # hours.
-                'text': _("Energieverbrauch gesamt: {kwh} kWh").format(
+                'text': _("Energy consumption, total: {kwh} kWh").format(
                     kwh=f"{kwh:.1f}".replace(".", ",")),
                 'kind': 'info', 'action': None,
             })
@@ -489,7 +489,8 @@ class _CozytouchDialogMixin:
         if tt is not None:
             items.append({
                 # Translators: Combined info+action label in the device tree.
-                'text': _("Zieltemperatur: {temp} Grad - Enter zum Ändern").format(temp=_fmt_temp(tt)),
+                'text': _("Target temperature: {temp} degrees - press Enter "
+                          "to change").format(temp=_fmt_temp(tt)),
                 'kind': 'action', 'action': 'cozytouch_temp',
             })
         # Only show the current heating target when it differs from the
@@ -500,32 +501,33 @@ class _CozytouchDialogMixin:
             items.append({
                 # Translators: Actual heating target when it differs from the
                 # setpoint.
-                'text': _("Aktuelles Heizziel: {temp} Grad").format(temp=_fmt_temp(at)),
+                'text': _("Current heating target: {temp} degrees").format(temp=_fmt_temp(at)),
                 'kind': 'info', 'action': None,
             })
 
         if device.mode_value is not None:
             items.append({
                 # Translators: Combined info+action label in the device tree.
-                'text': _("Betriebsmodus: {mode} - Enter zum Ändern").format(mode=device.mode_name),
+                'text': _("Operating mode: {mode} - press Enter to change").format(mode=device.mode_name),
                 'kind': 'action', 'action': 'cozytouch_mode',
             })
         items.append({
             # Translators: Combined info+action label in the device tree.
-            'text': _("Boost: {state} - Enter zum Umschalten").format(
-                state=_("An") if device.boost_on else _("Aus")),
+            'text': _("Boost: {state} - press Enter to toggle").format(
+                state=_("On") if device.boost_on else _("Off")),
             'kind': 'action', 'action': 'cozytouch_boost',
         })
         if device.boost_on:
-            # Boost-Laufzeit direkt UNTER dem Boost-Schalter. Bei aktivem
-            # Boost immer sichtbar; ohne gesetzten Wert wird das klar
-            # benannt, statt das Feld zu verstecken.
+            # Boost duration directly BELOW the boost switch. Always
+            # visible while boost is on; with no value set that is stated
+            # instead of hiding the row.
             bt = device.boost_total_time
             if bt:
                 items.append({
                     # Translators: Combined info+action label: boost duration
                     # in minutes, changeable with Enter.
-                    'text': _("Boost-Laufzeit: {minutes} Minuten - Enter zum Ändern").format(
+                    'text': _("Boost duration: {minutes} minutes - press "
+                              "Enter to change").format(
                         minutes=int(bt)),
                     'kind': 'action', 'action': 'cozytouch_boost_time',
                 })
@@ -533,59 +535,62 @@ class _CozytouchDialogMixin:
                 items.append({
                     # Translators: Combined info+action label: boost has no
                     # time limit set, changeable with Enter.
-                    'text': _("Boost-Laufzeit: keine Zeitbegrenzung gesetzt - Enter zum Ändern"),
+                    'text': _("Boost duration: no time limit set - press "
+                              "Enter to change"),
                     'kind': 'action', 'action': 'cozytouch_boost_time',
                 })
         items.append({
             # Translators: Action entry for switching operation on/off.
-            'text': _("Betrieb ausschalten") if device.is_on else _("Betrieb einschalten"),
+            'text': _("Turn operation off") if device.is_on else _("Turn "
+                                                                    "operation "
+                                                                    "on"),
             'kind': 'action', 'action': 'cozytouch_toggle',
         })
         if device.away_on:
-            state = _("An (geplant)") if device.away_pending else _("An")
+            state = _("On (scheduled)") if device.away_pending else _("On")
             _aw_start, _aw_end = device.away_window
             if _aw_end:
                 end_str = time.strftime("%d.%m.%Y %H:%M", time.localtime(_aw_end))
                 # Translators: Combined info+action label in the device tree:
                 # away mode is active/scheduled until the given date and time.
-                away_text = _("Abwesenheit: {state} bis {end} - Enter zum Ausschalten").format(
+                away_text = _("Away mode: {state} until {end} - press Enter "
+                              "to turn off").format(
                     state=state, end=end_str)
             else:
                 # Translators: Combined info+action label in the device tree.
-                away_text = _("Abwesenheit: {state} - Enter zum Umschalten").format(state=state)
+                away_text = _("Away mode: {state} - press Enter to toggle").format(state=state)
         else:
             # Translators: Combined info+action label in the device tree.
-            away_text = _("Abwesenheit: {state} - Enter zum Umschalten").format(state=_("Aus"))
+            away_text = _("Away mode: {state} - press Enter to toggle").format(state=_("Off"))
         items.append({
             'text': away_text,
             'kind': 'action', 'action': 'cozytouch_away',
         })
 
         # ---- Technical block right before the favorites: Wi-Fi, firmware
-        # (Wi-Fi deliberately BEFORE the firmware version). Das Modell steht
-        # bereits in der Klammer des eingeklappten Geräteeintrags (siehe
-        # get_type_display) und wird hier NICHT wiederholt - nur bei
-        # unbekannter Modell-ID erscheint ein Hinweis, damit neue Modelle
-        # gemeldet werden können. ----
+        # (Wi-Fi deliberately BEFORE the firmware version). The model already
+        # appears in brackets on the collapsed device row (see
+        # get_type_display) and is NOT repeated here - only an unknown model
+        # ID gets a note, so new models can be reported. ----
         if not device.model_display and device.model_id is not None:
             # Translators: Fallback when the model ID is not yet known to the
             # add-on. Helps users report new models.
-            items.append({'text': _("Modell-ID: {model_id} (unbekanntes Modell)").format(
+            items.append({'text': _("Model ID: {model_id} (unknown model)").format(
                 model_id=device.model_id), 'kind': 'info', 'action': None})
         ws = device.wifi_signal
         if ws is not None:
             # Translators: Wi-Fi signal strength in dBm.
-            items.append({'text': _("WLAN-Signal: {dbm} dBm").format(dbm=ws),
+            items.append({'text': _("Wi-Fi signal: {dbm} dBm").format(dbm=ws),
                           'kind': 'info', 'action': None})
         ssid = device.wifi_ssid
         if ssid:
             # Translators: Name of the connected Wi-Fi network.
-            items.append({'text': _("WLAN-Netz: {ssid}").format(ssid=ssid),
+            items.append({'text': _("Wi-Fi network: {ssid}").format(ssid=ssid),
                           'kind': 'info', 'action': None})
         fw = device.firmware
         if fw:
             # Translators: Firmware version of the device.
-            items.append({'text': _("Firmware-Version: {version}").format(version=fw),
+            items.append({'text': _("Firmware version: {version}").format(version=fw),
                           'kind': 'info', 'action': None})
 
         items.append(self._compute_cozytouch_favorite_item(device, is_favorite_view))
@@ -645,7 +650,7 @@ class _CozytouchDialogMixin:
                     return
             self._live_update_cozytouch_children(device_node, device)
         except Exception as e:
-            log.debug(f"Cozytouch Baum-Update fehlgeschlagen: {e}")
+            log.debug(f"Cozytouch tree update failed: {e}")
 
     def _rebuild_cozytouch_children_preserving_focus(self, device_item, device):
         """Rebuilds the children without losing focus."""
@@ -747,22 +752,22 @@ class _CozytouchDialogMixin:
                 if devices:
                     plugin.is_logged_in = True
                     plugin._start_background_refresh()
-                log.info(f"Cozytouch nachträglich initialisiert: {added} neue Geräte")
+                log.info(f"Cozytouch initialised late: {added} new devices")
 
                 wx.CallAfter(self._refresh_after_cozytouch_init, len(devices))
             except Exception as e:
-                log.error(f"Cozytouch nachträgliche Initialisierung fehlgeschlagen: {e}")
+                log.error(f"Late Cozytouch initialisation failed: {e}")
                 wx.CallAfter(
                     ui.message,
                     # Translators: Error message for the deferred Cozytouch
                     # login.
-                    _("Cozytouch-Login fehlgeschlagen: {error}").format(error=str(e)[:80])
+                    _("Cozytouch login failed: {error}").format(error=str(e)[:80])
                 )
 
         threading.Thread(target=_login_and_refresh, daemon=True).start()
         # Translators: Note that the Cozytouch connection is being established
         # in the background.
-        ui.message(_("Cozytouch wird verbunden..."))
+        ui.message(_("Connecting to Cozytouch..."))
 
     def _refresh_after_cozytouch_init(self, count):
         """Updates the tree after Cozytouch was connected afterwards."""
@@ -773,6 +778,6 @@ class _CozytouchDialogMixin:
             self._refresh_favorites_tree()
             # Translators: Confirmation after loading the Cozytouch devices
             # afterwards.
-            ui.message(_("Cozytouch: {count} Gerät(e) geladen").format(count=count))
+            ui.message(_("Cozytouch: {count} device(s) loaded").format(count=count))
         except Exception as e:
-            log.debug(f"Refresh nach Cozytouch-Init fehlgeschlagen: {e}")
+            log.debug(f"Refresh after the Cozytouch init failed: {e}")

@@ -31,10 +31,10 @@ import addonHandler
 try:
     addonHandler.initTranslation()
 except Exception as e:
-    log.debug(f"Ignorierter Fehler in <module>: {e}")
-if "_" not in globals():  # Fallback, falls initTranslation() scheitert
-    # Ohne diesen Fallback bleibt `_` undefiniert und der erste `_()`-Aufruf
-    # wirft einen NameError mitten im Dialogaufbau statt beim Import.
+    log.debug(f"Ignored error during translation setup: {e}")
+if "_" not in globals():  # fallback if initTranslation() fails
+    # Without this fallback `_` stays undefined and the first `_()` call
+    # raises a NameError mid-dialog instead of at import time.
     def _(s):
         return s
 
@@ -65,8 +65,8 @@ class NetatmoDevice:
         self.type = module_data.get('type', 'Unknown')
         self.home_id = home_id
         self.room_id = module_data.get('room_id', None)
-        # Raumname aus homesdata (wird in get_devices gesetzt). Leer für
-        # Geräte ohne Raumzuordnung (z.B. NAPlug, Wetterstationen).
+        # Room name from homesdata (set in get_devices). Empty for devices
+        # without a room (e.g. NAPlug, weather stations).
         self.room_name = ''
         self.station_name = station_name
 
@@ -254,15 +254,15 @@ class NetatmoDevice:
     def get_type_display(self):
         # Translators: Device type displays for Netatmo modules.
         type_map = {
-            'NAMain': _('Wetterstation (Innen)'),
-            'NAModule1': _('Außenmodul'),
-            'NAModule2': _('Windmesser'),
-            'NAModule3': _('Regenmesser'),
-            'NAModule4': _('Zusatz-Innenmodul'),
-            'NATherm1': _('Thermostat'),
-            'NRV': _('Heizkörperventil'),
-            'NAPlug': _('Thermostat-Relay'),
-            'NHC': _('Raumluftmonitor'),
+            'NAMain': _("Weather station (indoor)"),
+            'NAModule1': _("Outdoor module"),
+            'NAModule2': _("Wind gauge"),
+            'NAModule3': _("Rain gauge"),
+            'NAModule4': _("Additional indoor module"),
+            'NATherm1': _("Thermostat"),
+            'NRV': _("Radiator valve"),
+            'NAPlug': _("Thermostat relay"),
+            'NHC': _("Indoor air quality monitor"),
         }
         return type_map.get(self.type, self.type)
 
@@ -277,7 +277,7 @@ class NetatmoDevice:
         humidity = self.get_humidity()
         if humidity is not None:
             # Translators: Status announcement: relative humidity.
-            parts.append(_("{value}% Luftfeuchtigkeit").format(value=humidity))
+            parts.append(_("{value}% humidity").format(value=humidity))
 
         co2 = self.get_co2()
         if co2 is not None:
@@ -294,23 +294,23 @@ class NetatmoDevice:
         rain = self.get_rain()
         if rain is not None:
             # Translators: Status announcement: rain amount.
-            parts.append(_("{value} mm Regen").format(value=rain))
+            parts.append(_("{value} mm rain").format(value=rain))
 
         wind = self.get_wind_strength()
         if wind is not None:
             # Translators: Status announcement: wind speed.
-            parts.append(_("{value} km/h Wind").format(value=wind))
+            parts.append(_("{value} km/h wind").format(value=wind))
 
         gust = self.get_gust_strength()
         if gust is not None:
             # Translators: Status announcement: gust speed.
-            parts.append(_("{value} km/h Böen").format(value=gust))
+            parts.append(_("{value} km/h gusts").format(value=gust))
 
         setpoint = self.get_setpoint_temp()
         if setpoint is not None:
             # Translators: Status announcement: target temperature of a
             # thermostat.
-            parts.append(_("Soll: {value:.1f}°C").format(value=setpoint))
+            parts.append(_("Target: {value:.1f}°C").format(value=setpoint))
         # Show the heating mode (thermostats only)
         mode = self.get_setpoint_mode()
         if mode:
@@ -326,34 +326,34 @@ class NetatmoDevice:
                     end_str = time.strftime("%H:%M", end_local)
                     # Translators: Suffix after the heating mode: until when
                     # the manual temperature applies (HH:MM).
-                    mode_text += _(" (bis {time})").format(time=end_str)
+                    mode_text += _(" (until {time})").format(time=end_str)
                 except Exception as e:
-                    log.debug(f"Ignorierter Fehler in get_status_summary: {e}")
+                    log.debug(f"Ignored error in get_status_summary: {e}")
             # Translators: Status announcement: current heating mode.
-            parts.append(_("Modus: {mode}").format(mode=mode_text))
+            parts.append(_("Mode: {mode}").format(mode=mode_text))
         elif setpoint is not None:
             # If a setpoint exists but no mode, it was probably set manually
             # Translators: Status announcement: heating mode manual (no mode
             # reported).
-            parts.append(_("Modus: Manuell"))
+            parts.append(_("Mode: manual"))
 
         # Boiler status
         boiler = self.get_boiler_status()
         if boiler is not None:
             # Translators: Status announcement: boiler active/off.
-            parts.append(_("Heizung: aktiv") if boiler else _("Heizung: aus"))
+            parts.append(_("Heating: active") if boiler else _("Heating: off"))
 
         # Pre-heating (anticipation)
         anticipating = self.is_anticipating()
         if anticipating:
             # Translators: Status announcement: thermostat is pre-heating.
-            parts.append(_("Vorausheizen aktiv"))
+            parts.append(_("Pre-heating active"))
 
         # Open window
         open_window = self.is_open_window()
         if open_window:
             # Translators: Status announcement: open window detected.
-            parts.append(_("Fenster offen"))
+            parts.append(_("Window open"))
 
         # Next schedule change
         next_change = self.get_next_schedule_change()
@@ -361,35 +361,35 @@ class NetatmoDevice:
             try:
                 change_time = time.localtime(next_change['time'])
                 change_str = time.strftime("%H:%M", change_time)
-                # temp kann als Key mit Wert None vorhanden sein (Zone ohne
-                # Raum-Treffer) - {temp:.1f} würde dann TypeError werfen und
-                # die Ansage still verschlucken.
+                # temp can be present with value None (zone without a
+                # matching room) - {temp:.1f} would raise TypeError and
+                # silently swallow the announcement.
                 temp = next_change.get('temp')
                 if temp is not None:
                     # Translators: Status announcement: next schedule change
                     # (zone, temperature, time).
-                    nc_text = _("Nächste Änderung: {zone} ({temp:.1f}°C) um {time}").format(
+                    nc_text = _("Next change: {zone} ({temp:.1f}°C) at {time}").format(
                         zone=next_change.get('zone_name', ''),
                         temp=temp,
                         time=change_str)
                 else:
                     # Translators: Status announcement: next schedule change
                     # without a known temperature (zone, time).
-                    nc_text = _("Nächste Änderung: {zone} um {time}").format(
+                    nc_text = _("Next change: {zone} at {time}").format(
                         zone=next_change.get('zone_name', ''),
                         time=change_str)
                 parts.append(nc_text)
             except Exception as e:
-                log.debug(f"Ignorierter Fehler in get_status_summary: {e}")
+                log.debug(f"Ignored error in get_status_summary: {e}")
 
         battery = self.get_battery_percent()
         if battery is not None:
             # Translators: Status announcement: battery level in percent.
-            parts.append(_("Batterie: {value}%").format(value=battery))
+            parts.append(_("Battery: {value}%").format(value=battery))
 
         if not parts:
             # Translators: Status announcement without data or device offline.
-            return _("offline") if self.is_offline else _("keine Daten")
+            return _("offline") if self.is_offline else _("no data")
 
         return ", ".join(parts)
 
@@ -408,16 +408,16 @@ class NetatmoDevice:
             return name
         # Translators: Translations of Netatmo's default zone names.
         translations = {
-            'Comfort': _('Komfort'),
-            'Confort': _('Komfort'),
-            'Comfort+': _('Komfort+'),
-            'Comfort +': _('Komfort+'),
-            'Confort+': _('Komfort+'),
-            'Confort +': _('Komfort+'),
-            'Night': _('Nacht'),
-            'Eco': _('Eco'),
-            'Away': _('Abwesend'),
-            'Frost Guard': _('Frostschutz'),
+            'Comfort': _("Comfort"),
+            'Confort': _("Comfort"),
+            'Comfort+': _("Comfort+"),
+            'Comfort +': _("Comfort+"),
+            'Confort+': _("Comfort+"),
+            'Confort +': _("Comfort+"),
+            'Night': _("Night"),
+            'Eco': _("Eco"),
+            'Away': _("Away"),
+            'Frost Guard': _("Frost guard"),
         }
         return translations.get(name, name)
 
@@ -504,13 +504,16 @@ class NetatmoAPI:
         self.refresh_token = None
         self.token_expiry = 0
         self._devices = []
+        # Notified on every token renewal so the caller can persist the
+        # rotated tokens (see set_token_update_callback).
+        self._token_update_callback = None
 
-        # Lock für den Token-Refresh: Netatmo ROTIERT Refresh-Tokens (jeder
-        # Refresh stellt einen neuen aus und invalidiert den alten). Ohne Lock
-        # könnten Scheduler-Thread und UI-Aktion parallel refreshen – der
-        # zweite Refresh scheitert dann mit dem bereits invalidierten Token
-        # und verwirft schlimmstenfalls die komplette Anmeldung.
-        # (Analog zu _reauth_lock in VeSyncAPI/CozytouchAPI.)
+        # Lock for the token refresh: Netatmo ROTATES refresh tokens (each
+        # refresh issues a new one and invalidates the old). Without the lock
+        # the scheduler thread and a UI action could refresh in parallel; the
+        # second refresh then fails with the already invalidated token and at
+        # worst discards the whole login.
+        # (Same idea as _reauth_lock in VeSyncAPI/CozytouchAPI.)
         self._token_refresh_lock = threading.Lock()
 
         # Redirect target of the OAuth2 flow. The port is configurable (must
@@ -525,19 +528,19 @@ class NetatmoAPI:
             self.redirect_port = NETATMO_REDIRECT_PORT
         self.redirect_uri = netatmo_redirect_uri(self.redirect_port)
 
-        # Kurzzeit-Zwischenspeicher für /homesdata (Topologie + Heizprogramme).
-        # Diese Daten ändern sich praktisch nie - Heizprogramme legt man einmal
-        # an. Ohne Cache löste jedes Aufklappen eines Thermostats im
-        # Geräte-Menü eine vollständige homesdata-Anfrage aus, nur um den Namen
-        # des aktiven Programms anzuzeigen. Der Hintergrund-Poll holt sie
-        # ohnehin schon einmal für alle Thermostate (siehe update_device_status);
-        # mit dem Cache profitiert der Dialog davon mit.
-        self._homesdata_cache = {}       # params-Schlüssel -> (Zeitstempel, Daten)
+        # Short-lived cache for /homesdata (topology + heating schedules).
+        # This data practically never changes - schedules are created once.
+        # Without the cache, expanding a thermostat in the device menu
+        # triggered a full homesdata request just to show the name of the
+        # active schedule. The background poll fetches it once for all
+        # thermostats anyway (see update_device_status); with the cache the
+        # dialog benefits from that.
+        self._homesdata_cache = {}       # params key -> (timestamp, data)
         self._homesdata_cache_lock = threading.Lock()
 
-        # Zeitstempel des letzten VOLLEN Statuslaufs (get_devices mit
-        # getstationsdata + homesdata). Dazwischen pollt update_device_status
-        # nur /homestatus - siehe dort.
+        # Timestamp of the last FULL status pass (get_devices with
+        # getstationsdata + homesdata). In between, update_device_status only
+        # polls /homestatus - see there.
         self._last_full_status_refresh = 0.0
 
         # Network error deduplication: prevents ERROR log spam during network
@@ -573,20 +576,19 @@ class NetatmoAPI:
                 self._last_network_error_time = now
             else:
                 # Repeated error: only DEBUG
-                log.debug(f"{context} (Wiederholung #{self._network_error_count}): {exception}")
+                log.debug(f"{context} (retry #{self._network_error_count}): {exception}")
         else:
             # Not a network error: always log as ERROR
             log.error(f"{context}: {exception}")
 
     @staticmethod
     def _transient_hint(exception):
-        """Klartext-Hinweis für vorübergehende API-Zustände, sonst None.
+        """Plain-text hint for temporary API states, otherwise None.
 
-        Eingeordnet wird am HTTP-Status, weil der eindeutig ist. Die
-        anwendungseigenen Fehlernummern von Netatmo (``code`` im JSON) sind
-        nirgends vollständig dokumentiert und haben sich schon geändert -
-        deren ``message`` wird deshalb unverändert durchgereicht, statt sie
-        gegen eine selbstgebaute Tabelle zu übersetzen.
+        Classified by HTTP status because that is unambiguous. Netatmo's own
+        error numbers (``code`` in the JSON) are nowhere fully documented and
+        have changed before - their ``message`` is therefore passed through
+        unchanged instead of being mapped against a homemade table.
         """
         text = str(exception)
         match = re.search(r'\((?:HTTP\s)?(\d{3})\)', text)
@@ -595,34 +597,33 @@ class NetatmoAPI:
         status = int(match.group(1))
         if status == 429:
             # Translators: Explanation for HTTP 429 from the Netatmo API.
-            return _("Netatmo-Anfragelimit erreicht – die Erweiterung fragt "
-                     "später erneut ab")
+            return _("Netatmo request limit reached – the add-on will try "
+                     "again later")
         if 500 <= status < 600:
             # Translators: Explanation for HTTP 5xx from the Netatmo API.
             # Shown/logged when Netatmo's own servers are unavailable.
-            return _("Netatmo-Server vorübergehend nicht erreichbar – kein "
-                     "Problem der Erweiterung oder deiner Einstellungen; die "
-                     "nächste Abfrage versucht es erneut")
+            return _("Netatmo servers temporarily unavailable – not a problem "
+                     "with the add-on or your settings; the next update will "
+                     "try again")
         return None
 
     def _log_api_exception(self, context, exception):
-        """Loggt einen API-Fehler in der Schwere, die er verdient.
+        """Logs an API error at the severity it deserves.
 
-        Ein HTTP 503 von Netatmo ist kein Fehler dieser Erweiterung, sondern
-        ein Zustand auf deren Servern. Als ERROR geloggt schickt er einen beim
-        nächsten Durchsehen des NVDA-Logs auf die Suche nach einem Bug, den es
-        nicht gibt - deshalb WARNING plus Klartext, was der Zustand bedeutet.
-        Alles Unerwartete bleibt ERROR.
+        An HTTP 503 from Netatmo is not a fault of this add-on but a state on
+        their servers. Logged as ERROR it sends whoever reads the NVDA log
+        hunting for a bug that does not exist - hence WARNING plus plain text
+        on what the state means. Anything unexpected stays ERROR.
         """
         hint = self._transient_hint(exception)
         if hint:
             self._network_error_count += 1
             now = time.time()
             if (now - self._last_network_error_time) > self._NETWORK_ERROR_LOG_INTERVAL:
-                log.warning(f"{context}: {hint}. Antwort: {exception}")
+                log.warning(f"{context}: {hint}. Response: {exception}")
                 self._last_network_error_time = now
             else:
-                log.debug(f"{context} (Wiederholung "
+                log.debug(f"{context} (retry "
                           f"#{self._network_error_count}): {exception}")
             return
         if self._is_network_error(exception):
@@ -633,7 +634,7 @@ class NetatmoAPI:
     def _reset_network_error_state(self):
         """Resets the network error counters (after a successful API call)"""
         if self._network_error_count > 0:
-            log.info(f"Netatmo: Netzwerk wieder verfügbar (nach {self._network_error_count} fehlgeschlagenen Versuchen)")
+            log.info(f"Netatmo: network available again (after {self._network_error_count} failed attempts)")
         self._network_error_count = 0
 
     # ----------------------------------------------------------
@@ -656,6 +657,30 @@ class NetatmoAPI:
             'refresh_token': self.refresh_token or '',
             'token_expiry': self.token_expiry,
         }
+
+    def set_token_update_callback(self, callback):
+        """Registers a callback for every token renewal.
+
+        Netatmo ROTATES refresh tokens: each refresh issues a new one and
+        invalidates the old. Without this callback the renewed tokens only
+        lived inside this object - the caller kept saving the ones from the
+        login, so after a restart an already invalidated refresh token was
+        restored and the authorization had to be repeated.
+
+        ``callback(tokens_dict)`` runs on the thread that triggered the
+        refresh (usually the scheduler), so it must not touch the UI directly.
+        """
+        self._token_update_callback = callback
+
+    def _notify_token_update(self):
+        """Passes freshly issued tokens to the callback (never raises)."""
+        cb = self._token_update_callback
+        if not cb:
+            return
+        try:
+            cb(self.get_tokens())
+        except Exception as e:
+            log.debug(f"Ignored error in the token update callback: {e}")
 
     # ----------------------------------------------------------
     # OAuth2 flow
@@ -699,10 +724,9 @@ class NetatmoAPI:
             # because the port is in use by another program. {port} = port
             # number.
             raise RuntimeError(_(
-                "Port {port} ist belegt. Bitte wählen Sie in den Einstellungen "
-                "einen anderen Netatmo-Port (und tragen Sie ihn auch bei "
-                "dev.netatmo.com ein) oder schließen Sie das blockierende "
-                "Programm. ({error})"
+                "Port {port} is in use. Choose a different Netatmo port in "
+                "the settings (and register it at dev.netatmo.com as well), "
+                "or close the program blocking it. ({error})"
             ).format(port=self.redirect_port, error=e))
         server.timeout = 5  # short timeout per handle_request() pass
 
@@ -719,7 +743,7 @@ class NetatmoAPI:
         }
         auth_url = f"{NETATMO_AUTH_URL}?{urlencode(params)}"
 
-        log.info("Netatmo OAuth: Öffne Browser für Autorisierung...")
+        log.info("Netatmo OAuth: opening the browser for authorisation...")
         webbrowser.open(auth_url)
 
         # Wait for the OAuth callback (a loop instead of a single
@@ -740,7 +764,7 @@ class NetatmoAPI:
             # Translators: Error message when the user declines the Netatmo
             # authorization in the browser or Netatmo returns an error.
             raise RuntimeError(_(
-                "Netatmo Autorisierung abgelehnt: {error}"
+                "Netatmo authorization denied: {error}"
             ).format(error=server.oauth_state.auth_error))
 
         if not server.oauth_state.auth_code:
@@ -748,18 +772,19 @@ class NetatmoAPI:
             # return within the timeout (e.g. browser window closed by the
             # user).
             raise RuntimeError(_(
-                "Keine Antwort von Netatmo erhalten. "
-                "Zeitüberschreitung oder Browser-Fenster geschlossen."))
+                "No response received from Netatmo. Timeout or browser window "
+                "closed."))
 
         if server.oauth_state.auth_state != state:
             # Translators: Security error message when the OAuth2 CSRF state
             # parameter does not match. Should only happen on attack attempts.
             raise RuntimeError(_(
-                "Sicherheitsfehler: State-Parameter stimmt nicht überein (CSRF-Schutz)"))
+                "Security error: state parameter does not match (CSRF "
+                "protection)"))
 
         # Exchange the code for tokens
         self._exchange_code_for_token(server.oauth_state.auth_code, scopes)
-        log.info("Netatmo OAuth: Erfolgreich authentifiziert!")
+        log.info("Netatmo OAuth: authenticated successfully")
         return True
 
     def _exchange_code_for_token(self, code, scopes=None):
@@ -781,14 +806,15 @@ class NetatmoAPI:
                 detail = resp.json()
             except Exception:
                 detail = resp.text[:200]
-            raise RuntimeError(f"Token-Anfrage fehlgeschlagen ({resp.status_code}): {detail}")
+            raise RuntimeError(f"Token request failed ({resp.status_code}): {detail}")
 
         token_data = resp.json()
         self.access_token = token_data['access_token']
         self.refresh_token = token_data['refresh_token']
         self.token_expiry = time.time() + token_data.get('expires_in', 10800)
 
-        log.info(f"Netatmo: Token erhalten, gültig bis {time.ctime(self.token_expiry)}")
+        log.info(f"Netatmo: token received, valid until {time.ctime(self.token_expiry)}")
+        self._notify_token_update()
 
     def refresh_access_token(self):
         """Renews the access token with the refresh token.
@@ -809,7 +835,7 @@ class NetatmoAPI:
         with self._token_refresh_lock:
             if self.access_token != stale_token:
                 # Another thread refreshed while we waited on the lock.
-                log.debug("Netatmo: Token wurde parallel bereits erneuert – kein zweiter Refresh")
+                log.debug("Netatmo: token was already refreshed in parallel - no second refresh")
                 return
             self._refresh_access_token_locked()
 
@@ -817,7 +843,8 @@ class NetatmoAPI:
         """Actual refresh logic – call only while holding _token_refresh_lock."""
         if not self.refresh_token:
             # Translators: Error message when no OAuth refresh token is stored.
-            raise RuntimeError(_("Kein Refresh Token vorhanden – bitte neu autorisieren"))
+            raise RuntimeError(_("No refresh token available – please "
+                                 "authorize again"))
 
         data = {
             'grant_type': 'refresh_token',
@@ -833,20 +860,21 @@ class NetatmoAPI:
             # 5xx = transient server error -> keep the tokens, retry later
             if 400 <= resp.status_code < 500:
                 detail = self._format_api_error(resp)
-                log.error(f"Netatmo Anmeldung abgelaufen ({detail}). Tokens werden verworfen.")
+                log.error(f"Netatmo login expired ({detail}). Tokens are discarded.")
                 self.access_token = None
                 self.refresh_token = None
                 self.token_expiry = 0
+                self._notify_token_update()
                 # Translators: Error message: Netatmo authorization expired.
                 raise RuntimeError(_(
-                    "Netatmo-Anmeldung ist nicht mehr gültig. "
-                    "Bitte in den Einstellungen erneut verbinden."))
+                    "Netatmo login is no longer valid. Please reconnect in "
+                    "the settings."))
             else:
                 # Transient - the tokens stay valid
                 # Translators: Error message: Netatmo server unreachable.
-                msg = _("Netatmo-Server vorübergehend nicht erreichbar (HTTP {code})").format(
+                msg = _("Netatmo server temporarily unreachable (HTTP {code})").format(
                     code=resp.status_code)
-                log.warning(f"Netatmo Token-Erneuerung verschoben: {msg}")
+                log.warning(f"Netatmo token refresh deferred: {msg}")
                 raise RuntimeError(msg)
 
         token_data = resp.json()
@@ -854,7 +882,8 @@ class NetatmoAPI:
         self.refresh_token = token_data['refresh_token']
         self.token_expiry = time.time() + token_data.get('expires_in', 10800)
 
-        log.debug(f"Netatmo: Token erneuert, gültig bis {time.ctime(self.token_expiry)}")
+        log.debug(f"Netatmo: token refreshed, valid until {time.ctime(self.token_expiry)}")
+        self._notify_token_update()
 
     # ----------------------------------------------------------
     # Internal HTTP methods
@@ -863,11 +892,12 @@ class NetatmoAPI:
         """Makes sure a valid token is present"""
         if not self.access_token or not self.refresh_token:
             # Translators: Error message: no valid Netatmo access configured.
-            raise RuntimeError(_("Nicht autorisiert – bitte in Einstellungen mit Netatmo verbinden"))
+            raise RuntimeError(_("Not authorized – please connect to Netatmo "
+                                 "in the settings"))
 
         # Auto-refresh when the token expires in < 60s
         if time.time() >= self.token_expiry - 60:
-            log.debug("Netatmo: Token läuft ab, erneuere...")
+            log.debug("Netatmo: token is expiring, refreshing...")
             self.refresh_access_token()
 
     def _http_with_retry(self, method, url, **kwargs):
@@ -899,7 +929,7 @@ class NetatmoAPI:
                     wait = min(30, max(1, int(retry_after)))
                 except (TypeError, ValueError):
                     pass
-                log.warning(f"Netatmo: HTTP 429 (Rate-Limit), warte {wait}s...")
+                log.warning(f"Netatmo: HTTP 429 (rate limit), waiting {wait}s...")
                 time.sleep(wait)
                 continue
 
@@ -925,11 +955,11 @@ class NetatmoAPI:
             if 500 <= code < 600:
                 # Translators: Short hint for HTTP 5xx errors of the Netatmo
                 # API.
-                hint = _("Netatmo-Server vorübergehend nicht erreichbar")
+                hint = _("Netatmo server temporarily unreachable")
             else:
                 # Translators: Short hint for an unexpected response of the
                 # Netatmo API.
-                hint = _("Unerwartete Antwort vom Netatmo-Server")
+                hint = _("Unexpected response from the Netatmo server")
             return f"Netatmo API ({code}): {hint}"
         # JSON / plain text: only show the first 200 characters
         return f"Netatmo API ({code}): {body[:200]}"
@@ -992,20 +1022,19 @@ class NetatmoAPI:
 
     def get_homes_data(self, gateway_types=None, max_age=None,
                        cached_only=False):
-        """Fetches homes and topology (/homesdata), zwischengespeichert.
+        """Fetches homes and topology (/homesdata), cached.
 
         Args:
             gateway_types: e.g. 'NAPlug' to get energy-specific data incl. schedules
-            max_age: Höchstalter des zwischengespeicherten Werts in Sekunden.
-                None = ``HOMESDATA_CACHE_SECONDS``. 0 erzwingt eine frische
-                Abfrage.
-            cached_only: True = NIE eine Netzanfrage auslösen. Gibt den
-                zwischengespeicherten Wert zurück oder None. Für Aufrufer im
-                UI-Thread, die nicht blockieren dürfen.
+            max_age: maximum age of the cached value in seconds.
+                None = ``HOMESDATA_CACHE_SECONDS``. 0 forces a fresh request.
+            cached_only: True = NEVER issue a network request. Returns the
+                cached value or None. For callers on the UI thread that must
+                not block.
 
         Returns:
-            dict der API-Antwort, oder None wenn ``cached_only`` gesetzt ist
-            und nichts (mehr) im Zwischenspeicher liegt.
+            dict of the API response, or None if ``cached_only`` is set and
+            nothing (still) sits in the cache.
         """
         key = gateway_types or ''
         limit = HOMESDATA_CACHE_SECONDS if max_age is None else max_age
@@ -1015,14 +1044,14 @@ class NetatmoAPI:
         if entry is not None:
             age = time.time() - entry[0]
             if age < limit:
-                log.debug(f"Netatmo: homesdata aus Cache ({age:.0f}s alt)")
+                log.debug(f"Netatmo: homesdata from the cache ({age:.0f}s old)")
                 return entry[1]
             if cached_only:
-                # Lieber leicht veraltet als den UI-Thread blockieren: der
-                # Aufrufer zeigt den alten Wert an und lässt ihn im
-                # Hintergrund auffrischen.
-                log.debug(f"Netatmo: homesdata überaltert ({age:.0f}s), "
-                          f"aber cached_only - gebe alten Wert zurück")
+                # Slightly stale beats blocking the UI thread: the caller
+                # shows the old value and has it refreshed in the
+                # background.
+                log.debug(f"Netatmo: homesdata stale ({age:.0f}s), "
+                          f"but cached_only - returning the old value")
                 return entry[1]
         elif cached_only:
             return None
@@ -1036,10 +1065,10 @@ class NetatmoAPI:
         return data
 
     def invalidate_homesdata_cache(self):
-        """Verwirft den homesdata-Zwischenspeicher.
+        """Drops the homesdata cache.
 
-        Nach dem Wechsel des Heizprogramms aufzurufen: sonst zeigt das Menü
-        bis zu ``HOMESDATA_CACHE_SECONDS`` lang weiter das alte Programm an.
+        To be called after switching the heating schedule, otherwise the menu
+        keeps showing the old one for up to ``HOMESDATA_CACHE_SECONDS``.
         """
         with self._homesdata_cache_lock:
             self._homesdata_cache.clear()
@@ -1081,10 +1110,10 @@ class NetatmoAPI:
         """Returns the available heating schedules for a home.
 
         Args:
-            home_id: die Home-ID
-            cached_only: True = keine Netzanfrage auslösen. Für Aufrufer im
-                UI-Thread. Liegt nichts im Zwischenspeicher, kommt eine leere
-                Liste zurück.
+            home_id: the home ID
+            cached_only: True = issue no network request. For callers on the
+                UI thread. With nothing in the cache an empty list is
+                returned.
 
         Returns:
             list[dict]: list of {id, name, selected} dicts
@@ -1112,11 +1141,10 @@ class NetatmoAPI:
                     return schedules
             return []
         except Exception as e:
-            # Vorübergehende Serverzustände (503/5xx) sind KEIN Fehler dieser
-            # Erweiterung - sie als ERROR zu loggen schickt einen beim
-            # nächsten Log-Durchgang auf die Suche nach einem Bug, den es
-            # nicht gibt.
-            self._log_api_exception("Netatmo: Heizprogramme nicht abrufbar", e)
+            # Temporary server states (503/5xx) are NOT a fault of this
+            # add-on - logging them as ERROR sends whoever reads the log
+            # hunting for a bug that does not exist.
+            self._log_api_exception("Netatmo: heating schedules not retrievable", e)
             return []
 
     # ----------------------------------------------------------
@@ -1235,7 +1263,7 @@ class NetatmoAPI:
                 zone_name = zone_name_map.get(current_zone_id, None)
                 if zone_name:
                     zone_name = NetatmoDevice._translate_zone_name(zone_name)
-                    log.debug(f"Netatmo: Aktive Zone für Room {room_id}: {zone_name}")
+                    log.debug(f"Netatmo: active zone for room {room_id}: {zone_name}")
                 result['current_zone_name'] = zone_name
 
                 # ---- Compute the next schedule change ----
@@ -1279,13 +1307,13 @@ class NetatmoAPI:
                         'temp': temp,
                     }
                     result['next_change'] = next_change
-                    log.debug(f"Netatmo: Nächste Planänderung für Room {room_id}: {next_zone_name} ({temp}°C) um {time.strftime('%H:%M', time.localtime(next_timestamp))}")
+                    log.debug(f"Netatmo: next schedule change for room {room_id}: {next_zone_name} ({temp}°C) at {time.strftime('%H:%M', time.localtime(next_timestamp))}")
 
                 return result
 
             return None
         except Exception as e:
-            log.debug(f"Netatmo: Fehler beim Ermitteln der Zeitplan-Infos: {e}")
+            log.debug(f"Netatmo: failed to determine the schedule info: {e}")
             return None
 
     # ----------------------------------------------------------
@@ -1320,21 +1348,24 @@ class NetatmoAPI:
                     mod_dev = NetatmoDevice(module, station_name=station_name)
                     devices.append(mod_dev)
 
-            log.info(f"Netatmo: {len(devices)} Wetterstations-Modul(e) gefunden")
+            # debug, not info: this runs on every poll (roughly every 30
+            # seconds). At info level it produced 87% of the add-on's whole
+            # log output and buried the lines that actually matter.
+            log.debug(f"Netatmo: {len(devices)} weather station module(s) found")
             weather_ok = True
 
         except Exception as e:
             weather_ok = False
-            self._log_network_error("Netatmo Wetterstationsdaten-Fehler", e)
+            self._log_network_error("Netatmo weather station data error", e)
 
         # 2. Energy / thermostat
         try:
-            # max_age=0 umgeht bewusst den Zwischenspeicher. Die Geräteerkennung
-            # ist zugleich die Lebendprüfung der Plattform: käme die Antwort aus
-            # dem Cache, meldete der Scheduler "Netatmo verbunden", obwohl deren
-            # API gar nicht antwortet - und die Offline-Erkennung wäre blind.
-            # Der Cache dient dem Geräte-Menü und der Zeitplan-Auflösung, nicht
-            # dieser Stelle. Als Nebeneffekt füllt dieser Aufruf ihn frisch.
+            # max_age=0 deliberately bypasses the cache. Device discovery
+            # doubles as the liveness check of the platform: served from the
+            # cache, the scheduler would report "Netatmo connected" while
+            # their API does not answer at all, and offline detection would
+            # be blind. The cache serves the device menu and the schedule
+            # lookup, not this spot. As a side effect this call refills it.
             homes_data = self.get_homes_data(max_age=0)
             body = homes_data.get('body', {})
             energy_count = 0
@@ -1346,9 +1377,9 @@ class NetatmoAPI:
                 # Default duration for manual setpoints (in minutes)
                 default_duration = home.get('therm_setpoint_default_duration', None)
 
-                # Raum-Zuordnung: homesdata liefert die Räume mit Namen; die
-                # Module referenzieren sie über room_id. Wird für die
-                # Raum-Anzeige und die Raum-Gruppierung im Dialog genutzt.
+                # Room mapping: homesdata provides the rooms with names and
+                # the modules reference them via room_id. Used for the room
+                # display and the room grouping in the dialog.
                 rooms_map = {r.get('id'): r.get('name', '')
                              for r in home.get('rooms', [])}
 
@@ -1361,7 +1392,7 @@ class NetatmoAPI:
                     status_rooms = {r['id']: r for r in status_home.get('rooms', [])}
                     status_modules = {m['id']: m for m in status_home.get('modules', [])}
                 except Exception as e:
-                    log.debug(f"Ignorierter Fehler in get_devices: {e}")
+                    log.debug(f"Ignored error in get_devices: {e}")
 
                 for module in modules:
                     mod_type = module.get('type', '')
@@ -1376,7 +1407,7 @@ class NetatmoAPI:
 
                         device = NetatmoDevice(merged, station_name=home_name,
                                                home_id=home_id)
-                        # Raumname übernehmen (leer, wenn ohne Raum)
+                        # take over the room name (empty if there is none)
                         if room_id and room_id in rooms_map:
                             device.room_name = rooms_map[room_id] or ''
                         # Store the default duration of manual setpoints on the
@@ -1384,11 +1415,16 @@ class NetatmoAPI:
                         if default_duration is not None:
                             device._therm_setpoint_default_duration = default_duration
 
-                        # Temperature from the room status
+                        # Temperature from the room status. NOT for the relay
+                        # (NAPlug): it is a gateway without a sensor of its
+                        # own and would otherwise report the temperature of
+                        # the thermostat in the same room - which showed up in
+                        # the history as a second, identical series.
                         if room_id and room_id in status_rooms:
                             room_status = status_rooms[room_id]
-                            device._therm_measured = room_status.get(
-                                'therm_measured_temperature')
+                            if not device.is_relay:
+                                device._therm_measured = room_status.get(
+                                    'therm_measured_temperature')
                             device._therm_setpoint = room_status.get(
                                 'therm_setpoint_temperature')
                             device._therm_setpoint_mode = room_status.get(
@@ -1413,12 +1449,12 @@ class NetatmoAPI:
                         energy_count += 1
 
             if energy_count:
-                log.info(f"Netatmo: {energy_count} Energy-Gerät(e) gefunden")
+                log.debug(f"Netatmo: {energy_count} energy device(s) found")
             energy_ok = True
 
         except Exception as e:
             energy_ok = False
-            self._log_network_error("Netatmo Energy-Daten-Fehler", e)
+            self._log_network_error("Netatmo energy data error", e)
 
         # Reset the network status when at least one API call succeeded
         if weather_ok or energy_ok:
@@ -1439,7 +1475,7 @@ class NetatmoAPI:
                 try:
                     sched_homes_data = self.get_homes_data(gateway_types='NAPlug')
                 except Exception as e:
-                    log.debug(f"Netatmo: homesdata für Zeitpläne nicht abrufbar: {e}")
+                    log.debug(f"Netatmo: homesdata for the schedules not retrievable: {e}")
                     sched_homes_data = None
                 for dev in schedule_devices:
                     schedule_info = self._resolve_schedule_info(
@@ -1455,7 +1491,7 @@ class NetatmoAPI:
                         if active_sched_name:
                             dev._active_schedule_name = active_sched_name
         except Exception as e:
-            log.debug(f"Netatmo: Fehler beim Auflösen der Zeitplan-Zonen: {e}")
+            log.debug(f"Netatmo: failed to resolve the schedule zones: {e}")
 
         self._devices = devices
         return devices
@@ -1463,13 +1499,12 @@ class NetatmoAPI:
     def update_device_status(self, devices):
         """Updates the status of all Netatmo devices.
 
-        Leichter Pfad (Regelfall): ein /homestatus-Aufruf pro Haus
-        aktualisiert die veränderlichen Thermostat-Felder. Der volle Lauf
-        über get_devices() (getstationsdata + homesdata + Zeitplan-Auflösung,
-        >=3 Aufrufe) läuft höchstens alle NETATMO_FULL_REFRESH_SECONDS -
-        Wetterwerte und Zeitpläne ändern sich selten, und mit dem
-        fg-Poll-Intervall von 15 s läge der volle Lauf sonst über Netatmos
-        Nutzerlimit von ~500 Aufrufen/Stunde.
+        Light path (the normal case): one /homestatus call per home updates
+        the changing thermostat fields. The full pass via get_devices()
+        (getstationsdata + homesdata + schedule lookup, >=3 calls) runs at
+        most every NETATMO_FULL_REFRESH_SECONDS - weather values and
+        schedules rarely change, and with the 15 s fg poll interval the full
+        pass would otherwise exceed Netatmo's user limit of ~500 calls/hour.
         """
         now = time.time()
         energy_devs = [d for d in devices
@@ -1485,7 +1520,7 @@ class NetatmoAPI:
             try:
                 status = self.get_home_status(home_id)
             except Exception as e:
-                self._log_network_error("Netatmo Homestatus-Fehler", e)
+                self._log_network_error("Netatmo homestatus error", e)
                 continue
             home = status.get('body', {}).get('home', {})
             status_rooms = {r.get('id'): r for r in home.get('rooms', [])}
@@ -1504,7 +1539,9 @@ class NetatmoAPI:
                         device._boiler_status = bool(boiler_val)
                 room = status_rooms.get(device.room_id) if device.room_id else None
                 if room:
-                    device._therm_measured = room.get('therm_measured_temperature')
+                    # Not for the relay - see the note in get_devices().
+                    if not device.is_relay:
+                        device._therm_measured = room.get('therm_measured_temperature')
                     device._therm_setpoint = room.get('therm_setpoint_temperature')
                     device._therm_setpoint_mode = room.get('therm_setpoint_mode')
                     device._therm_setpoint_end_time = room.get('therm_setpoint_end_time')
@@ -1516,7 +1553,7 @@ class NetatmoAPI:
                         device._open_window = bool(open_window_val)
 
     def _update_device_status_full(self, devices):
-        """Voller Statuslauf: komplettes get_devices() und Feld-Übernahme."""
+        """Full status pass: complete get_devices() and field transfer."""
         try:
             fresh_devices = self.get_devices()
             fresh_map = {d.uuid: d for d in fresh_devices}
@@ -1540,11 +1577,11 @@ class NetatmoAPI:
                         device.is_offline = fresh.is_offline
                         device.raw_data = fresh.raw_data
         except Exception as e:
-            self._log_network_error("Netatmo Status-Update Fehler", e)
+            self._log_network_error("Netatmo status update error", e)
 
     def logout(self):
         """Discards the tokens"""
         self.access_token = None
         self.refresh_token = None
         self.token_expiry = 0
-        log.info("Netatmo: Abgemeldet")
+        log.info("Netatmo: logged out")

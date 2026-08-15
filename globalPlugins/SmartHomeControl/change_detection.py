@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
-Smart Home Control - Erkennung externer Geraeteaenderungen (alle Plattformen)
-Ausgelagert aus __init__.py (Modul-Aufteilung, Verhalten unverändert).
+Smart Home Control - detection of external device changes (all platforms).
+Split out of __init__.py; behaviour unchanged.
 """
 
 import time
@@ -14,10 +14,10 @@ import addonHandler
 try:
     addonHandler.initTranslation()
 except Exception as e:
-    log.debug(f"initTranslation fehlgeschlagen: {e}")
-if "_" not in globals():  # Fallback, falls initTranslation() scheitert
-    # Ohne diesen Fallback bleibt `_` undefiniert und der erste `_()`-Aufruf
-    # wirft einen NameError mitten im Dialogaufbau statt beim Import.
+    log.debug(f"initTranslation failed: {e}")
+if "_" not in globals():  # fallback if initTranslation() fails
+    # Without this fallback `_` stays undefined and the first `_()` call
+    # raises a NameError mid-dialog instead of at import time.
     def _(s):
         return s
 
@@ -25,12 +25,12 @@ from .dialog_helpers import _beep
 from .constants import (
     CACHE_VALID_DURATION, BOILER_COOLDOWN, NETATMO_MODE_NAMES,
     VESYNC_FILTER_WARN_THRESHOLD, BEEP_EXTERNAL_CHANGE,
-    BEEP_ON, BEEP_OFF, BEEP_ACTION,
+    BEEP_ON, BEEP_OFF, BEEP_ACTION, BEEP_ERROR,
 )
 
 
 class _ChangeDetectionMixin:
-    """Vergleicht Zustands-Snapshots und sagt externe Aenderungen an."""
+    """Compares state snapshots and announces external changes."""
 
     def _record_local_toggle(self, device_uuid, new_state):
         """Remembers local switch actions to avoid duplicate announcements"""
@@ -75,18 +75,70 @@ class _ChangeDetectionMixin:
             # Translators: Announcement that ONLY the named Meross device is
             # temporarily updated less often because its (per-device) cloud
             # limit is reached.
-            msg = _("Meross {name}: Aktualisierung pausiert – Cloud-Limit dieses Geräts erreicht").format(
+            msg = _("Meross {name}: updates paused – cloud limit of this "
+                    "device reached").format(
                 name=device_name)
         else:
             # Translators: As above, in case the device name is unavailable.
-            msg = _("Ein Meross-Gerät wird vorübergehend seltener aktualisiert – sein Cloud-Limit ist erreicht")
+            msg = _("A Meross device is temporarily being updated less often "
+                    "– its cloud limit has been reached")
         wx.CallAfter(ui.message, msg)
 
-    def _log_external_change(self, device_uuid, device_name, new_state):
-        """Schreibt eine extern ausgelöste Schaltung in den Verlauf.
+    def _detect_water_alarms(self, devices):
+        """Announces and logs changes of the Meross water sensors.
 
-        Läuft im MQTT-Push-Thread, deshalb bewusst komplett gekapselt: ein
-        Fehler beim Protokollieren darf die Ansage nicht verhindern.
+        A water sensor reports no measured value, only a state - which is why
+        it never appeared in the readings and, worse, was announced nowhere at
+        all: the alarm was visible only to whoever opened the device menu at
+        the right moment. For a leak sensor that is the one thing that must
+        not happen.
+
+        The state therefore lands in the history as an EVENT (that is what it
+        is) and is announced. Runs after every poll pass.
+        """
+        from .history import get_history, SOURCE_SYSTEM
+        for device in devices:
+            if not getattr(device, 'is_water_sensor', False):
+                continue
+            try:
+                wet = device.is_water_detected()
+            except Exception as e:
+                log.debug(f"Water sensor {getattr(device, 'name', '?')}: {e}")
+                continue
+            if wet is None:
+                continue
+            uuid = getattr(device, 'uuid', '')
+            previous = self._previous_water_states.get(uuid)
+            self._previous_water_states[uuid] = wet
+            if previous is None or previous == wet:
+                continue  # first reading or unchanged - nothing to report
+
+            action = 'water_detected' if wet else 'water_cleared'
+            try:
+                get_history().log_action(device, action, "",
+                                         source=SOURCE_SYSTEM)
+            except Exception as e:
+                log.debug(f"History entry (water sensor) failed: {e}")
+
+            if not getattr(self, 'notify_meross_water', True):
+                continue
+            if wet:
+                # Translators: Alarm of a Meross water sensor. {name} = device.
+                msg = _("Water alarm: {name}").format(name=device.name)
+                log.warning(f"Water alarm: {device.name}")
+                wx.CallAfter(_beep, BEEP_ERROR)
+            else:
+                # Translators: A water sensor no longer detects water.
+                msg = _("{name}: no water detected any more").format(
+                    name=device.name)
+                log.info(f"Water sensor dry again: {device.name}")
+            wx.CallAfter(ui.message, msg)
+
+    def _log_external_change(self, device_uuid, device_name, new_state):
+        """Writes an externally triggered switch to the history.
+
+        Runs on the MQTT push thread, hence fully guarded: a logging error
+        must not prevent the announcement.
         """
         try:
             from .history import get_history
@@ -99,11 +151,11 @@ class _ChangeDetectionMixin:
                         break
             get_history().log_external_action(
                 device_uuid, device_name, platform,
-                'toggle_on' if new_state else 'toggle_off',
-                # Translators: Detail column of a switch action in the history.
-                _('Ein') if new_state else _('Aus'))
+                # No detail: the action already says on/off (see
+                # _detail_is_redundant in history.py).
+                'toggle_on' if new_state else 'toggle_off', "")
         except Exception as e:
-            log.debug(f"Verlaufseintrag (extern) fehlgeschlagen: {e}")
+            log.debug(f"History entry (external) failed: {e}")
 
     def _on_external_device_change(self, device_name, new_state, device_uuid, channel_name=None):
         """
@@ -120,17 +172,17 @@ class _ChangeDetectionMixin:
         """
         # Do not announce the user's own recent actions twice
         if self._is_recent_local_toggle(device_uuid, new_state):
-            log.debug(f"Unterdrücke doppelte Ansage für {device_uuid}")
+            log.debug(f"Suppressing duplicate announcement for {device_uuid}")
             return
 
         # Check whether announcements are enabled
         # - global switch "Announce external changes"
         # - per-platform switch from the "Notifications" tab: Meross toggle
         if not self.announce_external_changes:
-            log.debug(f"Externe Änderung ignoriert (Ansagen deaktiviert): {device_name}")
+            log.debug(f"External change ignored (announcements off): {device_name}")
             return
         if not getattr(self, 'notify_meross_toggle', True):
-            log.debug(f"Meross-Toggle-Ansage deaktiviert: {device_name}")
+            log.debug(f"Meross toggle announcement disabled: {device_name}")
             return
 
         # Prevent duplicate announcements (within 2 seconds)
@@ -138,18 +190,17 @@ class _ChangeDetectionMixin:
         change_key = f"{device_uuid}_{new_state}_{channel_name or ''}"
         if (self._last_announced_change == change_key and 
             (current_time - self._last_announced_time) < 2.0):
-            log.debug(f"Doppelte Ansage unterdrückt: {device_name}")
+            log.debug(f"Duplicate announcement suppressed: {device_name}")
             return
         
         self._last_announced_change = change_key
         self._last_announced_time = current_time
 
-        # Verlauf: externe Schaltungen wurden bisher nur angesagt, aber nie
-        # protokolliert - damit konnte der Verlauf ausgerechnet die Frage
-        # nicht beantworten, für die man ihn aufschlägt: "war ich das oder
-        # jemand anders?". Als Herkunft steht schlicht "extern": ob es die
-        # Hersteller-App, ein Sprachassistent oder der Taster am Gerät war,
-        # geht aus der Cloud-Benachrichtigung nicht hervor.
+        # History: external switches used to be announced but never
+        # logged, so the history could not answer the very question it is
+        # opened for: "was that me or someone else?". The origin is simply
+        # "external" - the cloud notification does not say whether it was
+        # the vendor app, a voice assistant or the button on the device.
         self._log_external_change(device_uuid, device_name, new_state)
 
         # Update the internal cache (under the lock, since called from the push
@@ -166,7 +217,7 @@ class _ChangeDetectionMixin:
         # Phonetic improvements
         display_name = device_name.replace("WLAN", "W-LAN")
         # Translators: Status "switched on" for smart home devices (short).
-        status = _("ein") if new_state else _("aus")
+        status = _("on") if new_state else _("off")
 
         # Accessible announcement via wx.CallAfter (thread-safe)
         wx.CallAfter(_beep, BEEP_ON if new_state else BEEP_OFF)
@@ -177,7 +228,7 @@ class _ChangeDetectionMixin:
             # Also pass channel_name for multi-channel devices
             wx.CallAfter(self._active_dialog.update_device_status_live, device_uuid, new_state, channel_name)
         
-        log.info(f"Externe Änderung angesagt: {device_name} -> {status}")
+        log.info(f"External change announced: {device_name} -> {status}")
     
     def is_cache_fresh(self):
         """Checks whether the device cache is still fresh"""
@@ -273,9 +324,9 @@ class _ChangeDetectionMixin:
                     if new_sp is not None and old_sp is not None and abs(old_sp - new_sp) >= 0.05:
                         # Translators: Netatmo thermostat announcement: new
                         # target temperature in °C.
-                        changes.append(_("Soll-Temperatur: {temp:.1f}°C").format(temp=new_sp))
+                        changes.append(_("Target temperature: {temp:.1f}°C").format(temp=new_sp))
                     elif new_sp is not None and old_sp is None:
-                        changes.append(_("Soll-Temperatur: {temp:.1f}°C").format(temp=new_sp))
+                        changes.append(_("Target temperature: {temp:.1f}°C").format(temp=new_sp))
 
                 # Mode changed
                 if wants_mode and old_state.get('mode') != new_state.get('mode') and new_state.get('mode') is not None:
@@ -285,7 +336,7 @@ class _ChangeDetectionMixin:
                         mode_text += f" ({new_state['zone_name']})"
                     # Translators: Netatmo thermostat announcement: new heating
                     # mode (e.g. schedule, manual, away).
-                    changes.append(_("Heizmodus: {mode}").format(mode=mode_text))
+                    changes.append(_("Heating mode: {mode}").format(mode=mode_text))
 
                 # Schedule zone changed (even if the mode stays the same)
                 if (wants_mode
@@ -295,7 +346,7 @@ class _ChangeDetectionMixin:
                     # Translators: Netatmo thermostat announcement: the
                     # schedule switched to a different zone (e.g. day ->
                     # night).
-                    changes.append(_("Zeitplan-Zone: {zone}").format(zone=new_state['zone_name']))
+                    changes.append(_("Schedule zone: {zone}").format(zone=new_state['zone_name']))
 
                 # End time changed (normalized) - tied to the setpoint category
                 old_et = old_state.get('end_time')
@@ -305,11 +356,11 @@ class _ChangeDetectionMixin:
                         end_str = time.strftime("%H:%M", time.localtime(new_et))
                         # Translators: Netatmo thermostat announcement: until
                         # when the manual target temperature applies (HH:MM).
-                        changes.append(_("bis {time} Uhr").format(time=end_str))
+                        changes.append(_("until {time}").format(time=end_str))
                     elif old_et and not new_et:
                         # Translators: Netatmo thermostat announcement: the
                         # time limit of a manual setting was removed.
-                        changes.append(_("Endzeit entfernt"))
+                        changes.append(_("End time removed"))
 
                 # Boiler status changed (heating on/off). Pure boiler toggles
                 # (without other changes) are only reported every 5 min
@@ -318,7 +369,8 @@ class _ChangeDetectionMixin:
                 if boiler_changed and wants_boiler:
                     # Translators: Netatmo thermostat announcement: the boiler
                     # is currently heating.
-                    boiler_text = _("Heizung aktiv") if new_state['boiler'] else _("Heizung aus")
+                    boiler_text = _("Heating active") if new_state['boiler'] else _("Heating "
+                                                                                   "off")
                     # If there are also other changes, always report the boiler
                     if changes:
                         changes.append(boiler_text)
@@ -329,7 +381,7 @@ class _ChangeDetectionMixin:
                             changes.append(boiler_text)
                             self._last_boiler_announce_time[uid] = time.time()
                         else:
-                            log.debug(f"Netatmo Boiler-Toggle unterdrückt (Cooldown): {dev.name}")
+                            log.debug(f"Netatmo boiler toggle suppressed (cooldown): {dev.name}")
 
                 # Pre-heating (anticipation) changed
                 old_antic = old_state.get('anticipating')
@@ -339,11 +391,11 @@ class _ChangeDetectionMixin:
                         # Translators: Netatmo announcement: the thermostat is
                         # pre-heating for an upcoming target temperature
                         # increase.
-                        changes.append(_("Vorausheizen gestartet"))
+                        changes.append(_("Pre-heating started"))
                     else:
                         # Translators: Netatmo announcement: pre-heating has
                         # finished.
-                        changes.append(_("Vorausheizen beendet"))
+                        changes.append(_("Pre-heating finished"))
 
                 # Open window changed
                 old_ow = old_state.get('open_window')
@@ -352,17 +404,17 @@ class _ChangeDetectionMixin:
                     if new_ow:
                         # Translators: Netatmo announcement: the thermostat
                         # detected an open window (sudden temperature drop).
-                        changes.append(_("Offenes Fenster erkannt"))
+                        changes.append(_("Open window detected"))
                     else:
                         # Translators: Netatmo announcement: the open window
                         # was closed.
-                        changes.append(_("Fenster geschlossen"))
+                        changes.append(_("Window closed"))
 
                 if changes:
                     change_text = ", ".join(changes)
                     wx.CallAfter(_beep, BEEP_EXTERNAL_CHANGE)
                     wx.CallAfter(ui.message, f"{dev.name}: {change_text}")
-                    log.info(f"Netatmo externe Änderung: {dev.name} - {change_text}")
+                    log.info(f"Netatmo external change: {dev.name} - {change_text}")
                     # Also refresh the boiler cooldown on combined changes
                     if boiler_changed:
                         self._last_boiler_announce_time[uid] = time.time()
@@ -489,7 +541,7 @@ class _ChangeDetectionMixin:
             # confirming poll lay outside the 5 s. Applies to ALL VeSync device
             # types, since the detection runs centrally here.
             if self._is_recent_local_vesync_action(uid):
-                log.debug(f"VeSync Änderung unterdrückt (lokale Aktion): {dev.name}")
+                log.debug(f"VeSync change suppressed (local action): {dev.name}")
                 continue
 
             cls_name = type(dev).__name__
@@ -512,7 +564,7 @@ class _ChangeDetectionMixin:
                 if wants_toggle:
                     # Translators: Status of a VeSync device (switched on /
                     # switched off).
-                    changes.append(_("ein") if new_state['is_on'] else _("aus"))
+                    changes.append(_("on") if new_state['is_on'] else _("off"))
                 # on_change stays set independently of the notification setting
                 # because the live update of the dialog should still run
                 on_change = True
@@ -530,7 +582,7 @@ class _ChangeDetectionMixin:
                 mode_label = mode_map.get(new_state['mode'], new_state['mode'])
                 # Translators: VeSync announcement: new mode
                 # (auto/manual/sleep/turbo).
-                changes.append(_("Modus: {mode}").format(mode=mode_label))
+                changes.append(_("Mode: {mode}").format(mode=mode_label))
 
             # Announce the fan level ONLY in manually controlled mode.
             # Background: pyvesync documents the two fields ``fan_level`` (=
@@ -560,7 +612,7 @@ class _ChangeDetectionMixin:
                 # matches the display in the dialog.
                 level_value = new_state['fan_level']
                 # Translators: VeSync fan level announcement (e.g. "level 3").
-                level_text = _("Stufe {level}").format(level=level_value)
+                level_text = _("Level {level}").format(level=level_value)
                 if cls_name == 'VeSyncPurifier':
                     fan_levels = list(getattr(dev, 'fan_levels', []) or [])
                     if (len(fan_levels) == 3
@@ -568,7 +620,7 @@ class _ChangeDetectionMixin:
                         # Translators: VeSync fan level announcement with a
                         # descriptive name (e.g. "level 1 (low)") for models
                         # with 3 levels.
-                        level_text = _("Stufe {level} ({label})").format(
+                        level_text = _("Level {level} ({label})").format(
                             level=level_value,
                             label=VESYNC_PURIFIER_LEVEL_LABELS_3[level_value],
                         )
@@ -580,8 +632,8 @@ class _ChangeDetectionMixin:
                     and new_state['oscillation_on'] is not None
                     and wants_mode):
                 # Translators: VeSync tower fan announcement: oscillation.
-                changes.append(_("Oszillation ein") if new_state['oscillation_on']
-                               else _("Oszillation aus"))
+                changes.append(_("Oscillation on") if new_state['oscillation_on']
+                               else _("Oscillation off"))
 
             # Mute (mode category)
             if (old_state['mute_on'] is not None
@@ -590,8 +642,8 @@ class _ChangeDetectionMixin:
                     and wants_mode):
                 # Translators: VeSync announcement: sounds (the device's
                 # beeps).
-                changes.append(_("stumm") if new_state['mute_on']
-                               else _("Tonsignale ein"))
+                changes.append(_("muted") if new_state['mute_on']
+                               else _("Sounds on"))
 
             # Display (mode category)
             if (old_state['display_on'] is not None
@@ -599,8 +651,8 @@ class _ChangeDetectionMixin:
                     and new_state['display_on'] is not None
                     and wants_mode):
                 # Translators: VeSync announcement: LED display on the device.
-                changes.append(_("Display ein") if new_state['display_on']
-                               else _("Display aus"))
+                changes.append(_("Display on") if new_state['display_on']
+                               else _("Display off"))
 
             # Child lock (mode category)
             if (old_state['child_lock'] is not None
@@ -609,8 +661,8 @@ class _ChangeDetectionMixin:
                     and wants_mode):
                 # Translators: VeSync announcement: the child lock locks the
                 # buttons.
-                changes.append(_("Kindersicherung ein") if new_state['child_lock']
-                               else _("Kindersicherung aus"))
+                changes.append(_("Child lock on") if new_state['child_lock']
+                               else _("Child lock off"))
 
             # Night light (mode category)
             if (old_state['nightlight_status'] is not None
@@ -622,7 +674,7 @@ class _ChangeDetectionMixin:
                 )
                 # Translators: VeSync Core 200S announcement: night light mode
                 # (on/off/dimmed).
-                changes.append(_("Nachtlicht {mode}").format(mode=nl))
+                changes.append(_("Night light {mode}").format(mode=nl))
 
             # Auto profile (mode category)
             if (old_state['auto_preference_type'] is not None
@@ -636,7 +688,7 @@ class _ChangeDetectionMixin:
                 # Translators: VeSync announcement: the auto profile
                 # (default/efficient/quiet) determines the control behavior in
                 # auto mode.
-                changes.append(_("Auto-Profil {profile}").format(profile=ap))
+                changes.append(_("Auto profile {profile}").format(profile=ap))
 
             # Air quality (its own category)
             if (old_state['air_quality'] is not None
@@ -648,7 +700,7 @@ class _ChangeDetectionMixin:
                 )
                 # Translators: VeSync purifier announcement: new air quality
                 # level (excellent/good/moderate/poor).
-                changes.append(_("Luftqualität {level}").format(level=aq))
+                changes.append(_("Air quality {level}").format(level=aq))
 
             # Filter life warning: report once when the remaining life crosses
             # the warning threshold from above. A pure threshold crossing (old
@@ -662,7 +714,8 @@ class _ChangeDetectionMixin:
                     and old_filter > threshold and new_filter <= threshold):
                 # Translators: VeSync purifier warning: remaining filter life
                 # low (in percent). Replace the filter soon.
-                changes.append(_("Filter bald wechseln, Restlebensdauer {percent} Prozent").format(
+                changes.append(_("Replace filter soon, remaining life "
+                                 "{percent} percent").format(
                     percent=new_filter))
 
             if not changes:
@@ -689,7 +742,7 @@ class _ChangeDetectionMixin:
                 beep_const = BEEP_ACTION
             wx.CallAfter(_beep, beep_const)
             wx.CallAfter(ui.message, f"{display_name}: {change_text}")
-            log.info(f"VeSync externe Änderung: {dev.name} - {change_text}")
+            log.info(f"VeSync external change: {dev.name} - {change_text}")
 
             # LIVE UPDATE: nudge the open dialog so the tree nodes show the new
             # status immediately (analogous to Meross/Netatmo).
@@ -757,7 +810,7 @@ class _ChangeDetectionMixin:
                 continue
             # Do not report the user's own recent action as an external change.
             if self._is_recent_local_cozytouch_action(uuid):
-                log.debug(f"Cozytouch Änderung unterdrückt (lokale Aktion): {dev.name}")
+                log.debug(f"Cozytouch change suppressed (local action): {dev.name}")
                 continue
 
             parts = []
@@ -766,28 +819,32 @@ class _ChangeDetectionMixin:
                     and new_state['is_on'] is not None):
                 # Translators: Cozytouch announcement: hot water operation
                 # switched on/off.
-                parts.append(_("Betrieb ein") if new_state['is_on'] else _("Betrieb aus"))
+                parts.append(_("Operation on") if new_state['is_on'] else _("Operation "
+                                                                           "off"))
             if (self.notify_cozytouch_temp
                     and prev['target_temp'] != new_state['target_temp']
                     and new_state['target_temp'] is not None):
                 # Translators: Cozytouch announcement: new target temperature
                 # in degrees.
-                parts.append(_("Zieltemperatur {temp} Grad").format(
+                parts.append(_("Target temperature {temp} degrees").format(
                     temp=_fmt_temp(new_state['target_temp'])))
             if self.notify_cozytouch_mode and prev['mode'] != new_state['mode']:
                 mode_de = COZYTOUCH_HEATING_MODE_NAMES.get(new_state['mode'], new_state['mode'])
                 # Translators: Cozytouch announcement: new heating mode.
-                parts.append(_("Modus {mode}").format(mode=mode_de))
+                parts.append(_("Mode {mode}").format(mode=mode_de))
             if self.notify_cozytouch_boost and prev['boost'] != new_state['boost']:
                 # Translators: Cozytouch announcement: boost mode switched on
                 # or off.
-                parts.append(_("Boost ein") if new_state['boost'] else _("Boost aus"))
+                parts.append(_("Boost on") if new_state['boost'] else _("Boost "
+                                                                         "off"))
             if (self.notify_cozytouch_away
                     and prev['away'] != new_state['away']
                     and new_state['away'] is not None):
                 # Translators: Cozytouch announcement: away mode switched
                 # on/off.
-                parts.append(_("Abwesenheit ein") if new_state['away'] else _("Abwesenheit aus"))
+                parts.append(_("Away mode on") if new_state['away'] else _("Away "
+                                                                              "mode "
+                                                                              "off"))
 
             if not parts:
                 continue
@@ -805,5 +862,5 @@ class _ChangeDetectionMixin:
 
             wx.CallAfter(_beep, BEEP_EXTERNAL_CHANGE)
             wx.CallAfter(ui.message, f"{dev.name}: {change_text}")
-            log.info(f"Cozytouch externe Änderung: {dev.name} - {change_text}")
+            log.info(f"Cozytouch external change: {dev.name} - {change_text}")
 

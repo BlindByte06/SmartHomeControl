@@ -24,7 +24,7 @@ import addonHandler
 try:
     addonHandler.initTranslation()
 except Exception as e:
-    log.debug(f"Ignorierter Fehler in <module>: {e}")
+    log.debug(f"Ignored error during translation setup: {e}")
 if "_" not in globals():  # fallback outside of NVDA
     def _(s):
         return s
@@ -70,11 +70,11 @@ DEFAULT_TEMP_MAX = 62.0
 # Operating mode labels. Key = capability value of CAP_HEATING_MODE.
 COZYTOUCH_HEATING_MODE_NAMES = {
     # Translators: Cozytouch operating mode (manual).
-    "0": _("Manuell"),
+    "0": _("Manual"),
     # Translators: Cozytouch operating mode (Eco+).
     "3": _("Eco+"),
     # Translators: Cozytouch operating mode (time program).
-    "4": _("Programm"),
+    "4": _("Program"),
 }
 
 # Known model IDs -> exact model name. Shown in the device tree like the
@@ -132,7 +132,7 @@ def _format_schedule_windows(raw):
         if isinstance(w, list) and len(w) == 2 and not (w[0] == 0 and w[1] == 0):
             parts.append(f"{_min_to_hhmm(w[0])}–{_min_to_hhmm(w[1])}")
     # Translators: Time program without active heating windows.
-    return ", ".join(parts) if parts else _("keine")
+    return ", ".join(parts) if parts else _("none")
 
 
 class CozytouchWaterHeater:
@@ -145,7 +145,7 @@ class CozytouchWaterHeater:
         self.device_id = raw_device.get("deviceId")
         # Translators: Fallback device name for a Cozytouch hot water heat
         # pump.
-        self.device_name = raw_device.get("name", _("Warmwasser-Wärmepumpe"))
+        self.device_name = raw_device.get("name", _("Hot water heat pump"))
         self.model_id = raw_device.get("modelId")
         self.product_id = raw_device.get("productId")
         self.gateway_serial = raw_device.get("gatewaySerialNumber", "")
@@ -202,7 +202,7 @@ class CozytouchWaterHeater:
         if model:
             return model
         # Translators: Device type display for a Cozytouch hot water heat pump.
-        return _("Warmwasser-Wärmepumpe")
+        return _("Hot water heat pump")
 
     @property
     def model_display(self):
@@ -394,41 +394,41 @@ class CozytouchWaterHeater:
         if tt is not None:
             # Translators: Cozytouch status announcement: configured target
             # temperature.
-            parts.append(_("Zieltemperatur: {temp} Grad").format(temp=_fmt_temp(tt)))
+            parts.append(_("Target temperature: {temp} degrees").format(temp=_fmt_temp(tt)))
         at = self.active_target
         if at is not None and tt is not None and abs(at - tt) >= 0.5:
             # Translators: Cozytouch status announcement: actually targeted
             # heating goal (incl. Eco/boost adjustment) if it differs from the
             # target temperature.
-            parts.append(_("aktuelles Heizziel: {temp} Grad").format(temp=_fmt_temp(at)))
+            parts.append(_("current heating target: {temp} degrees").format(temp=_fmt_temp(at)))
         hw = self.hot_water_percent
         if hw is not None:
             # Translators: Cozytouch status announcement: remaining hot water
             # supply.
-            parts.append(_("Warmwasservorrat: {percent} Prozent").format(percent=hw))
+            parts.append(_("Hot water supply: {percent} percent").format(percent=hw))
         if self.mode_value is not None:
             # Translators: Cozytouch status announcement: current operating
             # mode.
-            parts.append(_("Modus: {mode}").format(mode=self.mode_name))
+            parts.append(_("Mode: {mode}").format(mode=self.mode_name))
         # Translators: Cozytouch status announcement: hot water production
         # on/off.
-        parts.append(_("Betrieb ein") if self.is_on else _("Betrieb aus"))
+        parts.append(_("Operation on") if self.is_on else _("Operation off"))
         if self.boost_on:
             # Translators: Cozytouch status announcement: boost mode is
             # running.
-            parts.append(_("Boost aktiv"))
+            parts.append(_("Boost active"))
         if self.away_on:
             if self.away_pending:
                 # Translators: Cozytouch status announcement: away mode is
                 # scheduled but its start time has not been reached yet.
-                parts.append(_("Abwesenheit geplant"))
+                parts.append(_("Away mode scheduled"))
             else:
                 # Translators: Cozytouch status announcement: away mode active.
-                parts.append(_("Abwesenheit aktiv"))
+                parts.append(_("Away mode active"))
         if self.resistance_on:
             # Translators: Cozytouch status announcement: electric backup
             # heating element active.
-            parts.append(_("Elektro-Heizstab aktiv"))
+            parts.append(_("Electric heating element active"))
         return ", ".join(parts)
 
     # ---------------- Setters (write + optimistically set locally)
@@ -465,12 +465,12 @@ class CozytouchWaterHeater:
         return ok
 
     def set_boost_duration(self, minutes):
-        """Setzt die Boost-Laufzeit (CAP 232) in Minuten.
+        """Sets the boost duration (CAP 232) in minutes.
 
-        EXPERIMENTELL: Die Referenz-Implementierung führt diese Capability
-        nur lesend (Diagnose). Ob die Cloud den Schreibzugriff akzeptiert,
-        prüft die Wert-Verifikation in set_capability - bei Ablehnung gibt
-        es eine ehrliche Fehlermeldung statt eines stillen Fehlschlags.
+        EXPERIMENTAL: the reference implementation treats this capability as
+        read-only (diagnostics). Whether the cloud accepts the write is
+        checked by the value verification in set_capability, so a rejection
+        produces an honest error instead of a silent failure.
         """
         value = str(int(minutes))
         ok = self._api.set_capability(self.device_id, CAP_BOOST_TOTAL_TIME, value)
@@ -537,4 +537,4 @@ class CozytouchWaterHeater:
                 self.apply_capabilities(caps)
                 self.is_offline = False
         except Exception as e:
-            log.debug(f"Cozytouch: _update_status für {self.name} fehlgeschlagen: {e}")
+            log.debug(f"Cozytouch: _update_status failed for {self.name}: {e}")

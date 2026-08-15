@@ -30,8 +30,26 @@ jobs:
     # polib wird von build_addon.py für die Übersetzungsprüfung gebraucht.
     # Ohne polib überspringt das Skript die Prüfung stillschweigend - dann
     # würde eine kaputte Übersetzung erst im fertigen Add-on auffallen.
+    # pyflakes prüft den Add-on-Code (siehe naechster Schritt).
     - name: Install build dependencies
-      run: python -m pip install --upgrade pip polib
+      run: python -m pip install --upgrade pip polib pyflakes
+
+    # Der Packschritt kopiert nur Dateien - ein Syntaxfehler oder ein toter
+    # Import fiele sonst erst zur Laufzeit auf, beim Nutzer. compileall
+    # uebersetzt jede Datei, pyflakes findet unbenutzte/fehlende Namen.
+    # Nur globalPlugins/: lib/ ist gebuendelter Fremdcode.
+    #
+    # WICHTIG: Python 3.11 oben ist kein Zufall, sondern die Version der
+    # aeltesten unterstuetzten NVDA-Fassung (2025.1). Genau deshalb faellt
+    # hier auf, was auf einem Entwicklungsrechner mit 3.12 noch durchgeht -
+    # etwa ein f-String, dessen Ausdruck dieselben Anfuehrungszeichen nutzt
+    # wie der f-String selbst (PEP 701). "build_addon.py py311" prueft
+    # dasselbe versionsunabhaengig und laeuft beim Packen ohnehin mit.
+    - name: Check add-on code
+      run: |
+        python -m compileall -q globalPlugins
+        python -m pyflakes globalPlugins/SmartHomeControl
+        python build_addon.py py311
 
     # Baut aus manifest.ini, globalPlugins/, lib/, doc/ und locale/ -
     # NICHT aus dem gesamten Repo. Prüft nebenbei Übersetzungen und
@@ -46,9 +64,9 @@ jobs:
         path: dist/*.nvda-addon
         if-no-files-found: error
 
-    # Die Release-Notes sind der Changelog-Abschnitt der getaggten Version,
-    # auf Englisch (CHANGELOG.en.md) - Release-Seiten werden international
-    # gelesen. Fehlt der Abschnitt, bricht der Schritt ab: ein Release ohne
+    # Die Release-Notes sind der Changelog-Abschnitt der getaggten Version
+    # aus CHANGELOG.md (englisch - Release-Seiten werden international
+    # gelesen). Fehlt der Abschnitt, bricht der Schritt ab: ein Release ohne
     # Changelog fiele sonst erst nach der Veröffentlichung auf.
     # Zusätzlich muss der Tag zur Version in manifest.ini passen, sonst trüge
     # das Release einen anderen Namen als das Paket darin.

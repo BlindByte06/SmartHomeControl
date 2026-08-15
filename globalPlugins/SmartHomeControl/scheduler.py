@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
-Smart Home Control - Polling-Scheduler und Plattform-Refresh
-Ausgelagert aus __init__.py (Modul-Aufteilung, Verhalten unverändert).
+Smart Home Control - polling scheduler and platform refresh.
+Split out of __init__.py; behaviour unchanged.
 """
 
 import threading
@@ -15,10 +15,10 @@ import addonHandler
 try:
     addonHandler.initTranslation()
 except Exception as e:
-    log.debug(f"initTranslation fehlgeschlagen: {e}")
-if "_" not in globals():  # Fallback, falls initTranslation() scheitert
-    # Ohne diesen Fallback bleibt `_` undefiniert und der erste `_()`-Aufruf
-    # wirft einen NameError mitten im Dialogaufbau statt beim Import.
+    log.debug(f"initTranslation failed: {e}")
+if "_" not in globals():  # fallback if initTranslation() fails
+    # Without this fallback `_` stays undefined and the first `_()` call
+    # raises a NameError mid-dialog instead of at import time.
     def _(s):
         return s
 
@@ -29,43 +29,63 @@ from .constants import (
 )
 
 
+def _read_sensor(device, names):
+    """First readable value among ``names`` (method or attribute), else None.
+
+    The platforms differ: Meross and Netatmo offer getters, VeSync keeps the
+    values as plain attributes. Reading both means a new sensor only needs an
+    entry in the table, not a wrapper method.
+    """
+    for name in names:
+        source = getattr(device, name, None)
+        if source is None:
+            continue
+        try:
+            value = source() if callable(source) else source
+        except Exception:
+            continue
+        if value is not None:
+            return value
+    return None
+
+
 class _SchedulerMixin:
-    """Hintergrund-Scheduler: pollt alle Plattformen und meldet Statuswechsel."""
+    """Background scheduler: polls all platforms and reports state changes."""
 
     def request_immediate_poll(self):
-        """Fordert eine sofortige Abfrage aller Plattformen an.
+        """Requests an immediate poll of all platforms.
 
-        Wird beim Öffnen des Geräte-Dialogs aufgerufen. Neben dem Flag wird
-        ``_stop_event`` gesetzt, damit der schlafende Scheduler SOFORT
-        aufwacht - er schläft nämlich bis zur nächsten fälligen Abfrage und
-        nicht mehr im Sekundentakt. ``_stop_event`` dient dabei doppelt: als
-        Stopp- UND als Wecksignal. Unterschieden wird am Flag
-        ``_background_refresh_running``, das ``_stop_background_refresh()``
-        VOR dem ``set()`` auf False setzt - ein Weckruf lässt es unangetastet.
+        Called when the device dialog opens. Besides the flag it sets
+        ``_stop_event`` so the sleeping scheduler wakes up AT ONCE - it
+        sleeps until the next due poll instead of ticking every second.
+        ``_stop_event`` therefore serves twice: as stop AND as wake signal.
+        They are told apart by ``_background_refresh_running``, which
+        ``_stop_background_refresh()`` clears BEFORE the ``set()``; a wake-up
+        leaves it untouched.
         """
         self._force_poll = True
         self._stop_event.set()
 
     def _scheduler_wait(self, timeout):
-        """Wartet ``timeout`` Sekunden. True = die Schleife soll enden.
+        """Waits ``timeout`` seconds. True = the loop should end.
 
-        Gegenstück zu ``request_immediate_poll``: wird das Event gesetzt,
-        während ``_background_refresh_running`` noch True ist, war es ein
-        Weckruf - das Event wird zurückgesetzt und weitergearbeitet.
+        Counterpart to ``request_immediate_poll``: if the event is set while
+        ``_background_refresh_running`` is still True it was a wake-up, so
+        the event is cleared and work continues.
         """
         if not self._stop_event.wait(timeout):
-            return False  # regulärer Zeitablauf
+            return False  # regular timeout
         if not self._background_refresh_running:
-            return True   # echter Stopp
-        # Weckruf: Event zurücksetzen und weiterlaufen. Kommt zwischen
-        # Prüfung und clear() doch ein Stopp, greift die while-Bedingung am
-        # Schleifenkopf, weil dort das Flag geprüft wird.
+            return True   # real stop
+        # Wake-up: clear the event and carry on. Should a stop arrive
+        # between the check and clear(), the while condition catches it
+        # because the flag is tested there.
         self._stop_event.clear()
         return False
 
     @staticmethod
     def _sleep_until_next_due(next_due, active_names):
-        """Schlafdauer bis zur nächsten fälligen Abfrage (gedeckelt)."""
+        """Sleep time until the next due poll (capped)."""
         due = [next_due[n] for n in active_names if n in next_due]
         if not due:
             return SCHEDULER_MAX_SLEEP
@@ -105,13 +125,13 @@ class _SchedulerMixin:
             # Translators: Announced when a smart home platform is reachable
             # again after a connection loss. {platform} is
             # Meross/Netatmo/VeSync.
-            msg = _("{platform} wieder verbunden").format(platform=label)
-            log.info(f"Plattform-Status: {label} wieder verbunden")
+            msg = _("{platform} reconnected").format(platform=label)
+            log.info(f"Platform status: {label} reconnected")
         else:
             # Translators: Announced when a smart home platform is temporarily
             # unreachable.
-            msg = _("{platform} vorübergehend nicht erreichbar").format(platform=label)
-            log.warning(f"Plattform-Status: {label} nicht erreichbar")
+            msg = _("{platform} temporarily unreachable").format(platform=label)
+            log.warning(f"Platform status: {label} unreachable")
         wx.CallAfter(ui.message, msg)
 
     def _start_background_refresh(self):
@@ -143,8 +163,8 @@ class _SchedulerMixin:
 
         def _scheduler_body():
             log.info(
-                f"Polling-Scheduler gestartet (Takt {SCHEDULER_TICK}s, "
-                f"Intervalle fg/bg pro Plattform aus PLATFORM_INTERVALS)"
+                f"Polling scheduler started (tick {SCHEDULER_TICK}s, "
+                f"fg/bg intervals per platform from PLATFORM_INTERVALS)"
             )
 
             # IMPORTANT: first poll after a short delay (5 seconds) so the
@@ -191,41 +211,66 @@ class _SchedulerMixin:
                         if now < next_due[name]:
                             continue
 
-                        result = refresh_fn(fg)
+                        base = PLATFORM_INTERVALS[name]['fg' if fg else 'bg']
+                        # Another path (refresh_devices() from the dialog) may
+                        # have polled this platform in the meantime. Repeating
+                        # it would spend the cloud budget twice for the same
+                        # data - so only re-schedule. This also covers the
+                        # forced poll when the dialog opens.
+                        last_any = self._platform_last_refresh.get(name, 0.0)
+                        if last_any and (now - last_any) < base:
+                            next_due[name] = last_any + base
+                            continue
+
+                        # Same lock as refresh_devices(): the dialog must not
+                        # send a second round of the same queries while this
+                        # poll is running (see _refresh_lock in __init__.py).
+                        with self._refresh_lock:
+                            result = refresh_fn(fg)
 
                         # Schedule the next due time. On a network outage the
                         # backoff kicks in: same escalation as before (60s,
                         # 120s, 300s).
-                        base = PLATFORM_INTERVALS[name]['fg' if fg else 'bg']
                         if self._network_offline:
                             backoff = min(300, BACKGROUND_REFRESH_INTERVAL * (
                                 2 ** min(self._consecutive_refresh_failures - 1, 4)))
                             interval = max(base, backoff)
                         else:
                             interval = base
-                        # Abstand ab dem ENDE des Aufrufs rechnen, nicht ab
-                        # dem Schleifenbeginn: refresh_fn() ist ein Netzaufruf
-                        # und kann 10-30 s dauern. Mit dem alten `now` wurde
-                        # die naechste Abfrage entsprechend frueher faellig -
-                        # die Polls ruecken also ausgerechnet bei langsamer
-                        # Verbindung zusammen. Fuer Meross ist das kritisch:
-                        # dort gilt ein Limit von 200 Nachrichten pro Stunde
-                        # und Geraet (siehe PLATFORM_INTERVALS).
+                        # Measure the gap from the END of the call, not from
+                        # the start of the loop: refresh_fn() is a network
+                        # call and can take 10-30 s. With the old `now` the
+                        # next poll fell due that much earlier, so polls
+                        # bunched up on exactly the slow connections.
+                        # Critical for Meross, which allows 200 messages per
+                        # hour and device (see PLATFORM_INTERVALS).
                         next_due[name] = time.time() + interval
 
                         # result None = not attempted (no devices) -> leave the
                         # status/offline detection untouched, otherwise
                         # evaluate.
                         if result is not None:
+                            self._mark_platform_refreshed(name)
+                            # Cache timestamp for is_cache_fresh(). Set here for
+                            # EVERY platform: previously only _refresh_meross
+                            # did it, so with Meross switched off the cache
+                            # never counted as fresh and the dialog refreshed
+                            # on its own every single time.
+                            self._last_refresh_time = time.time()
                             polled_any = True
                             last_ok[name] = result
                             self._announce_platform_state(name, result, True)
 
-                    # Messwerte in den Verlauf, sobald überhaupt gepollt
-                    # wurde. Der Änderungsfilter in log_sensor() entscheidet,
-                    # ob tatsächlich etwas geschrieben wird.
+                    # Readings go to the history as soon as anything was
+                    # polled; the change filter in log_sensor() decides
+                    # whether something is really written.
                     if polled_any:
                         self._log_sensor_measurements()
+                        # Water sensors report a state, not a value - they are
+                        # checked here rather than in the readings.
+                        with self._devices_lock:
+                            water_devices = list(self.devices)
+                        self._detect_water_alarms(water_devices)
 
                     # LIVE UPDATE: if a poll ran and the dialog is open,
                     # refresh the tree.
@@ -234,7 +279,7 @@ class _SchedulerMixin:
                         try:
                             wx.CallAfter(self._active_dialog.refresh_all_device_data_live)
                         except Exception as e:
-                            log.debug(f"Dialog Live-Update fehlgeschlagen (wird wiederholt): {e}")
+                            log.debug(f"Dialog live update failed (will be retried): {e}")
 
                     # ---- Network offline detection with backoff ----
                     # Only evaluate when this tick actually polled; otherwise
@@ -242,9 +287,9 @@ class _SchedulerMixin:
                     # last known result per platform: only when ALL active
                     # platforms last failed does the network count as offline.
                     if polled_any:
-                        # _fn statt _ als Wegwerfname: `_` ist in diesem Modul
-                        # die gettext-Funktion, und ein `for ... _ in ...`
-                        # verdeckt sie innerhalb der Comprehension.
+                        # _fn instead of _ as throwaway name: `_` is the
+                        # gettext function in this module and `for ... _ in
+                        # ...` would shadow it inside the comprehension.
                         active_results = [
                             last_ok[name] for name, is_active, _fn in platforms
                             if is_active() and name in last_ok
@@ -256,31 +301,30 @@ class _SchedulerMixin:
                                     and self._consecutive_refresh_failures >= 2):
                                 self._network_offline = True
                                 log.warning(
-                                    f"Netzwerk-Verbindung verloren (nach "
-                                    f"{self._consecutive_refresh_failures} fehlgeschlagenen Versuchen)")
+                                    f"Network connection lost (after "
+                                    f"{self._consecutive_refresh_failures} failed attempts)")
                         else:
                             if self._network_offline:
                                 log.info(
-                                    f"Netzwerk wieder verfügbar (nach "
-                                    f"{self._consecutive_refresh_failures} fehlgeschlagenen Versuchen)")
+                                    f"Network available again (after "
+                                    f"{self._consecutive_refresh_failures} failed attempts)")
                                 self._network_offline = False
                             self._consecutive_refresh_failures = 0
 
-                    # Bis zur naechsten faelligen Abfrage schlafen statt im
-                    # Sekundentakt aufzuwachen. Sofort unterbrechbar: sowohl
-                    # der Stopp als auch request_immediate_poll() setzen
-                    # _stop_event.
+                    # Sleep until the next due poll instead of waking up
+                    # every second. Interruptible at once: both the stop and
+                    # request_immediate_poll() set _stop_event.
                     active_names = [n for n, is_active, _fn in platforms if is_active()]
                     if self._scheduler_wait(
                             self._sleep_until_next_due(next_due, active_names)):
                         break
 
                 except Exception as e:
-                    log.debug(f"Polling-Scheduler Fehler: {e}")
+                    log.debug(f"Polling scheduler error: {e}")
                     if self._scheduler_wait(SCHEDULER_TICK):
                         break
 
-            log.info("Polling-Scheduler beendet")
+            log.info("Polling scheduler stopped")
 
         self._background_refresh_thread = threading.Thread(target=scheduler_loop, daemon=True)
         self._background_refresh_thread.start()
@@ -319,11 +363,11 @@ class _SchedulerMixin:
     # This keeps the scheduler loop lean and each platform is
     # testable/maintainable in isolation.
     def _log_power_samples(self, meross_devs):
-        """Nimmt Leistungs-Stichproben der Messsteckdosen ins Energie-Log auf.
+        """Adds power samples of the metering outlets to the energy log.
 
-        Läuft nach jedem Meross-Poll; die Drosselung (min. 60 s Abstand pro
-        Gerät) übernimmt das Energie-Log selbst. Kanäle von Mehrfach-/
-        Doppelsteckdosen werden einzeln erfasst.
+        Runs after every Meross poll; the throttling (at least 60 s per
+        device) is done by the energy log itself. Channels of multi-outlet
+        strips are recorded individually.
         """
         try:
             from .energy import get_energy_log
@@ -340,60 +384,89 @@ class _SchedulerMixin:
                         if ch_watts is not None:
                             elog.add_sample(ch.unique_id, ch.name, ch_watts)
                 except Exception as e:
-                    log.debug(f"Energie-Stichprobe fehlgeschlagen für {dev.name}: {e}")
+                    log.debug(f"Energy sample failed for {dev.name}: {e}")
         except Exception as e:
-            log.debug(f"Energie-Log nicht verfügbar: {e}")
+            log.debug(f"Energy log not available: {e}")
 
     def _log_sensor_measurements(self):
-        """Nimmt Messwerte aller Geräte in den Verlauf auf.
+        """Adds readings of all devices to the history.
 
-        Läuft nach jedem Poll-Durchlauf. Das ist der Unterschied zur früheren
-        Fassung: erfasst wurde damals in ``_populate_tree`` des Dialogs, also
-        nur beim Öffnen des Menüs - der "Verlauf" war dadurch ein Protokoll
-        der Menüöffnungen mit beliebig großen Lücken dazwischen.
+        Runs after every poll pass. That is the difference to the earlier
+        version, which recorded in the dialog's ``_populate_tree``, i.e. only
+        when the menu was opened - which made the "history" a log of menu
+        openings with arbitrarily large gaps in between.
 
-        Bezahlbar ist das minütliche Erfassen nur, weil ``log_sensor()`` einen
-        Änderungsfilter hat: gespeichert wird ein Wert nur, wenn er sich um
-        mehr als die jeweilige Schwelle geändert hat oder seit dem letzten
-        Stützpunkt eine Stunde vergangen ist.
+        Recording every minute is only affordable because ``log_sensor()``
+        has a change filter: a value is stored only if it moved by more than
+        its threshold or an hour has passed since the last data point.
 
-        Alle hier benutzten Getter lesen ausschließlich zwischengespeicherte
-        Werte aus dem vorangegangenen Poll - es entsteht KEIN zusätzlicher
-        Cloud-Aufruf. Leistung (Watt) fehlt bewusst: dafür ist energy.py
-        zuständig, das daraus auch Energiemengen integriert.
+        All getters used here read cached values from the previous poll
+        only - NO extra cloud call happens. Power (watts) is deliberately
+        missing: energy.py handles that and also integrates energy amounts
+        from it.
         """
         try:
             from .history import get_history
             history = get_history()
         except Exception as e:
-            log.debug(f"Verlauf nicht verfügbar: {e}")
+            log.debug(f"History not available: {e}")
             return
 
         with self._devices_lock:
             devices = list(self.devices)
 
-        getters = (
-            ('temperature', 'get_temperature'),
-            ('humidity', 'get_humidity'),
-            ('co2', 'get_co2'),
-            ('pressure', 'get_pressure'),
+        # Quantity -> possible sources on the device object. Meross and
+        # Netatmo expose getters, VeSync plain attributes - both are read, so
+        # the air purifiers' particulate values and the tower fans' measured
+        # temperature end up in the history as well.
+        sources = (
+            ('temperature', ('get_temperature', 'temperature')),
+            ('humidity', ('get_humidity', 'humidity')),
+            ('co2', ('get_co2',)),
+            ('pressure', ('get_pressure',)),
+            ('noise', ('get_noise',)),
+            ('pm25', ('air_quality_value',)),
+            ('pm10', ('pm10',)),
         )
+        # One-time repair of the entries written under the old key. Needs
+        # the device list, which is why it happens here and not on load.
+        if not getattr(self, '_history_keys_migrated', False):
+            self._history_keys_migrated = True
+            try:
+                history.migrate_device_keys(devices)
+            except Exception as e:
+                log.debug(f"History key migration failed: {e}")
+
+        silent = []
         for device in devices:
             try:
+                # Gateways/relays have no sensors of their own. They can still
+                # carry values taken over from a device in the same room (the
+                # Netatmo NAPlug did exactly that) - recording them would
+                # produce a second series with identical numbers.
+                if getattr(device, 'is_relay', False):
+                    continue
                 sensor_data = {}
-                for quantity, getter_name in getters:
-                    getter = getattr(device, getter_name, None)
-                    if getter is None:
-                        continue
-                    value = getter()
+                for quantity, names in sources:
+                    value = _read_sensor(device, names)
                     if value is not None:
                         sensor_data[quantity] = value
                 if sensor_data:
                     history.log_sensor(device, sensor_data)
+                elif (getattr(device, 'is_sensor', False)
+                        and not getattr(device, 'is_water_sensor', False)):
+                    # A sensor that yields nothing stays invisible in the
+                    # history - without this line one could only guess which
+                    # device is missing and why. Water sensors are exempt:
+                    # they report a state, not a value, and are handled by
+                    # _detect_water_alarms.
+                    silent.append(getattr(device, 'name', '?'))
             except Exception as e:
                 log.debug(
-                    f"Messwert-Erfassung für {getattr(device, 'name', '?')} "
-                    f"fehlgeschlagen: {e}")
+                    f"Recording readings for {getattr(device, 'name', '?')} "
+                    f"failed: {e}")
+        if silent:
+            log.debug(f"Sensors without a reading in this pass: {', '.join(silent)}")
 
     def _refresh_meross(self):
         if not (self.api and self.use_meross):
@@ -406,12 +479,11 @@ class _SchedulerMixin:
             return None
         try:
             self.api.update_device_status(meross_devs)
-            self._last_refresh_time = time.time()
             self._log_power_samples(meross_devs)
-            log.debug(f"Scheduler Meross: {len(meross_devs)} Geräte aktualisiert")
+            log.debug(f"Scheduler Meross: {len(meross_devs)} devices updated")
             return True
         except Exception as e:
-            log.debug(f"Scheduler Meross fehlgeschlagen: {e}")
+            log.debug(f"Scheduler Meross failed: {e}")
             return False
 
     def _refresh_netatmo(self):
@@ -448,10 +520,10 @@ class _SchedulerMixin:
                 for fresh_dev in fresh_netatmo_devs:
                     if fresh_dev.uuid not in existing_uuids:
                         self.devices.append(fresh_dev)
-            log.debug(f"Scheduler Netatmo: {len(fresh_netatmo_devs)} Geräte aktualisiert")
+            log.debug(f"Scheduler Netatmo: {len(fresh_netatmo_devs)} devices updated")
             return True
         except Exception as e:
-            log.debug(f"Scheduler Netatmo fehlgeschlagen: {e}")
+            log.debug(f"Scheduler Netatmo failed: {e}")
             return False
 
     def _refresh_vesync(self, fg):
@@ -473,10 +545,10 @@ class _SchedulerMixin:
             # call succeeded.
             ok = bool(report.get('devicelist_ok')) or bool(report.get('devices_ok'))
             self._detect_vesync_changes(vesync_devs)
-            log.debug(f"Scheduler VeSync: {len(vesync_devs)} Geräte, ok={ok}, fast={fg}")
+            log.debug(f"Scheduler VeSync: {len(vesync_devs)} devices, ok={ok}, fast={fg}")
             return ok
         except Exception as e:
-            log.debug(f"Scheduler VeSync fehlgeschlagen: {e}")
+            log.debug(f"Scheduler VeSync failed: {e}")
             return False
 
     def _refresh_cozytouch(self):
@@ -490,9 +562,9 @@ class _SchedulerMixin:
             report = self.cozytouch_api.update_device_status(cozytouch_devs) or {}
             ok = bool(report.get('devices_ok'))
             self._detect_cozytouch_changes(cozytouch_devs)
-            log.debug(f"Scheduler Cozytouch: {len(cozytouch_devs)} Geräte, ok={ok}")
+            log.debug(f"Scheduler Cozytouch: {len(cozytouch_devs)} devices, ok={ok}")
             return ok
         except Exception as e:
-            log.debug(f"Scheduler Cozytouch fehlgeschlagen: {e}")
+            log.debug(f"Scheduler Cozytouch failed: {e}")
             return False
     

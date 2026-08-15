@@ -1,33 +1,31 @@
 # -*- coding: utf-8 -*-
 """
-Smart Home Control - Verlauf (Ereignisse + Messwerte)
+Smart Home Control - history (events + readings).
 
-Der Verlauf trennt bewusst zwei Dinge, die frueher in einem Topf lagen:
+The history deliberately separates two things that used to share one list:
 
-* **Ereignisse** sind selten, einzeln wichtig und sollen lange aufbewahrt
-  werden - man will sie *vollstaendig*. Dazu gehoert die Herkunft: eine
-  Schaltung ist entweder ``local`` (der Nutzer, egal ob ueber Dialog oder
-  Favoriten-Geste), ``extern`` (Hersteller-App, Sprachassistent, Taster am
-  Geraet) oder ``system`` (automatisch).
-* **Messwerte** sind haeufig, einzeln bedeutungslos und nur als Verlauf
-  interessant - man will sie *verdichtet*. Sie werden deshalb nur als
-  Aenderungspunkte gespeichert: ein Wert landet nur dann in der Datei, wenn er
-  sich gegenueber dem zuletzt gespeicherten um mehr als eine Schwelle
-  unterscheidet, oder wenn seit dem letzten Stuetzpunkt eine Stunde vergangen
-  ist.
+* **Events** are rare, individually important and kept for a long time - they
+  are wanted *complete*. That includes the origin: a switch is either
+  ``local`` (the user, via dialog or favorites gesture), ``extern`` (vendor
+  app, voice assistant, button on the device) or ``system`` (automatic).
+* **Readings** are frequent, individually meaningless and only interesting as
+  a series - they are wanted *condensed*. They are therefore stored as change
+  points only: a value reaches the file only if it differs from the last
+  stored one by more than a threshold, or if an hour has passed since the
+  last data point.
 
-Frueher lagen beide in einem Ring von 5000 Eintraegen. Da Messwerte um
-Groessenordnungen haeufiger anfallen, verdraengten sie genau das, was man
-spaeter sucht: die Schaltvorgaenge. ``energy.py`` hat dieses Problem fuer die
-Leistungs-Stichproben schon geloest (eigene Ablage); hier folgt derselbe
-Schritt fuer Temperatur, Feuchte, CO2 und Luftdruck.
+Both used to live in one ring of 5000 entries. Since readings occur orders of
+magnitude more often, they crowded out exactly what is looked for later: the
+switching actions. ``energy.py`` already solved this for the power samples
+(its own file); the same step follows here for temperature, humidity, CO2 and
+air pressure.
 
-Leistung (Watt) wird hier bewusst NICHT gefuehrt - dafuer ist ``energy.py``
-zustaendig, das daraus auch Energiemengen integriert.
+Power (watts) is deliberately NOT kept here - ``energy.py`` is responsible
+for that and also integrates energy amounts from it.
 
-Persistente Ablage als JSON im NVDA-addons-Ordner (auf derselben Ebene wie
-z.B. ``clock.json``). Dieser Pfad ueberlebt Add-on-Updates - beim Update
-ersetzt NVDA nur den Add-on-Unterordner, nicht dessen Nachbardateien.
+Persisted as JSON in the NVDA addons folder (next to e.g. ``clock.json``).
+That path survives add-on updates: NVDA only replaces the add-on subfolder,
+not its neighbouring files.
 """
 
 import os
@@ -35,13 +33,14 @@ import json
 import time
 import csv
 import io
+import locale
 import threading
 from datetime import datetime
 
 from .platform_utils import platform_of
 
-# NVDA-Logger verwenden (siehe favorites.py): Meldungen dieses Moduls sollen
-# im NVDA-Log erscheinen. Fallback für Nutzung außerhalb von NVDA.
+# Use the NVDA logger (see favorites.py) so this module's messages show up
+# in the NVDA log. Fallback for use outside NVDA.
 try:
     from logHandler import log
 except ImportError:
@@ -67,73 +66,79 @@ if "_" not in globals():  # fallback outside of NVDA
 _ADDON_DIR = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
 _ADDONS_DIR = os.path.dirname(_ADDON_DIR)
 
-# Ereignisse behalten den bisherigen Dateinamen - dadurch bleibt die Datei
-# beim Update dieselbe und die Migration kann an Ort und Stelle arbeiten.
+# Events keep the previous file name, so the file stays the same across
+# updates and the migration can work in place.
 HISTORY_FILE = os.path.join(_ADDONS_DIR, "SmartHomeControl_history.json")
-# Messwerte bekommen eine eigene Ablage (wie SmartHomeControl_energy.json).
-# Vorteil: ein Schaltvorgang schreibt nie die - deutlich groessere -
-# Messwertdatei mit.
+# Readings get their own file (like SmartHomeControl_energy.json), so a
+# switching action never rewrites the much larger readings file.
 MEASUREMENTS_FILE = os.path.join(_ADDONS_DIR, "SmartHomeControl_measurements.json")
 # Legacy path (old versions stored inside the add-on folder).
 _LEGACY_HISTORY_FILE = os.path.join(_ADDON_DIR, "device_history.json")
 
 # ---------------------------------------------------------------------------
-# Aufbewahrung: getrennte Kontingente, getrennt gekuerzt. Ein Ereignis darf
-# NIE von einem Messwert verdraengt werden - das war der Kernfehler der alten
-# Fassung mit ihrem gemeinsamen Ring von 5000 Eintraegen.
+# Retention: separate quotas, trimmed separately. An event must NEVER be
+# crowded out by a reading - the core flaw of the old version with its shared
+# ring of 5000 entries.
 # ---------------------------------------------------------------------------
 MAX_EVENT_ENTRIES = 2000
-EVENT_RETENTION_SECONDS = 365 * 86400        # 1 Jahr
+EVENT_RETENTION_SECONDS = 365 * 86400        # 1 year
 MAX_MEASUREMENT_ENTRIES = 20000
-MEASUREMENT_RETENTION_SECONDS = 90 * 86400   # 90 Tage
+MEASUREMENT_RETENTION_SECONDS = 90 * 86400   # 90 days
 
-# Rueckwaertskompatibilitaet: alter Name, den evtl. anderer Code liest.
+# Backwards compatibility: old name that other code may read.
 MAX_HISTORY_ENTRIES = MAX_EVENT_ENTRIES
 
-# Debounce für das Speichern: Jeder Eintrag schrieb früher sofort die GESAMTE
-# Datei neu. Jetzt wird gesammelt und erst gespeichert, wenn genügend Zeit
-# vergangen ist ODER sich genug Einträge angesammelt haben.
-# flush_pending() (vom Plugin-terminate aufgerufen) sichert den Rest.
+# Debounced saving: every entry used to rewrite the WHOLE file at once.
+# Entries are now collected and only saved once enough time has passed OR
+# enough of them have piled up. flush_pending() (called from the plugin's
+# terminate) writes the rest.
 SAVE_DEBOUNCE_SECONDS = 30
 SAVE_DEBOUNCE_MAX_ENTRIES = 20
 
 # ---------------------------------------------------------------------------
-# Herkunft eines Ereignisses
+# Origin of an event
 # ---------------------------------------------------------------------------
-SOURCE_LOCAL = 'local'     # der Nutzer selbst (Dialog oder Favoriten-Geste)
-SOURCE_EXTERN = 'extern'   # Hersteller-App, Sprachassistent, Taster am Gerät
-SOURCE_SYSTEM = 'system'   # automatisch (Zeitplan, Regel)
+SOURCE_LOCAL = 'local'     # the user (dialog or favorites gesture)
+SOURCE_EXTERN = 'extern'   # vendor app, voice assistant, button on the device
+SOURCE_SYSTEM = 'system'   # automatic (schedule, rule)
 
 # ---------------------------------------------------------------------------
-# Messwerte: Aenderungsschwellen
+# Readings: change thresholds
 # ---------------------------------------------------------------------------
-# Ein Wert wird nur gespeichert, wenn er sich gegenueber dem zuletzt
-# GESPEICHERTEN Wert um mehr als diese Schwelle unterscheidet. Die Schwellen
-# liegen bewusst knapp ueber dem Messrauschen der jeweiligen Sensoren: kleiner
-# waere wieder Rauschen, groesser wuerde echte Verlaeufe abschneiden.
+# A value is only stored if it differs from the last STORED one by more than
+# this threshold. The thresholds sit deliberately just above the noise of the
+# respective sensors: smaller would be noise again, larger would cut off real
+# curves.
 MEASUREMENT_THRESHOLDS = {
     'temperature': 0.3,   # K
     'humidity': 2.0,      # %
     'co2': 50.0,          # ppm
     'pressure': 1.0,      # mbar
+    'pm25': 3.0,          # ug/m3 (Levoit air purifiers)
+    'pm10': 3.0,          # ug/m3 (Levoit Sprout/V2)
+    'noise': 5.0,         # dB (Netatmo indoor module)
 }
-# Auch ohne Aenderung spaetestens nach dieser Zeit ein Stuetzpunkt, damit eine
-# flache Linie nicht als Datenluecke erscheint und Min/Max/Mittelwert ueber
-# lange ruhige Phasen stimmen.
+# Even without a change, a data point after this time at the latest, so a
+# flat line does not look like a gap and min/max/average stay correct over
+# long quiet phases.
 MEASUREMENT_MAX_SILENCE = 3600.0
 
-# Reihenfolge und Beschriftung der Messgroessen in Anzeige und CSV.
-MEASUREMENT_ORDER = ('temperature', 'humidity', 'co2', 'pressure')
+# Order and labels of the quantities in the display and the CSV.
+MEASUREMENT_ORDER = ('temperature', 'humidity', 'co2', 'pressure',
+                     'pm25', 'pm10', 'noise')
 
 
 def _measurement_labels():
-    """Anzeigenamen der Messgrößen (zur Laufzeit, damit übersetzbar)."""
+    """Display names of the quantities (at runtime, so they translate)."""
     return {
         # Translators: Names of the measured quantities in the history.
-        'temperature': _("Temperatur"),
-        'humidity': _("Luftfeuchte"),
+        'temperature': _("Temperature"),
+        'humidity': _("Humidity"),
         'co2': _("CO₂"),
-        'pressure': _("Luftdruck"),
+        'pressure': _("Air pressure"),
+        'pm25': _("Particulate matter PM2.5"),
+        'pm10': _("Particulate matter PM10"),
+        'noise': _("Noise"),
     }
 
 
@@ -142,19 +147,25 @@ MEASUREMENT_UNITS = {
     'humidity': '%',
     'co2': 'ppm',
     'pressure': 'mbar',
+    'pm25': 'µg/m³',
+    'pm10': 'µg/m³',
+    'noise': 'dB',
 }
 
-# Nachkommastellen je Messgröße für die Anzeige.
+# Decimal places per quantity for the display.
 _MEASUREMENT_DIGITS = {
     'temperature': 1,
     'humidity': 0,
     'co2': 0,
     'pressure': 1,
+    'pm25': 0,
+    'pm10': 0,
+    'noise': 0,
 }
 
 
 def format_measurement(quantity, value):
-    """Formatiert einen Messwert mit Einheit, z.B. ``21,4 °C``."""
+    """Formats a reading with its unit, e.g. ``21.4 °C``."""
     if value is None:
         return ''
     digits = _MEASUREMENT_DIGITS.get(quantity, 1)
@@ -164,6 +175,39 @@ def format_measurement(quantity, value):
         return str(value)
     unit = MEASUREMENT_UNITS.get(quantity, '')
     return f"{text} {unit}".strip()
+
+
+def _csv_quantity_header(quantity):
+    """Column heading of a quantity, with its unit: "Temperature (°C)"."""
+    label = _measurement_labels().get(quantity, quantity)
+    unit = MEASUREMENT_UNITS.get(quantity, '')
+    return f"{label} ({unit})" if unit else label
+
+
+def _csv_number(value, decimal_point):
+    """Number for the CSV in the decimal notation of the system locale.
+
+    Excel reads a CSV with the settings of the region. In a German Excel
+    "28.5" is not a number at all but matches the date pattern day.month -
+    the temperature 28.5 °C silently became "28 May" (cell value 46170,
+    measured). With a comma it is a number that can be calculated with.
+    """
+    if value is None or value == '':
+        return ''
+    text = str(value)
+    return text.replace('.', decimal_point) if decimal_point != '.' else text
+
+
+def _device_key(device):
+    """Identity of a device for the history: ``unique_id`` before ``uuid``.
+
+    Sensors on a Meross hub ALL carry the hub's ``uuid`` - the wrapper offers
+    ``unique_id`` for exactly that reason (hub UUID plus subdevice ID). The
+    history used ``uuid`` and therefore merged every sensor of one hub into a
+    single series: two sensors in different rooms became one row whose
+    minimum, maximum and average mixed both rooms.
+    """
+    return getattr(device, 'unique_id', None) or device.uuid
 
 
 def _migrate_legacy_file():
@@ -180,21 +224,20 @@ def _migrate_legacy_file():
             backup = _LEGACY_HISTORY_FILE + ".migrated.bak"
             try:
                 os.replace(_LEGACY_HISTORY_FILE, backup)
-                log.info(f"History: Legacy-Datei nach Migration archiviert: {backup}")
+                log.info(f"History: legacy file archived after the migration: {backup}")
             except Exception as e:
-                log.debug(f"Ignorierter Fehler in _migrate_legacy_file: {e}")
+                log.debug(f"Ignored error in _migrate_legacy_file: {e}")
             return
         os.replace(_LEGACY_HISTORY_FILE, HISTORY_FILE)
-        log.info(f"History von {_LEGACY_HISTORY_FILE} nach {HISTORY_FILE} migriert")
+        log.info(f"History migrated from {_LEGACY_HISTORY_FILE} to {HISTORY_FILE}")
     except Exception as e:
-        log.warning(f"History-Migration fehlgeschlagen: {e}")
+        log.warning(f"History migration failed: {e}")
 
 
 def _atomic_write_json(path, data):
-    """Schreibt JSON atomar: erst .tmp, dann os.replace.
+    """Writes JSON atomically: .tmp first, then os.replace.
 
-    Schützt gegen halb geschriebene Dateien bei Absturz/Stromausfall mitten
-    im Schreiben.
+    Protects against half-written files if NVDA or the power dies mid-write.
     """
     tmp_path = path + ".tmp"
     with open(tmp_path, 'w', encoding='utf-8') as f:
@@ -203,11 +246,11 @@ def _atomic_write_json(path, data):
 
 
 class _EntryStore:
-    """Eine Liste von Einträgen mit eigener Datei, eigenem Kontingent, Debounce.
+    """A list of entries with its own file, quota and debounce.
 
-    Zwei Instanzen davon bilden den Verlauf: eine für Ereignisse, eine für
-    Messwerte. Dadurch trifft das Kürzen jeweils nur die eigene Art, und ein
-    Schaltvorgang schreibt nie die große Messwertdatei mit.
+    Two instances make up the history: one for events, one for readings. That
+    way trimming only ever affects its own kind, and a switching action never
+    rewrites the large readings file.
     """
 
     def __init__(self, path, max_entries, retention_seconds, label):
@@ -228,17 +271,17 @@ class _EntryStore:
                 if isinstance(data, list):
                     self.entries = data
                 else:
-                    log.warning(f"{self.label}: unerwartetes Dateiformat, starte leer")
+                    log.warning(f"{self.label}: unexpected file format, starting empty")
                     self.entries = []
-                log.debug(f"{self.label} geladen: {len(self.entries)} Einträge")
+                log.debug(f"{self.label} loaded: {len(self.entries)} entries")
             else:
                 self.entries = []
         except Exception as e:
-            log.error(f"{self.label} konnte nicht geladen werden: {e}")
+            log.error(f"{self.label} could not be loaded: {e}")
             self.entries = []
 
     def _trim(self):
-        """Kürzt nach Alter UND Anzahl. Gibt die Zahl der Verworfenen zurück."""
+        """Trims by age AND count. Returns the number of dropped entries."""
         before = len(self.entries)
         if self.retention_seconds:
             cutoff = time.time() - self.retention_seconds
@@ -257,9 +300,9 @@ class _EntryStore:
             self._dirty = False
             self._last_save_time = time.time()
             self._unsaved_count = 0
-            log.debug(f"{self.label} gespeichert: {len(self.entries)} Einträge")
+            log.debug(f"{self.label} saved: {len(self.entries)} entries")
         except Exception as e:
-            log.error(f"{self.label} konnte nicht gespeichert werden: {e}")
+            log.error(f"{self.label} could not be saved: {e}")
 
     def append(self, entry):
         self.entries.append(entry)
@@ -280,9 +323,9 @@ class _EntryStore:
 
 
 class DeviceHistory:
-    """Verwaltet Ereignisse und Messwerte.
+    """Manages events and readings.
 
-    Ereignis-Eintrag::
+    Event entry::
 
         {
             "timestamp": 1709287200.0,
@@ -295,7 +338,7 @@ class DeviceHistory:
             "source": "local" | "extern" | "system"
         }
 
-    Messwert-Eintrag (nur Änderungspunkte)::
+    Reading entry (change points only)::
 
         {
             "timestamp": ..., "device_uuid": ..., "device_name": ...,
@@ -305,21 +348,21 @@ class DeviceHistory:
     """
 
     def __init__(self):
-        # Ein Lock für beide Speicher. Nötig, seit der Verlauf auch aus dem
-        # MQTT-Push-Thread (externe Änderungen) und aus den Hintergrund-
-        # Threads der Favoriten-Gesten beschrieben wird - json.dump über eine
-        # Liste, die parallel wächst, kann sonst mitten im Schreiben brechen.
+        # One lock for both stores. Needed since the history is also
+        # written from the MQTT push thread (external changes) and from the
+        # background threads of the favorites gestures - json.dump over a
+        # list growing in parallel can otherwise break mid-write.
         self._lock = threading.RLock()
         self._events = _EntryStore(
             HISTORY_FILE, MAX_EVENT_ENTRIES, EVENT_RETENTION_SECONDS,
-            "Verlauf (Ereignisse)")
+            "History (events)")
         self._measurements = _EntryStore(
             MEASUREMENTS_FILE, MAX_MEASUREMENT_ENTRIES,
-            MEASUREMENT_RETENTION_SECONDS, "Verlauf (Messwerte)")
-        # Zustand des Änderungsfilters: (uuid, größe) -> (wert, zeitstempel)
-        # des zuletzt GESPEICHERTEN Punktes. Nur im Speicher; nach einem
-        # NVDA-Neustart wird der erste Wert je Größe wieder geschrieben, was
-        # als Stützpunkt sogar erwünscht ist.
+            MEASUREMENT_RETENTION_SECONDS, "History (readings)")
+        # State of the change filter: (uuid, quantity) -> (value,
+        # timestamp) of the last STORED point. In memory only; after an NVDA
+        # restart the first value per quantity is written again, which is
+        # even desirable as a data point.
         self._last_written = {}
 
         # One-time migration of the old file from the add-on subfolder.
@@ -349,29 +392,69 @@ class DeviceHistory:
                     store.mark_dirty()
                     changed += 1
         if changed:
-            log.info(f"Verlauf: {changed} Cozytouch-Einträge auf korrekte Plattform migriert")
+            log.info(f"History: {changed} Cozytouch entries migrated to the correct platform")
+
+    def migrate_device_keys(self, devices):
+        """Rewrites entries that were stored under the plain device UUID.
+
+        Until this version the history wrote ``device.uuid``. Every sensor on
+        a Meross hub shares it, which is why _device_key now uses
+        ``unique_id``. Switching the key alone would leave everything written
+        so far under the OLD one - each sensor would then appear twice, once
+        with the readings up to the change and once with those after it.
+
+        The old key plus the device name identifies the entries exactly, so
+        they can be repaired. Runs once as soon as the device list is known.
+        """
+        mapping = {}
+        for device in devices:
+            uuid = getattr(device, 'uuid', None)
+            unique = getattr(device, 'unique_id', None)
+            name = getattr(device, 'name', None)
+            if uuid and name and unique and unique != uuid:
+                mapping[(uuid, name)] = unique
+        if not mapping:
+            return 0
+
+        changed = 0
+        with self._lock:
+            for store in (self._events, self._measurements):
+                for entry in store.entries:
+                    key = (entry.get('device_uuid'), entry.get('device_name'))
+                    new_uuid = mapping.get(key)
+                    if new_uuid:
+                        entry['device_uuid'] = new_uuid
+                        store.mark_dirty()
+                        changed += 1
+            if changed:
+                self._events.save()
+                self._measurements.save()
+                # The change point filter is keyed by UUID - reseed it, or the
+                # next reading would be compared against a stale key.
+                self._seed_last_written()
+        if changed:
+            log.info(f"History: {changed} entries moved to the unique device ID")
+        return changed
 
     def _migrate_v1_layout(self):
-        """Trennt eine alte Verlaufsdatei in Ereignisse und Messwerte.
+        """Splits an old history file into events and readings.
 
-        Alte Fassungen legten Aktionen UND Sensorwerte in dieselbe Liste.
-        Beim ersten Start der neuen Fassung wird einmalig getrennt:
+        Old versions put actions AND sensor values in the same list. On the
+        first start of the new version they are separated once:
 
-        * Aktionen bleiben vollständig erhalten und bekommen ``source:
-          "local"`` - alles, was frühere Fassungen protokolliert haben, war
-          eine Aktion des Nutzers im Dialog.
-        * Sensorwerte laufen rückwirkend durch denselben Änderungsfilter, der
-          ab jetzt auch für neue Werte gilt. Verworfen werden ausschließlich
-          Wiederholungen; jeder Wert, der eine echte Änderung darstellt,
-          bleibt.
+        * Actions are kept in full and get ``source: "local"`` - everything
+          earlier versions logged was a user action in the dialog.
+        * Sensor values run retroactively through the same change filter that
+          applies to new values from now on. Only repetitions are dropped;
+          every value representing a real change stays.
 
-        Idempotent: erkennt an den ``event_type``-Werten, ob noch etwas zu
-        trennen ist.
+        Idempotent: the ``event_type`` values show whether anything is left
+        to split.
         """
         sensor_entries = [e for e in self._events.entries
                           if e.get('event_type') == 'sensor']
         if not sensor_entries:
-            # Nichts zu trennen. Fehlende source-Felder trotzdem nachziehen.
+            # Nothing to split. Still fill in missing source fields.
             filled = 0
             for entry in self._events.entries:
                 if 'source' not in entry:
@@ -387,7 +470,7 @@ class DeviceHistory:
         for entry in action_entries:
             entry.setdefault('source', SOURCE_LOCAL)
 
-        # Sensorwerte chronologisch durch den Änderungsfilter schicken.
+        # Run the sensor values through the change filter in order.
         sensor_entries.sort(key=lambda e: e.get('timestamp', 0))
         state = {}
         kept = []
@@ -397,7 +480,7 @@ class DeviceHistory:
             changed = {}
             for quantity, value in data.items():
                 if quantity not in MEASUREMENT_THRESHOLDS:
-                    continue  # z.B. 'power' -> gehört in energy.py
+                    continue  # e.g. 'power' -> belongs in energy.py
                 if self._is_change_point(state, entry.get('device_uuid', ''),
                                          quantity, value, ts):
                     changed[quantity] = value
@@ -416,16 +499,16 @@ class DeviceHistory:
         self._events.save()
         self._measurements.save()
         log.info(
-            f"Verlauf umgestellt: {len(action_entries)} Ereignisse behalten, "
-            f"{len(sensor_entries)} Sensor-Einträge ausgedünnt auf {len(kept)} "
-            f"Änderungspunkte ({dropped} Wiederholungen verworfen)."
+            f"History converted: {len(action_entries)} events kept, "
+            f"{len(sensor_entries)} sensor entries thinned to {len(kept)} "
+            f"change points ({dropped} repetitions dropped)."
         )
 
     def _seed_last_written(self):
-        """Füllt den Filterzustand aus den bereits gespeicherten Messwerten.
+        """Seeds the filter state from the readings already stored.
 
-        Ohne das würde nach jedem NVDA-Start der erste Wert jeder Größe
-        geschrieben, auch wenn er identisch zum letzten gespeicherten ist.
+        Without it the first value of every quantity would be written after
+        each NVDA start, even when identical to the last stored one.
         """
         for entry in self._measurements.entries:
             uuid = entry.get('device_uuid', '')
@@ -437,7 +520,7 @@ class DeviceHistory:
                     self._last_written[key] = (value, ts)
 
     # ------------------------------------------------------------------
-    # Persistenz
+    # Persistence
     # ------------------------------------------------------------------
     def flush(self):
         """Forces immediate saving of all unsaved entries.
@@ -457,22 +540,22 @@ class DeviceHistory:
         return platform_of(device)
 
     # ------------------------------------------------------------------
-    # Erfassung: Ereignisse
+    # Recording: events
     # ------------------------------------------------------------------
     def log_action(self, device, action, details="", source=SOURCE_LOCAL):
-        """Protokolliert ein Ereignis.
+        """Logs an event.
 
         Args:
-            device: Geräte-Wrapper (Meross/Netatmo/VeSync/Cozytouch)
-            action: Aktionsschlüssel, z.B. 'toggle_on', 'set_temp', 'set_mode'
-            details: Beschreibung, z.B. '22,5 °C'
-            source: SOURCE_LOCAL (Nutzer), SOURCE_EXTERN (App/Assistent/
-                Gerät) oder SOURCE_SYSTEM (automatisch)
+            device: device wrapper (Meross/Netatmo/VeSync/Cozytouch)
+            action: action key, e.g. 'toggle_on', 'set_temp', 'set_mode'
+            details: description, e.g. '22.5 °C'
+            source: SOURCE_LOCAL (user), SOURCE_EXTERN (app/assistant/
+                device) or SOURCE_SYSTEM (automatic)
         """
         try:
             entry = {
                 "timestamp": time.time(),
-                "device_uuid": device.uuid,
+                "device_uuid": _device_key(device),
                 "device_name": device.name,
                 "platform": self._detect_platform(device),
                 "event_type": "action",
@@ -481,19 +564,18 @@ class DeviceHistory:
                 "source": source,
             }
         except Exception as e:
-            log.debug(f"Verlauf: Ereignis konnte nicht gebildet werden: {e}")
+            log.debug(f"History: could not build the event: {e}")
             return
         with self._lock:
             self._events.append(entry)
 
     def log_external_action(self, device_uuid, device_name, platform, action,
                             details=""):
-        """Protokolliert eine externe Schaltung ohne Geräte-Objekt.
+        """Logs an external switch without a device object.
 
-        Der Push-Pfad (``_on_external_device_change``) kennt nur UUID, Name
-        und Zustand - das Geräteobjekt kann zu dem Zeitpunkt bereits ersetzt
-        worden sein. Deshalb ein eigener Einstieg statt eines Umwegs über
-        ``log_action``.
+        The push path (``_on_external_device_change``) only knows UUID, name
+        and state - the device object may already have been replaced by then.
+        Hence its own entry point instead of a detour via ``log_action``.
         """
         entry = {
             "timestamp": time.time(),
@@ -509,26 +591,25 @@ class DeviceHistory:
             self._events.append(entry)
 
     # ------------------------------------------------------------------
-    # Erfassung: Messwerte
+    # Recording: readings
     # ------------------------------------------------------------------
     @staticmethod
     def _is_change_point(state, device_uuid, quantity, value, now):
-        """Entscheidet, ob ein Wert als Änderungspunkt gespeichert wird.
+        """Decides whether a value is stored as a change point.
 
-        Gespeichert wird, wenn einer der drei Fälle zutrifft:
+        It is stored if one of three cases applies:
 
-        1. Für diese Größe gibt es noch keinen gespeicherten Wert.
-        2. Der Wert weicht um mehr als die Schwelle ab
+        1. There is no stored value for this quantity yet.
+        2. The value differs by more than the threshold
            (``MEASUREMENT_THRESHOLDS``).
-        3. Seit dem letzten Stützpunkt ist ``MEASUREMENT_MAX_SILENCE``
-           vergangen - damit eine flache Linie nicht wie eine Datenlücke
-           aussieht.
+        3. ``MEASUREMENT_MAX_SILENCE`` has passed since the last data point,
+           so a flat line does not look like a gap.
 
-        Aktualisiert ``state`` bei einem Treffer direkt mit.
+        Updates ``state`` directly on a hit.
         """
         threshold = MEASUREMENT_THRESHOLDS.get(quantity)
         if threshold is None:
-            return False  # unbekannte Größe (z.B. 'power') nicht führen
+            return False  # unknown quantity (e.g. 'power') is not kept
         try:
             numeric = float(value)
         except (TypeError, ValueError):
@@ -543,30 +624,30 @@ class DeviceHistory:
         try:
             drift = abs(numeric - float(prev_value))
         except (TypeError, ValueError):
-            drift = threshold + 1  # nicht vergleichbar -> als Änderung werten
+            drift = threshold + 1  # not comparable -> count as a change
         if drift > threshold or (now - prev_ts) >= MEASUREMENT_MAX_SILENCE:
             state[key] = (numeric, now)
             return True
         return False
 
     def log_sensor(self, device, sensor_data):
-        """Nimmt Messwerte auf - aber nur die, die sich geändert haben.
+        """Records readings - but only those that changed.
 
         Args:
-            device: Geräteobjekt
-            sensor_data: dict, z.B. {'temperature': 22.5, 'humidity': 65}
+            device: device object
+            sensor_data: dict, e.g. {'temperature': 22.5, 'humidity': 65}
 
         Returns:
-            True, wenn ein Änderungspunkt geschrieben wurde
+            True if a change point was written
         """
         if not sensor_data:
             return False
         try:
-            uuid = device.uuid
+            uuid = _device_key(device)
             name = device.name
             platform = self._detect_platform(device)
         except Exception as e:
-            log.debug(f"Verlauf: Messwert ohne Geräteangaben verworfen: {e}")
+            log.debug(f"History: reading without device data dropped: {e}")
             return False
 
         now = time.time()
@@ -591,7 +672,7 @@ class DeviceHistory:
         return True
 
     # ------------------------------------------------------------------
-    # Abfrage
+    # Queries
     # ------------------------------------------------------------------
     def _select(self, entries, device_uuid=None, platform=None,
                 since_hours=None):
@@ -611,8 +692,8 @@ class DeviceHistory:
 
         Args:
             device_uuid: optional – only entries for this device
-            event_type: 'action' (Ereignisse), 'sensor' (Messwerte) oder None
-                (beides zusammen)
+            event_type: 'action' (events), 'sensor' (readings) or None
+                (both together)
             max_entries: max. number of returned entries
             since_hours: optional – only entries of the last N hours
             platform: optional – 'meross', 'netatmo', 'vesync' or 'cozytouch'
@@ -633,18 +714,18 @@ class DeviceHistory:
 
     def summarize_measurements(self, device_uuid=None, platform=None,
                                since_hours=None):
-        """Verdichtet Messwerte zu Min/Max/Mittelwert je Gerät und Größe.
+        """Condenses readings to min/max/average per device and quantity.
 
-        Das ist der eigentliche Zweck der Messwerte: eine Zeile beantwortet,
-        wofür man sonst hundert Einzelzeilen durchgehen müsste.
+        That is the actual purpose of the readings: one row answers what
+        would otherwise mean going through a hundred.
 
-        Der Mittelwert ist zeitgewichtet (Trapez über die Stützpunkte), nicht
-        das arithmetische Mittel der Punkte - sonst würde eine Phase mit
-        vielen Änderungen den Durchschnitt gegenüber einer langen ruhigen
-        Phase verzerren. Bei nur einem Punkt ist der Mittelwert dieser Wert.
+        The average is time-weighted (trapezoid over the data points), not
+        the arithmetic mean of the points - otherwise a phase with many
+        changes would skew it against a long quiet one. With a single point
+        the average is that value.
 
         Returns:
-            Liste von dicts, sortiert nach Gerätename und Größenreihenfolge::
+            list of dicts, sorted by device name and quantity order::
 
                 {'device_uuid':…, 'device_name':…, 'platform':…,
                  'quantity': 'temperature', 'min':…, 'max':…, 'avg':…,
@@ -667,7 +748,13 @@ class DeviceHistory:
                     numeric = float(value)
                 except (TypeError, ValueError):
                     continue
-                rec = series.setdefault((uuid, quantity), {
+                # Grouped by name as WELL as UUID: entries written before
+                # the fix all carry the hub UUID, so two sensors of one hub
+                # would still be merged into one row. Splitting by name shows
+                # them separately again. A renamed device produces two rows
+                # for the period around the rename - the lesser evil against
+                # a summary that mixes two rooms.
+                rec = series.setdefault((uuid, entry.get('device_name', ''), quantity), {
                     'device_uuid': uuid,
                     'device_name': entry.get('device_name', ''),
                     'platform': entry.get('platform', ''),
@@ -686,6 +773,11 @@ class DeviceHistory:
             rec['last'] = values[-1]
             rec['count'] = len(values)
             rec['avg'] = _time_weighted_average(points)
+            # Period of the series: without it a row of numbers says nothing
+            # about WHEN it was measured - especially with the "all time"
+            # filter, where the range is not obvious from the filter either.
+            rec['first_ts'] = points[0][0]
+            rec['last_ts'] = points[-1][0]
             out.append(rec)
 
         order = {q: i for i, q in enumerate(MEASUREMENT_ORDER)}
@@ -709,20 +801,20 @@ class DeviceHistory:
                 seen[uuid] = {
                     'uuid': uuid,
                     # Translators: Placeholder for an unknown device name.
-                    'name': entry.get('device_name', _('Unbekannt')),
+                    'name': entry.get('device_name', _("Unknown")),
                     'platform': entry.get('platform', ''),
                 }
         return sorted(seen.values(), key=lambda d: d['name'].lower())
 
     def clear(self):
-        """Löscht Ereignisse und Messwerte."""
+        """Deletes events and readings."""
         with self._lock:
             self._events.clear()
             self._measurements.clear()
             self._last_written = {}
 
     def get_entry_count(self):
-        """Gesamtzahl aller Einträge (Ereignisse + Messwerte)."""
+        """Total number of entries (events + readings)."""
         with self._lock:
             return len(self._events.entries) + len(self._measurements.entries)
 
@@ -792,40 +884,84 @@ class DeviceHistory:
             else:
                 f = output
 
-            writer = csv.writer(f, delimiter=';', quoting=csv.QUOTE_MINIMAL)
+            # Both separators follow the locale, because that is what Excel
+            # expects: where the decimal separator is a comma, the list
+            # separator is a semicolon (and vice versa). A hard-coded ";"
+            # put every line of an English Excel into a single cell.
+            decimal_point = locale.localeconv().get('decimal_point') or '.'
+            delimiter = ';' if decimal_point == ',' else ','
+            writer = csv.writer(f, delimiter=delimiter,
+                                quoting=csv.QUOTE_MINIMAL)
 
-            # Header
+            # The columns come from the DATA, not from a fixed list. An
+            # export of the events used to carry seven empty measurement
+            # columns and a "Type" column reading "action" in every row -
+            # eight cells per row to skip past for nothing. Now a file only
+            # contains what it can fill.
+            has_actions = any(e.get('event_type') != 'sensor' for e in entries)
+            has_sensors = any(e.get('event_type') == 'sensor' for e in entries)
+            present = {q for e in entries for q in (e.get('sensor_data') or {})}
+            quantities = [q for q in MEASUREMENT_ORDER if q in present]
+
+            # The readable columns follow the interface language - the file
+            # is opened in a spreadsheet and read there. Next to them stand
+            # two columns that do NOT change with the language: the ISO
+            # timestamp and the action key.
             # Translators: Column headers of the CSV export (history).
-            writer.writerow([
-                _('Zeitpunkt'), _('Gerätename'), _('Plattform'), _('Typ'),
-                _('Herkunft'), _('Aktion'), _('Details'),
-                _('Temperatur (°C)'), _('Luftfeuchtigkeit (%)'),
-                _('CO₂ (ppm)'), _('Luftdruck (mbar)'),
-            ])
+            header = [_("Time"), _("Device name"), _("Platform")]
+            # Only meaningful when both kinds are in the same file.
+            if has_actions and has_sensors:
+                header.append(_("Type"))
+            if has_actions:
+                header += [
+                    _("Source"), _("Action"),
+                    # Translators: CSV column with the untranslated action
+                    # key (e.g. "toggle_off") for further processing.
+                    _("Action key"),
+                    _("Details"),
+                ]
+            header += [_csv_quantity_header(q) for q in quantities]
+            writer.writerow(header)
 
             for entry in entries:
                 ts = entry.get('timestamp', 0)
                 dt = datetime.fromtimestamp(ts) if ts else None
-                time_str = dt.strftime('%d.%m.%Y %H:%M:%S') if dt else ''
+                # ISO 8601 WITH the T: unambiguous in every language and
+                # sorting correctly as text. The T is not cosmetic - with a
+                # space Excel recognises a date, formats the cell to the
+                # region's pattern and then shows "##########" because the
+                # column is too narrow. The screen reader reads exactly
+                # those hash marks. With the T the value stays text and
+                # remains readable (measured with Excel 16).
+                time_str = dt.strftime('%Y-%m-%dT%H:%M:%S') if dt else ''
+                action = entry.get('action', '')
+                details = entry.get('details', '')
 
                 sensor = entry.get('sensor_data') or {}
 
                 # Free-text columns are defused (see _csv_safe); the numeric
                 # sensor columns cannot carry a formula and stay untouched so
                 # they remain usable as numbers in the spreadsheet.
-                writer.writerow([
+                row = [
                     time_str,
                     self._csv_safe(entry.get('device_name', '')),
                     self._csv_safe(entry.get('platform', '')),
-                    self._csv_safe(entry.get('event_type', '')),
-                    self._csv_safe(_source_text(entry.get('source', ''))),
-                    self._csv_safe(entry.get('action', '')),
-                    self._csv_safe(entry.get('details', '')),
-                    sensor.get('temperature', ''),
-                    sensor.get('humidity', ''),
-                    sensor.get('co2', ''),
-                    sensor.get('pressure', ''),
-                ])
+                ]
+                if has_actions and has_sensors:
+                    row.append(self._csv_safe(entry.get('event_type', '')))
+                if has_actions:
+                    row += [
+                        self._csv_safe(_source_text(entry.get('source', ''))),
+                        # Same text as in the dialog - this also repairs
+                        # details that older versions stored translated.
+                        self._csv_safe(_format_action_text(action)),
+                        self._csv_safe(action),
+                        self._csv_safe('' if _detail_is_redundant(action)
+                                       else _detail_text(action, details)),
+                    ]
+                row += [_csv_number(sensor.get(q, ''), decimal_point)
+                        for q in quantities]
+                writer.writerow(row)
 
             if filepath:
                 f.close()
@@ -834,10 +970,10 @@ class DeviceHistory:
                 return output.getvalue()
 
         except Exception as e:
-            log.error(f"CSV-Export fehlgeschlagen: {e}")
+            log.error(f"CSV export failed: {e}")
             raise
         finally:
-            # Nur echte Dateien schließen (StringIO wird vom Aufrufer gelesen).
+            # Only close real files (StringIO is read by the caller).
             if filepath and f is not None:
                 try:
                     f.close()
@@ -845,7 +981,7 @@ class DeviceHistory:
                     pass
 
     # ------------------------------------------------------------------
-    # Darstellung
+    # Display
     # ------------------------------------------------------------------
     def format_entry_for_display(self, entry):
         """Formats an entry for screen reader display.
@@ -859,8 +995,8 @@ class DeviceHistory:
 
         # Translators: Placeholder for an unknown time/device name in the
         # history.
-        time_abs = dt.strftime('%d.%m.%Y %H:%M') if dt else _('Unbekannt')
-        device_name = entry.get('device_name', _('Unbekannt'))
+        time_abs = dt.strftime('%d.%m.%Y %H:%M') if dt else _("Unknown")
+        device_name = entry.get('device_name', _("Unknown"))
         platform = entry.get('platform', '')
         event_type = entry.get('event_type', '')
 
@@ -877,16 +1013,15 @@ class DeviceHistory:
             return f"{time_abs} ({time_rel}) – {device_name} [{platform}]: {sensor_text}"
 
         # Translators: Fallback for a history entry of unknown type.
-        return _("{time} – {name}: Unbekanntes Ereignis").format(
+        return _("{time} – {name}: unknown event").format(
             time=time_abs, name=device_name)
 
 
 def _time_weighted_average(points):
-    """Zeitgewichteter Mittelwert über (Zeitstempel, Wert)-Punkte.
+    """Time-weighted average over (timestamp, value) points.
 
-    Trapezregel über die Stützpunkte, geteilt durch die Gesamtdauer. Bei
-    einem einzelnen Punkt oder einer Gesamtdauer von 0 wird dieser Wert
-    zurückgegeben.
+    Trapezoid rule over the data points divided by the total duration. With a
+    single point or a total duration of 0 that value is returned.
     """
     if not points:
         return None
@@ -906,58 +1041,61 @@ def _time_weighted_average(points):
 
 
 def relative_time(ts):
-    """Formatiert einen Zeitstempel als ``vor 5 Minuten`` o.ä."""
+    """Formats a timestamp as ``5 minutes ago`` or similar."""
     if not ts:
         # Translators: Placeholder for an unknown time in the history.
-        return _('Unbekannt')
+        return _("Unknown")
     diff = time.time() - ts
     if diff < 60:
         # Translators: Relative time in the history (less than 1 minute ago).
-        return _("gerade eben")
+        return _("just now")
     if diff < 3600:
         mins = int(diff / 60)
         # Translators: Relative time in the history (minutes).
-        return (_("vor {count} Minute") if mins == 1
-                else _("vor {count} Minuten")).format(count=mins)
+        return (_("{count} minute ago") if mins == 1
+                else _("{count} minutes ago")).format(count=mins)
     if diff < 86400:
         hours = int(diff / 3600)
         # Translators: Relative time in the history (hours).
-        return (_("vor {count} Stunde") if hours == 1
-                else _("vor {count} Stunden")).format(count=hours)
+        return (_("{count} hour ago") if hours == 1
+                else _("{count} hours ago")).format(count=hours)
     days = int(diff / 86400)
     # Translators: Relative time in the history (days).
-    return (_("vor {count} Tag") if days == 1
-            else _("vor {count} Tagen")).format(count=days)
+    return (_("{count} day ago") if days == 1
+            else _("{count} days ago")).format(count=days)
 
 
 def format_sensor_values(sensor):
-    """Formatiert ein sensor_data-dict als lesbare Aufzählung."""
+    """Formats a sensor_data dict as a readable enumeration."""
     parts = []
     for quantity in MEASUREMENT_ORDER:
         if quantity in sensor:
             parts.append(format_measurement(quantity, sensor[quantity]))
-    # Unbekannte Größen (z.B. 'power' aus alten Dateien) hinten anhängen.
+    # Append unknown quantities (e.g. 'power' from old files) at the end.
     for quantity, value in sensor.items():
         if quantity not in MEASUREMENT_ORDER:
             parts.append(f"{value} {MEASUREMENT_UNITS.get(quantity, '')}".strip())
     # Translators: History entry without sensor values.
-    return ", ".join(p for p in parts if p) if parts else _("Keine Daten")
+    return ", ".join(p for p in parts if p) if parts else _("No data")
 
 
 def _source_text(source):
-    """Anzeigetext für die Herkunft eines Ereignisses."""
+    """Display text for the origin of an event."""
     if source == SOURCE_EXTERN:
         # Translators: Origin of a history event - the device was switched
         # outside of NVDA (manufacturer app, voice assistant, button on the
         # device). Deliberately not more specific: which of these it was
         # cannot be determined from the cloud notification.
-        return _("extern")
+        return _("external")
     if source == SOURCE_SYSTEM:
         # Translators: Origin of a history event - triggered automatically.
-        return _("automatisch")
+        return _("automatic")
     if source == SOURCE_LOCAL:
-        # Translators: Origin of a history event - the user did it themselves.
-        return _("ich")
+        # Translators: Origin of a history event - the user switched the
+        # device themselves through this add-on. Addressed as "you": the
+        # speaker of the text is the add-on, so "me" would read as if the
+        # add-on had done it.
+        return _("you")
     return ""
 
 
@@ -965,46 +1103,105 @@ def _format_action_text(action, details=""):
     """Formats an action text for display"""
     # Translators: The following texts describe actions in the device history.
     action_map = {
-        'toggle_on': _('Eingeschaltet'),
-        'toggle_off': _('Ausgeschaltet'),
-        'set_temp': _('Temperatur gesetzt'),
-        'set_mode': _('Modus geändert'),
-        'back_to_schedule': _('Zurück zum Zeitplan'),
-        'diffuser_light': _('Schwach sprühen'),
-        'diffuser_strong': _('Stark sprühen'),
-        'diffuser_off': _('Sprühen aus'),
+        'toggle_on': _("Switched on"),
+        'toggle_off': _("Switched off"),
+        'set_temp': _("Temperature set"),
+        'set_mode': _("Mode changed"),
+        'back_to_schedule': _("Back to schedule"),
+        'diffuser_light': _("Light spray"),
+        'diffuser_strong': _("Strong spray"),
+        'diffuser_off': _("Spray off"),
         # Netatmo-specific actions (keys as logged in dialog_netatmo.py)
-        'therm_mode': _('Modus geändert'),
-        'switch_schedule': _('Heizprogramm gewechselt'),
+        'therm_mode': _("Mode changed"),
+        'switch_schedule': _("Heating schedule switched"),
         # Meross light actions (keys as logged in
         # dialog_meross.py/device_dialog.py)
-        'light_luminance': _('Helligkeit geändert'),
-        'light_temperature': _('Lichtfarbe geändert'),
-        'light_rgb': _('Farbe geändert'),
+        'light_luminance': _("Brightness changed"),
+        'light_temperature': _("Light color changed"),
+        'light_rgb': _("Color changed"),
         # Cozytouch-specific actions (keys as logged in dialog_cozytouch.py)
-        'set_target_temp': _('Zieltemperatur gesetzt'),
-        'boost_on': _('Boost eingeschaltet'),
-        'boost_off': _('Boost ausgeschaltet'),
-        'away_on': _('Abwesenheit eingeschaltet'),
-        'away_off': _('Abwesenheit ausgeschaltet'),
+        'set_target_temp': _("Target temperature set"),
+        'boost_on': _("Boost switched on"),
+        'boost_off': _("Boost switched off"),
+        'away_on': _("Away mode switched on"),
+        'away_off': _("Away mode switched off"),
         # VeSync-specific actions
-        'set_fan_speed': _('Lüftergeschwindigkeit geändert'),
-        'set_auto_preference': _('Auto-Profil geändert'),
-        'set_nightlight': _('Nachtlicht geändert'),
-        'oscillation_on': _('Oszillation eingeschaltet'),
-        'oscillation_off': _('Oszillation ausgeschaltet'),
-        'mute_on': _('Stumm eingeschaltet'),
-        'mute_off': _('Stumm ausgeschaltet'),
-        'display_on': _('Display eingeschaltet'),
-        'display_off': _('Display ausgeschaltet'),
-        'child_lock_on': _('Kindersicherung eingeschaltet'),
-        'child_lock_off': _('Kindersicherung ausgeschaltet'),
-        'reset_filter': _('Filter zurückgesetzt'),
+        'set_fan_speed': _("Fan speed changed"),
+        'set_auto_preference': _("Auto profile changed"),
+        'set_nightlight': _("Night light changed"),
+        'oscillation_on': _("Oscillation switched on"),
+        'oscillation_off': _("Oscillation switched off"),
+        'mute_on': _("Mute switched on"),
+        'mute_off': _("Mute switched off"),
+        'display_on': _("Display switched on"),
+        'display_off': _("Display switched off"),
+        'child_lock_on': _("Child lock switched on"),
+        'child_lock_off': _("Child lock switched off"),
+        'reset_filter': _("Filter reset"),
+        # Water sensors (MS400/MS405)
+        'water_detected': _("Water alarm"),
+        'water_cleared': _("No water detected any more"),
     }
     text = action_map.get(action, action)
-    if details:
-        text = f"{text}: {details}"
+    if details and not _detail_is_redundant(action):
+        text = f"{text}: {_detail_text(action, details)}"
     return text
+
+
+def _detail_is_redundant(action):
+    """True when the action already says everything the detail would.
+
+    "Switched off: Off" carries nothing beyond "Switched off" - and the
+    detail was the one part stored as READY-TRANSLATED text, so old entries
+    kept the language they were written in ("Switched off: Aus" in an English
+    interface). Dropping it fixes the wording and the language leak at once,
+    for entries already on disk as well.
+    """
+    return action.endswith(('_on', '_off'))
+
+
+def _detail_text(action, details):
+    """Renders a detail in the CURRENT language where that is possible.
+
+    Details are stored language-neutrally now: a fan level as the bare
+    number, a mode as its key. Older entries hold ready-translated text -
+    that is passed through unchanged, because nothing can recover its
+    meaning after the fact.
+    """
+    from .constants import (
+        VESYNC_PURIFIER_MODE_NAMES, VESYNC_FAN_MODE_NAMES,
+        VESYNC_NIGHTLIGHT_MODE_NAMES, VESYNC_AUTO_PREFERENCE_NAMES,
+        NETATMO_MODE_NAMES, DIFFUSER_MODE_NAMES, MEROSS_WHITE_PRESET_NAMES,
+        MEROSS_WHITE_PRESET_LEGACY,
+    )
+    from .cozytouch_devices import COZYTOUCH_HEATING_MODE_NAMES
+    value = str(details)
+    if action == 'set_fan_speed':
+        # Bare number since the changeover; older entries hold the rendered
+        # label ("Level 1" / "Stufe 1") - the digit in it is enough to show
+        # them in the current language too.
+        digits = ''.join(c for c in value if c.isdigit())
+        if digits:
+            # Translators: Fan level in the history. {level} = level number.
+            return _("Level {level}").format(level=digits)
+    if action == 'set_boost_duration':
+        digits = ''.join(c for c in value if c.isdigit())
+        if digits:
+            # Translators: Boost duration in the history. {minutes} = minutes.
+            return _("{minutes} minutes").format(minutes=digits)
+    if action in ('set_mode', 'therm_mode', 'set_nightlight',
+                  'set_auto_preference', 'light_temperature'):
+        for table in (VESYNC_PURIFIER_MODE_NAMES, VESYNC_FAN_MODE_NAMES,
+                      VESYNC_NIGHTLIGHT_MODE_NAMES, VESYNC_AUTO_PREFERENCE_NAMES,
+                      NETATMO_MODE_NAMES, DIFFUSER_MODE_NAMES,
+                      COZYTOUCH_HEATING_MODE_NAMES, MEROSS_WHITE_PRESET_NAMES):
+            if value in table:
+                return table[value]
+        # White tones stored under their German key up to 26.7.3.
+        legacy = MEROSS_WHITE_PRESET_LEGACY.get(value)
+        if legacy in MEROSS_WHITE_PRESET_NAMES:
+            return MEROSS_WHITE_PRESET_NAMES[legacy]
+    return value
 
 
 # Singleton instance

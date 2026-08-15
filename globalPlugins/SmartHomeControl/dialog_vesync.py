@@ -10,10 +10,10 @@ import addonHandler
 try:
     addonHandler.initTranslation()
 except Exception as e:
-    _nvda_log.debug(f"initTranslation fehlgeschlagen: {e}")
-if "_" not in globals():  # Fallback, falls initTranslation() scheitert
-    # Ohne diesen Fallback bleibt `_` undefiniert und der erste `_()`-Aufruf
-    # wirft einen NameError mitten im Dialogaufbau statt beim Import.
+    _nvda_log.debug(f"initTranslation failed: {e}")
+if "_" not in globals():  # fallback if initTranslation() fails
+    # Without this fallback `_` stays undefined and the first `_()` call
+    # raises a NameError mid-dialog instead of at import time.
     def _(s):
         return s
 
@@ -40,21 +40,19 @@ class _VeSyncDialogMixin:
             new_state = not device.is_on
             device.toggle_switch(new_state)
             _beep(BEEP_ON if new_state else BEEP_OFF)
-            status = _("ein") if new_state else _("aus")
+            status = _("on") if new_state else _("off")
             ui.message(_("{name}: {status}").format(name=device.name, status=status))
             self.plugin._record_local_toggle(device.uuid, new_state)
             self.plugin._record_local_vesync_action(device.uuid)
             get_history().log_action(
-                device, 'toggle_on' if new_state else 'toggle_off',
-                # Translators: History detail: device switched on/off.
-                _('Ein') if new_state else _('Aus')
+                device, 'toggle_on' if new_state else 'toggle_off', ""
             )
             self._rebuild_vesync_device_children(item, device)
         except Exception as e:
             _beep(BEEP_ERROR)
-            log.error(f"VeSync Toggle-Fehler: {e}")
+            log.error(f"VeSync toggle error: {e}")
             # Translators: Generic VeSync error message with detail text.
-            ui.message(_("VeSync-Fehler: {error}").format(error=str(e)[:80]))
+            ui.message(_("VeSync error: {error}").format(error=str(e)[:80]))
 
     def _vesync_choose_from_list(self, device, title, prompt,
                                   values, label_map, current_value):
@@ -63,7 +61,7 @@ class _VeSyncDialogMixin:
         """
         if not values:
             # Translators: Message when a selection list has no options.
-            ui.message(_("Keine Auswahl verfügbar"))
+            ui.message(_("No selection available"))
             return None
         labels = [label_map.get(v, str(v)) for v in values]
         dlg = wx.SingleChoiceDialog(self, prompt, title, labels)
@@ -101,9 +99,9 @@ class _VeSyncDialogMixin:
             device,
             # Translators: Title of the mode selection dialog. {name} = device
             # name.
-            _("{name}: Modus wählen").format(name=device.name),
+            _("{name}: choose mode").format(name=device.name),
             # Translators: Prompt in the mode selection dialog.
-            _("Wählen Sie den Betriebsmodus:"),
+            _("Choose the operating mode:"),
             available_modes, label_map, device.mode,
         )
         if chosen is None:
@@ -114,15 +112,16 @@ class _VeSyncDialogMixin:
             _beep(BEEP_ACTION)
             # Translators: Confirmation after a mode change. {mode} = mode
             # name.
-            ui.message(_("{name}: Modus {mode}").format(name=device.name, mode=mode_de))
+            ui.message(_("{name}: mode {mode}").format(name=device.name, mode=mode_de))
             self.plugin._record_local_vesync_action(device.uuid)
-            get_history().log_action(device, 'set_mode', mode_de)
+            # Mode key, not its label - the display translates it.
+            get_history().log_action(device, 'set_mode', str(chosen))
             self._rebuild_vesync_device_children(item, device)
         except Exception as e:
             _beep(BEEP_ERROR)
-            log.error(f"VeSync Modus-Fehler: {e}")
+            log.error(f"VeSync mode error: {e}")
             # Translators: Generic VeSync error message with detail text.
-            ui.message(_("VeSync-Fehler: {error}").format(error=str(e)[:80]))
+            ui.message(_("VeSync error: {error}").format(error=str(e)[:80]))
 
     def _handle_vesync_fan_speed(self, device, item):
         """Lets the user choose a fan speed"""
@@ -130,7 +129,7 @@ class _VeSyncDialogMixin:
         if not levels:
             # Translators: Message when the device has no selectable fan
             # levels.
-            ui.message(_("Keine Lüftergeschwindigkeit verfügbar"))
+            ui.message(_("No fan speed available"))
             return
         # For Core 200S/300S (3 levels) append the plain text "low/medium/high"
         cls_name = type(device).__name__
@@ -138,19 +137,19 @@ class _VeSyncDialogMixin:
             label_map = {
                 # Translators: List entry of a fan level with plain-text
                 # suffix.
-                lvl: _("Stufe {level} – {label}").format(
+                lvl: _("Level {level} – {label}").format(
                     level=lvl, label=VESYNC_PURIFIER_LEVEL_LABELS_3[lvl])
                 for lvl in levels if lvl in VESYNC_PURIFIER_LEVEL_LABELS_3
             }
         else:
             # Translators: List entry of a fan level.
-            label_map = {lvl: _("Stufe {level}").format(level=lvl) for lvl in levels}
+            label_map = {lvl: _("Level {level}").format(level=lvl) for lvl in levels}
         chosen = self._vesync_choose_from_list(
             device,
             # Translators: Title of the fan level dialog. {name} = device name.
-            _("{name}: Lüftergeschwindigkeit").format(name=device.name),
+            _("{name}: fan speed").format(name=device.name),
             # Translators: Prompt in the fan level dialog.
-            _("Wählen Sie die Lüftergeschwindigkeit:"),
+            _("Choose the fan speed:"),
             levels, label_map, device.fan_level,
         )
         if chosen is None:
@@ -160,16 +159,17 @@ class _VeSyncDialogMixin:
             _beep(BEEP_ACTION)
             # Translators: Confirmation after a level change. {level} = fan
             # level.
-            ui.message(_("{name}: Stufe {level}").format(name=device.name, level=chosen))
+            ui.message(_("{name}: level {level}").format(name=device.name, level=chosen))
             self.plugin._record_local_vesync_action(device.uuid)
-            # Translators: History detail: fan level that was set.
-            get_history().log_action(device, 'set_fan_speed', _("Stufe {level}").format(level=chosen))
+            # Bare level - the display renders "Level N" in the current
+            # language.
+            get_history().log_action(device, 'set_fan_speed', str(chosen))
             self._rebuild_vesync_device_children(item, device)
         except Exception as e:
             _beep(BEEP_ERROR)
-            log.error(f"VeSync Lüfter-Fehler: {e}")
+            log.error(f"VeSync fan error: {e}")
             # Translators: Generic VeSync error message with detail text.
-            ui.message(_("VeSync-Fehler: {error}").format(error=str(e)[:80]))
+            ui.message(_("VeSync error: {error}").format(error=str(e)[:80]))
 
     def _handle_vesync_oscillation(self, device, item):
         """Toggles the oscillation of a tower fan"""
@@ -177,20 +177,18 @@ class _VeSyncDialogMixin:
             new_state = not bool(device.oscillation_on)
             device.toggle_oscillation(new_state)
             _beep(BEEP_ACTION)
-            status = _("ein") if new_state else _("aus")
+            status = _("on") if new_state else _("off")
             # Translators: Confirmation after toggling oscillation.
-            ui.message(_("{name}: Oszillation {status}").format(name=device.name, status=status))
+            ui.message(_("{name}: oscillation {status}").format(name=device.name, status=status))
             self.plugin._record_local_vesync_action(device.uuid)
             get_history().log_action(
-                device, 'oscillation_on' if new_state else 'oscillation_off',
-                # Translators: History detail: oscillation switched on/off.
-                _("Oszillation {status}").format(status=status))
+                device, 'oscillation_on' if new_state else 'oscillation_off', "")
             self._rebuild_vesync_device_children(item, device)
         except Exception as e:
             _beep(BEEP_ERROR)
-            log.error(f"VeSync Oszillations-Fehler: {e}")
+            log.error(f"VeSync oscillation error: {e}")
             # Translators: Generic VeSync error message with detail text.
-            ui.message(_("VeSync-Fehler: {error}").format(error=str(e)[:80]))
+            ui.message(_("VeSync error: {error}").format(error=str(e)[:80]))
 
     def _handle_vesync_mute(self, device, item):
         """Toggles the mute of a tower fan"""
@@ -199,18 +197,17 @@ class _VeSyncDialogMixin:
             device.toggle_mute(new_state)
             _beep(BEEP_ACTION)
             # Translators: Status after toggling mute.
-            status = _("stumm") if new_state else _("Tonsignale ein")
+            status = _("muted") if new_state else _("Sounds on")
             ui.message(_("{name}: {status}").format(name=device.name, status=status))
             self.plugin._record_local_vesync_action(device.uuid)
             get_history().log_action(
-                device, 'mute_on' if new_state else 'mute_off',
-                "Stumm ein" if new_state else "Stumm aus")
+                device, 'mute_on' if new_state else 'mute_off', "")
             self._rebuild_vesync_device_children(item, device)
         except Exception as e:
             _beep(BEEP_ERROR)
-            log.error(f"VeSync Mute-Fehler: {e}")
+            log.error(f"VeSync mute error: {e}")
             # Translators: Generic VeSync error message with detail text.
-            ui.message(_("VeSync-Fehler: {error}").format(error=str(e)[:80]))
+            ui.message(_("VeSync error: {error}").format(error=str(e)[:80]))
 
     def _handle_vesync_display(self, device, item):
         """Toggles the display of a VeSync device"""
@@ -221,20 +218,18 @@ class _VeSyncDialogMixin:
             new_state = not bool(current)
             device.toggle_display(new_state)
             _beep(BEEP_ACTION)
-            status = _("ein") if new_state else _("aus")
+            status = _("on") if new_state else _("off")
             # Translators: Confirmation after toggling the device display.
-            ui.message(_("{name}: Display {status}").format(name=device.name, status=status))
+            ui.message(_("{name}: display {status}").format(name=device.name, status=status))
             self.plugin._record_local_vesync_action(device.uuid)
             get_history().log_action(
-                device, 'display_on' if new_state else 'display_off',
-                # Translators: History detail: display switched on/off.
-                _("Display {status}").format(status=status))
+                device, 'display_on' if new_state else 'display_off', "")
             self._rebuild_vesync_device_children(item, device)
         except Exception as e:
             _beep(BEEP_ERROR)
-            log.error(f"VeSync Display-Fehler: {e}")
+            log.error(f"VeSync display error: {e}")
             # Translators: Generic VeSync error message with detail text.
-            ui.message(_("VeSync-Fehler: {error}").format(error=str(e)[:80]))
+            ui.message(_("VeSync error: {error}").format(error=str(e)[:80]))
 
     def _handle_vesync_child_lock(self, device, item):
         """Toggles the child lock of an air purifier"""
@@ -242,20 +237,18 @@ class _VeSyncDialogMixin:
             new_state = not bool(device.child_lock)
             device.toggle_child_lock(new_state)
             _beep(BEEP_ACTION)
-            status = _("ein") if new_state else _("aus")
+            status = _("on") if new_state else _("off")
             # Translators: Confirmation after toggling the child lock.
-            ui.message(_("{name}: Kindersicherung {status}").format(name=device.name, status=status))
+            ui.message(_("{name}: child lock {status}").format(name=device.name, status=status))
             self.plugin._record_local_vesync_action(device.uuid)
             get_history().log_action(
-                device, 'child_lock_on' if new_state else 'child_lock_off',
-                # Translators: History detail: child lock switched on/off.
-                _("Kindersicherung {status}").format(status=status))
+                device, 'child_lock_on' if new_state else 'child_lock_off', "")
             self._rebuild_vesync_device_children(item, device)
         except Exception as e:
             _beep(BEEP_ERROR)
-            log.error(f"VeSync Kindersicherung-Fehler: {e}")
+            log.error(f"VeSync child lock error: {e}")
             # Translators: Generic VeSync error message with detail text.
-            ui.message(_("VeSync-Fehler: {error}").format(error=str(e)[:80]))
+            ui.message(_("VeSync error: {error}").format(error=str(e)[:80]))
 
     def _handle_vesync_nightlight(self, device, item):
         """Lets the user choose the night light mode"""
@@ -264,9 +257,9 @@ class _VeSyncDialogMixin:
             device,
             # Translators: Title of the night light dialog. {name} = device
             # name.
-            _("{name}: Nachtlicht").format(name=device.name),
+            _("{name}: night light").format(name=device.name),
             # Translators: Prompt in the night light dialog.
-            _("Wählen Sie den Nachtlicht-Modus:"),
+            _("Choose the night light mode:"),
             modes, VESYNC_NIGHTLIGHT_MODE_NAMES, device.nightlight_status,
         )
         if chosen is None:
@@ -277,15 +270,15 @@ class _VeSyncDialogMixin:
             _beep(BEEP_ACTION)
             # Translators: Confirmation after a night light change. {mode} =
             # mode name.
-            ui.message(_("{name}: Nachtlicht {mode}").format(name=device.name, mode=label))
+            ui.message(_("{name}: night light {mode}").format(name=device.name, mode=label))
             self.plugin._record_local_vesync_action(device.uuid)
-            get_history().log_action(device, 'set_nightlight', label)
+            get_history().log_action(device, 'set_nightlight', str(chosen))
             self._rebuild_vesync_device_children(item, device)
         except Exception as e:
             _beep(BEEP_ERROR)
-            log.error(f"VeSync Nachtlicht-Fehler: {e}")
+            log.error(f"VeSync night light error: {e}")
             # Translators: Generic VeSync error message with detail text.
-            ui.message(_("VeSync-Fehler: {error}").format(error=str(e)[:80]))
+            ui.message(_("VeSync error: {error}").format(error=str(e)[:80]))
 
     def _handle_vesync_auto_preference(self, device, item):
         """Lets the user choose an auto profile (default/efficient/quiet)"""
@@ -294,9 +287,9 @@ class _VeSyncDialogMixin:
             device,
             # Translators: Title of the auto profile dialog. {name} = device
             # name.
-            _("{name}: Auto-Profil").format(name=device.name),
+            _("{name}: auto profile").format(name=device.name),
             # Translators: Prompt in the auto profile dialog.
-            _("Wählen Sie das Auto-Profil:"),
+            _("Choose the auto profile:"),
             prefs, VESYNC_AUTO_PREFERENCE_NAMES, device.auto_preference_type,
         )
         if chosen is None:
@@ -307,15 +300,15 @@ class _VeSyncDialogMixin:
             _beep(BEEP_ACTION)
             # Translators: Confirmation after an auto profile change. {profile}
             # = profile name.
-            ui.message(_("{name}: Auto-Profil {profile}").format(name=device.name, profile=label))
+            ui.message(_("{name}: auto profile {profile}").format(name=device.name, profile=label))
             self.plugin._record_local_vesync_action(device.uuid)
-            get_history().log_action(device, 'set_auto_preference', label)
+            get_history().log_action(device, 'set_auto_preference', str(chosen))
             self._rebuild_vesync_device_children(item, device)
         except Exception as e:
             _beep(BEEP_ERROR)
-            log.error(f"VeSync Auto-Profil-Fehler: {e}")
+            log.error(f"VeSync auto profile error: {e}")
             # Translators: Generic VeSync error message with detail text.
-            ui.message(_("VeSync-Fehler: {error}").format(error=str(e)[:80]))
+            ui.message(_("VeSync error: {error}").format(error=str(e)[:80]))
 
     def _handle_vesync_reset_filter(self, device, item):
         """Resets the filter status to 100% after confirmation.
@@ -330,17 +323,16 @@ class _VeSyncDialogMixin:
             self,
             # Translators: First safety prompt before the filter reset. {name}
             # = device name.
-            _("Filter-Lebensdauer von {name} auf 100% zurücksetzen?\n\n"
-              "Diese Aktion ist nur sinnvoll, wenn Sie den HEPA-Filter "
-              "tatsächlich gerade gegen einen neuen ausgetauscht haben. "
-              "Ein Zurücksetzen ohne Filterwechsel führt dazu, dass das "
-              "Gerät keine Filterwechsel-Erinnerung mehr anzeigt.").format(name=device.name),
+            _("Reset the filter life of {name} to 100%?\n\nThis only makes "
+              "sense if the HEPA filter has actually just been replaced with "
+              "a new one. Resetting without a filter change means the device "
+              "no longer shows a filter reminder.").format(name=device.name),
             # Translators: Title of the filter reset dialog.
-            _("Filter-Lebensdauer zurücksetzen"),
+            _("Reset filter life"),
             wx.YES_NO | wx.NO_DEFAULT | wx.ICON_QUESTION,
         )
         # Translators: Button labels of the first safety prompt.
-        confirm.SetYesNoLabels(_("&Weiter"), _("&Abbrechen"))
+        confirm.SetYesNoLabels(_("&Next"), _("&Cancel"))
         previous_suppress = getattr(self, '_suppress_live_updates', False)
         self._suppress_live_updates = True
         try:
@@ -350,29 +342,28 @@ class _VeSyncDialogMixin:
                 confirm.Destroy()
             if result != wx.ID_YES:
                 # Translators: Message when the user cancels an action.
-                ui.message(_("Abgebrochen"))
+                ui.message(_("Cancelled"))
                 return
             # Step 2: final safety prompt
             final_confirm = wx.MessageDialog(
                 self,
                 # Translators: Second safety prompt before the filter reset.
                 # {name} = device name.
-                _("Sind Sie wirklich sicher, dass Sie die Filter-Lebensdauer "
-                  "von {name} jetzt auf 100% zurücksetzen möchten?\n\n"
-                  "Diese Aktion kann nicht rückgängig gemacht werden.").format(name=device.name),
+                _("Really reset the filter life of {name} to 100%?\n\nThis "
+                  "cannot be undone.").format(name=device.name),
                 # Translators: Title of the second safety prompt.
-                _("Sicherheitsabfrage"),
+                _("Confirmation"),
                 wx.YES_NO | wx.NO_DEFAULT | wx.ICON_WARNING,
             )
             # Translators: Button labels of the second safety prompt.
-            final_confirm.SetYesNoLabels(_("&Ja, zurücksetzen"), _("&Abbrechen"))
+            final_confirm.SetYesNoLabels(_("&Yes, reset"), _("&Cancel"))
             try:
                 result2 = final_confirm.ShowModal()
             finally:
                 final_confirm.Destroy()
             if result2 != wx.ID_YES:
                 # Translators: Message when the user cancels an action.
-                ui.message(_("Abgebrochen"))
+                ui.message(_("Cancelled"))
                 return
         finally:
             self._suppress_live_updates = previous_suppress
@@ -380,16 +371,16 @@ class _VeSyncDialogMixin:
             device.reset_filter()
             _beep(BEEP_ACTION)
             # Translators: Confirmation after a successful filter reset.
-            ui.message(_("{name}: Filter-Lebensdauer zurückgesetzt").format(name=device.name))
+            ui.message(_("{name}: filter life reset").format(name=device.name))
             self.plugin._record_local_vesync_action(device.uuid)
             # Translators: History detail: filter life reset.
-            get_history().log_action(device, 'reset_filter', _('Filter zurückgesetzt'))
+            get_history().log_action(device, 'reset_filter', "")
             self._rebuild_vesync_device_children(item, device)
         except Exception as e:
             _beep(BEEP_ERROR)
-            log.error(f"VeSync Filter-Reset-Fehler: {e}")
+            log.error(f"VeSync filter reset error: {e}")
             # Translators: Generic VeSync error message with detail text.
-            ui.message(_("VeSync-Fehler: {error}").format(error=str(e)[:80]))
+            ui.message(_("VeSync error: {error}").format(error=str(e)[:80]))
 
     def _rebuild_vesync_device_children(self, action_item, device):
         """Rebuilds the child nodes of a VeSync device after an action.
@@ -418,7 +409,7 @@ class _VeSyncDialogMixin:
             # preserving rebuild.
             self._live_update_vesync_children(device_node, device)
         except Exception as e:
-            log.debug(f"VeSync Baum-Update fehlgeschlagen: {e}")
+            log.debug(f"VeSync tree update failed: {e}")
 
     def _rebuild_vesync_children_preserving_focus(self, device_item, device):
         """Rebuilds the children of a VeSync device without losing focus.
@@ -497,12 +488,12 @@ class _VeSyncDialogMixin:
         if hasattr(device, 'is_offline') and device.is_offline:
             # Translators: Tree label of a device without connection.
             return _("{name} ({type}) - offline").format(name=device.name, type=type_display)
-        on_state = _("ein") if device.is_on else _("aus")
+        on_state = _("on") if device.is_on else _("off")
         label = f"{device.name} ({type_display}) - {on_state}"
         if self._vesync_filter_is_low(device):
             # Translators: Filter warning in the device label. {percent} =
             # remaining life.
-            label += _(" - Achtung: Filter wechseln {percent}%").format(percent=device.filter_life)
+            label += _(" - Warning: replace filter {percent}%").format(percent=device.filter_life)
         return label
 
     def _compute_vesync_items(self, device, is_favorite_view=False):
@@ -522,7 +513,7 @@ class _VeSyncDialogMixin:
 
         if hasattr(device, 'is_offline') and device.is_offline:
             # Translators: Status entry in the device tree.
-            items.append({'text': _("Status: Offline"), 'kind': 'info', 'action': None})
+            items.append({'text': _("Status: offline"), 'kind': 'info', 'action': None})
             items.append(self._compute_vesync_favorite_item(device, is_favorite_view))
             return items
 
@@ -536,7 +527,7 @@ class _VeSyncDialogMixin:
             items.append({
                 # Translators: Filter warning as the first tree entry.
                 # {percent} = remaining life.
-                'text': _("Achtung: Filter wechseln, Restlebensdauer {percent}%").format(
+                'text': _("Warning: replace filter, remaining life {percent}%").format(
                     percent=device.filter_life),
                 'kind': 'info', 'action': None,
             })
@@ -544,12 +535,12 @@ class _VeSyncDialogMixin:
         # ---- 1. Status info ----
         items.append({
             # Translators: Operating state in the device tree.
-            'text': _("Status: Ein") if device.is_on else _("Status: Aus"),
+            'text': _("Status: on") if device.is_on else _("Status: off"),
             'kind': 'info', 'action': None,
         })
 
         # Translators: Placeholder for an unknown mode.
-        unknown_mode = _("unbekannt")
+        unknown_mode = _("unknown")
         if cls_name == 'VeSyncPurifier':
             mode_label = VESYNC_PURIFIER_MODE_NAMES.get(device.mode, device.mode or unknown_mode)
         else:
@@ -560,7 +551,7 @@ class _VeSyncDialogMixin:
             if device.supports_air_quality and device.air_quality is not None:
                 aq_text = VESYNC_AIR_QUALITY_NAMES.get(device.air_quality, str(device.air_quality))
                 # Translators: Air quality rating in the device tree.
-                items.append({'text': _("Luftqualität: {value}").format(value=aq_text), 'kind': 'info', 'action': None})
+                items.append({'text': _("Air quality: {value}").format(value=aq_text), 'kind': 'info', 'action': None})
             if device.air_quality_value is not None:
                 items.append({'text': f"PM2.5: {device.air_quality_value} µg/m³", 'kind': 'info', 'action': None})
             if device.pm1 is not None:
@@ -569,21 +560,21 @@ class _VeSyncDialogMixin:
                 items.append({'text': f"PM10: {device.pm10} µg/m³", 'kind': 'info', 'action': None})
             if device.aq_percent is not None:
                 # Translators: Air quality in percent in the device tree.
-                items.append({'text': _("Luftqualität: {percent}%").format(percent=device.aq_percent), 'kind': 'info', 'action': None})
+                items.append({'text': _("Air quality: {percent}%").format(percent=device.aq_percent), 'kind': 'info', 'action': None})
             if device.voc is not None:
                 items.append({'text': f"VOC: {device.voc}", 'kind': 'info', 'action': None})
             if device.co2 is not None:
                 items.append({'text': f"CO₂: {device.co2} ppm", 'kind': 'info', 'action': None})
             if device.filter_life is not None:
                 # Translators: Remaining filter life in the device tree.
-                items.append({'text': _("Filter-Lebensdauer: {percent}%").format(percent=device.filter_life), 'kind': 'info', 'action': None})
+                items.append({'text': _("Filter life: {percent}%").format(percent=device.filter_life), 'kind': 'info', 'action': None})
 
         if cls_name == 'VeSyncTowerFan':
             if device.temperature is not None:
                 try:
                     items.append({
                         # Translators: Measured temperature in the device tree.
-                        'text': _("Temperatur: {temp}°C").format(temp=f"{float(device.temperature):.1f}"),
+                        'text': _("Temperature: {temp}°C").format(temp=f"{float(device.temperature):.1f}"),
                         'kind': 'info', 'action': None,
                     })
                 except (TypeError, ValueError):
@@ -591,7 +582,9 @@ class _VeSyncDialogMixin:
 
         # ---- 2. Actions ----
         # Translators: Action entry for switching on/off. {name} = device name.
-        toggle_text = (_("{name} ausschalten") if device.is_on else _("{name} einschalten")).format(name=device.name)
+        toggle_text = (_("Turn {name} off") if device.is_on else _("Turn "
+                                                                      "{name} "
+                                                                      "on")).format(name=device.name)
         items.append({'text': toggle_text, 'kind': 'action', 'action': 'vesync_toggle'})
 
         if device.is_on:
@@ -600,7 +593,7 @@ class _VeSyncDialogMixin:
                 items.append({
                     # Translators: Combined info+action label in the device
                     # tree.
-                    'text': _("Modus: {mode} - Enter zum Ändern").format(mode=mode_label),
+                    'text': _("Mode: {mode} - press Enter to change").format(mode=mode_label),
                     'kind': 'action', 'action': 'vesync_mode',
                 })
 
@@ -610,7 +603,8 @@ class _VeSyncDialogMixin:
                     items.append({
                         # Translators: Note that the fan level is currently
                         # controlled automatically.
-                        'text': _("Lüftergeschwindigkeit: automatisch geregelt - Enter zum Manuell-Setzen"),
+                        'text': _("Fan speed: automatically controlled - "
+                                  "press Enter to set manually"),
                         'kind': 'action', 'action': 'vesync_fan_speed',
                     })
                 else:
@@ -621,7 +615,7 @@ class _VeSyncDialogMixin:
                     items.append({
                         # Translators: Combined info+action label in the device
                         # tree.
-                        'text': _("Lüftergeschwindigkeit: {level} - Enter zum Ändern").format(level=level_label),
+                        'text': _("Fan speed: {level} - press Enter to change").format(level=level_label),
                         'kind': 'action', 'action': 'vesync_fan_speed',
                     })
 
@@ -634,19 +628,19 @@ class _VeSyncDialogMixin:
                 items.append({
                     # Translators: Combined info+action label in the device
                     # tree.
-                    'text': _("Auto-Profil: {profile} - Enter zum Ändern").format(profile=ap_label),
+                    'text': _("Auto profile: {profile} - press Enter to change").format(profile=ap_label),
                     'kind': 'action', 'action': 'vesync_auto_preference',
                 })
 
             if cls_name == 'VeSyncPurifier' and device.supports_nightlight \
                     and device.nightlight_modes:
                 nl_label = VESYNC_NIGHTLIGHT_MODE_NAMES.get(
-                    device.nightlight_status, device.nightlight_status or _("aus")
+                    device.nightlight_status, device.nightlight_status or _("off")
                 )
                 items.append({
                     # Translators: Combined info+action label in the device
                     # tree.
-                    'text': _("Nachtlicht: {mode} - Enter zum Ändern").format(mode=nl_label),
+                    'text': _("Night light: {mode} - press Enter to change").format(mode=nl_label),
                     'kind': 'action', 'action': 'vesync_nightlight',
                 })
 
@@ -654,8 +648,8 @@ class _VeSyncDialogMixin:
                 items.append({
                     # Translators: Combined info+action label in the device
                     # tree.
-                    'text': (_("Oszillation: ein - Enter zum Ausschalten") if device.oscillation_on
-                             else _("Oszillation: aus - Enter zum Einschalten")),
+                    'text': (_("Oscillation: on - press Enter to turn off") if device.oscillation_on
+                             else _("Oscillation: off - press Enter to turn on")),
                     'kind': 'action', 'action': 'vesync_oscillation',
                 })
 
@@ -663,8 +657,8 @@ class _VeSyncDialogMixin:
                 items.append({
                     # Translators: Combined info+action label in the device
                     # tree.
-                    'text': (_("Stummschaltung: ein - Enter zum Ausschalten") if device.mute_on
-                             else _("Stummschaltung: aus - Enter zum Einschalten")),
+                    'text': (_("Mute: on - press Enter to turn off") if device.mute_on
+                             else _("Mute: off - press Enter to turn on")),
                     'kind': 'action', 'action': 'vesync_mute',
                 })
 
@@ -673,8 +667,8 @@ class _VeSyncDialogMixin:
                 items.append({
                     # Translators: Combined info+action label in the device
                     # tree.
-                    'text': (_("Display: ein - Enter zum Ausschalten") if current_disp
-                             else _("Display: aus - Enter zum Einschalten")),
+                    'text': (_("Display: on - press Enter to turn off") if current_disp
+                             else _("Display: off - press Enter to turn on")),
                     'kind': 'action', 'action': 'vesync_display',
                 })
 
@@ -683,15 +677,15 @@ class _VeSyncDialogMixin:
                 items.append({
                     # Translators: Combined info+action label in the device
                     # tree.
-                    'text': (_("Kindersicherung: ein - Enter zum Ausschalten") if device.child_lock
-                             else _("Kindersicherung: aus - Enter zum Einschalten")),
+                    'text': (_("Child lock: on - press Enter to turn off") if device.child_lock
+                             else _("Child lock: off - press Enter to turn on")),
                     'kind': 'action', 'action': 'vesync_child_lock',
                 })
 
         if cls_name == 'VeSyncPurifier' and device.supports_reset_filter:
             items.append({
                 # Translators: Action entry for the filter reset.
-                'text': _("Filter-Lebensdauer auf 100% zurücksetzen - Enter zum Ausführen"),
+                'text': _("Reset filter life to 100% - press Enter to execute"),
                 'kind': 'action', 'action': 'vesync_reset_filter',
             })
 
@@ -705,12 +699,12 @@ class _VeSyncDialogMixin:
         if is_favorite_view or is_fav:
             return {
                 # Translators: Action entry in the device tree.
-                'text': _("Aus Favoriten entfernen - Enter"),
+                'text': _("Remove from favorites - Enter"),
                 'kind': 'action', 'action': 'favorite_remove',
             }
         return {
             # Translators: Action entry in the device tree.
-            'text': _("Zu Favoriten hinzufügen - Enter"),
+            'text': _("Add to favorites - Enter"),
             'kind': 'action', 'action': 'favorite_add',
         }
 
@@ -879,22 +873,22 @@ class _VeSyncDialogMixin:
                     if dev.uuid not in existing_uuids:
                         plugin.devices.append(dev)
                         added += 1
-                log.info(f"VeSync nachträglich initialisiert: {added} neue Geräte")
+                log.info(f"VeSync initialised late: {added} new devices")
 
                 # Update the dialog on the UI thread
                 wx.CallAfter(self._refresh_after_vesync_init, len(devices))
             except Exception as e:
-                log.error(f"VeSync nachträgliche Initialisierung fehlgeschlagen: {e}")
+                log.error(f"Late VeSync initialisation failed: {e}")
                 wx.CallAfter(
                     ui.message,
                     # Translators: Error message for the deferred VeSync login.
-                    _("VeSync-Login fehlgeschlagen: {error}").format(error=str(e)[:80])
+                    _("VeSync login failed: {error}").format(error=str(e)[:80])
                 )
 
         threading.Thread(target=_login_and_refresh, daemon=True).start()
         # Translators: Note that the VeSync connection is being established in
         # the background.
-        ui.message(_("VeSync wird verbunden..."))
+        ui.message(_("Connecting to VeSync..."))
 
     def _refresh_after_vesync_init(self, count):
         """Updates the tree after VeSync was connected afterwards."""
@@ -905,7 +899,7 @@ class _VeSyncDialogMixin:
             self._refresh_favorites_tree()
             # Translators: Confirmation after loading the VeSync devices
             # afterwards.
-            ui.message(_("VeSync: {count} Gerät(e) geladen").format(count=count))
+            ui.message(_("VeSync: {count} device(s) loaded").format(count=count))
         except Exception as e:
-            log.debug(f"Refresh nach VeSync-Init fehlgeschlagen: {e}")
+            log.debug(f"Refresh after the VeSync init failed: {e}")
 

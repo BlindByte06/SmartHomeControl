@@ -24,17 +24,17 @@ if "_" not in globals():  # fallback outside of NVDA
 # ============================================================
 NETATMO_MODE_NAMES = {
     # Translators: Netatmo heating mode (follows the weekly schedule).
-    'schedule': _('Zeitplan'),
+    'schedule': _("Schedule"),
     # Translators: Netatmo heating mode (manually set temperature).
-    'manual': _('Manuell'),
+    'manual': _("Manual"),
     # Translators: Netatmo heating mode (away, reduced temperature).
-    'away': _('Abwesend'),
+    'away': _("Away"),
     # Translators: Netatmo heating mode (frost guard).
-    'hg': _('Frostschutz'),
+    'hg': _("Frost guard"),
     # Translators: Netatmo heating mode (maximum heating power).
-    'max': _('Maximum'),
+    'max': _("Maximum"),
     # Translators: Netatmo heating mode (home).
-    'home': _('Zuhause'),
+    'home': _("Home"),
 }
 
 # ============================================================
@@ -43,11 +43,30 @@ NETATMO_MODE_NAMES = {
 # ============================================================
 DIFFUSER_MODE_NAMES = {
     # Translators: Spray mode of a Meross diffuser (light).
-    'diffuser_light': _('Schwaches Sprühen'),
+    'diffuser_light': _("Light spray"),
     # Translators: Spray mode of a Meross diffuser (strong).
-    'diffuser_strong': _('Starkes Sprühen'),
+    'diffuser_strong': _("Strong spray"),
     # Translators: Spray mode of a Meross diffuser (off).
-    'diffuser_off': _('Aus'),
+    'diffuser_off': _("Off"),
+}
+
+# ============================================================
+# Meross white presets (keys are the API values of set_light_white)
+# Used in: device_dialog.py, history.py
+# ============================================================
+MEROSS_WHITE_PRESET_NAMES = {
+    # Translators: Short names of the light colors (announcement/history).
+    'warm': _("Warm white"),
+    'daylight': _("Daylight"),
+    'cool': _("Cool white"),
+}
+
+# The keys above are also written to the history. Versions up to 26.7.3 used
+# German ones there - this table keeps those entries readable instead of
+# leaving a raw "tageslicht" in the list.
+MEROSS_WHITE_PRESET_LEGACY = {
+    'tageslicht': 'daylight',
+    'kalt': 'cool',
 }
 
 # ============================================================
@@ -56,58 +75,58 @@ DIFFUSER_MODE_NAMES = {
 # ============================================================
 VESYNC_PURIFIER_MODE_NAMES = {
     # Translators: Operating mode of a VeSync air purifier.
-    'auto': _('Auto'),
+    'auto': _("Auto"),
     # Translators: Operating mode of a VeSync air purifier.
-    'manual': _('Manuell'),
+    'manual': _("Manual"),
     # Translators: Operating mode of a VeSync air purifier.
-    'sleep': _('Schlafmodus'),
+    'sleep': _("Sleep mode"),
     # Translators: Operating mode of a VeSync air purifier.
-    'turbo': _('Turbo'),
+    'turbo': _("Turbo"),
     # Translators: Operating mode of a VeSync air purifier (for pets).
-    'pet': _('Haustier-Modus'),
+    'pet': _("Pet mode"),
 }
 
 VESYNC_FAN_MODE_NAMES = {
     # Translators: Operating mode of a VeSync fan.
-    'normal': _('Normal'),
+    'normal': _("Normal"),
     # Translators: Operating mode of a VeSync fan.
-    'turbo': _('Turbo'),
+    'turbo': _("Turbo"),
     # Translators: Operating mode of a VeSync fan.
-    'auto': _('Auto'),
+    'auto': _("Auto"),
     # Translators: Operating mode of a VeSync fan (advanced sleep mode).
-    'advancedSleep': _('Schlafmodus'),
+    'advancedSleep': _("Sleep mode"),
 }
 
 # Air quality levels (1=excellent ... 4=poor)
 VESYNC_AIR_QUALITY_NAMES = {
     # Translators: Air quality level 1 (best) of a VeSync air purifier.
-    1: _('ausgezeichnet'),
+    1: _("excellent"),
     # Translators: Air quality level 2 of a VeSync air purifier.
-    2: _('gut'),
+    2: _("good"),
     # Translators: Air quality level 3 of a VeSync air purifier.
-    3: _('mäßig'),
+    3: _("moderate"),
     # Translators: Air quality level 4 (worst) of a VeSync air purifier.
-    4: _('schlecht'),
+    4: _("poor"),
 }
 
 # Night light modes (Core 200S)
 VESYNC_NIGHTLIGHT_MODE_NAMES = {
     # Translators: Night light state (on).
-    'on': _('Ein'),
+    'on': _("On"),
     # Translators: Night light state (off).
-    'off': _('Aus'),
+    'off': _("Off"),
     # Translators: Night light state (dimmed).
-    'dim': _('Gedimmt'),
+    'dim': _("Dimmed"),
 }
 
 # Auto profile (Core 300S/400S/500S/600S)
 VESYNC_AUTO_PREFERENCE_NAMES = {
     # Translators: Auto mode profile of a VeSync air purifier.
-    'default': _('Standard'),
+    'default': _("Default"),
     # Translators: Auto mode profile of a VeSync air purifier.
-    'efficient': _('Effizient'),
+    'efficient': _("Efficient"),
     # Translators: Auto mode profile of a VeSync air purifier.
-    'quiet': _('Leise'),
+    'quiet': _("Quiet"),
 }
 
 # Default warning threshold (%) for the filter life of a VeSync air purifier.
@@ -124,11 +143,11 @@ VESYNC_FILTER_WARN_THRESHOLD = 15
 # vesync_purifier_level_label() in the dialog.
 VESYNC_PURIFIER_LEVEL_LABELS_3 = {
     # Translators: Fan level label (lowest level).
-    1: _('Niedrig'),
+    1: _("Low"),
     # Translators: Fan level label (middle level).
-    2: _('Mittel'),
+    2: _("Medium"),
     # Translators: Fan level label (highest level).
-    3: _('Hoch'),
+    3: _("High"),
 }
 
 # ============================================================
@@ -140,7 +159,7 @@ CONFSPEC = {
     "password": "string(default='')",
     "autoLogin": "boolean(default=true)",
     "announceExternalChanges": "boolean(default=true)",
-    # Welcher Tab beim Öffnen des Geräte-Menüs aktiv ist: 'devices' oder
+    # Which tab is active when the device menu opens: 'devices' or
     # 'favorites'.
     "startTab": "string(default='devices')",
     "useMeross": "boolean(default=false)",
@@ -175,6 +194,7 @@ CONFSPEC = {
     # Fine-grained notification settings per platform / event. Maintained by
     # the "Notifications" tab in the settings.
     "notifyMerossToggle": "boolean(default=true)",
+    "notifyMerossWater": "boolean(default=true)",
     "notifyNetatmoMode": "boolean(default=true)",
     "notifyNetatmoSetpoint": "boolean(default=true)",
     "notifyNetatmoBoiler": "boolean(default=true)",
@@ -191,7 +211,13 @@ CONFSPEC = {
 # Background refresh configuration
 # ============================================================
 BACKGROUND_REFRESH_INTERVAL = 30   # seconds between automatic updates (backoff base)
-CACHE_VALID_DURATION = 45          # seconds for which the cache counts as "fresh"
+# How long the device cache counts as "fresh" (dialog and status announcement
+# then use it directly instead of polling themselves). This MUST stay above the
+# largest background poll interval plus the duration of that poll - otherwise
+# the cache is stale again just before every poll and the dialog runs a full
+# refresh of its own on top of the scheduler's. With bg=60 s (VeSync) and a
+# poll taking up to ~10 s, 90 s leaves the needed headroom.
+CACHE_VALID_DURATION = 90          # seconds for which the cache counts as "fresh"
 BOILER_COOLDOWN = 300              # 5 minutes cooldown for pure boiler changes
 
 # ============================================================
@@ -215,15 +241,13 @@ BOILER_COOLDOWN = 300              # 5 minutes cooldown for pure boiler changes
 # poll hits the interval within <=1 s. The loop load is minimal because
 # non-due ticks only check four next_due values.
 #
-# Der Scheduler schläft inzwischen bis zur naechsten faelligen Abfrage statt
-# in festen Takten aufzuwachen (siehe _scheduler_body). SCHEDULER_TICK ist
-# damit nur noch die Untergrenze der Aufloesung - die Genauigkeit haengt
-# nicht mehr daran, und der Thread wacht statt 86400-mal am Tag nur noch so
-# oft auf, wie tatsaechlich gepollt wird. SCHEDULER_MAX_SLEEP deckelt die
-# Schlafdauer als Sicherheitsnetz, falls next_due einmal weit in der Zukunft
-# liegt.
+# The scheduler now sleeps until the next poll is due instead of waking on a
+# fixed tick (see _scheduler_body). SCHEDULER_TICK is therefore only the
+# lower bound of the resolution, and the thread wakes as often as it polls
+# rather than 86400 times a day. SCHEDULER_MAX_SLEEP caps the sleep as a
+# safety net should next_due ever sit far in the future.
 SCHEDULER_TICK = 1  # base tick of the scheduler in seconds (resolution of the next_due check)
-SCHEDULER_MAX_SLEEP = 15  # Obergrenze der Schlafdauer (s), reines Sicherheitsnetz
+SCHEDULER_MAX_SLEEP = 15  # upper bound of the sleep (s), pure safety net
 PLATFORM_INTERVALS = {
     # Meross: deliberately gentler than the others because the Meross cloud
     # caps messages at 200/hour PER DEVICE. Confirmed by Meross support in
@@ -259,6 +283,13 @@ PLATFORM_INTERVALS = {
 MEROSS_METRICS_MIN_INTERVAL = 120   # minimum spacing (s) between power metric queries per device
 MEROSS_HOURLY_BUDGET = 150          # hard ceiling: cloud queries/hour per device (< 200 with reserve)
 MEROSS_BUDGET_BURST = 15            # token bucket capacity (allowed short burst per device)
+# Tokens that only user-initiated queries may use. With the dialog open, the
+# routine poll of a metering plug (status every 30 s plus power metrics every
+# 120 s) reaches exactly MEROSS_HOURLY_BUDGET, so it emptied the bucket and the
+# consumption query - one message per device every 15 minutes - kept being
+# skipped ("Consumption query skipped (budget)"). The background poll now stops
+# at this reserve, so what the user explicitly asks for always gets through.
+MEROSS_BUDGET_RESERVE = 5
 MEROSS_THROTTLE_NOTIFY_COOLDOWN = 600  # minimum spacing (s) between throttle announcements to the user
 # Battery level of hub subdevices (MS100/MS130/valves) changes very
 # slowly, so it is polled at most once per this interval per hub (one extra
@@ -273,18 +304,17 @@ MEROSS_BATTERY_RETRY_INTERVAL = 300  # retry spacing (s) while no battery value 
 NETATMO_AUTH_URL = "https://api.netatmo.com/oauth2/authorize"
 NETATMO_TOKEN_URL = "https://api.netatmo.com/oauth2/token"
 NETATMO_API_BASE = "https://api.netatmo.com/api"
-# Höchstalter des /homesdata-Zwischenspeichers (Topologie + Heizprogramme).
-# Diese Daten ändern sich nur, wenn der Nutzer in der Netatmo-App etwas
-# umbaut - fünf Minuten sind reichlich frisch und sparen im Geräte-Menü eine
-# Anfrage pro Aufklappen eines Thermostats. Nach einem Programmwechsel durch
-# die Erweiterung wird der Speicher ohnehin sofort verworfen
-# (invalidate_homesdata_cache).
+# Maximum age of the /homesdata cache (topology + heating schedules).
+# This data only changes when the user rearranges something in the Netatmo
+# app, so five minutes is plenty fresh and saves one request per thermostat
+# expansion in the device menu. After the add-on changes a schedule the
+# cache is dropped immediately (invalidate_homesdata_cache).
 HOMESDATA_CACHE_SECONDS = 300
-# Höchstens alle so viele Sekunden macht update_device_status den VOLLEN
-# Statuslauf (getstationsdata + homesdata + Zeitplan-Auflösung, >=3 Aufrufe);
-# dazwischen wird nur /homestatus gepollt (1 Aufruf pro Haus). Hält die
-# fg-Polling-Last (15-s-Intervall) sicher unter Netatmos Nutzerlimit von
-# ~500 Aufrufen/Stunde: ~240 homestatus/h + 12 volle Läufe/h.
+# At most this often update_device_status does the FULL status run
+# (getstationsdata + homesdata + schedule resolution, >=3 calls); in between
+# it polls only /homestatus (1 call per home). Keeps the foreground load
+# (15 s interval) safely under Netatmo's ~500 calls/hour user limit:
+# ~240 homestatus/h plus 12 full runs/h.
 NETATMO_FULL_REFRESH_SECONDS = 300
 # Note: this redirect URI MUST match the URI registered at dev.netatmo.com
 # exactly (scheme, host, port and path - even localhost vs. 127.0.0.1 matters).
