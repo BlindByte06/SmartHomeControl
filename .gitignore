@@ -73,3 +73,9 @@ pyvesync/
 # SCons
 .sconsign.dblite
 .sconf_temp/
+
+# Arbeitsunterlagen, die nicht ins oeffentliche Repository gehoeren:
+# die Projektnotizen und die Pruefskripte. Sie wandern ueber Synology
+# Drive auf die anderen Rechner, nicht ueber git.
+CLAUDE.md
+tools/
