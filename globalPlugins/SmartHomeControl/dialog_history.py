@@ -33,7 +33,7 @@ if "_" not in globals():  # fallback if initTranslation() fails
 
 from .history import (
     get_history, _format_action_text, _source_text, format_measurement,
-    relative_time, _measurement_labels,
+    relative_time, _measurement_labels, local_date, local_time, local_datetime,
 )
 from .dialog_helpers import _beep
 from .constants import BEEP_ON, BEEP_OFF, BEEP_ERROR
@@ -56,7 +56,7 @@ def _day_label(dt):
     # Translators: Group heading in the history: weekday and date,
     # e.g. "Freitag, 24.07.2026".
     return _("{weekday}, {date}").format(
-        weekday=dt.strftime('%A'), date=dt.strftime('%d.%m.%Y'))
+        weekday=dt.strftime('%A'), date=local_date(dt))
 
 
 class _DetailDialog(wx.Dialog):
@@ -403,8 +403,8 @@ class HistoryDialog(wx.Dialog):
             return ''
         moment = datetime.fromtimestamp(ts)
         if moment.date() == datetime.now().date():
-            return moment.strftime('%H:%M')
-        return moment.strftime('%d.%m.%Y %H:%M')
+            return local_time(moment)
+        return local_datetime(moment)
 
     def _period_text(self, records):
         """Covered period across all series, e.g. "12.08. 08:00 - 13.08. 22:15".
@@ -417,10 +417,9 @@ class HistoryDialog(wx.Dialog):
             return ''
         first = datetime.fromtimestamp(min(starts))
         last = datetime.fromtimestamp(max(ends))
-        fmt = '%d.%m.%Y %H:%M'
         # Translators: Period of the readings. {start}/{end} = date and time.
         return _("{start} to {end}").format(
-            start=first.strftime(fmt), end=last.strftime(fmt))
+            start=local_datetime(first), end=local_datetime(last))
 
     def _populate_measurements(self, speak=True):
         """Fills the list with condensed readings."""
@@ -526,8 +525,8 @@ class HistoryDialog(wx.Dialog):
         for entry in points:
             value = (entry.get('sensor_data') or {}).get(quantity)
             lines.append("  {time} ({rel}): {value}".format(
-                time=datetime.fromtimestamp(
-                    entry.get('timestamp', 0)).strftime('%d.%m.%Y %H:%M'),
+                time=local_datetime(
+                    datetime.fromtimestamp(entry.get('timestamp', 0))),
                 rel=relative_time(entry.get('timestamp', 0)),
                 value=format_measurement(quantity, value)))
         if not points:

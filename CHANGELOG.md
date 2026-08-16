@@ -2,6 +2,45 @@
 
 The GitHub release notes are built from the section of the released version.
 
+## 26.7.5 (August 2026)
+
+### Dates follow the region
+
+Every date in the history was written German: `%d.%m.%Y`, regardless of who
+was reading. For a tester in the USA that is not merely unfamiliar but
+ambiguous – `08.09.2026` could be either day. Dates and times now follow the
+system region, which NVDA already sets: `16.08.2026 16:47` in German,
+`8/16/2026 4:47 PM` in the USA, `16/08/2026 16:47` in Spain. Regions that
+write the time with AM/PM get it that way, the others keep the 24-hour form.
+
+The timestamp in the CSV export deliberately stays ISO 8601 – it is meant to
+be language-independent and sortable.
+
+The away scheduling of the Cozytouch heat pump keeps the German format for
+now: there the same pattern also parses what is typed in and is quoted in the
+hint text, so display, input and hint have to move together. The device is
+sold in Europe only.
+
+### Translating made possible without the author
+
+Two commands were missing, and their absence was quiet rather than loud:
+
+- `python build_addon.py pot` rebuilds the template from the source. Without
+  it the template aged with every change to the code, and translators were
+  handed a file in which new texts were simply absent.
+- `python build_addon.py mo` compiles every `.po` under `locale/` into the
+  `.mo` that NVDA actually loads. A translation delivered as a `.po` alone
+  used to have no effect at all.
+
+Extracting the translator hints also got two fixes: a hint is now found even
+when an ordinary code comment sits above it, and a hint that exists only in
+the previous template is carried over instead of being dropped. 654 of 1021
+texts now carry one.
+
+### Other
+
+- The author's e-mail address is in the manifest, as it is with most add-ons.
+
 ## 26.7.4 (August 2026)
 
 ### Favourite gestures – rethought

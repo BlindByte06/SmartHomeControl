@@ -338,6 +338,126 @@ def _translatable_literals():
     return found
 
 
+def _translatable_entries():
+    """Wie `_translatable_literals`, zusätzlich mit dem Translators-Kommentar.
+
+    Der Kommentar über dem `_()`-Aufruf ist für Übersetzer oft wichtiger als
+    der Text selbst: er sagt, ob "Off" ein Gerätezustand, ein Menüeintrag
+    oder eine Schaltfläche ist. Er wird ab der Zeile über dem Aufruf nach
+    oben eingesammelt, solange dort Kommentarzeilen stehen.
+    """
+    import ast
+    eintraege = {}
+    pattern = os.path.join(ROOT, "globalPlugins", "SmartHomeControl", "*.py")
+    for path in sorted(glob.glob(pattern)):
+        with open(path, encoding="utf-8") as f:
+            quelle = f.read()
+        zeilen = quelle.splitlines()
+        tree = ast.parse(quelle, path)
+        for node in ast.walk(tree):
+            if not (isinstance(node, ast.Call)
+                    and isinstance(node.func, ast.Name)
+                    and node.func.id == "_" and node.args):
+                continue
+            arg = node.args[0]
+            if not (isinstance(arg, ast.Constant)
+                    and isinstance(arg.value, str)):
+                continue
+            block = []
+            for i in range(node.lineno - 2, max(-1, node.lineno - 10), -1):
+                zeile = zeilen[i].strip()
+                if zeile.startswith("#"):
+                    block.insert(0, zeile.lstrip("# ").rstrip())
+                else:
+                    break
+            kommentar = " ".join(block)
+            # Ab dem Marker schneiden, nicht auf ihn prüfen: über der
+            # Translators-Zeile steht oft noch ein normaler Codekommentar,
+            # und ein "startswith" würde den ganzen Hinweis verwerfen.
+            marke = kommentar.find("Translators")
+            if marke > 0:
+                kommentar = kommentar[marke:]
+            eintrag = eintraege.setdefault(
+                arg.value, {"occurrences": [], "comment": ""})
+            eintrag["occurrences"].append(
+                (os.path.basename(path), str(node.lineno)))
+            if kommentar.startswith("Translators") and not eintrag["comment"]:
+                eintrag["comment"] = kommentar
+    return eintraege
+
+
+def cmd_pot():
+    """Schreibt locale/SmartHomeControl.pot neu aus dem Quellcode.
+
+    Ohne dieses Kommando veraltet die Vorlage still bei jeder Code-Änderung -
+    Übersetzer bekämen dann eine Datei, in der neue Texte fehlen. Vorhandene
+    Übersetzungen werden NICHT angefasst; sie holen sich die Neuerungen über
+    "Aus POT-Datei aktualisieren" (Poedit) bzw. msgmerge.
+    """
+    import polib
+    from datetime import datetime, timezone
+    eintraege = _translatable_entries()
+    pot_path = os.path.join(ROOT, "locale", "SmartHomeControl.pot")
+
+    pot = polib.POFile()
+    pot.metadata = {
+        "Project-Id-Version": "SmartHomeControl",
+        "Report-Msgid-Bugs-To": "blindbyte06@gmail.com",
+        "POT-Creation-Date": datetime.now(timezone.utc).strftime(
+            "%Y-%m-%d %H:%M+0000"),
+        "MIME-Version": "1.0",
+        "Content-Type": "text/plain; charset=UTF-8",
+        "Content-Transfer-Encoding": "8bit",
+        "Language-Team": "LANGUAGE <LL@li.org>",
+    }
+    # Vorhandene Hinweise nicht verlieren: manche stehen als gewöhnlicher
+    # Codekommentar da ("Device filter") und tragen trotzdem Bedeutung für
+    # Übersetzer. Was der Quellcode hergibt, hat Vorrang; was er nicht
+    # hergibt, wird aus der bisherigen Vorlage übernommen.
+    bisher = {}
+    if os.path.isfile(pot_path):
+        bisher = {e.msgid: e.comment for e in polib.pofile(pot_path)
+                  if e.msgid and e.comment}
+    uebernommen = 0
+    for msgid, daten in eintraege.items():
+        kommentar = daten["comment"] or bisher.get(msgid, "")
+        if not daten["comment"] and kommentar:
+            uebernommen += 1
+        pot.append(polib.POEntry(
+            msgid=msgid, msgstr="",
+            comment=kommentar,
+            occurrences=daten["occurrences"]))
+    pot.sort(key=lambda e: e.msgid)
+    pot.save(pot_path)
+    mit = sum(1 for e in pot if e.comment)
+    print(f"[pot] {len(pot)} Texte geschrieben, {mit} mit Hinweis "
+          f"({uebernommen} aus der bisherigen Vorlage übernommen) -> {pot_path}")
+    return pot_path
+
+
+def cmd_mo():
+    """Kompiliert jede .po unter locale/ zu einer .mo neben ihr.
+
+    NVDA lädt ausschließlich die .mo. Wer eine Übersetzung nur als .po
+    schickt - etwa aus einem Weboberflächen-Werkzeug - hätte sonst eine
+    Übersetzung, die nirgends wirkt.
+    """
+    import polib
+    muster = os.path.join(ROOT, "locale", "*", "LC_MESSAGES", "nvda.po")
+    gefunden = sorted(glob.glob(muster))
+    if not gefunden:
+        print("[mo] keine .po-Dateien unter locale/ gefunden")
+        return
+    for po_path in gefunden:
+        po = polib.pofile(po_path)
+        mo_path = po_path[:-3] + ".mo"
+        po.save_as_mofile(mo_path)
+        sprache = os.path.basename(os.path.dirname(os.path.dirname(po_path)))
+        fehlend = sum(1 for e in po if not e.msgstr)
+        print(f"[mo] {sprache}: {len(po)} Texte, {fehlend} unübersetzt "
+              f"-> {os.path.basename(mo_path)}")
+
+
 def cmd_check_translations(strict=True):
     """Prüft alle Übersetzungen unter locale/ gegen den Quellcode.
 
@@ -549,7 +669,7 @@ def main():
     parser = argparse.ArgumentParser(description="Smart Home Control Build")
     parser.add_argument("command",
                         choices=["libs", "pack", "all", "i18n", "licenses",
-                                 "relnotes", "py311"])
+                                 "relnotes", "py311", "pot", "mo"])
     parser.add_argument("--out", help="Zusätzlicher Zielordner für das fertige Paket "
                         "(z.B. C:\\Users\\hasel_bg\\SynologyDrive\\NVDA-Addons); "
                         "bei 'relnotes': Zieldatei für den Text")
@@ -564,6 +684,12 @@ def main():
         return
     if args.command == "i18n":
         cmd_check_translations()
+        return
+    if args.command == "pot":
+        cmd_pot()
+        return
+    if args.command == "mo":
+        cmd_mo()
         return
     if args.command == "licenses":
         cmd_licenses(write=args.write)

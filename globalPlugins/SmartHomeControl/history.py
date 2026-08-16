@@ -177,6 +177,34 @@ def format_measurement(quantity, value):
     return f"{text} {unit}".strip()
 
 
+def local_date(dt):
+    """Date in the notation of the system region.
+
+    NVDA sets the Python locale to the interface language, so %x gives what
+    the reader is used to: "16.08.2026" in German, "8/16/2026" in the USA,
+    "16/08/2026" in Spain. A fixed "%d.%m.%Y" made every date German - and
+    for an American reader "08.09.2026" is genuinely ambiguous.
+    """
+    return dt.strftime('%x')
+
+
+def local_time(dt):
+    """Time of day in the notation of the region.
+
+    Regions that write the time with AM/PM get "4:47 PM", the others the
+    24-hour form. %X is deliberately not used: it appends the seconds, which
+    lengthens a list column without telling the reader anything.
+    """
+    if dt.strftime('%p'):
+        return dt.strftime('%I:%M %p').lstrip('0')
+    return dt.strftime('%H:%M')
+
+
+def local_datetime(dt):
+    """Date and time, both in the notation of the region."""
+    return f"{local_date(dt)} {local_time(dt)}"
+
+
 def _csv_quantity_header(quantity):
     """Column heading of a quantity, with its unit: "Temperature (°C)"."""
     label = _measurement_labels().get(quantity, quantity)
@@ -995,7 +1023,7 @@ class DeviceHistory:
 
         # Translators: Placeholder for an unknown time/device name in the
         # history.
-        time_abs = dt.strftime('%d.%m.%Y %H:%M') if dt else _("Unknown")
+        time_abs = local_datetime(dt) if dt else _("Unknown")
         device_name = entry.get('device_name', _("Unknown"))
         platform = entry.get('platform', '')
         event_type = entry.get('event_type', '')

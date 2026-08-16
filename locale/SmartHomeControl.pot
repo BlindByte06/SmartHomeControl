@@ -2,8 +2,9 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: SmartHomeControl\n"
-"Report-Msgid-Bugs-To: haselphilipp@gmail.com\n"
-"Language: \n"
+"Report-Msgid-Bugs-To: blindbyte06@gmail.com\n"
+"POT-Creation-Date: 2026-08-16 22:17+0000\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
@@ -49,8 +50,8 @@ msgstr ""
 msgid " – last updated {sec} seconds ago"
 msgstr ""
 
-#. Announce external changes (Meross-relevant only) Translators: Checkbox:
-#. NVDA should announce external switching (Alexa, app).
+#. Translators: Checkbox: NVDA should announce external switching (Alexa,
+#. app).
 #: settings_panel.py:359
 msgid "&Announce external changes (Alexa, Meross app, etc.)"
 msgstr ""
@@ -88,12 +89,12 @@ msgstr ""
 msgid "&Device:"
 msgstr ""
 
-#. Tree view with accessible name Translators: Label above the device tree.
+#. Translators: Label above the device tree.
 #: device_dialog.py:181
 msgid "&Devices:"
 msgstr ""
 
-#. Email Translators: Label of the email input field (Meross).
+#. Translators: Label of the email input field (Meross).
 #: settings_panel.py:331
 msgid "&Email:"
 msgstr ""
@@ -103,7 +104,7 @@ msgstr ""
 msgid "&End:"
 msgstr ""
 
-#. Filter button Translators: Button for applying the filters.
+#. Translators: Button for applying the filters.
 #: dialog_history.py:181
 msgid "&Filter"
 msgstr ""
@@ -114,8 +115,7 @@ msgstr ""
 msgid "&Filter warning threshold (%):"
 msgstr ""
 
-#. Filter with accessible name and help text Translators: Label for the filter
-#. selection in the device overview.
+#. Translators: Label for the filter selection in the device overview.
 #: device_dialog.py:132
 msgid "&Filter:"
 msgstr ""
@@ -136,8 +136,7 @@ msgstr ""
 msgid "&Hour:"
 msgstr ""
 
-#. Auto login checkbox Translators: Checkbox for enabling automatic login at
-#. NVDA start.
+#. Translators: Checkbox for enabling automatic login at NVDA start.
 #: settings_panel.py:229
 msgid "&Log in automatically when NVDA starts"
 msgstr ""
@@ -162,7 +161,7 @@ msgstr ""
 msgid "&Notifications"
 msgstr ""
 
-#. Password Translators: Label of the password input field (Meross).
+#. Translators: Label of the password input field (Meross).
 #: settings_panel.py:339
 msgid "&Password:"
 msgstr ""
@@ -197,13 +196,12 @@ msgstr ""
 msgid "&Status:"
 msgstr ""
 
-#. Temperature selection (0.5°C steps) Translators: Label of the temperature
-#. selection list.
+#. Translators: Label of the temperature selection list.
 #: dialog_netatmo.py:63
 msgid "&Temperature (°C):"
 msgstr ""
 
-#. Test button Translators: Button for testing the Meross connection.
+#. Translators: Button for testing the Meross connection.
 #: settings_panel.py:351 settings_panel.py:460
 msgid "&Test connection"
 msgstr ""
@@ -279,13 +277,13 @@ msgstr ""
 msgid "Accumulated energy consumption of the device in kilowatt hours."
 msgstr ""
 
-#: history.py:917
+#: history.py:945
 msgid "Action"
 msgstr ""
 
 #. Translators: CSV column with the untranslated action key (e.g.
 #. "toggle_off") for further processing.
-#: history.py:920
+#: history.py:948
 msgid "Action key"
 msgstr ""
 
@@ -325,8 +323,7 @@ msgstr ""
 msgid "Actions: target temperature, mode, boost, on/off, away mode"
 msgstr ""
 
-#. Platform selection Translators: Group label for selecting the active
-#. platforms.
+#. Translators: Group label for selecting the active platforms.
 #: settings_panel.py:192
 msgid "Active platforms"
 msgstr ""
@@ -525,7 +522,7 @@ msgstr ""
 msgid "Auto profile '{value}' is not supported"
 msgstr ""
 
-#: history.py:1130
+#: history.py:1158
 msgid "Auto profile changed"
 msgstr ""
 
@@ -551,7 +548,7 @@ msgid ""
 msgstr ""
 
 #. Translators: Time-weighted mean of a measurement series.
-#: dialog_history.py:513
+#: dialog_history.py:512
 msgid "Average (time-weighted): {value}"
 msgstr ""
 
@@ -586,11 +583,11 @@ msgstr ""
 msgid "Away mode scheduled"
 msgstr ""
 
-#: history.py:1127
+#: history.py:1155
 msgid "Away mode switched off"
 msgstr ""
 
-#: history.py:1126
+#: history.py:1154
 msgid "Away mode switched on"
 msgstr ""
 
@@ -609,7 +606,7 @@ msgstr ""
 msgid "Away – reduced temperature"
 msgstr ""
 
-#: history.py:1110
+#: history.py:1138
 msgid "Back to schedule"
 msgstr ""
 
@@ -703,11 +700,11 @@ msgstr ""
 msgid "Boost on"
 msgstr ""
 
-#: history.py:1125
+#: history.py:1153
 msgid "Boost switched off"
 msgstr ""
 
-#: history.py:1124
+#: history.py:1152
 msgid "Boost switched on"
 msgstr ""
 
@@ -729,7 +726,7 @@ msgid "Bright yellow"
 msgstr ""
 
 #. Meross light actions (keys as logged in dialog_meross.py/device_dialog.py)
-#: history.py:1119
+#: history.py:1147
 msgid "Brightness changed"
 msgstr ""
 
@@ -786,7 +783,7 @@ msgid "CO₂ concentration in the room air."
 msgstr ""
 
 #. Translators: File type filter in the file dialog.
-#: dialog_history.py:560
+#: dialog_history.py:559
 msgid "CSV files (*.csv)|*.csv"
 msgstr ""
 
@@ -806,7 +803,7 @@ msgstr ""
 msgid "Category {number}: {name}"
 msgstr ""
 
-#. Category Translators: F1 help for a category node.
+#. Translators: F1 help for a category node.
 #: dialog_help.py:60
 msgid "Category. Press Enter to expand or collapse. Right arrow to open."
 msgstr ""
@@ -844,11 +841,11 @@ msgstr ""
 msgid "Child lock on"
 msgstr ""
 
-#: history.py:1139
+#: history.py:1167
 msgid "Child lock switched off"
 msgstr ""
 
-#: history.py:1138
+#: history.py:1166
 msgid "Child lock switched on"
 msgstr ""
 
@@ -861,8 +858,7 @@ msgstr ""
 msgid "Child lock: on - press Enter to turn off"
 msgstr ""
 
-#. Help text for the dialog Translators: Help text in the color picker dialog.
-#. {name} = device name.
+#. Translators: Help text in the color picker dialog. {name} = device name.
 #: dialog_meross.py:189
 msgid "Choose a color for {name}.\n"
 msgstr ""
@@ -877,12 +873,13 @@ msgid ""
 "again toggles it)"
 msgstr ""
 
+#. Translators: Announced when the favorites layer opens and waits for a
+#. digit. Keep it short - it is spoken on every use.
 #: __init__.py:1222
 msgid "Choose a favorite: digit 1 to 9"
 msgstr ""
 
-#. Help text with the current value Translators: Help text in the light color
-#. dialog.
+#. Translators: Help text in the light color dialog.
 #: device_dialog.py:2909
 msgid "Choose a light color for {name}."
 msgstr ""
@@ -971,7 +968,7 @@ msgstr ""
 msgid "Close dialog"
 msgstr ""
 
-#: history.py:1121
+#: history.py:1149
 msgid "Color changed"
 msgstr ""
 
@@ -1024,8 +1021,7 @@ msgstr ""
 msgid "Confirmation"
 msgstr ""
 
-#. OAuth connect button Translators: Button starts the OAuth2 flow in the
-#. browser.
+#. Translators: Button starts the OAuth2 flow in the browser.
 #: settings_panel.py:440
 msgid "Connect to &Netatmo (OAuth2)"
 msgstr ""
@@ -1056,10 +1052,8 @@ msgstr ""
 msgid "Connecting to VeSync..."
 msgstr ""
 
-#. Note: with TR_HIDE_ROOT the root's children are shown automatically,
-#. Expand(root) must NOT be called! Translators: Status line text while the
-#. connection is being established. No separate ui.message - the
-#. ui.message("Lade Geräte...") below is enough.
+#. Translators: Status line text while the connection is being established. No
+#. separate ui.message - the ui.message below is enough.
 #: device_dialog.py:372
 msgid "Connecting..."
 msgstr ""
@@ -1307,7 +1301,7 @@ msgstr ""
 msgid "Current target temperature: {temp}°C"
 msgstr ""
 
-#: dialog_history.py:515
+#: dialog_history.py:514
 msgid "Current: {value}"
 msgstr ""
 
@@ -1359,11 +1353,11 @@ msgid "Default"
 msgstr ""
 
 #. Translators: Title of the confirmation prompt.
-#: dialog_history.py:621
+#: dialog_history.py:620
 msgid "Delete history"
 msgstr ""
 
-#: history.py:921
+#: history.py:949
 msgid "Details"
 msgstr ""
 
@@ -1400,7 +1394,8 @@ msgstr ""
 msgid "Device list"
 msgstr ""
 
-#: history.py:911
+#. Translators: Column headers of the CSV export (history).
+#: history.py:939
 msgid "Device name"
 msgstr ""
 
@@ -1425,7 +1420,6 @@ msgstr ""
 msgid "Device unreachable - not responding to switch command"
 msgstr ""
 
-#. The device was not found - probably offline or no longer connected
 #. Translators: Error message: Meross device unreachable.
 #: meross_api.py:1465
 msgid "Device unreachable - possibly offline or connection lost"
@@ -1494,11 +1488,11 @@ msgstr ""
 msgid "Display on"
 msgstr ""
 
-#: history.py:1137
+#: history.py:1165
 msgid "Display switched off"
 msgstr ""
 
-#: history.py:1136
+#: history.py:1164
 msgid "Display switched on"
 msgstr ""
 
@@ -1511,8 +1505,7 @@ msgstr ""
 msgid "Display: on - press Enter to turn off"
 msgstr ""
 
-#. Duration option: default duration or until a given time Translators: Label
-#. of the duration section in the thermostat dialog.
+#. Translators: Label of the duration section in the thermostat dialog.
 #: dialog_netatmo.py:87
 msgid "Duration:"
 msgstr ""
@@ -1581,8 +1574,7 @@ msgstr ""
 msgid "Energy consumption, total: {kwh} kWh"
 msgstr ""
 
-#. Detailed help text for screen readers Translators: Help text in the custom
-#. RGB values dialog.
+#. Translators: Help text in the custom RGB values dialog.
 #: dialog_meross.py:248
 msgid ""
 "Enter RGB values (red, green, blue).\n"
@@ -1600,14 +1592,12 @@ msgstr ""
 msgid "Enter or Space: execute action, "
 msgstr ""
 
-#. Help text Translators: Help text in the thermostat dialog. {name} = device
-#. name.
+#. Translators: Help text in the thermostat dialog. {name} = device name.
 #: dialog_netatmo.py:49
 msgid "Enter target temperature for {name}.\n"
 msgstr ""
 
-#. Detailed help text for screen readers Translators: Help texts in the
-#. brightness dialog.
+#. Translators: Help texts in the brightness dialog.
 #: device_dialog.py:3010
 msgid "Enter the brightness for {name}."
 msgstr ""
@@ -1696,17 +1686,17 @@ msgid "Export as &CSV"
 msgstr ""
 
 #. Translators: Error message on CSV export.
-#: dialog_history.py:603
+#: dialog_history.py:602
 msgid "Export failed: {error}"
 msgstr ""
 
 #. Translators: Title of the file dialog for the CSV export.
-#: dialog_history.py:547
+#: dialog_history.py:546
 msgid "Export history as CSV"
 msgstr ""
 
 #. Translators: Title of the export success dialog.
-#: dialog_history.py:594
+#: dialog_history.py:593
 msgid "Export successful"
 msgstr ""
 
@@ -1723,7 +1713,7 @@ msgid "Fan level {level} is not supported"
 msgstr ""
 
 #. VeSync-specific actions
-#: history.py:1129
+#: history.py:1157
 msgid "Fan speed changed"
 msgstr ""
 
@@ -1760,8 +1750,7 @@ msgstr ""
 msgid "Fetching energy data..."
 msgstr ""
 
-#. === Filter area === Translators: Label of the filter area in the history
-#. dialog.
+#. Translators: Label of the filter area in the history dialog.
 #: device_dialog.py:152 dialog_history.py:149
 msgid "Filter"
 msgstr ""
@@ -1781,7 +1770,7 @@ msgid "Filter life: {percent}%"
 msgstr ""
 
 #. Translators: History detail: filter life reset.
-#: history.py:1140
+#: history.py:1168
 msgid "Filter reset"
 msgstr ""
 
@@ -1883,7 +1872,7 @@ msgstr ""
 msgid "Heating off"
 msgstr ""
 
-#: history.py:1116
+#: history.py:1144
 msgid "Heating schedule switched"
 msgstr ""
 
@@ -1922,22 +1911,22 @@ msgstr ""
 msgid "High"
 msgstr ""
 
-#: dialog_history.py:510
+#: dialog_history.py:509
 msgid "Highest value: {value}"
 msgstr ""
 
 #. Translators: Confirmation after deleting the history.
-#: dialog_history.py:631
+#: dialog_history.py:630
 msgid "History deleted"
 msgstr ""
 
 #. Translators: Title of the detail dialog of a history entry.
-#: dialog_history.py:482
+#: dialog_history.py:481
 msgid "History entry details"
 msgstr ""
 
 #. Translators: Success message in the export dialog. {path} = file.
-#: dialog_history.py:591
+#: dialog_history.py:590
 msgid ""
 "History exported successfully.\n"
 "\n"
@@ -1945,7 +1934,7 @@ msgid ""
 msgstr ""
 
 #. Translators: Confirmation after the CSV export of the history.
-#: dialog_history.py:584
+#: dialog_history.py:583
 msgid "History exported to {filename}"
 msgstr ""
 
@@ -2153,7 +2142,7 @@ msgid "Last hour"
 msgstr ""
 
 #. Translators: Heading of the change point list.
-#: dialog_history.py:524
+#: dialog_history.py:523
 msgid "Latest changes:"
 msgstr ""
 
@@ -2166,7 +2155,7 @@ msgid "Latest value"
 msgstr ""
 
 #. Translators: VeSync fan level announcement (e.g. "level 3").
-#: change_detection.py:615 dialog_vesync.py:146 history.py:1186
+#: change_detection.py:615 dialog_vesync.py:146 history.py:1214
 #: vesync_devices.py:618 vesync_devices.py:1005
 msgid "Level {level}"
 msgstr ""
@@ -2182,7 +2171,7 @@ msgstr ""
 msgid "Level {level} – {label}"
 msgstr ""
 
-#: history.py:1120
+#: history.py:1148
 msgid "Light color changed"
 msgstr ""
 
@@ -2199,7 +2188,7 @@ msgid "Light color: warm white (cozy) - press Enter to change"
 msgstr ""
 
 #. Translators: Spray mode of a Meross diffuser (light).
-#: constants.py:46 device_dialog.py:2377 history.py:1111 meross_devices.py:939
+#: constants.py:46 device_dialog.py:2377 history.py:1139 meross_devices.py:939
 msgid "Light spray"
 msgstr ""
 
@@ -2227,7 +2216,6 @@ msgstr ""
 msgid "Loading error – press F5 to retry."
 msgstr ""
 
-#. Load the available heating schedules asynchronously (UI stays responsive).
 #. Translators: Announcement while the heating schedules are loaded from the
 #. cloud.
 #: dialog_netatmo.py:529
@@ -2259,7 +2247,7 @@ msgid "Low"
 msgstr ""
 
 #. Translators: Summary lines in the measurement detail dialog.
-#: dialog_history.py:508
+#: dialog_history.py:507
 msgid "Lowest value: {value}"
 msgstr ""
 
@@ -2373,7 +2361,7 @@ msgid "Mode '{mode}' is not supported by this device"
 msgstr ""
 
 #. Netatmo-specific actions (keys as logged in dialog_netatmo.py)
-#: history.py:1109 history.py:1115
+#: history.py:1137 history.py:1143
 msgid "Mode changed"
 msgstr ""
 
@@ -2387,8 +2375,7 @@ msgstr ""
 msgid "Mode {mode}"
 msgstr ""
 
-#. If a setpoint exists but no mode, it was probably set manually Translators:
-#. Status announcement: heating mode manual (no mode reported).
+#. Translators: Status announcement: heating mode manual (no mode reported).
 #: netatmo_api.py:338
 msgid "Mode: manual"
 msgstr ""
@@ -2411,11 +2398,11 @@ msgstr ""
 msgid "Model ID: {model_id} (unknown model)"
 msgstr ""
 
-#: history.py:1135
+#: history.py:1163
 msgid "Mute switched off"
 msgstr ""
 
-#: history.py:1134
+#: history.py:1162
 msgid "Mute switched on"
 msgstr ""
 
@@ -2533,8 +2520,7 @@ msgstr ""
 msgid "Netatmo server temporarily unreachable"
 msgstr ""
 
-#. Transient - the tokens stay valid Translators: Error message: Netatmo
-#. server unreachable.
+#. Translators: Error message: Netatmo server unreachable.
 #: netatmo_api.py:875
 msgid "Netatmo server temporarily unreachable (HTTP {code})"
 msgstr ""
@@ -2632,7 +2618,7 @@ msgstr ""
 msgid "Night"
 msgstr ""
 
-#: history.py:1131
+#: history.py:1159
 msgid "Night light changed"
 msgstr ""
 
@@ -2668,13 +2654,13 @@ msgstr ""
 
 #. Translators: Shown when a measurement series has no change points in the
 #. selected period.
-#: dialog_history.py:536
+#: dialog_history.py:535
 msgid "No changes in the selected period"
 msgstr ""
 
 #. Translators: Announced when a device currently provides no sensor/status
 #. data.
-#: __init__.py:1675 history.py:1079
+#: __init__.py:1675 history.py:1107
 msgid "No data"
 msgstr ""
 
@@ -2737,7 +2723,7 @@ msgid "No internet connection - server unreachable"
 msgstr ""
 
 #. Translators: Message when no measurements match the filter.
-#: dialog_history.py:460
+#: dialog_history.py:459
 msgid "No measurements found"
 msgstr ""
 
@@ -2771,7 +2757,7 @@ msgstr ""
 msgid "No water detected"
 msgstr ""
 
-#: history.py:1143
+#: history.py:1171
 msgid "No water detected any more"
 msgstr ""
 
@@ -2810,7 +2796,7 @@ msgstr ""
 msgid "Not logged in – opening settings"
 msgstr ""
 
-#. Note Translators: Hint text in the General tab.
+#. Translators: Hint text in the General tab.
 #: settings_panel.py:252
 msgid ""
 "Note: Meross, Netatmo, VeSync and Cozytouch can be used individually or in combination.\n"
@@ -2969,11 +2955,11 @@ msgstr ""
 msgid "Oscillation on"
 msgstr ""
 
-#: history.py:1133
+#: history.py:1161
 msgid "Oscillation switched off"
 msgstr ""
 
-#: history.py:1132
+#: history.py:1160
 msgid "Oscillation switched on"
 msgstr ""
 
@@ -3056,7 +3042,7 @@ msgstr ""
 
 #. Translators: Period and number of readings in the detail dialog. {period} =
 #. from-to, {count} = number of stored readings.
-#: dialog_history.py:519
+#: dialog_history.py:518
 msgid "Period: {period}"
 msgstr ""
 
@@ -3073,7 +3059,8 @@ msgstr ""
 msgid "Pink"
 msgstr ""
 
-#: dialog_history.py:244 history.py:911
+#. Translators: Column headers of the CSV export (history).
+#: dialog_history.py:244 history.py:939
 msgid "Platform"
 msgstr ""
 
@@ -3247,13 +3234,13 @@ msgstr ""
 msgid "Rated capacity of the hot water tank in liters"
 msgstr ""
 
-#: dialog_history.py:521
+#: dialog_history.py:520
 msgid "Readings stored: {count}"
 msgstr ""
 
 #. Translators: Confirmation prompt before deleting the history. {events} =
 #. number of events, {measurements} = number of measurement change points.
-#: dialog_history.py:617
+#: dialog_history.py:616
 msgid ""
 "Really delete the entire history?\n"
 "\n"
@@ -3301,15 +3288,12 @@ msgstr ""
 msgid "Refreshed in {seconds}s - {online} devices online"
 msgstr ""
 
-#. OPTIMIZED: set the status line + speak in one step. Translators: Status
-#. while a manual refresh is running.
+#. Translators: Status while a manual refresh is running.
 #: device_dialog.py:3105
 msgid "Refreshing..."
 msgstr ""
 
-#. Display of the redirect URI to register exactly (read-only, focusable via
-#. TE_READONLY so the screen reader can read/copy it). Translators: Label
-#. before the displayed redirect URI.
+#. Translators: Label before the displayed redirect URI.
 #: settings_panel.py:428
 msgid "Register this redirect URI at dev.netatmo.com:"
 msgstr ""
@@ -3377,8 +3361,7 @@ msgstr ""
 msgid "S&ettings (Alt+E)"
 msgstr ""
 
-#. Sort order with accessible name and help text Translators: Label for the
-#. sort selection in the device overview.
+#. Translators: Label for the sort selection in the device overview.
 #: device_dialog.py:159
 msgid "S&ort order:"
 msgstr ""
@@ -3548,8 +3531,7 @@ msgstr ""
 msgid "Smart Home Control - Settings"
 msgstr ""
 
-#. General help Translators: General F1 help with all keyboard shortcuts of
-#. the dialog.
+#. Translators: General F1 help with all keyboard shortcuts of the dialog.
 #: dialog_help.py:44
 msgid ""
 "Smart home device control - keyboard shortcuts: arrow keys: navigate, Enter "
@@ -3587,7 +3569,7 @@ msgstr ""
 msgid "Sounds on"
 msgstr ""
 
-#: dialog_history.py:245 history.py:917
+#: dialog_history.py:245 history.py:945
 msgid "Source"
 msgstr ""
 
@@ -3595,7 +3577,7 @@ msgstr ""
 msgid "Spray mode: {mode}"
 msgstr ""
 
-#: device_dialog.py:2385 history.py:1113
+#: device_dialog.py:2385 history.py:1141
 msgid "Spray off"
 msgstr ""
 
@@ -3684,7 +3666,7 @@ msgid "Strong red"
 msgstr ""
 
 #. Translators: Spray mode of a Meross diffuser (strong).
-#: constants.py:48 device_dialog.py:2381 history.py:1112 meross_devices.py:942
+#: constants.py:48 device_dialog.py:2381 history.py:1140 meross_devices.py:942
 msgid "Strong spray"
 msgstr ""
 
@@ -3710,11 +3692,11 @@ msgstr ""
 msgid "Switch to white mode - press Enter to open"
 msgstr ""
 
-#: history.py:1107
+#: history.py:1135
 msgid "Switched off"
 msgstr ""
 
-#: history.py:1106
+#: history.py:1134
 msgid "Switched on"
 msgstr ""
 
@@ -3734,7 +3716,7 @@ msgid "Target temperature in degrees ({lo} to {hi}):"
 msgstr ""
 
 #. Cozytouch-specific actions (keys as logged in dialog_cozytouch.py)
-#: history.py:1123
+#: history.py:1151
 msgid "Target temperature set"
 msgstr ""
 
@@ -3781,7 +3763,7 @@ msgstr ""
 msgid "Temperature sensors"
 msgstr ""
 
-#: history.py:1108
+#: history.py:1136
 msgid "Temperature set"
 msgstr ""
 
@@ -3881,7 +3863,8 @@ msgstr ""
 msgid "Thermostats"
 msgstr ""
 
-#: dialog_history.py:244 history.py:911
+#. Translators: Column headers of the CSV export (history).
+#: dialog_history.py:244 history.py:939
 msgid "Time"
 msgstr ""
 
@@ -3969,16 +3952,14 @@ msgstr ""
 msgid "Turn tower fan oscillation on or off. Press Enter or Space to toggle."
 msgstr ""
 
-#. ---- 2. Actions ---- Translators: Action entry for switching on/off. {name}
-#. = device name.
+#. Translators: Action entry for switching on/off. {name} = device name.
 #: device_dialog.py:934 device_dialog.py:1049 device_dialog.py:1096
 #: device_dialog.py:2325 device_dialog.py:2397 device_dialog.py:708
 #: dialog_vesync.py:585
 msgid "Turn {name} off"
 msgstr ""
 
-#. ---- 2. Actions ---- Translators: Action entry for switching on/off. {name}
-#. = device name.
+#. Translators: Action entry for switching on/off. {name} = device name.
 #: device_dialog.py:934 device_dialog.py:1049 device_dialog.py:1096
 #: device_dialog.py:2325 device_dialog.py:2397 device_dialog.py:708
 #: dialog_vesync.py:585
@@ -3996,7 +3977,7 @@ msgid ""
 "FR. Automatically determines the VeSync server region (EU or US)."
 msgstr ""
 
-#: history.py:914
+#: history.py:942
 msgid "Type"
 msgstr ""
 
@@ -4008,7 +3989,7 @@ msgstr ""
 #. Translators: Placeholder for an unknown device name.
 #: dialog_favorites.py:369 dialog_favorites.py:392 dialog_favorites.py:414
 #: dialog_favorites.py:346 dialog_history.py:366 dialog_netatmo.py:301
-#: history.py:1047 history.py:998 history.py:999 history.py:804
+#: history.py:1075 history.py:1026 history.py:1027 history.py:832
 #: meross_api.py:1501
 msgid "Unknown"
 msgstr ""
@@ -4018,7 +3999,6 @@ msgstr ""
 msgid "Unknown ({mode})"
 msgstr ""
 
-#. Find the device name - use target_devices if available (faster!)
 #. Translators: Placeholder when the device name cannot be determined.
 #: meross_api.py:270 meross_api.py:276
 msgid "Unknown device"
@@ -4292,7 +4272,7 @@ msgstr ""
 msgid "Warning: replace filter, remaining life {percent}%"
 msgstr ""
 
-#: history.py:1142
+#: history.py:1170
 msgid "Water alarm"
 msgstr ""
 
@@ -4373,7 +4353,7 @@ msgid "active"
 msgstr ""
 
 #. Translators: Origin of a history event - triggered automatically.
-#: history.py:1092
+#: history.py:1120
 msgid "automatic"
 msgstr ""
 
@@ -4412,7 +4392,7 @@ msgstr ""
 #. NVDA (manufacturer app, voice assistant, button on the device).
 #. Deliberately not more specific: which of these it was cannot be determined
 #. from the cloud notification.
-#: history.py:1089
+#: history.py:1117
 msgid "external"
 msgstr ""
 
@@ -4428,7 +4408,7 @@ msgid "hub with {count} sensors"
 msgstr ""
 
 #. Translators: Relative time in the history (less than 1 minute ago).
-#: history.py:1051
+#: history.py:1079
 msgid "just now"
 msgstr ""
 
@@ -4505,12 +4485,12 @@ msgid "poor"
 msgstr ""
 
 #. Translators: Suggested file name for the CSV export of the events.
-#: dialog_history.py:558
+#: dialog_history.py:557
 msgid "smart-home-events.csv"
 msgstr ""
 
 #. Translators: Suggested file name for the CSV export of the readings.
-#: dialog_history.py:554
+#: dialog_history.py:553
 msgid "smart-home-readings.csv"
 msgstr ""
 
@@ -4533,16 +4513,16 @@ msgstr ""
 #. Translators: Origin of a history event - the user switched the device
 #. themselves through this add-on. Addressed as "you": the speaker of the text
 #. is the add-on, so "me" would read as if the add-on had done it.
-#: history.py:1098
+#: history.py:1126
 msgid "you"
 msgstr ""
 
 #. Translators: Relative time in the history (days).
-#: history.py:1064
+#: history.py:1092
 msgid "{count} day ago"
 msgstr ""
 
-#: history.py:1065
+#: history.py:1093
 msgid "{count} days ago"
 msgstr ""
 
@@ -4572,43 +4552,40 @@ msgid "{count} events shown (total: {total})"
 msgstr ""
 
 #. Translators: Relative time in the history (hours).
-#: history.py:1060
+#: history.py:1088
 msgid "{count} hour ago"
 msgstr ""
 
-#: history.py:1061
+#: history.py:1089
 msgid "{count} hours ago"
 msgstr ""
 
 #. Translators: Message after loading the measurement view.
-#: dialog_history.py:457
+#: dialog_history.py:456
 msgid "{count} measurement series"
 msgstr ""
 
 #. Translators: Status line of the measurement view without data.
-#: dialog_history.py:450
+#: dialog_history.py:449
 msgid "{count} measurement series from {total} readings"
 msgstr ""
 
 #. Translators: Status line of the measurement view. {count} = number of rows,
 #. {total} = stored readings, {period} = covered period.
-#: dialog_history.py:446
+#: dialog_history.py:445
 msgid "{count} measurement series from {total} readings, {period}"
 msgstr ""
 
 #. Translators: Relative time in the history (minutes).
-#: history.py:1055
+#: history.py:1083
 msgid "{count} minute ago"
 msgstr ""
 
-#: history.py:1056
+#: history.py:1084
 msgid "{count} minutes ago"
 msgstr ""
 
-#. Vollständiger Name inkl. Gerät: "Garten: Pumpe" (benannter Ausgang) bzw.
-#. "Garten: Ausgang 1" (ohne Namen) - überall dort verwendet, wo der Kontext
-#. (das Elterngerät) nicht ohnehin klar ist (Ansagen, Favoriten, Toggle-
-#. Aktion). Translators: Full channel name: device name plus outlet label.
+#. Translators: Full channel name: device name plus outlet label.
 #: meross_devices.py:611 meross_devices.py:1335
 msgid "{device}: {outlet}"
 msgstr ""
@@ -4620,7 +4597,7 @@ msgid "{field} (saved - leave empty to keep it)"
 msgstr ""
 
 #. Translators: Boost duration in the history. {minutes} = minutes.
-#: history.py:1191
+#: history.py:1219
 msgid "{minutes} minutes"
 msgstr ""
 
@@ -4675,7 +4652,7 @@ msgid "{name} {pct}%"
 msgstr ""
 
 #. Translators: Header of the measurement detail dialog.
-#: dialog_history.py:503
+#: dialog_history.py:502
 msgid "{name} – {quantity}"
 msgstr ""
 
@@ -4999,8 +4976,7 @@ msgstr ""
 msgid "{name}: {mode} set"
 msgstr ""
 
-#. ALWAYS a uniform announcement with a colon Translators: Announcement of an
-#. external switch state change.
+#. Translators: Announcement of an external switch state change.
 #: __init__.py:2038 __init__.py:1983 __init__.py:1997 device_dialog.py:1222
 #: dialog_vesync.py:44 dialog_vesync.py:201
 msgid "{name}: {status}"
@@ -5046,7 +5022,7 @@ msgid "{platform} temporarily unreachable"
 msgstr ""
 
 #. Translators: Period of the readings. {start}/{end} = date and time.
-#: dialog_history.py:422
+#: dialog_history.py:421
 msgid "{start} to {end}"
 msgstr ""
 
@@ -5056,7 +5032,7 @@ msgid "{temp}°C"
 msgstr ""
 
 #. Translators: Fallback for a history entry of unknown type.
-#: history.py:1016
+#: history.py:1044
 msgid "{time} – {name}: unknown event"
 msgstr ""
 
