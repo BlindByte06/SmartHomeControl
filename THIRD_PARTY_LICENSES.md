@@ -1,8 +1,8 @@
-# Gebündelte Fremdkomponenten
+# Bundled third-party components
 
-Erzeugt mit `python build_addon.py licenses --write` aus den `*.dist-info/METADATA`-Feldern der gebündelten Pakete.
+Generated with `python build_addon.py licenses --write` from the `*.dist-info/METADATA` fields of the bundled packages.
 
-| Paket | Version | Lizenz |
+| Package | Version | Licence |
 |---|---|---|
 | `aiohappyeyeballs` | 2.7.1 | PSF-2.0 |
 | `aiohttp` | 3.14.1 | Apache-2.0 AND MIT |

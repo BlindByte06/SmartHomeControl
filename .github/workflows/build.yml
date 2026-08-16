@@ -9,8 +9,8 @@ on:
   pull_request:
   workflow_dispatch:
 
-# Release-Erstellung (softprops/action-gh-release) braucht Schreibrechte auf
-# Contents; je nach Repo-Einstellung ist der GITHUB_TOKEN sonst nur lesend.
+# Creating a release (softprops/action-gh-release) needs write access to
+# contents; depending on the repository setting the GITHUB_TOKEN is read-only.
 permissions:
   contents: write
 
@@ -27,33 +27,33 @@ jobs:
       with:
         python-version: '3.11'
 
-    # polib wird von build_addon.py für die Übersetzungsprüfung gebraucht.
-    # Ohne polib überspringt das Skript die Prüfung stillschweigend - dann
-    # würde eine kaputte Übersetzung erst im fertigen Add-on auffallen.
-    # pyflakes prüft den Add-on-Code (siehe naechster Schritt).
+    # build_addon.py needs polib for the translation check. Without polib the
+    # script skips that check silently - a broken translation would then only
+    # show up in the finished add-on. pyflakes checks the add-on code (see the
+    # next step).
     - name: Install build dependencies
       run: python -m pip install --upgrade pip polib pyflakes
 
-    # Der Packschritt kopiert nur Dateien - ein Syntaxfehler oder ein toter
-    # Import fiele sonst erst zur Laufzeit auf, beim Nutzer. compileall
-    # uebersetzt jede Datei, pyflakes findet unbenutzte/fehlende Namen.
-    # Nur globalPlugins/: lib/ ist gebuendelter Fremdcode.
+    # The pack step only copies files - a syntax error or a dead import would
+    # otherwise surface at runtime, at the user. compileall compiles every
+    # file, pyflakes finds unused and missing names. Only globalPlugins/:
+    # lib/ is bundled third-party code.
     #
-    # WICHTIG: Python 3.11 oben ist kein Zufall, sondern die Version der
-    # aeltesten unterstuetzten NVDA-Fassung (2025.1). Genau deshalb faellt
-    # hier auf, was auf einem Entwicklungsrechner mit 3.12 noch durchgeht -
-    # etwa ein f-String, dessen Ausdruck dieselben Anfuehrungszeichen nutzt
-    # wie der f-String selbst (PEP 701). "build_addon.py py311" prueft
-    # dasselbe versionsunabhaengig und laeuft beim Packen ohnehin mit.
+    # IMPORTANT: Python 3.11 above is not arbitrary but the version of the
+    # oldest supported NVDA release (2025.1). That is exactly why this catches
+    # what still passes on a development machine running 3.12 - an f-string
+    # whose expression uses the same quotes as the f-string itself (PEP 701),
+    # for instance. "build_addon.py py311" checks the same thing independently
+    # of the version and runs as part of packing anyway.
     - name: Check add-on code
       run: |
         python -m compileall -q globalPlugins
         python -m pyflakes globalPlugins/SmartHomeControl
         python build_addon.py py311
 
-    # Baut aus manifest.ini, globalPlugins/, lib/, doc/ und locale/ -
-    # NICHT aus dem gesamten Repo. Prüft nebenbei Übersetzungen und
-    # Paketintegrität und schlägt bei Problemen fehl.
+    # Builds from manifest.ini, globalPlugins/, lib/, doc/ and locale/ - NOT
+    # from the whole repository. Checks translations and package integrity
+    # along the way and fails on any problem.
     - name: Build addon
       run: python build_addon.py pack
 
@@ -64,19 +64,19 @@ jobs:
         path: dist/*.nvda-addon
         if-no-files-found: error
 
-    # Die Release-Notes sind der Changelog-Abschnitt der getaggten Version
-    # aus CHANGELOG.md (englisch - Release-Seiten werden international
-    # gelesen). Fehlt der Abschnitt, bricht der Schritt ab: ein Release ohne
-    # Changelog fiele sonst erst nach der Veröffentlichung auf.
-    # Zusätzlich muss der Tag zur Version in manifest.ini passen, sonst trüge
-    # das Release einen anderen Namen als das Paket darin.
+    # The release notes are the changelog section of the tagged version from
+    # CHANGELOG.md (English - release pages are read internationally). If the
+    # section is missing the step fails: a release without a changelog would
+    # otherwise only be noticed after publication. The tag must also match the
+    # version in manifest.ini, or the release would carry a different name
+    # than the package inside it.
     - name: Build release notes (on tag)
       if: startsWith(github.ref, 'refs/tags/')
       run: |
         $version = "${{ github.ref_name }}" -replace '^v', ''
         $manifest = python -c "import build_addon; print(build_addon.read_version())"
         if ($version -ne $manifest) {
-          Write-Host "::error::Tag v$version passt nicht zu manifest.ini ($manifest)"
+          Write-Host "::error::Tag v$version does not match manifest.ini ($manifest)"
           exit 1
         }
         python build_addon.py relnotes --version $version --out release-notes.md

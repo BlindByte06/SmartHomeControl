@@ -1,20 +1,21 @@
 # -*- coding: utf-8 -*-
 """
-Smart Home Control – Build-Skript
+Smart Home Control - build script
 
-Erzeugt reproduzierbar das Lib-Bundle und das fertige .nvda-addon-Paket.
-Läuft mit jedem normalen Python 3.9+ (getestet unter Windows), braucht nur
-pip im PATH und Internet für das "libs"-Kommando.
+Produces the lib bundle and the finished .nvda-addon package reproducibly.
+Runs on any ordinary Python 3.9+ (tested on Windows); it only needs pip on
+the PATH, and an internet connection for the "libs" command.
 
-Verwendung (in diesem Ordner ausführen):
-    python build_addon.py pack          Paket bauen -> dist/SmartHomeControl-<version>.nvda-addon
-    python build_addon.py libs         lib/ und lib/_arch/ aus requirements-bundle.txt neu erzeugen
-    python build_addon.py all          libs + pack
-    python build_addon.py pack --out "C:\\Users\\hasel_bg\\SynologyDrive\\NVDA-Addons"
+Usage (run inside this folder):
+    python build_addon.py pack     build the package into dist/
+    python build_addon.py libs     rebuild lib/ and lib/_arch/ from requirements-bundle.txt
+    python build_addon.py all      libs + pack
+    python build_addon.py pot      rebuild the translation template from the source
+    python build_addon.py mo       compile every .po under locale/ into its .mo
 
-Ins Paket kommen NUR: manifest.ini, globalPlugins/, lib/
-Ausgeschlossen werden: __pycache__, *.pyc/*.pyo, *.log, _old_*-Ordner,
-Spikes, Upstream-Quellpakete, .git*, .claude, Berichte, dieses Skript.
+Only these go into the package: manifest.ini, globalPlugins/, lib/, doc/,
+locale/ and LICENSE. Excluded are __pycache__, *.pyc/*.pyo, *.log, _old_*
+folders, upstream source packages, .git*, working notes and this script.
 """
 
 import argparse
@@ -33,21 +34,21 @@ REQUIREMENTS = os.path.join(ROOT, "requirements-bundle.txt")
 LIB_DIR = os.path.join(ROOT, "lib")
 DIST_DIR = os.path.join(ROOT, "dist")
 
-# Architektur-Ziele: (Ordnername, pip-Platform, Python-Version)
-# NVDA 2025.x = 32-Bit Python 3.11; NVDA 2026.1+ = 64-Bit Python 3.13.
+# Architecture targets: (folder name, pip platform, Python version)
+# NVDA 2025.x = 32-bit Python 3.11; NVDA 2026.1+ = 64-bit Python 3.13.
 ARCH_TARGETS = [
     ("cp311-win32", "win32", "3.11"),
     ("cp313-amd64", "win_amd64", "3.13"),
 ]
 
-# Nur diese Top-Level-Einträge gehören ins Paket.
-# doc/, locale/ und LICENSE sind optional (übersprungen, falls nicht vorhanden).
+# Only these top-level entries belong in the package.
+# doc/, locale/ and LICENSE are optional (skipped when absent).
 INCLUDE_TOP = ("manifest.ini", "globalPlugins", "lib", "doc", "locale", "LICENSE")
 OPTIONAL_TOP = {"doc", "locale", "LICENSE"}
 
-# "SelfTest" ist die Testsuite von pycryptodomex: 196 Dateien, 2,8 MB
-# entpackt, die zur Laufzeit nie importiert werden (geprüft: kein Treffer im
-# Add-on-Code und in meross_iot). Dasselbe gilt fuer aiohttps test_utils.
+# "SelfTest" is the test suite of pycryptodomex: 196 files, 2.8 MB
+# unpacked, never imported at runtime (verified: no hit in the add-on code
+# nor in meross_iot). The same goes for aiohttp's test_utils.
 EXCLUDE_DIR_NAMES = {"__pycache__", "SelfTest"}
 EXCLUDE_DIR_GLOBS = ["_old_*"]
 EXCLUDE_FILE_GLOBS = ["*.pyc", "*.pyo", "*.log", "*.tmp", "*.bak",
@@ -55,7 +56,7 @@ EXCLUDE_FILE_GLOBS = ["*.pyc", "*.pyo", "*.log", "*.tmp", "*.bak",
 
 
 def read_requirements():
-    """Liest requirements-bundle.txt und trennt [pure]- und [arch]-Pakete."""
+    """Reads requirements-bundle.txt, splitting [pure] and [arch] packages."""
     pure, arch = [], []
     current = None
     with open(REQUIREMENTS, encoding="utf-8") as f:
@@ -70,14 +71,14 @@ def read_requirements():
             if not line or line.startswith("#"):
                 continue
             if current is None:
-                raise SystemExit(f"Zeile außerhalb einer Sektion: {line}")
+                raise SystemExit(f"Line outside any section: {line}")
             current.append(line)
     return pure, arch
 
 
 def pip_download(dest, packages, platform=None, python_version=None):
-    """Lädt Wheels für die angegebenen Pakete (ohne Abhängigkeiten –
-    die Requirements-Datei pinnt bewusst ALLE benötigten Pakete explizit)."""
+    """Downloads wheels for the given packages (without dependencies - the
+    requirements file deliberately pins EVERY needed package explicitly)."""
     for pkg in packages:
         cmd = [sys.executable, "-m", "pip", "download", "--only-binary=:all:",
                "--no-deps", "-d", dest, pkg]
@@ -89,45 +90,45 @@ def pip_download(dest, packages, platform=None, python_version=None):
         result = subprocess.run(cmd, capture_output=True, text=True)
         if result.returncode != 0:
             raise SystemExit(
-                f"pip download fehlgeschlagen für {pkg}:\n{result.stderr[-800:]}")
+                f"pip download failed for {pkg}:\n{result.stderr[-800:]}")
 
 
 def extract_wheels(wheel_dir, target_dir):
-    """Entpackt alle Wheels eines Ordners in das Zielverzeichnis."""
+    """Unpacks every wheel of a folder into the target directory."""
     os.makedirs(target_dir, exist_ok=True)
     for name in sorted(os.listdir(wheel_dir)):
         if name.endswith(".whl"):
             with zipfile.ZipFile(os.path.join(wheel_dir, name)) as z:
                 z.extractall(target_dir)
-            print(f"  entpackt: {name}")
+            print(f"  unpacked: {name}")
 
 
 def cmd_libs():
-    """Erzeugt lib/ und lib/_arch/ frisch aus requirements-bundle.txt."""
+    """Rebuilds lib/ and lib/_arch/ from requirements-bundle.txt."""
     pure, arch = read_requirements()
-    print(f"[libs] {len(pure)} pure + {len(arch)} arch Pakete")
+    print(f"[libs] {len(pure)} pure + {len(arch)} arch packages")
 
     with tempfile.TemporaryDirectory() as tmp:
-        # 1. Pure-Python-Pakete -> lib/
+        # 1. Pure Python packages -> lib/
         pure_dl = os.path.join(tmp, "pure")
         pip_download(pure_dl, pure)
 
-        # 2. Arch-Pakete je Ziel
+        # 2. Arch packages per target
         arch_dls = {}
         for arch_name, plat, pyver in ARCH_TARGETS:
             d = os.path.join(tmp, arch_name)
             pip_download(d, arch, platform=plat, python_version=pyver)
             arch_dls[arch_name] = d
 
-        # 3. Erst NACH erfolgreichem Download die alten Ordner ersetzen
-        #    (ein fehlgeschlagener Download lässt das Bundle unangetastet).
+        # 3. Replace the old folders only AFTER a successful download, so a
+        #    failed one leaves the bundle untouched.
         staging = os.path.join(tmp, "staging_lib")
         extract_wheels(pure_dl, staging)
         for arch_name, _, _ in ARCH_TARGETS:
             extract_wheels(arch_dls[arch_name],
                            os.path.join(staging, "_arch", arch_name))
 
-        # README im _arch-Ordner erhalten, falls vorhanden
+        # Keep the README in the _arch folder if there is one
         old_readme = os.path.join(LIB_DIR, "_arch", "README.md")
         if os.path.isfile(old_readme):
             shutil.copy2(old_readme, os.path.join(staging, "_arch", "README.md"))
@@ -138,41 +139,41 @@ def cmd_libs():
         if os.path.isdir(LIB_DIR):
             os.replace(LIB_DIR, backup)
         shutil.move(staging, LIB_DIR)
-        print(f"[libs] fertig. Vorherige Version liegt in {backup} "
-              f"(nach Funktionstest löschen).")
+        print(f"[libs] done. The previous version is in {backup} "
+              f"(delete it after a functional test).")
 
 
 def read_version():
-    """Liest die Versionsnummer aus manifest.ini."""
+    """Reads the version number from manifest.ini."""
     with open(os.path.join(ROOT, "manifest.ini"), encoding="utf-8") as f:
         content = f.read()
     m = re.search(r'^version\s*=\s*"?([^"\r\n]+)"?', content, re.MULTILINE)
     if not m:
-        raise SystemExit("Version nicht in manifest.ini gefunden")
+        raise SystemExit("No version found in manifest.ini")
     return m.group(1).strip()
 
 
 def cmd_relnotes(version=None, out_path=None):
-    """Schneidet den Abschnitt einer Version aus CHANGELOG.md heraus.
+    """Cuts the section of one version out of CHANGELOG.md.
 
-    Die GitHub-Releases tragen den Changelog der jeweiligen Version. Es gibt
-    genau eine Changelog-Datei, und zwar auf Englisch - so halten es auch die
-    offizielle Add-on-Vorlage und die groesseren NVDA-Add-ons; Release-Seiten
-    werden international gelesen.
+    A GitHub release carries the changelog of its version. There is exactly
+    one changelog file and it is English - the official add-on template and
+    the larger NVDA add-ons do the same, since release pages are read
+    internationally.
 
-    Ohne --version wird die Version aus manifest.ini genommen; im Workflow
-    kommt sie aus dem Tag. Fehlt der Abschnitt, ist das ein Fehler und kein
-    stiller Rückfall auf einen Platzhaltertext: ein Release ohne Changelog
-    fiele erst auf, wenn es veröffentlicht ist.
+    Without --version the version comes from manifest.ini; in the workflow it
+    comes from the tag. A missing section is an error rather than a silent
+    fallback to placeholder text: a release without a changelog would only be
+    noticed once it is published.
     """
     version = version or read_version()
     path = os.path.join(ROOT, "CHANGELOG.md")
     if not os.path.exists(path):
-        raise SystemExit(f"[relnotes] {path} fehlt")
+        raise SystemExit(f"[relnotes] {path} is missing")
     with open(path, encoding="utf-8") as f:
         lines = f.read().splitlines()
 
-    # Abschnitt = von "## <version>" bis zur nächsten "## "-Überschrift.
+    # Section = from "## <version>" up to the next "## " heading.
     start = None
     for i, line in enumerate(lines):
         if re.match(r'^##\s+' + re.escape(version) + r'(\s|$)', line):
@@ -180,8 +181,8 @@ def cmd_relnotes(version=None, out_path=None):
             break
     if start is None:
         raise SystemExit(
-            f"[relnotes] Kein Abschnitt '## {version}' in CHANGELOG.md - "
-            f"vor dem Taggen den Changelog-Eintrag ergaenzen")
+            f"[relnotes] No section '## {version}' in CHANGELOG.md - "
+            f"add the changelog entry before tagging")
     end = len(lines)
     for i in range(start + 1, len(lines)):
         if lines[i].startswith("## "):
@@ -190,7 +191,7 @@ def cmd_relnotes(version=None, out_path=None):
 
     body = "\n".join(lines[start + 1:end]).strip()
     if not body:
-        raise SystemExit(f"[relnotes] Abschnitt '## {version}' ist leer")
+        raise SystemExit(f"[relnotes] Section '## {version}' is empty")
 
     text = (f"## Smart Home Control {version}\n\n{body}\n\n"
             "---\n\n"
@@ -205,10 +206,11 @@ def cmd_relnotes(version=None, out_path=None):
     if out_path:
         with open(out_path, "w", encoding="utf-8") as f:
             f.write(text)
-        print(f"[relnotes] {version} -> {out_path} ({len(body.splitlines())} Zeilen)")
+        print(f"[relnotes] {version} -> {out_path} ({len(body.splitlines())} lines)")
     else:
-        # Die Konsole ist unter Windows oft cp1252; der Changelog enthält
-        # aber Zeichen wie CO₂. Ohne Umstellung bricht die Ausgabe hier ab.
+        # The console is often cp1252 on Windows while the changelog holds
+        # characters such as CO2 with a subscript. Without switching, printing
+        # would abort here.
         try:
             sys.stdout.reconfigure(encoding="utf-8")
         except (AttributeError, OSError):
@@ -226,12 +228,12 @@ def _file_excluded(name):
 
 
 def sync_doc_titles(version):
-    """Hält die Version im Fenstertitel der Hilfe-Dateien aktuell.
+    """Keeps the version in the window title of the help files current.
 
-    NVDA zeigt beim Öffnen der Hilfe den <title> im Browserfenster an –
-    Konvention der Community-Add-ons ist "Name Version" (z.B.
-    "Smart Home Control 26.07.1"). Wird bei jedem pack aus manifest.ini
-    synchronisiert, damit die Version nie veraltet.
+    NVDA shows the <title> in the browser window when the help is opened; the
+    convention among community add-ons is "Name Version" (for example
+    "Smart Home Control 26.7.5"). Synchronised from manifest.ini on every
+    pack so the version can never go stale.
     """
     for lang_dir in sorted(os.listdir(os.path.join(ROOT, "doc"))) if os.path.isdir(os.path.join(ROOT, "doc")) else []:
         path = os.path.join(ROOT, "doc", lang_dir, "readme.html")
@@ -247,24 +249,24 @@ def sync_doc_titles(version):
         if new_content != content:
             with open(path, "w", encoding="utf-8") as f:
                 f.write(new_content)
-            print(f"[pack] Titel aktualisiert: doc/{lang_dir}/readme.html -> {version}")
+            print(f"[pack] title updated: doc/{lang_dir}/readme.html -> {version}")
 
 
 def cmd_check_min_python(strict=True):
-    """Prüft den Code gegen die Python-Version der ältesten NVDA-Fassung.
+    """Checks the code against the Python version of the oldest NVDA.
 
-    minimumNVDAVersion 2025.1 bedeutet Python 3.11. Dort ist es ein
-    SyntaxError, wenn ein Ausdruck IM f-String dasselbe Anführungszeichen
-    benutzt wie der f-String selbst - erst 3.12 erlaubt das (PEP 701).
+    minimumNVDAVersion 2025.1 means Python 3.11. There it is a SyntaxError
+    when an expression INSIDE an f-string uses the same quote as the f-string
+    itself - only 3.12 allows that (PEP 701).
 
-    Genau daran ist das Add-on schon einmal beim Nutzer gescheitert, während
-    es auf dem Entwicklungsrechner (Python 3.12) fehlerfrei übersetzte:
+    The add-on has already failed at a user for exactly this reason while
+    compiling without complaint on the development machine (Python 3.12):
 
-        f"{device.name}: {_("Error")}. "   ->  auf 3.11 SyntaxError
+        f"{device.name}: {_("Error")}. "   ->  a SyntaxError on 3.11
 
-    Ein `python -m compileall` mit einer neueren Version findet das NICHT,
-    deshalb diese eigene Prüfung. Sie läuft bei `pack` mit, damit ein Paket
-    gar nicht erst entsteht, das auf der Mindestversion nicht startet.
+    A `python -m compileall` with a newer version does NOT find it, which is
+    why this check exists. It runs as part of `pack`, so a package that will
+    not start on the minimum version is never produced in the first place.
     """
     import ast
     problems = []
@@ -288,16 +290,16 @@ def cmd_check_min_python(strict=True):
             for expr in re.findall(r"\{([^{}]*)\}", inner):
                 if quote in expr:
                     problems.append(
-                        f"{os.path.basename(path)}:{node.lineno} - Ausdruck im "
-                        f"f-String nutzt {quote} wie der f-String selbst "
-                        f"(auf Python 3.11 ein SyntaxError): {seg[:70]}")
+                        f"{os.path.basename(path)}:{node.lineno} - expression "
+                        f"in the f-string uses {quote} like the f-string itself "
+                        f"(a SyntaxError on Python 3.11): {seg[:70]}")
                     break
-                # Zweite Falle derselben Art: Backslashes im Ausdruck erlaubt
-                # ebenfalls erst 3.12.
+                # Second trap of the same kind: backslashes in the
+                # expression are also allowed only from 3.12.
                 if "\\" in expr:
                     problems.append(
-                        f"{os.path.basename(path)}:{node.lineno} - Backslash im "
-                        f"f-String-Ausdruck (auf Python 3.11 ein SyntaxError): "
+                        f"{os.path.basename(path)}:{node.lineno} - backslash in "
+                        f"the f-string expression (a SyntaxError on Python 3.11): "
                         f"{seg[:70]}")
                     break
 
@@ -305,20 +307,20 @@ def cmd_check_min_python(strict=True):
         print("[py311] " + "\n[py311] ".join(problems))
         if strict:
             raise SystemExit(
-                "Code ist auf der Mindest-NVDA-Version nicht lauffähig - "
-                "im f-String das andere Anführungszeichen verwenden")
+                "The code will not run on the minimum NVDA version - use "
+                "the other quote inside the f-string")
         return False
-    print("[py311] OK - keine verschachtelten Anführungszeichen in f-Strings")
+    print("[py311] OK - no nested quotes inside f-strings")
     return True
 
 
 def _translatable_literals():
-    """Alle `_("...")`-Literale im Quellcode, mit Fundstelle.
+    """Every `_("...")` literal in the source, with where it was found.
 
-    Rein statisch über den AST - kein xgettext nötig, das unter Windows
-    ohnehin selten installiert ist. Erfasst werden nur Aufrufe mit einem
-    String-Literal als erstem Argument; f-Strings und Variablen sind
-    ohnehin nicht übersetzbar.
+    Purely static, over the AST - no xgettext needed, which is rarely
+    installed on Windows anyway. Only calls with a string literal as their
+    first argument are collected; f-strings and variables cannot be
+    translated in any case.
     """
     import ast
     found = {}
@@ -339,21 +341,21 @@ def _translatable_literals():
 
 
 def _translatable_entries():
-    """Wie `_translatable_literals`, zusätzlich mit dem Translators-Kommentar.
+    """Like `_translatable_literals`, plus the Translators comment.
 
-    Der Kommentar über dem `_()`-Aufruf ist für Übersetzer oft wichtiger als
-    der Text selbst: er sagt, ob "Off" ein Gerätezustand, ein Menüeintrag
-    oder eine Schaltfläche ist. Er wird ab der Zeile über dem Aufruf nach
-    oben eingesammelt, solange dort Kommentarzeilen stehen.
+    The comment above the `_()` call is often more important to a translator
+    than the text itself: it says whether "Off" is a device state, a menu
+    entry or a button. It is collected upwards from the line above the call
+    for as long as comment lines are found there.
     """
     import ast
-    eintraege = {}
+    entries = {}
     pattern = os.path.join(ROOT, "globalPlugins", "SmartHomeControl", "*.py")
     for path in sorted(glob.glob(pattern)):
         with open(path, encoding="utf-8") as f:
-            quelle = f.read()
-        zeilen = quelle.splitlines()
-        tree = ast.parse(quelle, path)
+            source = f.read()
+        lines = source.splitlines()
+        tree = ast.parse(source, path)
         for node in ast.walk(tree):
             if not (isinstance(node, ast.Call)
                     and isinstance(node.func, ast.Name)
@@ -365,38 +367,38 @@ def _translatable_entries():
                 continue
             block = []
             for i in range(node.lineno - 2, max(-1, node.lineno - 10), -1):
-                zeile = zeilen[i].strip()
-                if zeile.startswith("#"):
-                    block.insert(0, zeile.lstrip("# ").rstrip())
+                line = lines[i].strip()
+                if line.startswith("#"):
+                    block.insert(0, line.lstrip("# ").rstrip())
                 else:
                     break
-            kommentar = " ".join(block)
-            # Ab dem Marker schneiden, nicht auf ihn prüfen: über der
-            # Translators-Zeile steht oft noch ein normaler Codekommentar,
-            # und ein "startswith" würde den ganzen Hinweis verwerfen.
-            marke = kommentar.find("Translators")
-            if marke > 0:
-                kommentar = kommentar[marke:]
-            eintrag = eintraege.setdefault(
+            comment = " ".join(block)
+            # Cut from the marker rather than testing for it: an ordinary
+            # code comment often sits above the Translators line, and a
+            # "startswith" would discard the whole hint.
+            marker = comment.find("Translators")
+            if marker > 0:
+                comment = comment[marker:]
+            entry = entries.setdefault(
                 arg.value, {"occurrences": [], "comment": ""})
-            eintrag["occurrences"].append(
+            entry["occurrences"].append(
                 (os.path.basename(path), str(node.lineno)))
-            if kommentar.startswith("Translators") and not eintrag["comment"]:
-                eintrag["comment"] = kommentar
-    return eintraege
+            if comment.startswith("Translators") and not entry["comment"]:
+                entry["comment"] = comment
+    return entries
 
 
 def cmd_pot():
-    """Schreibt locale/SmartHomeControl.pot neu aus dem Quellcode.
+    """Rewrites locale/SmartHomeControl.pot from the source.
 
-    Ohne dieses Kommando veraltet die Vorlage still bei jeder Code-Änderung -
-    Übersetzer bekämen dann eine Datei, in der neue Texte fehlen. Vorhandene
-    Übersetzungen werden NICHT angefasst; sie holen sich die Neuerungen über
-    "Aus POT-Datei aktualisieren" (Poedit) bzw. msgmerge.
+    Without this command the template ages silently with every change to the
+    code, and translators are handed a file in which new texts are simply
+    absent. Existing translations are NOT touched; they pick up the additions
+    through "Update from POT file" (Poedit) or msgmerge.
     """
     import polib
     from datetime import datetime, timezone
-    eintraege = _translatable_entries()
+    entries = _translatable_entries()
     pot_path = os.path.join(ROOT, "locale", "SmartHomeControl.pot")
 
     pot = polib.POFile()
@@ -410,77 +412,79 @@ def cmd_pot():
         "Content-Transfer-Encoding": "8bit",
         "Language-Team": "LANGUAGE <LL@li.org>",
     }
-    # Vorhandene Hinweise nicht verlieren: manche stehen als gewöhnlicher
-    # Codekommentar da ("Device filter") und tragen trotzdem Bedeutung für
-    # Übersetzer. Was der Quellcode hergibt, hat Vorrang; was er nicht
-    # hergibt, wird aus der bisherigen Vorlage übernommen.
-    bisher = {}
+    # Do not lose existing hints: some sit there as an ordinary code comment
+    # ("Device filter") and still carry meaning for a translator. What the
+    # source yields wins; what it does not yield is carried over from the
+    # previous template.
+    previous = {}
     if os.path.isfile(pot_path):
-        bisher = {e.msgid: e.comment for e in polib.pofile(pot_path)
-                  if e.msgid and e.comment}
-    uebernommen = 0
-    for msgid, daten in eintraege.items():
-        kommentar = daten["comment"] or bisher.get(msgid, "")
-        if not daten["comment"] and kommentar:
-            uebernommen += 1
+        previous = {e.msgid: e.comment for e in polib.pofile(pot_path)
+                    if e.msgid and e.comment}
+    carried = 0
+    for msgid, data in entries.items():
+        comment = data["comment"] or previous.get(msgid, "")
+        if not data["comment"] and comment:
+            carried += 1
         pot.append(polib.POEntry(
             msgid=msgid, msgstr="",
-            comment=kommentar,
-            occurrences=daten["occurrences"]))
+            comment=comment,
+            occurrences=data["occurrences"]))
     pot.sort(key=lambda e: e.msgid)
     pot.save(pot_path)
-    mit = sum(1 for e in pot if e.comment)
-    print(f"[pot] {len(pot)} Texte geschrieben, {mit} mit Hinweis "
-          f"({uebernommen} aus der bisherigen Vorlage übernommen) -> {pot_path}")
+    with_hint = sum(1 for e in pot if e.comment)
+    print(f"[pot] {len(pot)} texts written, {with_hint} with a hint "
+          f"({carried} carried over from the previous template) "
+          f"-> {pot_path}")
     return pot_path
 
 
 def cmd_mo():
-    """Kompiliert jede .po unter locale/ zu einer .mo neben ihr.
+    """Compiles every .po under locale/ into the .mo beside it.
 
-    NVDA lädt ausschließlich die .mo. Wer eine Übersetzung nur als .po
-    schickt - etwa aus einem Weboberflächen-Werkzeug - hätte sonst eine
-    Übersetzung, die nirgends wirkt.
+    NVDA loads the .mo and nothing else. A translation delivered as a .po
+    alone - from a web-based tool, say - would otherwise have no effect
+    anywhere.
     """
     import polib
-    muster = os.path.join(ROOT, "locale", "*", "LC_MESSAGES", "nvda.po")
-    gefunden = sorted(glob.glob(muster))
-    if not gefunden:
-        print("[mo] keine .po-Dateien unter locale/ gefunden")
+    pattern = os.path.join(ROOT, "locale", "*", "LC_MESSAGES", "nvda.po")
+    po_files = sorted(glob.glob(pattern))
+    if not po_files:
+        print("[mo] no .po files found under locale/")
         return
-    for po_path in gefunden:
+    for po_path in po_files:
         po = polib.pofile(po_path)
         mo_path = po_path[:-3] + ".mo"
         po.save_as_mofile(mo_path)
-        sprache = os.path.basename(os.path.dirname(os.path.dirname(po_path)))
-        fehlend = sum(1 for e in po if not e.msgstr)
-        print(f"[mo] {sprache}: {len(po)} Texte, {fehlend} unübersetzt "
+        lang = os.path.basename(os.path.dirname(os.path.dirname(po_path)))
+        missing = sum(1 for e in po if not e.msgstr)
+        print(f"[mo] {lang}: {len(po)} texts, {missing} untranslated "
               f"-> {os.path.basename(mo_path)}")
 
 
 def cmd_check_translations(strict=True):
-    """Prüft alle Übersetzungen unter locale/ gegen den Quellcode.
+    """Checks every translation under locale/ against the source.
 
-    Quellsprache ist Englisch: die `_()`-Texte im Code SIND die msgids, jede
-    Sprache unter locale/ ist eine Übersetzung davon. Damit sehen Nutzer ohne
-    passende Übersetzung Englisch und nicht die Sprache des Autors.
+    The source language is English: the `_()` texts in the code ARE the
+    msgids, and each language under locale/ is a translation of them. A user
+    without a matching translation therefore sees English, not the language
+    of the author.
 
-    Vier Fehlerbilder, die alle schon vorgekommen sind:
+    Four failure modes, all of which have happened:
 
-    1. Ein `_()`-String fehlt in einer .po -> dort erscheint Englisch,
-       obwohl die Oberfläche in der jeweiligen Sprache läuft.
-    2. Die .mo ist älter als die .po -> NVDA lädt die .mo, die neuen
-       Übersetzungen wirken nicht.
-    3. Nicht übersetzte oder fuzzy Einträge.
-    4. Die .pot passt nicht mehr zum Code - Übersetzer bekämen eine
-       veraltete Vorlage.
+    1. A `_()` string is missing from a .po -> English appears there although
+       the interface runs in that language.
+    2. The .mo is older than the .po -> NVDA loads the .mo, so the new
+       translations have no effect.
+    3. Untranslated or fuzzy entries.
+    4. The .pot no longer matches the code - translators would be handed a
+       stale template.
 
-    Läuft automatisch bei `pack`.
+    Runs automatically as part of `pack`.
     """
     try:
         import polib
     except ImportError:
-        print("[i18n] polib nicht installiert - Prüfung übersprungen "
+        print("[i18n] polib not installed - check skipped "
               "(pip install polib)")
         return True
 
@@ -488,22 +492,23 @@ def cmd_check_translations(strict=True):
     literals = _translatable_literals()
     problems = []
 
-    # Die .pot ist die Vorlage für Übersetzer und muss den Code abbilden.
+    # The .pot is the template for translators and has to mirror the code.
     pot_path = os.path.join(locale_dir, "SmartHomeControl.pot")
     if not os.path.isfile(pot_path):
-        problems.append(f"{pot_path} fehlt - Übersetzer haben keine Vorlage")
+        problems.append(f"{pot_path} is missing - translators have no template")
     else:
         pot_ids = {e.msgid for e in polib.pofile(pot_path) if e.msgid}
         pot_missing = sorted(set(literals) - pot_ids)
         if pot_missing:
             problems.append(
-                f"{len(pot_missing)} Strings im Code fehlen in der .pot "
-                f"(z.B. {literals[pot_missing[0]]}) - .pot neu erzeugen")
+                f"{len(pot_missing)} strings in the code are missing from "
+                f"the .pot (e.g. {literals[pot_missing[0]]}) - run "
+                f"'build_addon.py pot'")
 
     langs = sorted(d for d in os.listdir(locale_dir)
                    if os.path.isdir(os.path.join(locale_dir, d)))
     if not langs:
-        print("[i18n] keine Übersetzungen vorhanden (Quellsprache Englisch)")
+        print("[i18n] no translations present (source language is English)")
         return True
 
     counts = []
@@ -511,11 +516,11 @@ def cmd_check_translations(strict=True):
         po_path = os.path.join(locale_dir, lang, "LC_MESSAGES", "nvda.po")
         mo_path = os.path.join(locale_dir, lang, "LC_MESSAGES", "nvda.mo")
         if not os.path.isfile(po_path):
-            problems.append(f"{lang}: nvda.po fehlt")
+            problems.append(f"{lang}: nvda.po is missing")
             continue
         if not os.path.isfile(mo_path):
-            problems.append(f"{lang}: nvda.mo fehlt - NVDA lädt zur Laufzeit "
-                            f"die .mo, nicht die .po!")
+            problems.append(f"{lang}: nvda.mo is missing - at runtime NVDA "
+                            f"loads the .mo, not the .po")
             continue
 
         po = polib.pofile(po_path)
@@ -524,42 +529,42 @@ def cmd_check_translations(strict=True):
 
         missing = sorted(set(literals) - po_ids)
         if missing:
-            problems.append(f"{lang}: {len(missing)} Strings im Code fehlen "
-                            f"in der .po:")
+            problems.append(f"{lang}: {len(missing)} strings in the code are "
+                            f"missing from the .po:")
             for msgid in missing[:15]:
                 problems.append(f"    {literals[msgid]:<28} {msgid[:60]!r}")
             if len(missing) > 15:
-                problems.append(f"    ... und {len(missing) - 15} weitere")
+                problems.append(f"    ... and {len(missing) - 15} more")
 
         drift = po_ids ^ {e.msgid for e in mo}
         if drift:
-            problems.append(f"{lang}: .mo weicht von der .po ab "
-                            f"({len(drift)} Einträge) - .mo neu kompilieren")
+            problems.append(f"{lang}: the .mo differs from the .po "
+                            f"({len(drift)} entries) - run 'build_addon.py mo'")
         if po.untranslated_entries():
             problems.append(f"{lang}: {len(po.untranslated_entries())} "
-                            f"unübersetzte Einträge")
+                            f"untranslated entries")
         if po.fuzzy_entries():
-            problems.append(f"{lang}: {len(po.fuzzy_entries())} fuzzy Einträge")
+            problems.append(f"{lang}: {len(po.fuzzy_entries())} fuzzy entries")
         counts.append(f"{lang}={len(po)}")
 
     if problems:
         print("[i18n] " + "\n[i18n] ".join(problems))
         if strict:
-            raise SystemExit("Übersetzungsprüfung fehlgeschlagen")
+            raise SystemExit("Translation check failed")
         return False
 
-    print(f"[i18n] OK - {len(literals)} Strings im Code (englisch), "
-          f"Übersetzungen: {', '.join(counts)}")
+    print(f"[i18n] OK - {len(literals)} strings in the code (English), "
+          f"translations: {', '.join(counts)}")
     return True
 
 
 def cmd_licenses(write=False):
-    """Liest die Lizenzen der gebündelten Pakete aus deren METADATA.
+    """Reads the licences of the bundled packages from their METADATA.
 
-    Hintergrund: das Add-on steht unter GPL-2.0-or-later, und mindestens ein
-    gebündeltes Paket (paho-mqtt) ist dual lizenziert, wobei nur die eine
-    Hälfte GPL-verträglich ist. Diese Übersicht von Hand zu pflegen geht
-    schief, sobald eine Version wechselt - deshalb generiert.
+    Background: the add-on is GPL-2.0-or-later, and at least one bundled
+    package (paho-mqtt) is dual licensed with only one half compatible with
+    the GPL. Maintaining this overview by hand goes wrong as soon as a
+    version changes - hence it is generated.
     """
     rows = {}
     for meta in glob.glob(os.path.join(ROOT, "lib", "**", "*.dist-info",
@@ -569,7 +574,7 @@ def cmd_licenses(write=False):
         with open(meta, encoding="utf-8", errors="replace") as f:
             for line in f:
                 if not line.strip():
-                    break  # Ende des Headers
+                    break  # end of the header
                 if line.startswith("Name: "):
                     name = line[6:].strip()
                 elif line.startswith("Version: "):
@@ -578,7 +583,7 @@ def cmd_licenses(write=False):
                     license_name = line[20:].strip()
                 elif line.startswith("License: ") and not license_name:
                     value = line[9:].strip()
-                    if len(value) < 60:  # lange Werte sind der volle Lizenztext
+                    if len(value) < 60:  # long values are the full licence text
                         license_name = value
                 elif line.startswith("Classifier: License ::"):
                     classifiers.append(line.split("::")[-1].strip())
@@ -587,29 +592,29 @@ def cmd_licenses(write=False):
         if name:
             rows[name.lower()] = (name, version, license_name or "?")
 
-    lines = ["| Paket | Version | Lizenz |", "|---|---|---|"]
+    lines = ["| Package | Version | Licence |", "|---|---|---|"]
     for key in sorted(rows):
         name, version, license_name = rows[key]
         lines.append(f"| `{name}` | {version} | {license_name} |")
     table = "\n".join(lines)
     print(table)
-    print(f"\n[licenses] {len(rows)} Pakete")
+    print(f"\n[licenses] {len(rows)} packages")
     if write:
         out = os.path.join(ROOT, "THIRD_PARTY_LICENSES.md")
         with open(out, "w", encoding="utf-8", newline="\n") as f:
-            f.write("# Gebündelte Fremdkomponenten\n\n"
-                    "Erzeugt mit `python build_addon.py licenses --write` aus "
-                    "den `*.dist-info/METADATA`-Feldern der gebündelten "
-                    "Pakete.\n\n" + table + "\n")
-        print(f"[licenses] geschrieben: {out}")
+            f.write("# Bundled third-party components\n\n"
+                    "Generated with `python build_addon.py licenses --write` "
+                    "from the `*.dist-info/METADATA` fields of the bundled "
+                    "packages.\n\n" + table + "\n")
+        print(f"[licenses] written: {out}")
     return rows
 
 
 def cmd_pack(out_dir=None):
-    """Baut das .nvda-addon-Paket."""
+    """Builds the .nvda-addon package."""
     version = read_version()
-    # Zuerst die Lauffaehigkeit auf der Mindestversion - ein Paket, das dort
-    # nicht startet, braucht niemand.
+    # First whether it runs on the minimum version - nobody needs a package
+    # that will not start there.
     cmd_check_min_python()
     cmd_check_translations()
     sync_doc_titles(version)
@@ -627,7 +632,7 @@ def cmd_pack(out_dir=None):
             if not os.path.isdir(p):
                 if top in OPTIONAL_TOP:
                     continue
-                raise SystemExit(f"Pflicht-Eintrag fehlt: {top}")
+                raise SystemExit(f"Mandatory entry missing: {top}")
             for root, dirs, files in os.walk(p):
                 dirs[:] = [d for d in dirs if not _dir_excluded(d)]
                 for fname in files:
@@ -638,31 +643,31 @@ def cmd_pack(out_dir=None):
                     count += 1
 
     size_mb = os.path.getsize(out_path) / 1024 / 1024
-    print(f"[pack] {out_path}  ({count} Dateien, {size_mb:.1f} MB)")
+    print(f"[pack] {out_path}  ({count} files, {size_mb:.1f} MB)")
 
-    # Integritätsprüfung
+    # Integrity check
     with zipfile.ZipFile(out_path) as z:
         bad = z.testzip()
         names = z.namelist()
-    assert bad is None, f"Defekte Datei im ZIP: {bad}"
-    assert "manifest.ini" in names, "manifest.ini fehlt im Paket!"
+    assert bad is None, f"Corrupt file in the ZIP: {bad}"
+    assert "manifest.ini" in names, "manifest.ini is missing from the package"
     forbidden = [n for n in names if "__pycache__" in n or "_old_" in n
                  or n.endswith((".pyc", ".log"))]
-    assert not forbidden, f"Verbotene Dateien im Paket: {forbidden[:5]}"
-    # Die .mo ist die Datei, die NVDA zur Laufzeit lädt. Fehlt sie, ist das
-    # Add-on still einsprachig - ohne Fehlermeldung. Genau das kann passieren,
-    # wenn eine .gitignore-Regel `*.mo` ausschließt und das Paket aus einem
-    # frischen Klon gebaut wird.
+    assert not forbidden, f"Forbidden files in the package: {forbidden[:5]}"
+    # The .mo is what NVDA loads at runtime. Without it the add-on is
+    # silently monolingual, with no error message. That happens exactly when
+    # a .gitignore rule excludes `*.mo` and the package is built from a fresh
+    # clone.
     mo_files = [n for n in names if n.endswith(".mo")]
-    assert mo_files, ("Keine .mo im Paket - die Übersetzungen fehlen! "
-                      "(Prüfe .gitignore auf eine *.mo-Regel)")
-    print(f"[pack] Integrität OK ({len(mo_files)} Übersetzungsdatei(en))")
+    assert mo_files, ("No .mo in the package - the translations are missing "
+                      "(check .gitignore for a *.mo rule)")
+    print(f"[pack] integrity OK ({len(mo_files)} translation file(s))")
 
     if out_dir:
         os.makedirs(out_dir, exist_ok=True)
         dest = os.path.join(out_dir, os.path.basename(out_path))
         shutil.copy2(out_path, dest)
-        print(f"[pack] kopiert nach: {dest}")
+        print(f"[pack] copied to: {dest}")
 
 
 def main():
@@ -670,13 +675,14 @@ def main():
     parser.add_argument("command",
                         choices=["libs", "pack", "all", "i18n", "licenses",
                                  "relnotes", "py311", "pot", "mo"])
-    parser.add_argument("--out", help="Zusätzlicher Zielordner für das fertige Paket "
-                        "(z.B. C:\\Users\\hasel_bg\\SynologyDrive\\NVDA-Addons); "
-                        "bei 'relnotes': Zieldatei für den Text")
+    parser.add_argument("--out", help="additional target folder for the "
+                        "finished package; with 'relnotes': target file for "
+                        "the text")
     parser.add_argument("--write", action="store_true",
-                        help="bei 'licenses': THIRD_PARTY_LICENSES.md schreiben")
+                        help="with 'licenses': write THIRD_PARTY_LICENSES.md")
     parser.add_argument("--version",
-                        help="bei 'relnotes': Version statt der aus manifest.ini")
+                        help="with 'relnotes': version instead of the one in "
+                        "manifest.ini")
     args = parser.parse_args()
 
     if args.command == "py311":

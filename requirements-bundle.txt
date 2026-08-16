@@ -1,16 +1,16 @@
 # ============================================================
-# Smart Home Control – gebündelte Bibliotheken (Stand 14.06.2026)
+# Smart Home Control - bundled libraries (as of 2026-06-14)
 #
-# Diese Datei ist die Quelle für build_addon.py ("libs"-Kommando):
-# Alle hier gepinnten Versionen werden als Wheels geladen und nach
-# lib/ bzw. lib/_arch/<tag>/ entpackt.
+# This file is the source for build_addon.py ("libs" command): every
+# version pinned here is downloaded as a wheel and unpacked into lib/
+# or lib/_arch/<tag>/.
 #
-# Aufteilung:
-#   [pure]  -> lib/            (reine Python-Pakete, arch-unabhängig)
-#   [arch]  -> lib/_arch/cp311-win32/  UND  lib/_arch/cp313-amd64/
-#              (Pakete mit kompilierten C-Extensions; je NVDA-Python)
+# Split:
+#   [pure]  -> lib/            (pure Python packages, architecture-neutral)
+#   [arch]  -> lib/_arch/cp311-win32/  AND  lib/_arch/cp313-amd64/
+#              (packages with compiled C extensions; one per NVDA Python)
 #
-# Bei Security-Updates: Version hier anheben, dann
+# For a security update: raise the version here, then
 #   python build_addon.py libs && python build_addon.py pack
 # ============================================================
 

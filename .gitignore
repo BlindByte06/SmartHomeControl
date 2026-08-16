@@ -1,31 +1,31 @@
-# .gitignore für NVDA Add-on
+# .gitignore for the NVDA add-on
 
 # Python
 __pycache__/
 *.pyc
 *.pyo
-# ACHTUNG: KEINE *.py[cod]-Regel - das "d" schlösse auch die *.pyd aus,
-# also die kompilierten C-Extensions in lib/_arch/. Ohne sie ist ein
-# frischer Klon nicht lauffähig (aiohttp, yarl, pycryptodomex ...).
+# CAUTION: NO *.py[cod] rule - the "d" would also exclude the *.pyd files,
+# that is the compiled C extensions in lib/_arch/. Without them a fresh
+# clone does not run (aiohttp, yarl, pycryptodomex ...).
 *$py.class
 *.so
 *.egg-info/
 dist/
 build/
-# Erzeugt "build_addon.py relnotes" im Release-Workflow
+# Produced by "build_addon.py relnotes" in the release workflow
 release-notes.md
-# Backup, das "build_addon.py libs" vor dem Ersetzen anlegt
+# Backup that "build_addon.py libs" creates before replacing lib/
 lib.old/
 
 # NVDA
 *.nvda-addon
-# Die .pot ist die Vorlage fuer Uebersetzer und liegt im ausgelieferten
-# Paket - sie wird eingecheckt, nicht ignoriert.
+# The .pot is the template for translators and ships inside the package -
+# it is checked in, not ignored.
 *.mo
-# ACHTUNG: Die kompilierte .mo IST die Datei, die NVDA zur Laufzeit lädt -
-# die .po ist nur die Quelle. Ohne diese Ausnahme baut ein frischer Klon des
-# Repos ein Add-on OHNE englische Oberfläche, und build_addon.py merkt es
-# nicht. Die Ausnahme muss nach der *.mo-Regel stehen (letzte Regel gewinnt).
+# CAUTION: the compiled .mo IS the file NVDA loads at runtime - the .po is
+# only the source. Without this exception a fresh clone of the repository
+# builds an add-on with NO translations, and build_addon.py does not notice.
+# The exception has to come after the *.mo rule (the last rule wins).
 !locale/**/*.mo
 
 # Logs
@@ -33,30 +33,30 @@ lib.old/
 log_tail.txt
 NVDA_LOG.log
 
-# Entwicklung
+# Development
 .vscode/
 .idea/
 *.swp
 *~
 .claude/
 
-# Temporäre Dateien
+# Temporary files
 .DS_Store
 Thumbs.db
 
-# Persönliche Daten (WICHTIG!)
+# Personal data (IMPORTANT)
 config.ini
 settings.json
-# Laufzeitdaten des Add-ons (liegen normalerweise im addons-Ordner,
-# beim Entwickeln aber gelegentlich hier)
+# Runtime data of the add-on (normally in the addons folder, but during
+# development occasionally here)
 SmartHomeControl_history.json*
 SmartHomeControl_energy.json*
 SmartHomeControl_favorites.json*
 smarthomecontrol_salt.bin
 
-# Interne Arbeitsdokumente (nicht fürs öffentliche Repo).
-# Ins Repo gehören nur README, CHANGELOG, LICENSE und
-# THIRD_PARTY_LICENSES - alles andere ist Arbeitsmaterial.
+# Internal working documents (not for the public repository). Only README,
+# CHANGELOG, LICENSE and THIRD_PARTY_LICENSES belong in the repository -
+# everything else is working material.
 VEROEFFENTLICHUNG.md
 README_FAKTENPRUEFUNG.md
 VOR_EINREICHUNG_CHECKLISTE.md
@@ -65,8 +65,8 @@ SmartHomeControl_Release_Checkliste.md
 BACKLOG_NACH_RELEASE_1.md
 CODE_REVIEW_*.md
 
-# Aus dem Upstream entpackte Bibliotheks-Quellen (werden über
-# requirements-bundle.txt reproduziert, nicht eingecheckt)
+# Library sources unpacked from upstream (reproduced through
+# requirements-bundle.txt, not checked in)
 MerossIot-*/
 pyvesync/
 
@@ -74,8 +74,8 @@ pyvesync/
 .sconsign.dblite
 .sconf_temp/
 
-# Arbeitsunterlagen, die nicht ins oeffentliche Repository gehoeren:
-# die Projektnotizen und die Pruefskripte. Sie wandern ueber Synology
-# Drive auf die anderen Rechner, nicht ueber git.
+# Working material that does not belong in the public repository: the
+# project notes and the check scripts. They travel to the other machines
+# over Synology Drive, not over git.
 CLAUDE.md
 tools/
