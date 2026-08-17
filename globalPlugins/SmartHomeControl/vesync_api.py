@@ -40,6 +40,7 @@ from .vesync_devices import (
     VeSyncPurifier, VeSyncTowerFan, VESYNC_PURIFIER_TYPES, VESYNC_FAN_TYPES,
     resolve_device_config,
 )
+from .errors import CredentialsRejected
 
 
 # ============================================================
@@ -407,9 +408,12 @@ class VeSyncAPI:
             # Translators: Placeholder when VeSync does not provide an error
             # text.
             msg = auth_resp.get("msg") or _("Unknown error")
+            # This is the step that checks the password, so the interface may
+            # offer to enter it again - see errors.CredentialsRejected.
             # Translators: VeSync login error, with the server message as
             # {msg}.
-            raise RuntimeError(_("VeSync login failed: {msg}").format(msg=msg))
+            raise CredentialsRejected(
+                _("VeSync login failed: {msg}").format(msg=msg))
 
         result = auth_resp.get("result") or {}
         authorize_code = result.get("authorizeCode")

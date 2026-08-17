@@ -514,7 +514,9 @@ class MerossAPI:
         except (ConnectionError, TimeoutError, OSError) as e:
             log.error(f"Login failed - network error: {e}")
             self._cleanup()
-            raise ConnectionError(f"Verbindungsfehler: {e}")
+            # Translators: Error message when the Meross login fails for
+            # network reasons. {error} = technical detail.
+            raise ConnectionError(_("Connection error: {error}").format(error=e))
         except Exception as e:
             log.error(f"Login failed: {e}")
             self._cleanup()
@@ -1780,7 +1782,7 @@ class MerossAPI:
             else:
                 log.debug("Event loop thread stopped successfully")
 
-        log.debug("Meross API: Cleanup abgeschlossen")
+        log.debug("Meross API: cleanup finished")
     
     def logout(self):
         """Logs out and cleans up"""

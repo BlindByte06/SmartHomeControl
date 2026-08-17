@@ -11,6 +11,7 @@ import threading
 from logHandler import log
 
 from .constants import netatmo_redirect_uri, NETATMO_REDIRECT_PORT
+from .platform_utils import PLATFORM_LABELS, PASSWORD_PLATFORMS
 
 import addonHandler
 try:
@@ -24,6 +25,49 @@ if "_" not in globals():  # fallback if initTranslation() fails
         return s
 
 
+def is_credentials_error(error):
+    """Was the login rejected because of the credentials, not the network?
+
+    The distinction decides whether asking for the password again makes
+    sense. A timeout during the automatic login at NVDA start (the WLAN is
+    often not up yet) must not open a settings dialog.
+
+    Decided by the error TYPE, never by its text: the messages are
+    translated, so a check for "login" would work in English and be wrong in
+    German. Our API layers raise ``CredentialsRejected`` (a ValueError) where
+    the platform refused the credentials; Meross comes from a third-party
+    library, whose ``BadLoginException`` can only be recognised by its class
+    name.
+    """
+    if isinstance(error, (ConnectionError, TimeoutError, OSError)):
+        return False
+    if "badlogin" in type(error).__name__.lower():
+        return True
+    # CredentialsRejected and the "email and password required" of the API
+    # layers are both ValueErrors.
+    return isinstance(error, ValueError)
+
+
+def login_error_message(platform, error):
+    """One line saying why the login failed, for status and speech."""
+    label = PLATFORM_LABELS.get(platform, platform)
+    if "badlogin" in type(error).__name__.lower():
+        # Translators: Login error for wrong credentials. {platform} = brand
+        # name (Meross etc.). The library's own English message is replaced
+        # here, since it is not translatable.
+        return _("{platform}: email address or password not accepted").format(
+            platform=label)
+    text = str(error)[:100]
+    if text.lower().startswith(label.lower()):
+        # The platform names itself already ("VeSync login failed: ..."),
+        # prefixing it again would stutter.
+        return text
+    # Translators: Login error with the platform's own message. {platform} =
+    # brand name, {error} = message from the platform.
+    return _("{platform} login failed: {error}").format(
+        platform=label, error=text)
+
+
 class SmartHomeSettingsDialog(wx.Dialog):
     """Settings dialog with tabs for Meross, Netatmo and VeSync credentials.
 
@@ -32,7 +76,13 @@ class SmartHomeSettingsDialog(wx.Dialog):
     immediately without closing and reopening the dialog (used to be static).
     """
 
-    def __init__(self, parent, plugin):
+    # Tab index of each platform in the notebook, in the order the pages are
+    # added in _create_ui(). on_ok jumps there on a validation error, and
+    # ``focus_platform`` uses it to open the dialog straight at the platform
+    # whose login just failed.
+    _PLATFORM_TABS = {'meross': 1, 'netatmo': 2, 'vesync': 3, 'cozytouch': 4}
+
+    def __init__(self, parent, plugin, focus_platform=None):
         super().__init__(
             parent,
             # Translators: Title of the settings dialog.
@@ -42,6 +92,15 @@ class SmartHomeSettingsDialog(wx.Dialog):
 
         self.plugin = plugin
         self._notify_checkboxes = {}
+        # Platforms whose credentials were changed by this dialog. The caller
+        # reads it after wx.ID_OK: a platform that is already logged in keeps
+        # its session otherwise, so a new password would be stored but never
+        # used - and a wrong one would stay unnoticed until the next NVDA
+        # start.
+        self.changed_platforms = set()
+        # Set by Cancel/Escape. A credential check running in the background
+        # asks for it before it saves anything.
+        self._cancelled = False
         # The Netatmo OAuth flow runs on a background thread with a 120 s
         # timeout, as do the connection tests of the other platforms. If the
         # settings are closed meanwhile, the callback fired on a destroyed wx
@@ -51,7 +110,35 @@ class SmartHomeSettingsDialog(wx.Dialog):
         self._is_destroyed = False
         self.Bind(wx.EVT_WINDOW_DESTROY, self._on_window_destroy)
         self._create_ui()
+        if focus_platform:
+            self._focus_platform(focus_platform)
         self.CenterOnScreen()
+
+    def _password_ctrl(self, platform):
+        """The secret input field of a platform (None if there is none)."""
+        return {
+            'meross': getattr(self, 'merossPasswordCtrl', None),
+            'netatmo': getattr(self, 'netatmoSecretCtrl', None),
+            'vesync': getattr(self, 'vesyncPasswordCtrl', None),
+            'cozytouch': getattr(self, 'cozytouchPasswordCtrl', None),
+        }.get(platform)
+
+    def _focus_platform(self, platform):
+        """Opens the platform's tab and puts the focus in its password field.
+
+        Used after a failed login: the credentials can be typed again right
+        away instead of having to find the tab first.
+        """
+        tab = self._PLATFORM_TABS.get(platform)
+        if tab is None:
+            return
+        try:
+            self.notebook.SetSelection(tab)
+            ctrl = self._password_ctrl(platform)
+            if ctrl:
+                ctrl.SetFocus()
+        except Exception as e:
+            log.debug(f"Could not focus the {platform} tab: {e}")
 
     # ---- Password fields: placeholder logic ----
     # Stored passwords/secrets are NOT decrypted into the TextCtrl on opening
@@ -172,6 +259,12 @@ class SmartHomeSettingsDialog(wx.Dialog):
 
         # Translators: "Cancel" button in the settings dialog.
         cancelBtn = wx.Button(self, wx.ID_CANCEL, _("&Cancel"))
+        # Own handler instead of the default behaviour: a credential check
+        # started by "Save" may still be running, and its result must not
+        # save anything after a cancel. Escape reaches this handler too - wx
+        # sends the click of the wxID_CANCEL button for it.
+        cancelBtn.Bind(wx.EVT_BUTTON, self.on_cancel)
+        self.okBtn = okBtn
         buttonSizer.Add(cancelBtn)
 
         mainSizer.Add(buttonSizer, flag=wx.ALIGN_RIGHT | wx.ALL, border=10)
@@ -1167,7 +1260,7 @@ class SmartHomeSettingsDialog(wx.Dialog):
             if not email:
                 self._set_status(_("Meross: please enter an email address"), error=True)
                 ui.message(_("Meross: please enter an email address"))
-                self.notebook.SetSelection(1)  # Meross tab
+                self.notebook.SetSelection(self._PLATFORM_TABS['meross'])
                 self.merossEmailCtrl.SetFocus()
                 return
 
@@ -1175,14 +1268,14 @@ class SmartHomeSettingsDialog(wx.Dialog):
                 # Translators: Validation error for invalid email syntax.
                 self._set_status(_("Invalid email address"), error=True)
                 ui.message(_("Invalid email address"))
-                self.notebook.SetSelection(1)
+                self.notebook.SetSelection(self._PLATFORM_TABS['meross'])
                 self.merossEmailCtrl.SetFocus()
                 return
 
             if not password:
                 self._set_status(_("Meross: please enter a password"), error=True)
                 ui.message(_("Meross: please enter a password"))
-                self.notebook.SetSelection(1)
+                self.notebook.SetSelection(self._PLATFORM_TABS['meross'])
                 self.merossPasswordCtrl.SetFocus()
                 return
 
@@ -1190,7 +1283,7 @@ class SmartHomeSettingsDialog(wx.Dialog):
                 # Translators: Validation error for a too short password.
                 self._set_status(_("Password too short (min. 6 characters)"), error=True)
                 ui.message(_("Password too short"))
-                self.notebook.SetSelection(1)
+                self.notebook.SetSelection(self._PLATFORM_TABS['meross'])
                 self.merossPasswordCtrl.SetFocus()
                 return
 
@@ -1203,7 +1296,7 @@ class SmartHomeSettingsDialog(wx.Dialog):
         if use_netatmo and (not netatmo_client_id or not netatmo_client_secret):
             self._set_status(_("Netatmo: please enter client ID and secret"), error=True)
             ui.message(_("Netatmo: please enter client ID and secret"))
-            self.notebook.SetSelection(2)  # Netatmo tab
+            self.notebook.SetSelection(self._PLATFORM_TABS['netatmo'])
             self.netatmoIdCtrl.SetFocus()
             return
 
@@ -1218,7 +1311,7 @@ class SmartHomeSettingsDialog(wx.Dialog):
             if not vesync_email:
                 self._set_status(_("VeSync: please enter an email address"), error=True)
                 ui.message(_("VeSync: please enter an email address"))
-                self.notebook.SetSelection(3)  # VeSync tab
+                self.notebook.SetSelection(self._PLATFORM_TABS['vesync'])
                 self.vesyncEmailCtrl.SetFocus()
                 return
 
@@ -1226,21 +1319,21 @@ class SmartHomeSettingsDialog(wx.Dialog):
             if not re.match(email_pattern, vesync_email):
                 self._set_status(_("VeSync: invalid email address"), error=True)
                 ui.message(_("VeSync: invalid email address"))
-                self.notebook.SetSelection(3)
+                self.notebook.SetSelection(self._PLATFORM_TABS['vesync'])
                 self.vesyncEmailCtrl.SetFocus()
                 return
 
             if not vesync_password:
                 self._set_status(_("VeSync: please enter a password"), error=True)
                 ui.message(_("VeSync: please enter a password"))
-                self.notebook.SetSelection(3)
+                self.notebook.SetSelection(self._PLATFORM_TABS['vesync'])
                 self.vesyncPasswordCtrl.SetFocus()
                 return
 
             if len(vesync_country) != 2 or not vesync_country.isalpha():
                 self._set_status(_("VeSync: country code must be two letters"), error=True)
                 ui.message(_("VeSync: invalid country code"))
-                self.notebook.SetSelection(3)
+                self.notebook.SetSelection(self._PLATFORM_TABS['vesync'])
                 self.vesyncCountryCtrl.SetFocus()
                 return
 
@@ -1255,13 +1348,13 @@ class SmartHomeSettingsDialog(wx.Dialog):
             if not cozytouch_email or not re.match(email_pattern, cozytouch_email):
                 self._set_status(_("Cozytouch: invalid email address"), error=True)
                 ui.message(_("Cozytouch: invalid email address"))
-                self.notebook.SetSelection(4)  # Cozytouch tab
+                self.notebook.SetSelection(self._PLATFORM_TABS['cozytouch'])
                 self.cozytouchEmailCtrl.SetFocus()
                 return
             if not cozytouch_password:
                 self._set_status(_("Cozytouch: please enter a password"), error=True)
                 ui.message(_("Cozytouch: please enter a password"))
-                self.notebook.SetSelection(4)
+                self.notebook.SetSelection(self._PLATFORM_TABS['cozytouch'])
                 self.cozytouchPasswordCtrl.SetFocus()
                 return
 
@@ -1273,64 +1366,254 @@ class SmartHomeSettingsDialog(wx.Dialog):
             self.notebook.SetSelection(0)
             return
 
-        # All OK - save
-        self.plugin.email = email
-        self.plugin.password = password
-        self.plugin.auto_login = self.autoLoginCheckbox.GetValue()
-        self.plugin.announce_external_changes = self.announceExternalCheckbox.GetValue()
-        try:
-            self.plugin.start_tab = self._startTabValues[self.startTabChoice.GetSelection()]
-        except (IndexError, AttributeError):
-            self.plugin.start_tab = 'devices'
-        self.plugin.use_meross = use_meross
-        self.plugin.use_netatmo = use_netatmo
-        self.plugin.use_vesync = use_vesync
-        self.plugin.netatmo_client_id = netatmo_client_id
-        self.plugin.netatmo_client_secret = netatmo_client_secret
-        self.plugin.netatmo_redirect_port = self.netatmoPortCtrl.GetValue()
+        # ---- Which platforms got new credentials? ----
+        # An unchanged password was accepted when it was stored, so it is not
+        # probed again - saving stays instant for everything except a real
+        # credential change. A changed one has to prove itself first: the
+        # running session keeps working no matter what is typed here, so a
+        # wrong password would be stored silently and only surface at the next
+        # NVDA start, with no hint where it came from.
+        changed = set()
+        if email != self.plugin.email or password != self.plugin.password:
+            changed.add('meross')
+        if (netatmo_client_id != getattr(self.plugin, 'netatmo_client_id', '')
+                or netatmo_client_secret != getattr(
+                    self.plugin, 'netatmo_client_secret', '')):
+            changed.add('netatmo')
+        if (vesync_email != getattr(self.plugin, 'vesync_email', '')
+                or vesync_password != getattr(self.plugin, 'vesync_password', '')
+                or vesync_country != getattr(
+                    self.plugin, 'vesync_country_code', 'DE')):
+            changed.add('vesync')
+        if (cozytouch_email != getattr(self.plugin, 'cozytouch_email', '')
+                or cozytouch_password != getattr(
+                    self.plugin, 'cozytouch_password', '')):
+            changed.add('cozytouch')
 
-        # If the VeSync credentials change, discard the existing tokens
-        old_vesync_email = getattr(self.plugin, 'vesync_email', '')
-        old_vesync_password = getattr(self.plugin, 'vesync_password', '')
-        old_vesync_country = getattr(self.plugin, 'vesync_country_code', 'DE')
-        credentials_changed = (
-            vesync_email != old_vesync_email
-            or vesync_password != old_vesync_password
-            or vesync_country != old_vesync_country
-        )
-        self.plugin.vesync_email = vesync_email
-        self.plugin.vesync_password = vesync_password
-        self.plugin.vesync_country_code = vesync_country
+        # Everything read from the controls in one place: the check runs in the
+        # background, and the fields must not be read again afterwards (they
+        # can be edited meanwhile).
         # Filter warning threshold (%) - parse tolerantly, clamp to 1..100,
         # invalid/empty = default 15.
         try:
             threshold = int(self.vesyncFilterThresholdCtrl.GetValue().strip() or "15")
         except ValueError:
             threshold = 15
-        self.plugin.vesync_filter_threshold = max(1, min(100, threshold))
-        if credentials_changed:
+        # Rated capacity (liters) - parse tolerantly, invalid/empty = 0 (off)
+        try:
+            capacity = max(0, int(
+                self.cozytouchCapacityCtrl.GetValue().strip() or "0"))
+        except ValueError:
+            capacity = 0
+        try:
+            start_tab = self._startTabValues[self.startTabChoice.GetSelection()]
+        except (IndexError, AttributeError):
+            start_tab = 'devices'
+
+        pending = {
+            'changed': changed,
+            'email': email,
+            'password': password,
+            'use_meross': use_meross,
+            'use_netatmo': use_netatmo,
+            'netatmo_client_id': netatmo_client_id,
+            'netatmo_client_secret': netatmo_client_secret,
+            'netatmo_redirect_port': self.netatmoPortCtrl.GetValue(),
+            # Only a new client ID invalidates the stored tokens - see _commit.
+            'netatmo_new_app': (netatmo_client_id != getattr(
+                self.plugin, 'netatmo_client_id', '')),
+            'use_vesync': use_vesync,
+            'vesync_email': vesync_email,
+            'vesync_password': vesync_password,
+            'vesync_country': vesync_country,
+            'vesync_filter_threshold': max(1, min(100, threshold)),
+            'use_cozytouch': use_cozytouch,
+            'cozytouch_email': cozytouch_email,
+            'cozytouch_password': cozytouch_password,
+            'cozytouch_capacity_liters': capacity,
+            'auto_login': self.autoLoginCheckbox.GetValue(),
+            'announce_external_changes': self.announceExternalCheckbox.GetValue(),
+            'start_tab': start_tab,
+            # Tokens the check earned on the way - see _verify_credentials.
+            'vesync_creds': None,
+            'cozytouch_token': None,
+        }
+
+        # A password login can be proven here; Netatmo's OAuth cannot - that
+        # authorisation runs in the browser via "Connect to Netatmo".
+        to_verify = [name for name in ('meross', 'vesync', 'cozytouch')
+                     if name in changed and pending['use_' + name]]
+        if to_verify:
+            self._verify_then_commit(pending, to_verify)
+        else:
+            self._commit(pending)
+
+    def on_cancel(self, event):
+        """Cancel: save nothing, and drop a check that is still running."""
+        self._cancelled = True
+        self.EndModal(wx.ID_CANCEL)
+
+    def _verify_then_commit(self, pending, to_verify):
+        """Proves the new credentials in the background, then saves.
+
+        Only the login is attempted, not the device list: the login answers
+        the question ("are these credentials valid?") in a fraction of a
+        second, while reading the devices takes up to fifteen seconds for a
+        large Meross account - too long to wait on a Save button.
+        """
+        self._safe_button_disable(self.okBtn)
+        # Translators: Status while the newly entered credentials are being
+        # checked at the platform.
+        self._set_status(_("Checking the credentials..."))
+        threading.Thread(
+            target=self._verify_credentials,
+            args=(pending, to_verify),
+            daemon=True,
+        ).start()
+
+    def _verify_credentials(self, pending, to_verify):
+        """Thread body of the credential check. Saves or reports."""
+        for platform in to_verify:
+            if self._cancelled or self._is_destroyed:
+                return
+            if len(to_verify) > 1:
+                # Several platforms in a row can take half a minute on a slow
+                # connection. Naming each one keeps the wait from sounding
+                # like a hang. With only one there is nothing to add to the
+                # message already spoken.
+                self._safe_call_after(
+                    self._set_status,
+                    # Translators: Status while one platform is being checked.
+                    # {platform} = brand name (Meross etc.).
+                    _("Checking {platform}...").format(
+                        platform=PLATFORM_LABELS[platform]))
+            try:
+                if platform == 'meross':
+                    from .meross_api import MerossAPI
+                    api = MerossAPI()
+                    try:
+                        api.login(pending['email'], pending['password'])
+                    finally:
+                        # Only a check: the session is closed again and the
+                        # login for real use happens afterwards. Without the
+                        # logout the event loop thread and the MQTT connection
+                        # of this probe would stay alive.
+                        api.logout()
+                elif platform == 'vesync':
+                    from .vesync_api import VeSyncAPI
+                    api = VeSyncAPI(country_code=pending['vesync_country'])
+                    api.login(pending['vesync_email'],
+                              pending['vesync_password'])
+                    # The token from the check is kept: it saves the following
+                    # login a second password round trip (and VeSync may have
+                    # switched the region in the meantime).
+                    creds = api.get_credentials()
+                    if creds.get("token") and creds.get("account_id"):
+                        pending['vesync_creds'] = creds
+                    api.logout()
+                elif platform == 'cozytouch':
+                    from .cozytouch_api import CozytouchAPI
+                    api = CozytouchAPI()
+                    api.login(pending['cozytouch_email'],
+                              pending['cozytouch_password'])
+                    creds = api.get_credentials()
+                    if creds.get("token"):
+                        pending['cozytouch_token'] = creds["token"]
+                    api.logout()
+            except Exception as e:
+                log.error(f"{PLATFORM_LABELS[platform]} credential check "
+                          f"failed: {type(e).__name__}: {e}")
+                self._safe_call_after(self._verification_failed, platform, e)
+                return
+            log.info(f"{PLATFORM_LABELS[platform]}: new credentials verified")
+
+        self._safe_call_after(self._commit, pending)
+
+    def _verification_failed(self, platform, error):
+        """Keeps the dialog open at the platform whose credentials failed."""
+        self._safe_button_enable(self.okBtn)
+        message = login_error_message(platform, error)
+        # Set the status line without speech and jump into the password field
+        # first: NVDA cancels running speech on a focus change, so a reason
+        # spoken now would be cut off by the field announcement. It follows
+        # once the field has been announced - the same pattern as the filter
+        # warning when the device menu opens.
+        self._set_status(message, error=True, speak=False)
+        self._focus_platform(platform)
+        try:
+            wx.CallLater(500, self._speak_verification_failure, message)
+        except Exception as e:
+            log.debug(f"Ignored error in _verification_failed: {e}")
+
+    def _speak_verification_failure(self, message):
+        """Announces reason and consequence in ONE utterance.
+
+        In one, not two: a second ui.message would overwrite the reason on
+        the braille display.
+        """
+        if self._is_destroyed:
+            return
+        # Translators: Announcement after a refused credential check. {reason}
+        # = why the platform refused, e.g. "Meross: email address or password
+        # not accepted".
+        ui.message(_("{reason}. Nothing saved - please enter the credentials "
+                     "again").format(reason=message))
+
+    def _commit(self, pending):
+        """Writes the checked values into the plugin and closes the dialog."""
+        if self._is_destroyed or self._cancelled:
+            # Cancelled while the check was running - save nothing.
+            return
+
+        self.plugin.email = pending['email']
+        self.plugin.password = pending['password']
+        self.plugin.auto_login = pending['auto_login']
+        self.plugin.announce_external_changes = pending['announce_external_changes']
+        self.plugin.start_tab = pending['start_tab']
+        self.plugin.use_meross = pending['use_meross']
+        self.plugin.use_netatmo = pending['use_netatmo']
+        self.plugin.use_vesync = pending['use_vesync']
+        self.plugin.netatmo_client_id = pending['netatmo_client_id']
+        self.plugin.netatmo_client_secret = pending['netatmo_client_secret']
+        self.plugin.netatmo_redirect_port = pending['netatmo_redirect_port']
+
+        # A new client ID means the stored tokens were issued to another app
+        # registration and can no longer be renewed. Keeping them would fail
+        # at the next refresh with an "invalid_client" nobody can place. A
+        # corrected secret is different: the tokens belong to the client ID,
+        # not to the secret, so they stay valid and the authorisation in the
+        # browser does not have to be repeated.
+        if pending['netatmo_new_app']:
+            self.plugin.netatmo_access_token = ""
+            self.plugin.netatmo_refresh_token = ""
+            self.plugin.netatmo_token_expiry = 0
+            self.plugin.netatmo_api = None
+
+        self.plugin.vesync_email = pending['vesync_email']
+        self.plugin.vesync_password = pending['vesync_password']
+        self.plugin.vesync_country_code = pending['vesync_country']
+        self.plugin.vesync_filter_threshold = pending['vesync_filter_threshold']
+        if pending['vesync_creds']:
+            creds = pending['vesync_creds']
+            self.plugin.vesync_token = creds["token"]
+            self.plugin.vesync_account_id = creds["account_id"]
+            self.plugin.vesync_country_code = creds["country_code"]
+            self.plugin.vesync_region = creds["region"]
+        elif 'vesync' in pending['changed']:
+            # Changed credentials without a fresh token (platform disabled, so
+            # not checked): the old tokens belong to the old account.
             self.plugin.vesync_token = ""
             self.plugin.vesync_account_id = ""
             self.plugin.vesync_region = ""
 
-        # Save Cozytouch; discard the token when the credentials changed
-        self.plugin.use_cozytouch = use_cozytouch
-        old_cozytouch_email = getattr(self.plugin, 'cozytouch_email', '')
-        old_cozytouch_password = getattr(self.plugin, 'cozytouch_password', '')
-        cozytouch_changed = (
-            cozytouch_email != old_cozytouch_email
-            or cozytouch_password != old_cozytouch_password
-        )
-        self.plugin.cozytouch_email = cozytouch_email
-        self.plugin.cozytouch_password = cozytouch_password
-        if cozytouch_changed:
+        self.plugin.use_cozytouch = pending['use_cozytouch']
+        self.plugin.cozytouch_email = pending['cozytouch_email']
+        self.plugin.cozytouch_password = pending['cozytouch_password']
+        self.plugin.cozytouch_capacity_liters = pending['cozytouch_capacity_liters']
+        if pending['cozytouch_token']:
+            self.plugin.cozytouch_token = pending['cozytouch_token']
+        elif 'cozytouch' in pending['changed']:
             self.plugin.cozytouch_token = ""
-        # Rated capacity (liters) - parse tolerantly, invalid/empty = 0 (off)
-        try:
-            self.plugin.cozytouch_capacity_liters = max(0, int(
-                self.cozytouchCapacityCtrl.GetValue().strip() or "0"))
-        except ValueError:
-            self.plugin.cozytouch_capacity_liters = 0
 
         # Write the notification checkboxes from the "Notifications" tab back
         # into the plugin. Platforms whose section was not visible in the
@@ -1343,6 +1626,14 @@ class SmartHomeSettingsDialog(wx.Dialog):
                 log.debug(f"Ignored error in on_ok: {e}")
 
         self.plugin.save_settings()
+        # The caller re-logs in exactly these platforms - a running session
+        # would otherwise keep the old credentials.
+        self.changed_platforms = set(pending['changed'])
+        # The plugin keeps the passwords encrypted from here on; the plain
+        # text of the check does not have to wait for the garbage collector.
+        for key in ('password', 'vesync_password', 'cozytouch_password',
+                    'netatmo_client_secret'):
+            pending[key] = None
 
         log.info("Smart Home settings saved")
         # Translators: Success message after saving the settings.
@@ -1354,12 +1645,16 @@ class SmartHomeSettingsDialog(wx.Dialog):
     # Helpers
     # =========================================================================
     # =
-    def _set_status(self, text, error=False):
+    def _set_status(self, text, error=False, speak=True):
         """Updates the status line AND speaks the text via ui.message.
 
         Previously the StaticText was often only set via SetLabel; NVDA does
         not announce StaticText changes automatically. Now a ui.message output
         happens in parallel so blind users are always informed.
+
+        ``speak=False`` is for the one case where a focus change follows
+        immediately: NVDA cancels running speech on a focus change, so the
+        text would be cut off. It is then spoken afterwards instead.
         """
         # `if not self or not self.statusText` was the wrong test: on an
         # already destroyed wx object the mere attribute access raises, not
@@ -1375,7 +1670,7 @@ class SmartHomeSettingsDialog(wx.Dialog):
             self.Layout()
             # Synchronous ui.message: NVDA announces the new status
             # immediately.
-            if text:
+            if text and speak:
                 try:
                     ui.message(text)
                 except Exception as e:
@@ -1396,6 +1691,59 @@ class SmartHomeSettingsDialog(wx.Dialog):
                 button.Disable()
         except RuntimeError:
             pass
+
+
+def offer_credential_reentry(parent, plugin, platform, error, on_saved=None):
+    """Offers to enter the credentials of a platform again right away.
+
+    Called after a login that failed on the credentials. Without this the
+    only remaining path was: hear the error, find the settings, find the tab,
+    find the field. Answering "Enter again" opens the settings straight at
+    that tab with the focus in the password field.
+
+    Runs on the main thread (wx dialogs) - callers use wx.CallAfter.
+
+    Args:
+        parent: window the dialogs belong to.
+        plugin: the GlobalPlugin instance.
+        platform: platform key ('meross', 'vesync', ...).
+        error: the exception the login failed with.
+        on_saved: called with the set of changed platforms after a save.
+    """
+    label = PLATFORM_LABELS.get(platform, platform)
+    ui.message(login_error_message(platform, error))
+    if platform not in PASSWORD_PLATFORMS:
+        # Netatmo: the way back is the browser authorisation, not a password
+        # field. Its own message already says so.
+        return
+    ask = wx.MessageDialog(
+        parent,
+        # Translators: Question after a failed login. {platform} = brand name.
+        _("The {platform} login was refused.\n\nEnter the credentials "
+          "again?").format(platform=label),
+        # Translators: Title of the dialog after a failed login. {platform} =
+        # brand name.
+        _("{platform} login failed").format(platform=label),
+        wx.YES_NO | wx.ICON_EXCLAMATION,
+    )
+    # Translators: Button that opens the settings for another attempt.
+    # Translators: Button that dismisses the failed login without a new attempt.
+    ask.SetYesNoLabels(_("&Enter again"), _("&Later"))
+    try:
+        ask.SetEscapeId(wx.ID_NO)
+    except Exception as e:
+        log.debug(f"Ignored error in offer_credential_reentry: {e}")
+    answer = ask.ShowModal()
+    ask.Destroy()
+    if answer != wx.ID_YES:
+        return
+
+    dlg = SmartHomeSettingsDialog(parent, plugin, focus_platform=platform)
+    try:
+        if dlg.ShowModal() == wx.ID_OK and on_saved:
+            on_saved(dlg.changed_platforms)
+    finally:
+        dlg.Destroy()
 
 
 # ============================================================================

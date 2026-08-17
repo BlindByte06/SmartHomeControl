@@ -21,6 +21,12 @@ PLATFORM_LABELS = {
     'cozytouch': 'Cozytouch',
 }
 
+# Platforms that sign in with email and password. Netatmo is missing on
+# purpose: its authorisation is granted in the browser (OAuth2), so a
+# refused login is not answered by typing a password again but by the
+# "Connect to Netatmo" button.
+PASSWORD_PLATFORMS = ('meross', 'vesync', 'cozytouch')
+
 
 def platform_of(device):
     """Returns the platform key ('meross'/'netatmo'/'vesync'/'cozytouch')

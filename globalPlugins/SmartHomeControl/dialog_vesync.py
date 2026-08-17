@@ -814,15 +814,20 @@ class _VeSyncDialogMixin:
     def _init_vesync_in_background(self):
         """Initializes the VeSync API in the background and loads devices afterwards.
 
-        Called from the settings dialog when VeSync has just been enabled -
-        without blocking the UI.
+        Called from the settings dialog when VeSync has just been enabled or
+        its credentials changed - without blocking the UI.
         """
         plugin = self.plugin
+        if not plugin.begin_platform_login('vesync'):
+            log.info("VeSync login already running - not starting a second one")
+            return
 
         def _login_and_refresh():
             try:
                 from .vesync_api import VeSyncAPI
                 api = VeSyncAPI(country_code=plugin.vesync_country_code or "DE")
+                if hasattr(api, 'set_reauth_callback'):
+                    api.set_reauth_callback(plugin._vesync_reauth)
 
                 # Preferred: existing tokens, otherwise email/password
                 if plugin.vesync_token and plugin.vesync_account_id:
@@ -864,26 +869,33 @@ class _VeSyncDialogMixin:
                     plugin.vesync_region = creds["region"]
                     plugin.save_settings()
 
-                plugin.vesync_api = api
+                # Take over the new session only after the login worked; the
+                # old one is closed afterwards so its HTTP session does not
+                # stay open.
+                old_api, plugin.vesync_api = plugin.vesync_api, api
+                if old_api is not None and old_api is not api:
+                    try:
+                        old_api.logout()
+                    except Exception as e:
+                        log.debug(f"Logout of the old VeSync session failed: {e}")
 
-                # Add the VeSync devices to the device list
-                existing_uuids = {d.uuid for d in plugin.devices}
-                added = 0
+                # Replace the VeSync devices in the shared list - under the
+                # lock, since the scheduler thread reads and writes it in
+                # parallel.
+                count = plugin.replace_platform_devices('vesync', devices)
                 for dev in devices:
-                    if dev.uuid not in existing_uuids:
-                        plugin.devices.append(dev)
-                        added += 1
-                log.info(f"VeSync initialised late: {added} new devices")
+                    plugin._previous_vesync_states.setdefault(
+                        dev.uuid, plugin._snapshot_vesync_state(dev))
+                log.info(f"VeSync initialised late: {count} devices")
 
                 # Update the dialog on the UI thread
                 wx.CallAfter(self._refresh_after_vesync_init, len(devices))
             except Exception as e:
-                log.error(f"Late VeSync initialisation failed: {e}")
-                wx.CallAfter(
-                    ui.message,
-                    # Translators: Error message for the deferred VeSync login.
-                    _("VeSync login failed: {error}").format(error=str(e)[:80])
-                )
+                log.error(f"Late VeSync initialisation failed: "
+                          f"{type(e).__name__}: {e}")
+                wx.CallAfter(self._offer_login_reentry, 'vesync', e)
+            finally:
+                plugin.end_platform_login('vesync')
 
         threading.Thread(target=_login_and_refresh, daemon=True).start()
         # Translators: Note that the VeSync connection is being established in

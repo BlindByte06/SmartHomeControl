@@ -99,12 +99,17 @@ from .netatmo_api import NetatmoAPI
 from .vesync_api import VeSyncAPI
 from .cozytouch_api import CozytouchAPI
 from .device_dialog import SmartHomeControlDialog
-from .settings_panel import SmartHomeSettingsDialog
+from .settings_panel import (
+    SmartHomeSettingsDialog, is_credentials_error, login_error_message,
+    offer_credential_reentry,
+)
 from .security import encrypt_dpapi, decrypt_dpapi, is_encrypted
 from .credentials import _CredentialsMixin
 from .scheduler import _SchedulerMixin
 from .change_detection import _ChangeDetectionMixin
-from .platform_utils import split_by_platform, PLATFORM_LABELS
+from .platform_utils import (
+    split_by_platform, PLATFORM_LABELS, PASSWORD_PLATFORMS,
+)
 from .dialog_helpers import _beep
 from .constants import (
     CONFSPEC, BEEP_ERROR, BEEP_SUCCESS, BEEP_LOADING, BEEP_ACTION,
@@ -162,6 +167,12 @@ class GlobalPlugin(_CredentialsMixin, _SchedulerMixin, _ChangeDetectionMixin,
         # which path did it. The scheduler uses it to re-schedule instead of
         # repeating a poll the dialog has just made (see _scheduler_body).
         self._platform_last_refresh = {}
+        # Which platforms are logging in right now. A Meross login takes
+        # fifteen seconds for a large account, and the API only appears when
+        # it is through - a second Save in that window used to start a second
+        # login, and two sessions then polled the cloud in parallel.
+        self._logging_in = set()
+        self._login_lock = threading.Lock()
         self.devices = []  # all devices (Meross + Netatmo + VeSync mixed)
         self.is_logged_in = False
         self.is_loading = False
@@ -610,8 +621,55 @@ class GlobalPlugin(_CredentialsMixin, _SchedulerMixin, _ChangeDetectionMixin,
             _safe_log_error("Cozytouch re-auth failed", e)
             return False
 
-    def _start_auto_login(self):
-        """Starts the automatic login in the background"""
+    def begin_platform_login(self, platform):
+        """Claims the login slot of a platform.
+
+        Returns False when a login for that platform is already running - the
+        caller then does nothing. Without this a second Save during a running
+        Meross login started a second one, and both sessions stayed alive
+        afterwards: doubled cloud traffic against the hourly budget and every
+        push notification arriving twice.
+        """
+        with self._login_lock:
+            if platform in self._logging_in:
+                return False
+            self._logging_in.add(platform)
+            return True
+
+    def end_platform_login(self, platform):
+        """Releases the login slot - always, including after a failure."""
+        with self._login_lock:
+            self._logging_in.discard(platform)
+
+    def replace_platform_devices(self, platform, devices):
+        """Swaps the devices of ONE platform in the shared list.
+
+        Used after a login with changed credentials: the devices of the old
+        session must go, not just be joined by the new ones - otherwise a
+        device that was renamed or removed in the account stays in the tree,
+        and every device of a swapped account appears twice.
+
+        Runs under the lock, since the scheduler thread reads and writes the
+        list in parallel.
+
+        Returns:
+            int: how many devices the platform now contributes.
+        """
+        from .platform_utils import platform_of
+        with self._devices_lock:
+            others = [d for d in self.devices if platform_of(d) != platform]
+            self.devices = others + list(devices)
+        return len(devices)
+
+    def _start_auto_login(self, interactive=False):
+        """Starts the automatic login in the background.
+
+        Args:
+            interactive: True when the login follows an action by the user
+                (settings saved). Only then may a refused login ask for the
+                credentials again - at NVDA start a dialog would pop up
+                unasked, typically because the network is not up yet.
+        """
         log.info("Starting auto login...")
         platforms = []
         if self.use_meross:
@@ -623,9 +681,10 @@ class GlobalPlugin(_CredentialsMixin, _SchedulerMixin, _ChangeDetectionMixin,
         if self.use_cozytouch:
             platforms.append("Cozytouch")
         ui.message(_("Logging in to {platforms}...").format(platforms=", ".join(platforms)))
-        threading.Thread(target=self._do_login, daemon=True).start()
-    
-    def _do_login(self):
+        threading.Thread(
+            target=self._do_login, args=(interactive,), daemon=True).start()
+
+    def _do_login(self, interactive=False):
         """Performs the login (in a separate thread) - Meross and/or Netatmo and/or VeSync"""
         try:
             log.info("_do_login: login process starting...")
@@ -634,6 +693,10 @@ class GlobalPlugin(_CredentialsMixin, _SchedulerMixin, _ChangeDetectionMixin,
             netatmo_devices = []
             vesync_devices = []
             cozytouch_devices = []
+            # Platforms that refused the credentials. Collected instead of
+            # asked about immediately: the remaining platforms should still
+            # get their chance before a dialog interrupts.
+            refused = []
 
             # ---- Meross login ----
             if self.use_meross and self.email and self._encrypted_password:
@@ -673,9 +736,7 @@ class GlobalPlugin(_CredentialsMixin, _SchedulerMixin, _ChangeDetectionMixin,
                 except Exception as e:
                     # No exc_info -> avoids token/header leaks in the log.
                     _safe_log_error("Meross login failed", e)
-                    error_msg = str(e)[:80]
-                    # Translators: Error message for a failed Meross login.
-                    wx.CallAfter(ui.message, _("Meross error: {error}").format(error=error_msg))
+                    self._note_login_failure('meross', e, refused)
             
             # ---- Netatmo login ----
             if self.use_netatmo and self.netatmo_client_id and self.netatmo_refresh_token:
@@ -714,9 +775,7 @@ class GlobalPlugin(_CredentialsMixin, _SchedulerMixin, _ChangeDetectionMixin,
                     
                 except Exception as e:
                     _safe_log_error("Netatmo login failed", e)
-                    error_msg = str(e)[:80]
-                    # Translators: Error message for a failed Netatmo login.
-                    wx.CallAfter(ui.message, _("Netatmo error: {error}").format(error=error_msg))
+                    self._note_login_failure('netatmo', e, refused)
             
             # ---- VeSync login ----
             if self.use_vesync:
@@ -792,9 +851,7 @@ class GlobalPlugin(_CredentialsMixin, _SchedulerMixin, _ChangeDetectionMixin,
 
                 except Exception as e:
                     _safe_log_error("VeSync login failed", e)
-                    error_msg = str(e)[:80]
-                    # Translators: Error message for a failed VeSync login.
-                    wx.CallAfter(ui.message, _("VeSync error: {error}").format(error=error_msg))
+                    self._note_login_failure('vesync', e, refused)
 
             # ---- Cozytouch login (Atlantic / Austria Email) ----
             if self.use_cozytouch and self.cozytouch_email and self._encrypted_cozytouch_password:
@@ -826,9 +883,7 @@ class GlobalPlugin(_CredentialsMixin, _SchedulerMixin, _ChangeDetectionMixin,
 
                 except Exception as e:
                     _safe_log_error("Cozytouch login failed", e)
-                    error_msg = str(e)[:80]
-                    # Translators: Error message for a failed Cozytouch login.
-                    wx.CallAfter(ui.message, _("Cozytouch error: {error}").format(error=error_msg))
+                    self._note_login_failure('cozytouch', e, refused)
 
             # ---- Merge the device lists (atomically under the lock) ----
             new_devices = meross_devices + netatmo_devices + vesync_devices + cozytouch_devices
@@ -903,7 +958,41 @@ class GlobalPlugin(_CredentialsMixin, _SchedulerMixin, _ChangeDetectionMixin,
                 self.is_logged_in = False
         finally:
             self.is_loading = False
-    
+            # In the finally block on purpose: the session protection above
+            # returns early, and a refused password has to be reported from
+            # that path too.
+            if interactive and refused:
+                platform, error = refused[0]
+                wx.CallAfter(self._ask_credential_reentry, platform, error)
+
+    def _note_login_failure(self, platform, error, refused):
+        """Announces a failed login and notes a refused credential.
+
+        Only a refusal of the credentials themselves is noted; a timeout or a
+        missing network must not lead to a question about the password.
+        """
+        wx.CallAfter(ui.message, login_error_message(platform, error))
+        if platform in PASSWORD_PLATFORMS and is_credentials_error(error):
+            refused.append((platform, error))
+
+    def _ask_credential_reentry(self, platform, error):
+        """Offers to enter the refused credentials again (main thread)."""
+        def _after_save(changed):
+            if changed:
+                self._start_auto_login(interactive=True)
+
+        # prePopup/postPopup as for every dialog of this add-on: NVDA needs
+        # them to hand the focus over and give it back afterwards.
+        gui.mainFrame.prePopup()
+        try:
+            offer_credential_reentry(
+                gui.mainFrame, self, platform, error, on_saved=_after_save)
+        except Exception as e:
+            log.error(f"Credential re-entry failed: {type(e).__name__}: {e}")
+        finally:
+            gui.mainFrame.postPopup()
+
+
     @scriptHandler.script(
         # Translators: Description of the script in the NVDA input gestures
         # dialog.
@@ -950,7 +1039,11 @@ class GlobalPlugin(_CredentialsMixin, _SchedulerMixin, _ChangeDetectionMixin,
         """Shows the settings dialog"""
         gui.mainFrame.prePopup()
         dlg = SmartHomeSettingsDialog(gui.mainFrame, self)
-        if dlg.ShowModal() == wx.ID_OK:
+        try:
+            saved = dlg.ShowModal() == wx.ID_OK
+        finally:
+            dlg.Destroy()
+        if saved:
             # Settings were saved, try to log in
             should_login = False
             if self.use_meross and self.email and self._encrypted_password:
@@ -965,8 +1058,9 @@ class GlobalPlugin(_CredentialsMixin, _SchedulerMixin, _ChangeDetectionMixin,
             if self.use_cozytouch and self.cozytouch_email and self._encrypted_cozytouch_password:
                 should_login = True
             if should_login:
-                self._start_auto_login()
-        dlg.Destroy()
+                # interactive: the login follows the save, so a refused
+                # password may ask to be entered again.
+                self._start_auto_login(interactive=True)
         gui.mainFrame.postPopup()
     
     @scriptHandler.script(

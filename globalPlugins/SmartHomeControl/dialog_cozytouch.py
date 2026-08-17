@@ -709,11 +709,14 @@ class _CozytouchDialogMixin:
     def _init_cozytouch_in_background(self):
         """Initializes the Cozytouch API in the background and loads devices afterwards.
 
-        Called from the settings dialog when Cozytouch has just been enabled -
-        without blocking the UI. This way NVDA does not have to be restarted
-        for the device to appear in the tree.
+        Called from the settings dialog when Cozytouch has just been enabled
+        or its credentials changed - without blocking the UI. This way NVDA
+        does not have to be restarted for the device to appear in the tree.
         """
         plugin = self.plugin
+        if not plugin.begin_platform_login('cozytouch'):
+            log.info("Cozytouch login already running - not starting a second one")
+            return
 
         def _login_and_refresh():
             try:
@@ -736,33 +739,37 @@ class _CozytouchDialogMixin:
                     plugin.cozytouch_token = creds["token"]
                     plugin.save_settings()
 
-                plugin.cozytouch_api = api
+                # Take over the new session only after the login worked; the
+                # old one is closed afterwards so its HTTP session does not
+                # stay open.
+                old_api, plugin.cozytouch_api = plugin.cozytouch_api, api
+                if old_api is not None and old_api is not api:
+                    try:
+                        old_api.logout()
+                    except Exception as e:
+                        log.debug(f"Logout of the old Cozytouch session failed: {e}")
 
-                # Add Cozytouch devices to the shared list
-                existing_uuids = {d.uuid for d in plugin.devices}
-                added = 0
+                # Replace the Cozytouch devices in the shared list - under the
+                # lock, since the scheduler thread reads and writes it in
+                # parallel.
+                count = plugin.replace_platform_devices('cozytouch', devices)
                 for dev in devices:
-                    if dev.uuid not in existing_uuids:
-                        plugin.devices.append(dev)
-                        plugin._previous_cozytouch_states[dev.uuid] = \
-                            plugin._snapshot_cozytouch_state(dev)
-                        added += 1
+                    plugin._previous_cozytouch_states.setdefault(
+                        dev.uuid, plugin._snapshot_cozytouch_state(dev))
                 # Set is_logged_in if Cozytouch is the first/only platform, and
                 # make sure the background refresh is running.
                 if devices:
                     plugin.is_logged_in = True
                     plugin._start_background_refresh()
-                log.info(f"Cozytouch initialised late: {added} new devices")
+                log.info(f"Cozytouch initialised late: {count} devices")
 
                 wx.CallAfter(self._refresh_after_cozytouch_init, len(devices))
             except Exception as e:
-                log.error(f"Late Cozytouch initialisation failed: {e}")
-                wx.CallAfter(
-                    ui.message,
-                    # Translators: Error message for the deferred Cozytouch
-                    # login.
-                    _("Cozytouch login failed: {error}").format(error=str(e)[:80])
-                )
+                log.error(f"Late Cozytouch initialisation failed: "
+                          f"{type(e).__name__}: {e}")
+                wx.CallAfter(self._offer_login_reentry, 'cozytouch', e)
+            finally:
+                plugin.end_platform_login('cozytouch')
 
         threading.Thread(target=_login_and_refresh, daemon=True).start()
         # Translators: Note that the Cozytouch connection is being established

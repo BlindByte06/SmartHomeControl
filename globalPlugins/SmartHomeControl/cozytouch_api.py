@@ -34,6 +34,7 @@ if "_" not in globals():  # fallback if initTranslation() fails
         return s
 
 from .cozytouch_devices import CozytouchWaterHeater
+from .errors import CredentialsRejected
 
 API_BASE = "https://apis.groupe-atlantic.com"
 # Public Basic-Auth value hard-coded in the Cozytouch client (base64 of
@@ -182,7 +183,8 @@ class CozytouchAPI:
         if not isinstance(token, dict) or "access_token" not in token:
             err = token.get("error") if isinstance(token, dict) else None
             if err == "invalid_grant":
-                raise ValueError(_("Cozytouch: incorrect email or password"))
+                raise CredentialsRejected(
+                    _("Cozytouch: incorrect email or password"))
             raise RuntimeError(_("Cozytouch: login failed (HTTP {code})").format(
                 code=resp.status_code))
 

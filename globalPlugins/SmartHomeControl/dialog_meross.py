@@ -383,11 +383,14 @@ class _MerossDialogMixin:
     def _init_meross_in_background(self):
         """Initializes the Meross API in the background and loads devices afterwards.
 
-        Called from the settings dialog when Meross has just been (re-)enabled -
-        without blocking the UI and without the former forced NVDA restart
-        (analogous to VeSync/Cozytouch).
+        Called from the settings dialog when Meross has just been (re-)enabled
+        or its credentials changed - without blocking the UI and without the
+        former forced NVDA restart (analogous to VeSync/Cozytouch).
         """
         plugin = self.plugin
+        if not plugin.begin_platform_login('meross'):
+            log.info("Meross login already running - not starting a second one")
+            return
 
         def _login_and_refresh():
             try:
@@ -407,28 +410,29 @@ class _MerossDialogMixin:
 
                 devices = api_obj.get_devices()
                 api_obj.set_wrapped_devices(devices)
-                plugin.api = api_obj
+                # Take over the new session only after the login worked, and
+                # only then close the old one: a failed re-login leaves the
+                # working session (including its MQTT push) untouched.
+                old_api, plugin.api = plugin.api, api_obj
+                if old_api is not None and old_api is not api_obj:
+                    # Unconditionally, not just on a credential change: an
+                    # abandoned session keeps its MQTT connection, polls the
+                    # cloud on its own and delivers every push a second time.
+                    try:
+                        old_api.logout()
+                    except Exception as e:
+                        log.debug(f"Logout of the old Meross session failed: {e}")
 
-                # Add new Meross devices to the shared list (under the lock,
-                # since the scheduler thread reads/writes in parallel).
-                added = 0
-                with plugin._devices_lock:
-                    existing_uuids = {d.uuid for d in plugin.devices}
-                    for dev in devices:
-                        if dev.uuid not in existing_uuids:
-                            plugin.devices.append(dev)
-                            added += 1
-                log.info(f"Meross initialised late: {added} new devices")
+                count = plugin.replace_platform_devices('meross', devices)
+                log.info(f"Meross initialised late: {count} devices")
 
                 # Update the dialog on the UI thread
                 wx.CallAfter(self._refresh_after_meross_init, len(devices))
             except Exception as e:
                 log.error(f"Late Meross initialisation failed: {type(e).__name__}: {e}")
-                wx.CallAfter(
-                    ui.message,
-                    # Translators: Error message for the deferred Meross login.
-                    _("Meross login failed: {error}").format(error=str(e)[:80])
-                )
+                wx.CallAfter(self._offer_login_reentry, 'meross', e)
+            finally:
+                plugin.end_platform_login('meross')
 
         threading.Thread(target=_login_and_refresh, daemon=True).start()
         # Translators: Note that the Meross connection is being established in

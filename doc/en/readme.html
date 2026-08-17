@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Smart Home Control 26.7.5</title>
+<title>Smart Home Control 26.8.1beta1</title>
 <style>
 body { font-family: Segoe UI, Arial, sans-serif; line-height: 1.6; max-width: 60em; margin: 1.5em auto; padding: 0 1em; }
 h1, h2, h3, h4 { line-height: 1.25; }
@@ -264,6 +264,15 @@ and enter the credentials – details per platform in the following sections.
 Finally: optionally enable "Automatic login" (the connection is then
 established at every NVDA start) and save. The devices are loaded and
 immediately available in the menu – no NVDA restart required.</p>
+<p>Credentials that were changed are signed in at the platform before they
+are saved. If the platform refuses them, nothing is stored: the dialog
+stays open, says why, and the focus lands back in the password field. The
+same applies to a later change – a new password reaches the platform even
+while it is connected, instead of only being noticed at the next NVDA
+start. Should a sign-in fail anyway – because the password was changed in
+the manufacturer app, for instance – a question offers to enter the
+credentials again straight away and opens the settings at the affected
+tab.</p>
 <h3 id="set-up-meross">Set up Meross</h3>
 <p>Enter the email address and password of the Meross account – done.</p>
 <h3 id="set-up-netatmo">Set up Netatmo</h3>

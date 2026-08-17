@@ -2,6 +2,92 @@
 
 The GitHub release notes are built from the section of the released version.
 
+## 26.8.1beta1 (August 2026)
+
+Beta for testing. Everything below is new since 26.7.5.
+
+### A wrong password was accepted
+
+- Once a platform was connected, the settings took **any** password without
+  complaint. A running session does not care what is stored: it keeps working
+  with the credentials it logged in with. The typo was saved, the device list
+  stayed complete, everything looked right - and at the next NVDA start the
+  login failed for a reason that was no longer anywhere near the mistake.
+- Changed credentials are now proven before they are stored: saving logs in at
+  the platform first, and only then writes.
+- A refusal saves nothing. The dialog stays open, says why, and puts the focus
+  back in the password field.
+- Only the login is attempted, not the device list - that answers the question
+  in a fraction of a second, while reading 41 Meross devices takes fifteen.
+- Unchanged credentials are not probed, so saving stays as fast as it was for
+  everything except a real change.
+- The VeSync and Cozytouch token the check earns on the way is kept and saves
+  the following login a second round trip.
+
+### Changed credentials reach a running session
+
+- A platform used to be connected only when it had no connection yet. A new
+  password therefore reached the configuration but never the platform.
+- Platforms whose credentials changed are now logged in again right away.
+- The old session is closed, and its devices are replaced rather than joined:
+  a device that was renamed or removed in the account used to stay in the
+  tree, and every device of a swapped account appeared twice.
+
+### Entering a password again, without the way back
+
+- A failed login used to leave an announcement and nothing else. What followed
+  was: find the settings, find the tab, find the field.
+- A question now offers the new attempt directly and opens the settings at the
+  tab that failed, with the focus in the password field.
+- Only when the credentials themselves were refused. A timeout or a missing
+  network is announced and nothing more - a password dialog would be the wrong
+  answer to it.
+- The automatic login at NVDA start never asks; there the network is often
+  simply not up yet. Only a login that follows a save does.
+- Netatmo is exempt: its authorisation is granted in the browser, so the way
+  back there is the "Connect to Netatmo" button, not a password field.
+
+### One login per platform, and the old session really ends
+
+- A Meross login with 41 devices takes fifteen seconds, and the connection only
+  becomes visible when it is through. A second Save in that window therefore
+  saw "no connection yet" and started a second login. Both ran to the end, and
+  both stayed.
+- Two MQTT sessions then polled the same account: every push notification
+  arrived twice, and the hourly message budget was spent twice over.
+- A login now claims its platform for its duration - a second one is skipped
+  instead of started.
+- The replaced session is closed in every case, not only after a credential
+  change: an abandoned session does not notice that it has been replaced.
+
+### Other
+
+- A corrected Netatmo **client secret** no longer costs the browser
+  authorisation. The tokens belong to the client ID, not to the secret, so they
+  stay valid. Only a new client ID discards them - they were issued to another
+  app registration then and would fail at the next refresh with an
+  "invalid_client" nobody can place.
+- The refresh button in the device menu carried a German label after the first
+  refresh, on every interface language - and moved its accelerator from Alt+R
+  to Alt+K along with it.
+- A Meross connection error appeared in German regardless of the interface
+  language.
+- Whether a login failed on the credentials or on the network is now decided by
+  the error type instead of its wording. The wording is translated, so a check
+  for "login" would have worked in English and been wrong in German.
+
+### Known in this beta
+
+- After a refresh, and after a platform is connected late, the selected entry
+  in the device tree is announced two or three times, once with the wrong
+  level; the NVDA log notes an error in its tree handling. The cause is the
+  tree being rebuilt while it holds the focus. Nothing is lost, and switching
+  devices is unaffected.
+- The same rebuild puts the selection back on the first entry - a position
+  further down the list is not kept across a refresh.
+- Switching a platform off in the settings stops the polling immediately, but
+  its devices stay in the tree until NVDA is restarted.
+
 ## 26.7.5 (August 2026)
 
 ### Dates follow the region

@@ -3167,7 +3167,12 @@ class SmartHomeControlDialog(_NetatmoDialogMixin, _VeSyncDialogMixin, _MerossDia
     
     def _reset_refresh_button(self):
         """Resets the refresh button"""
-        self.refresh_btn.SetLabel("A&ktualisieren (F5)")
+        # The same text as when it was created - a literal here used to put a
+        # German label on an English interface after the first refresh, and
+        # moved the accelerator from Alt+R to Alt+K along with it.
+        # Translators: Button that refreshes the device list. & marks the
+        # accelerator, F5 does the same.
+        self.refresh_btn.SetLabel(_("&Refresh (F5)"))
         self.refresh_btn.Enable(True)
     
     def _on_settings(self, event):
@@ -3175,63 +3180,119 @@ class SmartHomeControlDialog(_NetatmoDialogMixin, _VeSyncDialogMixin, _MerossDia
         from .settings_panel import MerossSettingsDialog
 
         dlg = MerossSettingsDialog(self, self.plugin)
-        if dlg.ShowModal() == wx.ID_OK:
-            # The settings were saved. Check whether Netatmo was newly
-            # connected (tokens present, but the API not initialized)
-            if (self.plugin.use_netatmo and
-                self.plugin.netatmo_client_id and
-                self.plugin.netatmo_refresh_token and
-                not self.plugin.netatmo_api):
-                # Initialize the Netatmo API
-                try:
-                    from .netatmo_api import NetatmoAPI
-                    self.plugin.netatmo_api = NetatmoAPI(
-                        self.plugin.netatmo_client_id,
-                        self.plugin.netatmo_client_secret,
-                        redirect_port=getattr(self.plugin, 'netatmo_redirect_port', 8474),
-                    )
-                    self.plugin.netatmo_api.set_tokens(
-                        self.plugin.netatmo_access_token,
-                        self.plugin.netatmo_refresh_token,
-                        self.plugin.netatmo_token_expiry
-                    )
-                    # Same as after the login: renewed tokens must be
-                    # persisted, since Netatmo rotates refresh tokens.
-                    self.plugin.netatmo_api.set_token_update_callback(
-                        self.plugin._on_netatmo_tokens_renewed)
-                    log.info("Netatmo API initialised from the settings dialog")
-                except Exception as e:
-                    log.error(f"Netatmo API initialisation failed: {e}")
+        try:
+            saved = dlg.ShowModal() == wx.ID_OK
+            # Which platforms got new credentials - see _apply_settings_change.
+            changed = set(getattr(dlg, 'changed_platforms', ()))
+        finally:
+            dlg.Destroy()
+        if saved:
+            self._apply_settings_change(changed)
 
-            # Reinitialize VeSync when enabled and credentials are present but
-            # the API is not built yet (e.g. after enabling it in the
-            # settings). The login runs in the background so the dialog does
-            # not block; after a successful login the devices are loaded.
-            if (self.plugin.use_vesync
-                    and (self.plugin.vesync_email
-                         and self.plugin._encrypted_vesync_password)
-                    and not self.plugin.vesync_api):
-                self._init_vesync_in_background()
+    def _apply_settings_change(self, changed):
+        """Connects platforms after a save: newly enabled and newly credentialed.
 
-            # Connect Cozytouch afterwards when freshly enabled and no API is
-            # built yet (avoids the forced NVDA restart).
-            if (self.plugin.use_cozytouch
-                    and self.plugin.cozytouch_email
-                    and self.plugin._encrypted_cozytouch_password
-                    and not self.plugin.cozytouch_api):
-                self._init_cozytouch_in_background()
+        Two reasons to (re)connect exist, and only the first one used to be
+        handled: a platform that has no API yet, and a platform whose
+        credentials changed. The second one matters because a running session
+        does not care what is stored - it keeps working with the credentials it
+        logged in with. A new password therefore reached the configuration but
+        never the platform, and a wrong one stayed unnoticed until the next
+        NVDA start.
 
-            # Connect Meross afterwards when freshly (re-)enabled and no API is
-            # built yet - otherwise the Meross devices would only appear after
-            # an NVDA restart.
-            if (self.plugin.use_meross
-                    and self.plugin.email
-                    and self.plugin._encrypted_password
-                    and not self.plugin.api):
-                self._init_meross_in_background()
+        Args:
+            changed: platform keys whose credentials the dialog changed.
+        """
+        # The settings clear the Netatmo tokens when the client ID changes -
+        # the authorisation belongs to the old app registration then.
+        if (self.plugin.use_netatmo and 'netatmo' in changed
+                and self.plugin.netatmo_client_id
+                and not self.plugin.netatmo_refresh_token):
+            # Translators: Note after new Netatmo client data: the OAuth2
+            # authorisation in the browser has to be granted again.
+            ui.message(_("Netatmo: authorise again with the Connect button in "
+                         "the settings"))
 
-            # Update the dialog
-            if self.plugin.is_logged_in:
-                self._on_refresh(None)
-        dlg.Destroy()
+        # Check whether Netatmo was newly connected (tokens present, but the
+        # API not initialized), or whether the client data changed - the API
+        # holds the client ID and secret, so it has to be rebuilt then.
+        if (self.plugin.use_netatmo and
+            self.plugin.netatmo_client_id and
+            self.plugin.netatmo_refresh_token and
+                (not self.plugin.netatmo_api or 'netatmo' in changed)):
+            # Initialize the Netatmo API
+            try:
+                from .netatmo_api import NetatmoAPI
+                self.plugin.netatmo_api = NetatmoAPI(
+                    self.plugin.netatmo_client_id,
+                    self.plugin.netatmo_client_secret,
+                    redirect_port=getattr(self.plugin, 'netatmo_redirect_port', 8474),
+                )
+                self.plugin.netatmo_api.set_tokens(
+                    self.plugin.netatmo_access_token,
+                    self.plugin.netatmo_refresh_token,
+                    self.plugin.netatmo_token_expiry
+                )
+                # Same as after the login: renewed tokens must be
+                # persisted, since Netatmo rotates refresh tokens.
+                self.plugin.netatmo_api.set_token_update_callback(
+                    self.plugin._on_netatmo_tokens_renewed)
+                log.info("Netatmo API initialised from the settings dialog")
+            except Exception as e:
+                log.error(f"Netatmo API initialisation failed: {e}")
+
+        # Reinitialize VeSync when enabled and credentials are present but
+        # the API is not built yet (e.g. after enabling it in the
+        # settings), or when the credentials changed. The login runs in the
+        # background so the dialog does not block; after a successful login
+        # the devices are loaded.
+        if (self.plugin.use_vesync
+                and (self.plugin.vesync_email
+                     and self.plugin._encrypted_vesync_password)
+                and (not self.plugin.vesync_api or 'vesync' in changed)):
+            self._init_vesync_in_background()
+
+        # Connect Cozytouch afterwards when freshly enabled and no API is
+        # built yet (avoids the forced NVDA restart), or with new credentials.
+        if (self.plugin.use_cozytouch
+                and self.plugin.cozytouch_email
+                and self.plugin._encrypted_cozytouch_password
+                and (not self.plugin.cozytouch_api or 'cozytouch' in changed)):
+            self._init_cozytouch_in_background()
+
+        # Connect Meross afterwards when freshly (re-)enabled and no API is
+        # built yet - otherwise the Meross devices would only appear after
+        # an NVDA restart - or when the credentials changed.
+        if (self.plugin.use_meross
+                and self.plugin.email
+                and self.plugin._encrypted_password
+                and (not self.plugin.api or 'meross' in changed)):
+            self._init_meross_in_background()
+
+        # Update the dialog
+        if self.plugin.is_logged_in:
+            self._on_refresh(None)
+
+    def _offer_login_reentry(self, platform, error):
+        """After a failed login: offers to enter the credentials again.
+
+        Only for a refusal of the credentials. A timeout or a missing network
+        is announced and nothing more - a password dialog would be the wrong
+        answer to it.
+
+        Called from the login threads of the platform mixins via
+        wx.CallAfter.
+        """
+        from .settings_panel import (
+            is_credentials_error, login_error_message, offer_credential_reentry)
+        from .platform_utils import PASSWORD_PLATFORMS
+        # Dialog already closed, or nothing a password would fix: say what
+        # happened and leave it at that.
+        if (getattr(self, '_is_destroyed', False)
+                or platform not in PASSWORD_PLATFORMS
+                or not is_credentials_error(error)):
+            ui.message(login_error_message(platform, error))
+            return
+        offer_credential_reentry(self, self.plugin, platform, error,
+                                 on_saved=self._apply_settings_change)
 

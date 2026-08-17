@@ -82,11 +82,15 @@ jobs:
         python build_addon.py relnotes --version $version --out release-notes.md
         Get-Content release-notes.md
 
+    # prerelease: a tag carrying "beta", "alpha" or "rc" must NOT become the
+    # release that GitHub offers as the current one - testers would otherwise
+    # be handed a beta as if it were the finished version.
     - name: Create Release (on tag)
       if: startsWith(github.ref, 'refs/tags/')
       uses: softprops/action-gh-release@v2
       with:
         files: dist/*.nvda-addon
         body_path: release-notes.md
+        prerelease: ${{ contains(github.ref_name, 'beta') || contains(github.ref_name, 'alpha') || contains(github.ref_name, 'rc') }}
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

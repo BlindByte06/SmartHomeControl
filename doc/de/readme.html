@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Smart Home Control 26.7.5</title>
+<title>Smart Home Control 26.8.1beta1</title>
 <style>
 body { font-family: Segoe UI, Arial, sans-serif; line-height: 1.6; max-width: 60em; margin: 1.5em auto; padding: 0 1em; }
 h1, h2, h3, h4 { line-height: 1.25; }
@@ -272,6 +272,15 @@ Details pro Plattform in den folgenden Abschnitten. Zum Schluss: optional
 NVDA-Start automatisch aufgebaut) und speichern. Die Geräte werden geladen
 und stehen sofort im Menü zur Verfügung – ein NVDA-Neustart ist nicht
 nötig.</p>
+<p>Geänderte Zugangsdaten werden vor dem Speichern bei der Plattform
+angemeldet. Lehnt die Plattform sie ab, wird nichts gespeichert: der Dialog
+bleibt offen, nennt den Grund, und der Fokus steht wieder im Passwortfeld.
+Das gilt auch für eine spätere Änderung – ein neues Passwort erreicht die
+Plattform auch dann, wenn sie gerade verbunden ist, statt erst beim
+nächsten NVDA-Start aufzufallen. Schlägt eine Anmeldung doch fehl – etwa
+weil das Passwort in der Hersteller-App geändert wurde –, bietet eine
+Rückfrage die erneute Eingabe an und öffnet die Einstellungen beim
+betroffenen Tab.</p>
 <h3 id="meross-einrichten">Meross einrichten</h3>
 <p>E-Mail und Passwort des Meross-Kontos eintragen – fertig.</p>
 <h3 id="netatmo-einrichten">Netatmo einrichten</h3>
