@@ -97,6 +97,114 @@ VESYNC_FAN_MODE_NAMES = {
     'advancedSleep': _("Sleep mode"),
 }
 
+# ============================================================
+# Favorites layer: how long the switching press stays valid
+# ============================================================
+# After a digit has announced a status, the SAME digit switches - but only
+# within this window. It exists because the layer used to stay open
+# indefinitely: press a digit, get distracted, press it again minutes
+# later, and a device switched. On a power strip carrying a computer that
+# is not a nuisance but lost work.
+#
+# The window is measured from the announcement, and the default is five
+# seconds rather than the two that feel right for a lamp. A purifier
+# announces mode, fan level, air quality and filter life, which takes four
+# to five seconds to speak - a two-second window would expire while the
+# announcement it is meant to be a reaction to is still running, and that
+# is precisely the failure the layer was built to remove.
+#
+# Letting it expire is never a dead end: the same digit then simply
+# announces again and opens a fresh window.
+FAV_LAYER_SWITCH_WINDOW_DEFAULT = 5
+FAV_LAYER_SWITCH_WINDOW_MIN = 1
+FAV_LAYER_SWITCH_WINDOW_MAX = 30
+
+# ============================================================
+# VeSync air fryer (Cosori)
+# ============================================================
+# Cooking states as the appliance reports them. Established from the log of
+# a complete programme on a CAF-P583S: standby -> ready (programme set,
+# countdown not yet running) -> cooking -> cookEnd -> standby.
+#
+# Stored language-neutrally and translated only when displayed, so a value
+# that reaches the history or the favourites does not stay in the language
+# the interface happened to have.
+#
+# 'cookStop' joined them from a log, and its meaning came from the tester
+# standing at the appliance: it is PAUSE, not stop. The name reads like an
+# ending and is not one - the programme is still loaded, its remaining time
+# frozen, waiting to go on. Guessing from the name alone would have had the
+# add-on offer to start something new while a meal sat half-cooked.
+#
+# The older single-element Cosori line (CS137/CS158) speaks a different
+# protocol and additionally documents 'heating', 'preheatStop', 'preheatEnd'
+# and 'pullOut'. None of those has been seen on a Dual Blaze and what they
+# mean there would be a guess, so they are deliberately absent: an unknown
+# value falls through as raw text and the log then names the one to add -
+# which is exactly how 'cookStop' arrived.
+VESYNC_FRYER_COOK_STATES = {
+    # Translators: An air fryer that is not cooking.
+    'standby': _("standby"),
+    # Translators: An air fryer with a programme selected that has not
+    # started running yet.
+    'ready': _("ready to start"),
+    # Translators: An air fryer that is cooking.
+    'cooking': _("cooking"),
+    # Translators: An air fryer that has finished its programme.
+    'cookend': _("finished"),
+    # Translators: An air fryer whose programme is paused and can go on.
+    'cookstop': _("paused"),
+}
+
+# Cooking programmes. The appliance reports the programme twice: as `mode`,
+# which stays English, and as `recipeName`, which arrives in the language of
+# the VeSync app (an ioBroker capture shows mode "Chicken" next to
+# recipeName "Huhn"). Only `mode` is usable as a key, and only it is stored.
+#
+# Eleven of the twelve are confirmed against a CAF-P583S: the appliance was
+# asked to load each programme in turn and the replies were read off. The
+# spellings are not what one would guess - 'AirFry' has no space, 'Veggies'
+# is not 'Vegetables', and fries arrive as 'French fries', which was the one
+# guess that missed and showed up as raw English in the interface. Keys are
+# normalised for case and spaces on lookup, and 'fries' is kept alongside in
+# case a regional variant shortens it.
+#
+# Not yet seen: 'Keep warm'. Left in on the manual's wording; if the
+# appliance calls it something else it will simply be displayed as it comes
+# and the log will say what to add.
+VESYNC_FRYER_PROGRAMME_NAMES = {
+    # Translators: Cooking programme of an air fryer.
+    'steak': _("Steak"),
+    # Translators: Cooking programme of an air fryer.
+    'chicken': _("Chicken"),
+    # Translators: Cooking programme of an air fryer.
+    'seafood': _("Seafood"),
+    # Translators: Cooking programme of an air fryer.
+    'veggies': _("Vegetables"),
+    # Translators: Cooking programme of an air fryer.
+    'frenchfries': _("Fries"),
+    # Translators: Cooking programme of an air fryer.
+    'fries': _("Fries"),
+    # Translators: Cooking programme of an air fryer (food from frozen).
+    'frozen': _("Frozen food"),
+    # Translators: Cooking programme of an air fryer.
+    'airfry': _("Air fry"),
+    # Translators: Cooking programme of an air fryer.
+    'reheat': _("Reheat"),
+    # Translators: Cooking programme of an air fryer.
+    'broil': _("Broil"),
+    # Translators: Cooking programme of an air fryer.
+    'roast': _("Roast"),
+    # Translators: Cooking programme of an air fryer.
+    'bake': _("Bake"),
+    # Translators: Cooking programme of an air fryer.
+    'keepwarm': _("Keep warm"),
+    # Translators: Cooking programme of an air fryer with temperature and
+    # time set by hand rather than by a preset. Deliberately not just
+    # "Manual" - that msgid already belongs to the purifier operating mode.
+    'custom': _("Manual programme"),
+}
+
 # Air quality levels (1=excellent ... 4=poor)
 VESYNC_AIR_QUALITY_NAMES = {
     # Translators: Air quality level 1 (best) of a VeSync air purifier.

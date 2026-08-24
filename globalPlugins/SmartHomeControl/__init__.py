@@ -110,6 +110,27 @@ from .change_detection import _ChangeDetectionMixin
 from .platform_utils import (
     split_by_platform, PLATFORM_LABELS, PASSWORD_PLATFORMS,
 )
+
+
+def _addon_version():
+    """The version from the add-on's own manifest.ini, for the log.
+
+    Read from the file rather than through addonHandler: this also works
+    when the add-on runs from a source folder that NVDA never registered,
+    which is how it is developed. Any failure gives "unknown" - a missing
+    version line must not stop the add-on from starting.
+    """
+    try:
+        manifest = os.path.join(
+            os.path.dirname(os.path.dirname(os.path.dirname(__file__))),
+            "manifest.ini")
+        with open(manifest, encoding="utf-8") as fh:
+            for line in fh:
+                if line.strip().startswith("version"):
+                    return line.split("=", 1)[1].strip().strip('"').strip("'")
+    except Exception as e:
+        log.debug(f"Add-on version could not be read: {e}")
+    return "unknown"
 from .dialog_helpers import _beep
 from .constants import (
     CONFSPEC, BEEP_ERROR, BEEP_SUCCESS, BEEP_LOADING, BEEP_ACTION,
@@ -267,6 +288,12 @@ class GlobalPlugin(_CredentialsMixin, _SchedulerMixin, _ChangeDetectionMixin,
         
         log.info("=" * 50)
         log.info("Smart Home Control: add-on started")
+        # The version, from the add-on's own manifest. NVDA logs one too,
+        # but a tester's report is read by searching this block, and a
+        # round of testing has already been spent on a package that was
+        # not the one meant: two builds carried the same version, and
+        # neither the log nor the tester could tell them apart.
+        log.info(f"Add-on version: {_addon_version()}")
         log.info(f"Python-Version: {sys.version}")
         log.info(f"Addon-Pfad: {os.path.dirname(__file__)}")
         log.info("=" * 50)
@@ -409,6 +436,9 @@ class GlobalPlugin(_CredentialsMixin, _SchedulerMixin, _ChangeDetectionMixin,
             self.vesync_account_id = decrypt_dpapi(encrypted_vs_account) if encrypted_vs_account else ""
             self.vesync_region = conf.get("vesyncRegion", "")
             self.vesync_filter_threshold = conf.get("vesyncFilterThreshold", 15)
+            from .constants import FAV_LAYER_SWITCH_WINDOW_DEFAULT
+            self.fav_layer_switch_window = conf.get(
+                "favLayerSwitchWindow", FAV_LAYER_SWITCH_WINDOW_DEFAULT)
 
             # Cozytouch credentials (password and token encrypted)
             self.use_cozytouch = conf.get("useCozytouch", False)
@@ -460,6 +490,8 @@ class GlobalPlugin(_CredentialsMixin, _SchedulerMixin, _ChangeDetectionMixin,
             self.vesync_account_id = ""
             self.vesync_region = ""
             self.vesync_filter_threshold = 15
+            from .constants import FAV_LAYER_SWITCH_WINDOW_DEFAULT
+            self.fav_layer_switch_window = FAV_LAYER_SWITCH_WINDOW_DEFAULT
             self.use_cozytouch = False
             self.cozytouch_email = ""
             self._encrypted_cozytouch_password = ""
@@ -519,6 +551,7 @@ class GlobalPlugin(_CredentialsMixin, _SchedulerMixin, _ChangeDetectionMixin,
             conf["vesyncAccountId"] = encrypt_dpapi(self.vesync_account_id) if self.vesync_account_id else ""
             conf["vesyncRegion"] = self.vesync_region or ""
             conf["vesyncFilterThreshold"] = self.vesync_filter_threshold
+            conf["favLayerSwitchWindow"] = self.fav_layer_switch_window
 
             # Cozytouch credentials (password and token encrypted)
             conf["useCozytouch"] = self.use_cozytouch
@@ -1420,9 +1453,22 @@ class GlobalPlugin(_CredentialsMixin, _SchedulerMixin, _ChangeDetectionMixin,
             watchdog.Start(self._FAV_LAYER_IDLE_MS)
 
         if getattr(self, '_fav_layer_last_digit', None) == number:
-            # Same digit pressed again: switch and end the layer.
-            self._fav_layer_exit()
-            self._favorite_toggle(number)
+            # Same digit pressed again - but only switch if it followed the
+            # announcement closely enough. The layer used to stay open
+            # indefinitely, so a digit pressed, forgotten, and pressed again
+            # minutes later switched a device. On a power strip carrying a
+            # computer that is lost work, not a nuisance.
+            #
+            # An expired window is not a dead end: the digit announces the
+            # status again and opens a fresh one, so switching is always
+            # two quick presses away.
+            since = time.time() - getattr(self, '_fav_layer_last_digit_ts', 0)
+            if since <= self._fav_layer_switch_window():
+                self._fav_layer_exit()
+                self._favorite_toggle(number)
+                return
+            self._fav_layer_last_digit_ts = time.time()
+            self._favorite_status(number)
             return
 
         from .favorites import get_favorites
@@ -1432,7 +1478,27 @@ class GlobalPlugin(_CredentialsMixin, _SchedulerMixin, _ChangeDetectionMixin,
             ui.message(_("Favorite {number} is not assigned").format(number=number))
             return  # stay in the layer - another digit can be chosen
         self._fav_layer_last_digit = number
+        self._fav_layer_last_digit_ts = time.time()
         self._favorite_status(number)
+
+    def _fav_layer_switch_window(self):
+        """How long after an announcement the same digit still switches.
+
+        In seconds, from the settings. Kept as a method rather than read
+        inline so the layer picks up a changed setting without a restart.
+        """
+        from .constants import (
+            FAV_LAYER_SWITCH_WINDOW_DEFAULT, FAV_LAYER_SWITCH_WINDOW_MIN,
+            FAV_LAYER_SWITCH_WINDOW_MAX,
+        )
+        value = getattr(self, 'fav_layer_switch_window',
+                        FAV_LAYER_SWITCH_WINDOW_DEFAULT)
+        try:
+            value = int(value)
+        except (TypeError, ValueError):
+            return FAV_LAYER_SWITCH_WINDOW_DEFAULT
+        return max(FAV_LAYER_SWITCH_WINDOW_MIN,
+                   min(FAV_LAYER_SWITCH_WINDOW_MAX, value))
 
     def _fav_layer_announce_overview(self):
         """Announces which digit switches which favorite (key 0).

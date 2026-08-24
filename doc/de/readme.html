@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Smart Home Control 26.8.1beta1</title>
+<title>Smart Home Control 26.8.1beta2</title>
 <style>
 body { font-family: Segoe UI, Arial, sans-serif; line-height: 1.6; max-width: 60em; margin: 1.5em auto; padding: 0 1em; }
 h1, h2, h3, h4 { line-height: 1.25; }
@@ -91,10 +91,16 @@ wählen: Ziffer 1 bis 9" und wartet auf eine Ziffer.</p>
 <ul>
 <li><strong>Ziffer 1 bis 9</strong> sagt sofort den Status des Favoriten mit
   dieser Nummer an.</li>
-<li><strong>Dieselbe Ziffer noch einmal</strong> schaltet ihn. Dafür gibt es
-  keine Zeitvorgabe – die Ebene bleibt offen, bis die Entscheidung gefallen
-  ist. Der Status lässt sich also in Ruhe zu Ende hören, erst danach wird
-  geschaltet.</li>
+<li><strong>Dieselbe Ziffer noch einmal</strong> schaltet ihn – sofern sie
+  innerhalb weniger Sekunden auf die Ansage folgt. Standard sind fünf Sekunden,
+  einstellbar von einer bis dreißig. Das Fenster ist bewusst großzügig: Ein
+  Luftreiniger sagt Modus, Lüfterstufe, Luftqualität und Filterstand an, und
+  das alles soll zu hören sein, bevor entschieden wird.</li>
+<li><strong>Dieselbe Ziffer nach Ablauf des Fensters</strong> sagt den Status
+  erneut an und öffnet ein neues. Schalten ist also nie unerreichbar, sondern
+  zwei zügige Tastendrücke entfernt. Genau das verhindert, dass eine viel
+  später versehentlich gedrückte Ziffer noch etwas abschaltet – der Fall, der
+  zählt, ist eine Steckerleiste mit einem Rechner daran.</li>
 <li><strong>Eine andere Ziffer</strong> sagt deren Status an und wird
   ihrerseits zur gemerkten; „1, 2, 1" schaltet deshalb nichts.</li>
 <li><strong>0</strong> liest vor, welche Ziffer zu welchem Gerät gehört.</li>
@@ -226,6 +232,67 @@ ein steuerbares <strong>Nachtlicht</strong> (Ein/Aus/Gedimmt).</p>
 </ul>
 <p>Verfügbare Funktionen: Ein/Aus, Modus (Normal, Auto, Turbo, Schlaf),
 Lüfterstufe, Oszillation, Stummschaltung und Display.</p>
+<h4 id="heissluftfritteusen-cosori">Heißluftfritteusen (Cosori)</h4>
+<ul>
+<li><strong>CAF-P583S</strong>-Serie (Dual Blaze), unabhängig vom Länderkürzel</li>
+</ul>
+<p><strong>Wird angezeigt, ein laufendes Programm lässt sich beenden.</strong>
+Der Baum zeigt Name, Ein/Aus, Erreichbarkeit und, solange ein Programm
+geladen ist, dessen Zustand (Startbereit, Garen läuft, Fertig, Pausiert), das Programm
+selbst, die Restzeit sowie beide Temperaturen – die gemessene und die
+eingestellte – in der Einheit, die das Gerät selbst meldet.</p>
+<p><strong>Programm starten</strong> bietet die Garprogramme an, die dieses
+Gerät gemeldet hat, dazu einen freien Start mit eigener Temperatur und Zeit.
+Auch bei einem Programm lassen sich Temperatur und Dauer anpassen; sie stehen
+zunächst auf den Werten, die das Gerät für dieses Programm hält. Eine Änderung
+für einen Garvorgang bleibt einmalig – sie benennt das Programm nicht um, die
+gleiche Auswahl bedeutet beim nächsten Mal also dasselbe. Wird das Programm am
+Gerät geändert und neu geladen, ändert es sich sehr wohl mit: dann hat sich die
+Einstellung des Geräts selbst geändert.</p>
+<p>Die Programmliste füllt sich selbst. Um ein Programm namentlich zu starten,
+verlangt die Cloud die Kennung, die das Gerät dafür benutzt, und die lässt
+sich nicht herleiten – auf einer CAF-P583S lauten sie 1, 2, 3, 5, 6, 9, 13,
+14, 15, 16, 17, mit Lücken. Also nennt sie das Gerät selbst: Jedes Mal, wenn
+dort ein Programm geladen wird, werden Name und Kennung notiert, und es steht
+von da an in der Liste. Das Programm am Gerät nur auszuwählen genügt, gegart
+werden muss es nicht. Bis das geschehen ist, führt der freie Start zum Ziel,
+und die Liste sagt das, statt leer zu bleiben.</p>
+<p><strong>Temperatur ändern</strong> und <strong>Garzeit ändern</strong>
+passen ein laufendes Programm an. Sie werden auch nur dann angeboten: Vor dem
+Start lehnt das Gerät beides ab, deshalb sagt der Baum das, statt eine
+Bedienung hinzuhalten, die nicht funktionieren kann.</p>
+<p>Eine neue Zeit wird als Gesamtdauer genommen, und der Countdown beginnt neu
+davon – am Gerät gemessen. „Garzeit auf zehn Minuten setzen“ heißt also zehn
+Minuten ab diesem Moment. Das Ändern der Temperatur nimmt die Cloud zwar an,
+am getesteten Gerät wirkte es aber nicht: Der Messwert stieg weiter Richtung
+ursprünglicher Einstellung. Bis das geklärt ist, bleibt der Eintrag – und die
+Zeile mit der gemessenen Temperatur ist die ehrliche Stelle zum Nachsehen.</p>
+<p><strong>Programm beenden</strong> bricht ein laufendes Programm ab.</p>
+<p>Beides fragt vor dem Absenden nach. Die Rückfrage nennt das Programm und,
+beim Starten, Temperatur und Dauer; „Abbrechen“ ist die vorausgewählte
+Schaltfläche.</p>
+<p><strong>Starten heißt nicht zwangsläufig Heizen.</strong> Cosori gibt an,
+dass sich die Heißluftfritteusen nicht aus der Ferne einschalten lassen – wegen
+einer Sicherheitsnorm, die verhindern soll, dass ein Gerät unbeaufsichtigt zu
+garen beginnt; Temperatur und Zeit sind aus der App dagegen einstellbar. Ob
+dieses Modell von selbst losläuft oder auf seine eigene Starttaste wartet, ist
+hier nicht belegt. Der Programmzustand sagt es bei der nächsten Aktualisierung:
+<em>Garen läuft</em> – oder <em>Startbereit</em>, dann ist die Taste am Gerät
+noch zu drücken. Der mühsame Teil – Programm, Temperatur und Zeit ohne Blick
+auf ein Tastfeld zu wählen – ist so oder so erledigt.</p>
+<p> Vorheizen und das Ändern von Zeit oder Temperatur eines bereits
+laufenden Programms werden nicht angeboten – die Befehle dafür sind zwar
+dokumentiert, aber nichts davon ist an einem echten Gerät bestätigt.</p>
+<p>In Bereitschaft misst das Gerät nicht mehr und meldet weiterhin die letzte
+Temperatur des vorigen Garvorgangs, unverändert so lange, wie es unbenutzt
+steht. Dieser Wert wird weggelassen statt so angezeigt, als wäre er
+aktuell.</p>
+<p>Während das Gerät seine Temperatur hält, schwankt die Messung von Abfrage
+zu Abfrage um einige Grad. Der angezeigte Wert folgt erst einer Änderung von
+fünf Grad oder mehr (neun in Fahrenheit), damit die Zeile nicht alle fünfzehn
+Sekunden neu vorgelesen wird, ohne etwas Neues zu sagen. Der Anstieg auf die
+Solltemperatur kommt ungehindert durch, ebenso der Messwert in dem Moment, in
+dem ein Programm endet.</p>
 <p>Andere Gerätetypen im VeSync-Konto (z. B. Steckdosen, Lampen oder
 Luftbefeuchter) werden derzeit nicht angezeigt.</p>
 <h3 id="cozytouch-atlantic">Cozytouch / Atlantic (experimentell)</h3>
@@ -490,10 +557,13 @@ vorübergehend ausfallen.</p>
 </ul>
 <p><strong>Vor dem Verschicken bitte einen Blick auf persönliche Daten im
 Protokoll werfen.</strong> Es enthält Geräte- und Haus-Namen so, wie sie in
-der Hersteller-App vergeben wurden. Die Erweiterung selbst protokolliert
-weder Passwörter noch Tokens noch die E-Mail-Adresse – Fehlermeldungen, die
-aus den Hersteller-Bibliotheken durchgereicht werden, liegen aber außerhalb
-ihrer Kontrolle.</p>
+der Hersteller-App vergeben wurden. NVDA schreibt beim Start außerdem die
+vollständige Konfiguration ins Protokoll, darin die E-Mail-Adresse im
+Klartext sowie die gespeicherten Passwörter und Tokens – letztere
+verschlüsselt und nur auf dem Rechner und Benutzerkonto lesbar, auf dem sie
+abgelegt wurden. Die Erweiterung selbst protokolliert nichts davon;
+Fehlermeldungen, die aus den Hersteller-Bibliotheken durchgereicht werden,
+liegen aber außerhalb ihrer Kontrolle.</p>
 <h2 id="lizenz-und-verwendete-komponenten">Lizenz und verwendete Komponenten</h2>
 <p>Smart Home Control steht unter der <strong>GNU General Public License,
 Version 2</strong> (siehe Datei <code>LICENSE</code>).</p>

@@ -5291,3 +5291,456 @@ msgstr "{reason}. Nichts gespeichert - Zugangsdaten bitte erneut eingeben"
 #: settings_panel.py:1488
 msgid "Checking {platform}..."
 msgstr "{platform} wird geprüft..."
+
+#. Translators: Result of the connection test when the account holds devices
+#. the add-on does not support. {supported}/{total} = number of devices,
+#. {types} = model designations, comma separated.
+msgid ""
+"VeSync: connected – {supported} of {total} device(s) supported. Not shown: "
+"{types}"
+msgstr ""
+"VeSync: verbunden – {supported} von {total} Geräten unterstützt. Nicht "
+"angezeigt: {types}"
+
+#. Translators: Status while an unsupported device is asked what it reports.
+#. {name} = device name.
+msgid "Asking {name} what it reports..."
+msgstr "{name} wird gefragt, was es meldet..."
+
+#. Translators: Tree entry for a device the add-on can show but not yet
+#. operate. {type} = model designation.
+msgid "Cannot be operated yet ({type})"
+msgstr "Noch nicht bedienbar ({type})"
+
+#. Translators: Error when a device is recognised but cannot be operated yet.
+#. {name} = device name, {type} = model designation.
+msgid "{name} is shown but cannot be operated yet ({type})"
+msgstr "{name} wird angezeigt, ist aber noch nicht bedienbar ({type})"
+
+#. Translators: An air fryer that is not cooking.
+msgid "standby"
+msgstr "Bereitschaft"
+
+#. Translators: Cooking state of an air fryer. {state} = what the appliance
+#. reports, e.g. "standby".
+msgid "Programme state: {state}"
+msgstr "Programmzustand: {state}"
+
+#. Translators: Selected cooking programme of an air fryer. {mode} =
+#. programme name, e.g. "Steak".
+msgid "Programme: {mode}"
+msgstr "Programm: {mode}"
+
+#. Translators: Measured temperature of an air fryer. {value} = number
+#. with unit.
+msgid "Temperature: {value}"
+msgstr "Temperatur: {value}"
+
+#. Translators: An air fryer with a programme selected that has not started
+#. running yet.
+msgid "ready to start"
+msgstr "Startbereit"
+
+#. Translators: An air fryer that is cooking.
+msgid "cooking"
+msgstr "Garen läuft"
+
+#. Translators: An air fryer that has finished its programme.
+msgid "finished"
+msgstr "Fertig"
+
+#. Translators: Cooking programme of an air fryer.
+msgid "Steak"
+msgstr "Steak"
+
+#. Translators: Cooking programme of an air fryer.
+msgid "Chicken"
+msgstr "Hähnchen"
+
+#. Translators: Cooking programme of an air fryer.
+msgid "Seafood"
+msgstr "Meeresfrüchte"
+
+#. Translators: Cooking programme of an air fryer.
+msgid "Vegetables"
+msgstr "Gemüse"
+
+#. Translators: Cooking programme of an air fryer.
+msgid "Fries"
+msgstr "Pommes frites"
+
+#. Translators: Cooking programme of an air fryer (food from frozen).
+msgid "Frozen food"
+msgstr "Tiefkühlkost"
+
+#. Translators: Cooking programme of an air fryer.
+msgid "Air fry"
+msgstr "Heißluftfritieren"
+
+#. Translators: Cooking programme of an air fryer.
+msgid "Reheat"
+msgstr "Aufwärmen"
+
+#. Translators: Cooking programme of an air fryer.
+msgid "Broil"
+msgstr "Grillen"
+
+#. Translators: Cooking programme of an air fryer.
+msgid "Roast"
+msgstr "Braten"
+
+#. Translators: Cooking programme of an air fryer.
+msgid "Bake"
+msgstr "Backen"
+
+#. Translators: Cooking programme of an air fryer.
+msgid "Keep warm"
+msgstr "Warmhalten"
+
+#. Translators: Cooking programme of an air fryer with temperature and time
+#. set by hand rather than by a preset.
+msgid "Manual programme"
+msgstr "Manuelles Programm"
+
+#. Translators: Remaining cooking time of an air fryer. {value} = time, e.g.
+#. "7 min 12 sec".
+msgid "Remaining time: {value}"
+msgstr "Restzeit: {value}"
+
+#. Translators: Remaining cooking time of an air fryer. {minutes} = whole
+#. minutes, {seconds} = remaining seconds.
+msgid "{minutes} min {seconds} sec"
+msgstr "{minutes} Min. {seconds} Sek."
+
+#. Translators: Remaining cooking time of an air fryer, under a minute.
+#. {seconds} = seconds.
+msgid "{seconds} sec"
+msgstr "{seconds} Sek."
+
+#. Translators: Temperature an air fryer was set to, as opposed to the one it
+#. currently measures. {value} = number with unit.
+msgid "Set temperature: {value}"
+msgstr "Solltemperatur: {value}"
+
+#. Translators: Remaining cooking time of an air fryer, whole minutes.
+#. {minutes} = minutes.
+msgid "{minutes} min"
+msgstr "{minutes} Min."
+
+#. Translators: Action entry in the device tree, stops a running cooking
+#. programme.
+msgid "Stop programme - Enter"
+msgstr "Programm beenden - Eingabetaste"
+
+#. Translators: Tree entry for an air fryer. A running programme can be
+#. stopped from here, but not started. {type} = model designation.
+msgid "Programmes can only be started on the appliance ({type})"
+msgstr "Programme lassen sich nur am Gerät starten ({type})"
+
+#. Translators: Title of the dialog that stops a cooking programme.
+msgid "Stop programme"
+msgstr "Programm beenden"
+
+#. Translators: Safety prompt before a cooking programme is stopped. {name} =
+#. device name, {programme} = programme name, {remaining} = remaining time.
+msgid ""
+"Stop the programme {programme} on {name}?\n"
+"\n"
+"{remaining} still to run."
+msgstr ""
+"Programm {programme} auf {name} beenden?\n"
+"\n"
+"Es laufen noch {remaining}."
+
+#. Translators: Safety prompt before a cooking programme is stopped, with no
+#. remaining time known. {name} = device name, {programme} = programme name.
+msgid "Stop the programme {programme} on {name}?"
+msgstr "Programm {programme} auf {name} beenden?"
+
+#. Translators: Safety prompt before a cooking programme is stopped. {name} =
+#. device name.
+msgid "Stop the running programme on {name}?"
+msgstr "Laufendes Programm auf {name} beenden?"
+
+#. Translators: Button labels of the prompt before stopping a cooking
+#. programme.
+msgid "&Yes, stop"
+msgstr "&Ja, beenden"
+
+#. Translators: Confirmation after a cooking programme was stopped. {name} =
+#. device name.
+msgid "{name}: programme stopped"
+msgstr "{name}: Programm beendet"
+
+#. Translators: Error when a running cooking programme could not be stopped.
+msgid "VeSync: the programme could not be stopped"
+msgstr "VeSync: Das Programm konnte nicht beendet werden"
+
+#. Translators: History entry: a cooking programme was stopped from the
+#. add-on.
+msgid "Cooking programme stopped"
+msgstr "Garprogramm beendet"
+
+#. Translators: Context help for the tree entry that stops a cooking
+#. programme.
+msgid ""
+"Stop the running cooking programme of the air fryer. Enter asks for "
+"confirmation first. Starting a programme is only possible on the appliance "
+"itself."
+msgstr ""
+"Beendet das laufende Garprogramm der Heißluftfritteuse. Die Eingabetaste "
+"fragt zuerst nach. Ein Programm zu starten, geht nur am Gerät selbst."
+
+#. Translators: Action entry in the device tree, starts a cooking programme.
+msgid "Start programme - Enter"
+msgstr "Programm starten - Eingabetaste"
+
+#. Translators: Title of the dialog that starts a cooking programme.
+msgid "Start programme"
+msgstr "Programm starten"
+
+#. Translators: Prompt of the programme list. {count} = how many programmes
+#. the appliance has shown so far.
+msgid "Which programme? The appliance has reported {count} so far."
+msgstr "Welches Programm? Das Gerät hat bisher {count} gemeldet."
+
+#. Translators: Prompt of the programme list when the appliance has not
+#. reported any programme yet.
+msgid ""
+"No programme has been reported by this appliance yet. Selecting one on the "
+"appliance itself teaches it to the add-on."
+msgstr ""
+"Dieses Gerät hat noch kein Programm gemeldet. Ein am Gerät gewähltes "
+"Programm wird dem Add-on dadurch bekannt."
+
+#. Translators: Entry in the programme list for a start with a temperature and
+#. a time entered by hand.
+msgid "Enter temperature and time"
+msgstr "Temperatur und Zeit eingeben"
+
+#. Translators: Title of the cooking time entry.
+msgid "Cooking time"
+msgstr "Garzeit"
+
+#. Translators: Prompt of the temperature entry. {low}/{high} = the permitted
+#. values.
+msgid "Temperature between {low} and {high}:"
+msgstr "Temperatur zwischen {low} und {high}:"
+
+#. Translators: Prompt of the cooking time entry. {low}/{high} = the permitted
+#. values in minutes.
+msgid "Time in minutes, between {low} and {high}:"
+msgstr "Zeit in Minuten, zwischen {low} und {high}:"
+
+#. Translators: Message after an entry outside the permitted range.
+#. {low}/{high} = the permitted values.
+msgid "Please enter a whole number between {low} and {high}"
+msgstr "Bitte eine ganze Zahl zwischen {low} und {high} eingeben"
+
+#. Translators: Safety prompt before a cooking programme is started. {name} =
+#. device name, {programme} = programme name, {temperature} = set temperature
+#. with unit, {minutes} = duration in minutes.
+msgid ""
+"Start {programme} on {name}?\n"
+"\n"
+"{temperature} for {minutes} minutes.\n"
+"\n"
+"The appliance starts heating straight away."
+msgstr ""
+"{programme} auf {name} starten?\n"
+"\n"
+"{temperature} für {minutes} Minuten.\n"
+"\n"
+"Das Gerät beginnt sofort zu heizen."
+
+#. Translators: Button labels of the prompt before starting a cooking
+#. programme.
+msgid "&Yes, start"
+msgstr "&Ja, starten"
+
+#. Translators: Confirmation after a cooking programme was started. {name} =
+#. device name, {programme} = programme name.
+msgid "{name}: {programme} started"
+msgstr "{name}: {programme} gestartet"
+
+#. Translators: Error when a cooking programme could not be started.
+msgid "VeSync: the programme could not be started"
+msgstr "VeSync: Das Programm konnte nicht gestartet werden"
+
+#. Translators: Error when a temperature outside the appliance's range was
+#. entered. {low}/{high} = the permitted values.
+msgid "The temperature has to be between {low} and {high}"
+msgstr "Die Temperatur muss zwischen {low} und {high} liegen"
+
+#. Translators: Error when a cooking time outside the permitted range was
+#. entered. {low}/{high} = the permitted values in minutes.
+msgid "The time has to be between {low} and {high} minutes"
+msgstr "Die Zeit muss zwischen {low} und {high} Minuten liegen"
+
+#. Translators: Tree entry for an air fryer that has not reported its state
+#. yet.
+msgid "Waiting for the appliance"
+msgstr "Warten auf das Gerät"
+
+#. Translators: History entry: a cooking programme was started from the
+#. add-on.
+msgid "Cooking programme started"
+msgstr "Garprogramm gestartet"
+
+#. Translators: Context help for the tree entry that stops a cooking
+#. programme.
+msgid ""
+"Stop the running cooking programme of the air fryer. Enter asks for "
+"confirmation first."
+msgstr ""
+"Beendet das laufende Garprogramm der Heißluftfritteuse. Die Eingabetaste "
+"fragt zuerst nach."
+
+#. Translators: Context help for the tree entry that starts a cooking
+#. programme.
+msgid ""
+"Start a cooking programme. Enter offers the programmes this appliance has "
+"reported, plus a free start with a temperature and a time. Temperature and "
+"time can be adjusted for a programme as well, and everything is confirmed "
+"before it is sent."
+msgstr ""
+"Startet ein Garprogramm. Die Eingabetaste bietet die Programme an, die "
+"dieses Gerät gemeldet hat, dazu einen freien Start mit Temperatur und Zeit. "
+"Auch bei einem Programm lassen sich Temperatur und Zeit anpassen, und vor "
+"dem Absenden wird alles bestätigt."
+
+#. Translators: Safety prompt before a cooking programme is started. {name} =
+#. device name, {programme} = programme name, {temperature} = set temperature
+#. with unit, {minutes} = duration in minutes.
+msgid ""
+"Start {programme} on {name}?\n"
+"\n"
+"{temperature} for {minutes} minutes."
+msgstr ""
+"{programme} auf {name} starten?\n"
+"\n"
+"{temperature} für {minutes} Minuten."
+
+#. Translators: Confirmation after a cooking programme was sent to the
+#. appliance. {name} = device name, {programme} = programme name.
+msgid "{name}: {programme} set"
+msgstr "{name}: {programme} eingestellt"
+
+#. Translators: Context help for the tree entry that starts a cooking
+#. programme.
+msgid ""
+"Start a cooking programme. Enter offers the programmes this appliance has "
+"reported, plus a free start with a temperature and a time. Temperature and "
+"time can be adjusted for a programme as well, and everything is confirmed "
+"before it is sent. Cosori appliances may require their own start button to "
+"be pressed afterwards; the programme state then says “ready to start” "
+"instead of “cooking”."
+msgstr ""
+"Startet ein Garprogramm. Die Eingabetaste bietet die Programme an, die "
+"dieses Gerät gemeldet hat, dazu einen freien Start mit Temperatur und Zeit. "
+"Auch bei einem Programm lassen sich Temperatur und Zeit anpassen, und vor "
+"dem Absenden wird alles bestätigt. Cosori-Geräte verlangen unter Umständen, "
+"dass danach ihre eigene Starttaste gedrückt wird; der Programmzustand "
+"lautet dann „Startbereit“ statt „Garen läuft“."
+
+#. Translators: Action entry in the device tree, changes the temperature of a
+#. loaded cooking programme.
+msgid "Change temperature - Enter"
+msgstr "Temperatur ändern - Eingabetaste"
+
+#. Translators: Action entry in the device tree, changes the time of a loaded
+#. cooking programme.
+msgid "Change cooking time - Enter"
+msgstr "Garzeit ändern - Eingabetaste"
+
+#. Translators: Title of the dialog that changes the time or temperature of a
+#. running cooking programme.
+msgid "Change programme"
+msgstr "Programm ändern"
+
+#. Translators: Safety prompt before the temperature of a running programme is
+#. changed. {name} = device name, {temperature} = new set temperature with unit.
+msgid "Change the temperature on {name} to {temperature}?"
+msgstr "Temperatur auf {name} auf {temperature} ändern?"
+
+#. Translators: Safety prompt before the time of a running programme is
+#. changed. {name} = device name, {minutes} = new time in minutes.
+msgid "Set the cooking time on {name} to {minutes} minutes?"
+msgstr "Garzeit auf {name} auf {minutes} Minuten setzen?"
+
+#. Translators: Button labels of the prompt before the time or temperature of
+#. a running programme is changed.
+msgid "&Yes, change"
+msgstr "&Ja, ändern"
+
+#. Translators: Button labels of the prompt before starting a cooking
+#. programme, when the settings can still be changed.
+msgid "C&hange..."
+msgstr "Ä&ndern ..."
+
+#. Translators: Confirmation after the time or temperature of a running
+#. programme was changed. {name} = device name.
+msgid "{name}: change sent"
+msgstr "{name}: Änderung gesendet"
+
+#. Translators: Error when the time or temperature of a running programme
+#. could not be changed.
+msgid "VeSync: the change was not accepted"
+msgstr "VeSync: Die Änderung wurde nicht angenommen"
+
+#. Translators: History entry: time or temperature of a running cooking
+#. programme was changed.
+msgid "Cooking programme adjusted"
+msgstr "Garprogramm angepasst"
+
+#. Translators: Context help for the tree entries that change a loaded cooking
+#. programme.
+msgid ""
+"Change the temperature or the cooking time of the loaded programme. Enter "
+"asks for the new value and confirms it before sending. The remaining time "
+"line then shows what the appliance made of it."
+msgstr ""
+"Ändert Temperatur oder Garzeit des geladenen Programms. Die Eingabetaste "
+"fragt den neuen Wert ab und bestätigt ihn vor dem Absenden. Die Zeile mit "
+"der Restzeit zeigt danach, was das Gerät daraus gemacht hat."
+
+#. Translators: An air fryer whose programme was stopped before it finished.
+msgid "stopped"
+msgstr "Abgebrochen"
+
+#. Translators: How long the selected cooking programme will take, before it
+#. has started running. {value} = time, e.g. "6 min".
+msgid "Duration: {value}"
+msgstr "Dauer: {value}"
+
+#. Translators: An air fryer whose programme is paused and can go on.
+msgid "paused"
+msgstr "Pausiert"
+
+#. Translators: Label of the input field for how long a favorites layer digit
+#. may still be pressed a second time to switch.
+msgid "Favorites layer: &switching press valid for (seconds):"
+msgstr "Favoriten-Ebene: &Schaltdruck gültig für (Sekunden):"
+
+#. Translators: Accessible name of the favorites layer switching window field.
+msgid "Favorites layer switching window in seconds"
+msgstr "Schaltfenster der Favoriten-Ebene in Sekunden"
+
+#. Translators: Tooltip for the favorites layer switching window.
+msgid ""
+"In the favorites layer a digit announces the status, and the same digit "
+"pressed again switches the device. This is how long after the announcement "
+"that second press still switches. Later presses announce the status again "
+"instead, so a digit pressed by accident long afterwards cannot switch "
+"anything off. Between {low} and {high}, default {default}."
+msgstr ""
+"In der Favoriten-Ebene sagt eine Ziffer den Status an, dieselbe Ziffer "
+"erneut schaltet das Gerät. So lange nach der Ansage schaltet dieser zweite "
+"Druck noch. Späteres Drücken sagt stattdessen wieder den Status an, damit "
+"eine viel später versehentlich gedrückte Ziffer nichts abschalten kann. "
+"Zwischen {low} und {high}, Standard {default}."
+
+#. Translators: Tree entry for an air fryer whose programme is loaded but not
+#. yet running.
+msgid "Time and temperature can only be changed once the programme runs"
+msgstr "Zeit und Temperatur lassen sich erst ändern, wenn das Programm läuft"

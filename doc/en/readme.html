@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Smart Home Control 26.8.1beta1</title>
+<title>Smart Home Control 26.8.1beta2</title>
 <style>
 body { font-family: Segoe UI, Arial, sans-serif; line-height: 1.6; max-width: 60em; margin: 1.5em auto; padding: 0 1em; }
 h1, h2, h3, h4 { line-height: 1.25; }
@@ -90,9 +90,16 @@ favorite: digit 1 to 9” and waits for a digit.</p>
 <ul>
 <li><strong>Digits 1 to 9</strong> immediately announce the status of the
   favorite with that number.</li>
-<li><strong>The same digit again</strong> toggles it. There is no time limit
-  for this – the layer stays open until a decision is made, so the whole
-  status announcement can be heard first and only then switched.</li>
+<li><strong>The same digit again</strong> toggles it – as long as it follows
+  the announcement within a few seconds. Five by default, adjustable from one
+  to thirty in the settings. The window is generous on purpose: a purifier
+  announces mode, fan level, air quality and filter life, and the whole of that
+  should be audible before deciding.</li>
+<li><strong>The same digit after that window</strong> announces the status
+  again and opens a fresh one, so switching is never out of reach – it is two
+  quick presses away. This is what stops a digit pressed by accident long
+  afterwards from switching something off: a power strip carrying a computer
+  is the case worth protecting.</li>
 <li><strong>A different digit</strong> announces its status and becomes the
   remembered one, so "1, 2, 1" switches nothing.</li>
 <li><strong>0</strong> reads out which digit belongs to which device.</li>
@@ -220,6 +227,67 @@ LAP-C201S/C202S) additionally has a controllable <strong>night light</strong>
 </ul>
 <p>Functions: on/off, mode (normal, auto, turbo, sleep), fan level,
 oscillation, mute and display.</p>
+<h4 id="air-fryers-cosori">Air fryers (Cosori)</h4>
+<ul>
+<li><strong>CAF-P583S</strong> series (Dual Blaze), regardless of the country code</li>
+</ul>
+<p><strong>Shown, and a running programme can be stopped.</strong> The tree
+gives the name, on/off, whether the appliance is online and, while a
+programme is loaded, its state (ready to start, cooking, finished, paused), the
+programme itself, the remaining time and both temperatures – the measured one
+and the one the programme was set to – in the unit the appliance reports.</p>
+<p><strong>Start programme</strong> offers the cooking programmes this
+appliance has reported, plus a free start with a temperature and a time of
+one's own. Temperature and duration can be adjusted for a preset programme
+as well; they start out at the values the appliance holds for it. A change
+made for one cook stays a one-off - it does not redefine the programme, so the
+same choice means the same thing next time. Adjusting it on the appliance and
+loading it again does change it, because then the appliance's own setting has
+changed.</p>
+<p>The programme list fills itself. To start a programme by name the cloud
+wants the id the appliance uses for it, and those ids cannot be worked out -
+on a CAF-P583S they run 1, 2, 3, 5, 6, 9, 13, 14, 15, 16, 17, with gaps. So
+the appliance is left to say them: every time a programme is loaded on it,
+its name and id are noted, and it appears in the list from then on. Merely
+selecting a programme on the appliance is enough; it does not have to be
+cooked. Until that has happened the free start is the way in, and the list
+says so instead of showing nothing.</p>
+<p><strong>Change temperature</strong> and <strong>Change cooking time</strong>
+adjust a programme while it runs. They are offered only then: before the
+programme starts the appliance refuses both, so the tree says so instead of
+holding out a control that cannot work.</p>
+<p>A new time is taken as the whole duration and the countdown starts again
+from it - measured on the appliance, so “set the time to ten minutes” means ten
+minutes from that moment. Changing the temperature is accepted by the cloud,
+but on the tested appliance it did not take effect: the measured temperature
+kept climbing towards the original setting. Until that is settled the entry
+stays, and the measured temperature line is the honest place to check what the
+appliance is really doing.</p>
+<p><strong>Stop programme</strong> ends a programme that is running.</p>
+<p>Both ask before anything is sent. The question names the programme and,
+for a start, the temperature and the duration; Cancel is the preselected
+button.</p>
+<p><strong>Starting may not mean heating.</strong> Cosori state that their air
+fryers cannot be switched on remotely, to comply with a safety standard that
+exists so an appliance cannot begin cooking unattended; temperature and time,
+however, are adjustable from the app. Whether this model begins by itself or
+waits for its own start button is not established here. The programme state
+says which it was on the next refresh: <em>cooking</em>, or <em>ready to
+start</em>, in which case the button on the appliance still has to be pressed.
+The hard part - choosing the programme, the temperature and the time without
+reading a touch panel - is done either way.</p>
+<p> Preheating and changing the time or temperature of a programme
+already under way are not offered - the commands for them are documented,
+but nothing about them has been confirmed against a real appliance.</p>
+<p>In standby the appliance stops measuring and keeps sending the last
+temperature of the previous cook, unchanged for as long as it stands idle.
+That reading is left out rather than shown as if it were current.</p>
+<p>While the appliance holds its temperature, the measurement wobbles by a few
+degrees from one reading to the next. The displayed value only follows a
+change of five degrees or more (nine in Fahrenheit), so the line does not get
+re-read every fifteen seconds without saying anything new. The climb to the
+set temperature passes through unhindered, as does the reading at the moment a
+programme ends.</p>
 <p>Other device types in the VeSync account (e.g. plugs, lights or
 humidifiers) are currently not shown.</p>
 <h3 id="cozytouch-atlantic">Cozytouch / Atlantic (experimental)</h3>
@@ -469,9 +537,13 @@ temporarily fail when the manufacturers change their servers.</p>
   and the NVDA version</li>
 </ul>
 <p><strong>Before sending, please check the log for personal data.</strong> It
-contains device names and home names as given in the manufacturer app. The add-on itself logs neither passwords nor tokens nor the email
-address – but error messages passed through from the manufacturer libraries
-are beyond its control, so a quick look is worth it.</p>
+contains device and home names as given in the manufacturer app. NVDA also
+writes the complete configuration into the log at startup, which includes the
+email address in plain text and the stored passwords and tokens – those in
+encrypted form, readable only on the machine and user account they were saved
+on. The add-on itself logs none of that, but error messages passed through
+from the manufacturer libraries are beyond its control, so a quick look is
+worth it.</p>
 <h2 id="license-and-bundled-components">License and bundled components</h2>
 <p>Smart Home Control is licensed under the <strong>GNU General Public License,
 version 2</strong> (see the <code>LICENSE</code> file).</p>

@@ -382,6 +382,389 @@ class _VeSyncDialogMixin:
             # Translators: Generic VeSync error message with detail text.
             ui.message(_("VeSync error: {error}").format(error=str(e)[:80]))
 
+    def _ask_number(self, title, prompt, low, high, preset=None):
+        """Asks for a whole number in a range. None when cancelled.
+
+        A plain text entry rather than a spin control on purpose: a spin
+        control is read as its current value on every arrow key, and
+        stepping from 80 to 200 degrees that way is a long listen. Typing
+        the number and hearing it back is shorter.
+        """
+        default = '' if preset is None else str(preset)
+        previous = getattr(self, '_suppress_live_updates', False)
+        self._suppress_live_updates = True
+        try:
+            while True:
+                dlg = wx.TextEntryDialog(self, prompt, title, default)
+                try:
+                    if dlg.ShowModal() != wx.ID_OK:
+                        return None
+                    raw = dlg.GetValue().strip()
+                finally:
+                    dlg.Destroy()
+                try:
+                    value = int(raw)
+                except (TypeError, ValueError):
+                    value = None
+                if value is not None and low <= value <= high:
+                    return value
+                default = raw
+                # Translators: Message after an entry outside the permitted
+                # range. {low}/{high} = the permitted values.
+                ui.message(_("Please enter a whole number between {low} and "
+                             "{high}").format(low=low, high=high))
+        finally:
+            self._suppress_live_updates = previous
+
+    def _handle_vesync_start_cook(self, device, item):
+        """Starts a cooking programme, after confirmation.
+
+        Two ways in: a programme the appliance has shown us before, or a
+        free start with a temperature and a time. The free start is always
+        offered - it needs no recipe id, and on an appliance that has not
+        been used with the add-on yet it is the only way in.
+        """
+        modes = device.known_programmes()
+        # Translators: Entry in the programme list for a start with a
+        # temperature and a time entered by hand.
+        manual_label = _("Enter temperature and time")
+        values = list(modes) + ['__manual__']
+        labels = {m: device.programme_display_for(m) for m in modes}
+        labels['__manual__'] = manual_label
+
+        if modes:
+            # Translators: Prompt of the programme list. {count} = how many
+            # programmes the appliance has shown so far.
+            prompt = _("Which programme? The appliance has reported {count} "
+                       "so far.").format(count=len(modes))
+        else:
+            # Translators: Prompt of the programme list when the appliance
+            # has not reported any programme yet.
+            prompt = _("No programme has been reported by this appliance "
+                       "yet. Selecting one on the appliance itself teaches "
+                       "it to the add-on.")
+        chosen = self._vesync_choose_from_list(
+            device,
+            # Translators: Title of the dialog that starts a cooking
+            # programme.
+            _("Start programme"), prompt, values, labels,
+            values[0] if values else None)
+        if chosen is None:
+            # Translators: Message when the user cancels an action.
+            ui.message(_("Cancelled"))
+            return
+
+        low, high = device.temperature_range()
+        details = None if chosen == '__manual__' else device.programme_details(chosen)
+        mode = device.CUSTOM_MODE if chosen == '__manual__' else chosen
+        preset_temp = (details or {}).get('cook_temp')
+        preset_time = (details or {}).get('cook_set_time')
+        programme_label = labels.get(chosen, chosen)
+
+        # A programme whose settings are known can be started from here in
+        # one more keystroke. Asking for a temperature and a time that are
+        # already right turned "the usual vegetables" into four dialogs,
+        # three of which only had to be confirmed unchanged.
+        if preset_temp is not None and preset_time is not None:
+            preset_minutes = max(1, int(preset_time) // 60)
+            decision = self._confirm_start(
+                device, programme_label, preset_temp, preset_minutes,
+                offer_change=True)
+            if decision == 'cancel':
+                # Translators: Message when the user cancels an action.
+                ui.message(_("Cancelled"))
+                return
+            if decision == 'start':
+                self._send_start_cook(device, item, mode, programme_label,
+                                      preset_temp, preset_minutes * 60,
+                                      details)
+                return
+            # 'change' falls through to the two entries below, prefilled.
+
+        temperature = self._ask_number(
+            # Translators: Title of the temperature entry.
+            _("Temperature"),
+            # Translators: Prompt of the temperature entry. {low}/{high} =
+            # the permitted values.
+            _("Temperature between {low} and {high}:").format(low=low, high=high),
+            low, high, preset_temp)
+        if temperature is None:
+            # Translators: Message when the user cancels an action.
+            ui.message(_("Cancelled"))
+            return
+
+        min_s, max_s = device.TIME_RANGE_SECONDS
+        minutes = self._ask_number(
+            # Translators: Title of the cooking time entry.
+            _("Cooking time"),
+            # Translators: Prompt of the cooking time entry. {low}/{high} =
+            # the permitted values in minutes.
+            _("Time in minutes, between {low} and {high}:").format(
+                low=min_s // 60, high=max_s // 60),
+            min_s // 60, max_s // 60,
+            None if preset_time is None else max(1, int(preset_time) // 60))
+        if minutes is None:
+            # Translators: Message when the user cancels an action.
+            ui.message(_("Cancelled"))
+            return
+
+        if self._confirm_start(device, programme_label, temperature, minutes,
+                               offer_change=False) != 'start':
+            # Translators: Message when the user cancels an action.
+            ui.message(_("Cancelled"))
+            return
+        self._send_start_cook(device, item, mode, programme_label,
+                              temperature, minutes * 60, details)
+
+    def _confirm_start(self, device, programme_label, temperature, minutes,
+                       offer_change):
+        """Asks before a programme is sent. 'start', 'change' or 'cancel'.
+
+        ``offer_change`` adds the third button, used when the settings came
+        from the programme itself and may want adjusting.
+        """
+        message = (
+            # Translators: Safety prompt before a cooking programme is
+            # started. {name} = device name, {programme} = programme name,
+            # {temperature} = set temperature with unit, {minutes} =
+            # duration in minutes.
+            #
+            # Deliberately no promise about heating: Cosori appliances
+            # comply with a safety standard that forbids switching them on
+            # remotely, and whether this model begins by itself or waits
+            # for its own start button is not established. The programme
+            # state in the tree answers that within one poll.
+            _("Start {programme} on {name}?\n\n"
+              "{temperature} for {minutes} minutes.").format(
+                name=device.name, programme=programme_label,
+                temperature=device._format_temperature(temperature),
+                minutes=minutes))
+        # Translators: Title of the dialog that starts a cooking programme.
+        title = _("Start programme")
+
+        style = wx.ICON_QUESTION | wx.NO_DEFAULT
+        style |= wx.YES_NO | wx.CANCEL if offer_change else wx.YES_NO
+        confirm = wx.MessageDialog(self, message, title, style)
+        if offer_change:
+            # Translators: Button labels of the prompt before starting a
+            # cooking programme, when the settings can still be changed.
+            confirm.SetYesNoCancelLabels(_("&Yes, start"), _("C&hange..."),
+                                         _("&Cancel"))
+        else:
+            # Translators: Button labels of the prompt before starting a
+            # cooking programme.
+            confirm.SetYesNoLabels(_("&Yes, start"), _("&Cancel"))
+
+        previous = getattr(self, '_suppress_live_updates', False)
+        self._suppress_live_updates = True
+        try:
+            try:
+                result = confirm.ShowModal()
+            finally:
+                confirm.Destroy()
+        finally:
+            self._suppress_live_updates = previous
+        if result == wx.ID_YES:
+            return 'start'
+        if offer_change and result == wx.ID_NO:
+            return 'change'
+        return 'cancel'
+
+    def _send_start_cook(self, device, item, mode, programme_label,
+                         temperature, seconds, details):
+        """Sends startCook and reports what came of it."""
+        try:
+            device.start_cook(
+                mode, temperature, seconds,
+                recipe_id=(details or {}).get('recipe_id'),
+                recipe_type=(details or {}).get('recipe_type'))
+            _beep(BEEP_ACTION)
+            # "set", not "started": the command was accepted, which is all
+            # that is known at this moment. Whether the appliance began
+            # heating or is waiting for its own start button shows up in
+            # the programme state on the next poll, and that line says it
+            # in words - "cooking" or "ready to start".
+            # Translators: Confirmation after a cooking programme was sent
+            # to the appliance. {name} = device name, {programme} =
+            # programme name.
+            ui.message(_("{name}: {programme} set").format(
+                name=device.name, programme=programme_label))
+            self.plugin._record_local_vesync_action(device.uuid)
+            # Translators: History detail: a cooking programme was started.
+            get_history().log_action(device, 'start_cook', mode)
+            self._rebuild_vesync_device_children(item, device)
+        except Exception as e:
+            _beep(BEEP_ERROR)
+            log.error(f"VeSync startCook error: {e}")
+            # Translators: Generic VeSync error message with detail text.
+            ui.message(_("VeSync error: {error}").format(error=str(e)[:80]))
+
+    def _handle_vesync_set_cook_temp(self, device, item):
+        """Changes the temperature of a programme that is already loaded."""
+        low, high = device.temperature_range()
+        temperature = self._ask_number(
+            # Translators: Title of the temperature entry.
+            _("Temperature"),
+            # Translators: Prompt of the temperature entry. {low}/{high} =
+            # the permitted values.
+            _("Temperature between {low} and {high}:").format(low=low, high=high),
+            low, high, device.target_temp)
+        if temperature is None:
+            # Translators: Message when the user cancels an action.
+            ui.message(_("Cancelled"))
+            return
+        self._send_cook_adjustment(
+            device, item,
+            # Translators: Safety prompt before the temperature of a
+            # running programme is changed. {name} = device name,
+            # {temperature} = new set temperature with unit.
+            _("Change the temperature on {name} to {temperature}?").format(
+                name=device.name,
+                temperature=device._format_temperature(temperature)),
+            temperature=temperature)
+
+    def _handle_vesync_set_cook_time(self, device, item):
+        """Changes the time of a programme that is already loaded."""
+        min_s, max_s = device.TIME_RANGE_SECONDS
+        minutes = self._ask_number(
+            # Translators: Title of the cooking time entry.
+            _("Cooking time"),
+            # Translators: Prompt of the cooking time entry. {low}/{high} =
+            # the permitted values in minutes.
+            _("Time in minutes, between {low} and {high}:").format(
+                low=min_s // 60, high=max_s // 60),
+            min_s // 60, max_s // 60,
+            None if device.cook_set_time is None
+            else max(1, int(device.cook_set_time) // 60))
+        if minutes is None:
+            # Translators: Message when the user cancels an action.
+            ui.message(_("Cancelled"))
+            return
+        self._send_cook_adjustment(
+            device, item,
+            # Translators: Safety prompt before the time of a running
+            # programme is changed. {name} = device name, {minutes} = new
+            # time in minutes. Deliberately "set to" rather than "add":
+            # whether the appliance treats it as the remaining time or as
+            # the whole duration is not established.
+            _("Set the cooking time on {name} to {minutes} minutes?").format(
+                name=device.name, minutes=minutes),
+            seconds=minutes * 60)
+
+    def _send_cook_adjustment(self, device, item, question,
+                              temperature=None, seconds=None):
+        """Confirms and sends one setTimeOrTemp change."""
+        confirm = wx.MessageDialog(
+            self, question,
+            # Translators: Title of the dialog that changes the time or
+            # temperature of a running cooking programme.
+            _("Change programme"),
+            wx.YES_NO | wx.NO_DEFAULT | wx.ICON_QUESTION,
+        )
+        # Translators: Button labels of the prompt before the time or
+        # temperature of a running programme is changed.
+        confirm.SetYesNoLabels(_("&Yes, change"), _("&Cancel"))
+        previous = getattr(self, '_suppress_live_updates', False)
+        self._suppress_live_updates = True
+        try:
+            try:
+                result = confirm.ShowModal()
+            finally:
+                confirm.Destroy()
+        finally:
+            self._suppress_live_updates = previous
+        if result != wx.ID_YES:
+            # Translators: Message when the user cancels an action.
+            ui.message(_("Cancelled"))
+            return
+
+        try:
+            device.set_time_or_temp(temperature=temperature, seconds=seconds)
+            _beep(BEEP_ACTION)
+            # Translators: Confirmation after the time or temperature of a
+            # running programme was changed. {name} = device name.
+            ui.message(_("{name}: change sent").format(name=device.name))
+            self.plugin._record_local_vesync_action(device.uuid)
+            detail = 'temp' if temperature is not None else 'time'
+            # Translators: History detail: time or temperature of a running
+            # programme was changed.
+            get_history().log_action(device, 'adjust_cook', detail)
+            self._rebuild_vesync_device_children(item, device)
+        except Exception as e:
+            _beep(BEEP_ERROR)
+            log.error(f"VeSync setTimeOrTemp error: {e}")
+            # Translators: Generic VeSync error message with detail text.
+            ui.message(_("VeSync error: {error}").format(error=str(e)[:80]))
+
+    def _handle_vesync_end_cook(self, device, item):
+        """Stops a running cooking programme, after confirmation.
+
+        Confirmed rather than sent straight away, even though stopping is
+        the harmless direction: an eight-minute programme that is thrown
+        away three minutes in by a mistyped Enter costs a meal. The
+        question names the programme and the remaining time, so it can be
+        answered without going back to the tree.
+        """
+        remaining = device.remaining_time_display()
+        programme = device.programme_display()
+        if programme and remaining:
+            # Translators: Safety prompt before a cooking programme is
+            # stopped. {name} = device name, {programme} = programme name,
+            # {remaining} = remaining time.
+            question = _("Stop the programme {programme} on {name}?\n\n"
+                         "{remaining} still to run.").format(
+                name=device.name, programme=programme, remaining=remaining)
+        elif programme:
+            # Translators: Safety prompt before a cooking programme is
+            # stopped, with no remaining time known. {name} = device name,
+            # {programme} = programme name.
+            question = _("Stop the programme {programme} on {name}?").format(
+                name=device.name, programme=programme)
+        else:
+            # Translators: Safety prompt before a cooking programme is
+            # stopped. {name} = device name.
+            question = _("Stop the running programme on {name}?").format(
+                name=device.name)
+
+        confirm = wx.MessageDialog(
+            self, question,
+            # Translators: Title of the dialog that stops a cooking programme.
+            _("Stop programme"),
+            wx.YES_NO | wx.NO_DEFAULT | wx.ICON_QUESTION,
+        )
+        # Translators: Button labels of the prompt before stopping a
+        # cooking programme.
+        confirm.SetYesNoLabels(_("&Yes, stop"), _("&Cancel"))
+        previous_suppress = getattr(self, '_suppress_live_updates', False)
+        self._suppress_live_updates = True
+        try:
+            try:
+                result = confirm.ShowModal()
+            finally:
+                confirm.Destroy()
+        finally:
+            self._suppress_live_updates = previous_suppress
+        if result != wx.ID_YES:
+            # Translators: Message when the user cancels an action.
+            ui.message(_("Cancelled"))
+            return
+
+        try:
+            device.end_cook()
+            _beep(BEEP_ACTION)
+            # Translators: Confirmation after a cooking programme was
+            # stopped. {name} = device name.
+            ui.message(_("{name}: programme stopped").format(name=device.name))
+            self.plugin._record_local_vesync_action(device.uuid)
+            # Translators: History detail: a cooking programme was stopped.
+            get_history().log_action(device, 'end_cook', "")
+            self._rebuild_vesync_device_children(item, device)
+        except Exception as e:
+            _beep(BEEP_ERROR)
+            log.error(f"VeSync endCook error: {e}")
+            # Translators: Generic VeSync error message with detail text.
+            ui.message(_("VeSync error: {error}").format(error=str(e)[:80]))
+
     def _rebuild_vesync_device_children(self, action_item, device):
         """Rebuilds the child nodes of a VeSync device after an action.
 
@@ -417,19 +800,34 @@ class _VeSyncDialogMixin:
         Called by the background refresh so mode/level/air quality are
         updated live while the user is not ripped out of the currently
         focused action entry.
+
+        The focus is restored by key where the line carries one, and only
+        otherwise by position. The difference is audible on an air fryer:
+        when a programme ends, the temperature and the remaining time drop
+        out of the list, and restoring by position alone silently moved the
+        reader from "Temperature: 192 °C" onto "Cannot be operated yet",
+        which is what the screen reader then announced - at the very moment
+        the interesting news was that the food was done.
+
+        When the line really is gone, the search walks back up the old order
+        to the nearest line that survived. Going up rather than down on
+        purpose: the lines above are the ones the vanished line belonged to,
+        so a reader parked on the temperature ends up on the programme state
+        - which is where the news is - instead of on the favorites entry.
         """
-        # Remember the focus (index of the focused child)
+        # Remember the focus (key and index) and the order of the keys, so a
+        # line that disappears can be traded for its nearest neighbour.
         focused_item = self.tree.GetFocusedItem()
         focused_child_index = -1
-        if focused_item.IsOk():
-            child, cookie = self.tree.GetFirstChild(device_item)
-            idx = 0
-            while child.IsOk():
-                if child == focused_item:
-                    focused_child_index = idx
-                    break
-                idx += 1
-                child, cookie = self.tree.GetNextChild(device_item, cookie)
+        focused_key = None
+        old_keys = []
+        child, cookie = self.tree.GetFirstChild(device_item)
+        while child.IsOk():
+            old_keys.append((self.tree.GetItemData(child) or {}).get('key'))
+            if focused_item.IsOk() and child == focused_item:
+                focused_child_index = len(old_keys) - 1
+                focused_key = old_keys[-1]
+            child, cookie = self.tree.GetNextChild(device_item, cookie)
 
         # Update the device label (model alias + status + filter warning if
         # any)
@@ -444,24 +842,45 @@ class _VeSyncDialogMixin:
 
         # Restore the focus (silently, without a duplicate NVDA announcement)
         if focused_child_index >= 0:
+            children = []
+            by_key = {}
             child, cookie = self.tree.GetFirstChild(device_item)
-            idx = 0
-            last_child = child
-            target_child = None
             while child.IsOk():
-                if idx == focused_child_index:
-                    target_child = child
-                    break
-                last_child = child
-                idx += 1
+                children.append(child)
+                key = (self.tree.GetItemData(child) or {}).get('key')
+                if key is not None:
+                    by_key.setdefault(key, child)
                 child, cookie = self.tree.GetNextChild(device_item, cookie)
-            if target_child is None and last_child and last_child.IsOk():
-                target_child = last_child
+
+            target_child = by_key.get(focused_key)
+            if target_child is None:
+                # The line is gone: the nearest one above it that survived.
+                for key in reversed(old_keys[:focused_child_index]):
+                    if key is not None and key in by_key:
+                        target_child = by_key[key]
+                        break
+            if target_child is None and focused_child_index < len(children):
+                # Unkeyed lines (purifiers, fans) keep the old behaviour.
+                target_child = children[focused_child_index]
+            if target_child is None and children:
+                target_child = children[-1]
             if target_child and target_child.IsOk():
+                if self.tree.GetFocusedItem() == target_child:
+                    # Already where it belongs. Selecting it again would
+                    # fire a focus event for no movement, and the screen
+                    # reader would read the line out once more.
+                    return
                 self._suppress_tree_focus_event = True
                 try:
                     self.tree.SelectItem(target_child)
-                    self.tree.SetFocusedItem(target_child)
+                    # SelectItem moves the focus in a single-selection tree,
+                    # so SetFocusedItem was firing a SECOND focus event for
+                    # the same line: after a programme ended, NVDA announced
+                    # "Programme state: standby" twice, eight milliseconds
+                    # apart. Only nudge the focus if selecting did not
+                    # already take it there.
+                    if self.tree.GetFocusedItem() != target_child:
+                        self.tree.SetFocusedItem(target_child)
                 finally:
                     wx.CallAfter(setattr, self, '_suppress_tree_focus_event', False)
 
@@ -518,6 +937,135 @@ class _VeSyncDialogMixin:
             return items
 
         cls_name = type(device).__name__
+
+        # ---- Devices that are shown but not operated ----
+        # Everything below this point assumes a purifier or a fan: mode, fan
+        # level, filter life. An air fryer has none of that, and reading it
+        # would fail in the middle of building the tree. It gets what the
+        # device list knows - and a line saying why there is nothing to
+        # press, because an entry with no actions and no explanation reads
+        # like a defect.
+        if cls_name == 'VeSyncAirFryer':
+            items.append({
+                # Translators: Operating state in the device tree.
+                'text': _("Status: on") if device.is_on else _("Status: off"),
+                'kind': 'info', 'action': None, 'key': 'fryer_switch',
+            })
+            if device.cook_status:
+                items.append({
+                    # Translators: Cooking state of an air fryer. {state} =
+                    # what the appliance reports, e.g. "standby".
+                    'text': _("Programme state: {state}").format(
+                        state=device.cook_status_display()),
+                    'kind': 'info', 'action': None, 'key': 'fryer_state',
+                })
+            # The programme, the remaining time and the temperatures only
+            # exist while a programme is loaded - in standby the appliance
+            # sends an empty stepArray and a stale temperature. Rows that
+            # would carry nothing are left out rather than shown empty; the
+            # focus survives that because it is restored by key, not by
+            # position (see _rebuild_vesync_children_preserving_focus).
+            #
+            # Not device.cook_mode: that reads 'normal' whatever is
+            # running. The programme is what the appliance was set to.
+            programme = device.programme_display()
+            if programme:
+                items.append({
+                    # Translators: Selected cooking programme of an air fryer.
+                    # {mode} = programme name, e.g. "Steak".
+                    'text': _("Programme: {mode}").format(mode=programme),
+                    'kind': 'info', 'action': None, 'key': 'fryer_programme',
+                })
+            remaining = device.remaining_time_display()
+            if remaining and device.time_is_counting_down:
+                items.append({
+                    # Translators: Remaining cooking time of an air fryer.
+                    # {value} = time, e.g. "7 min 12 s".
+                    'text': _("Remaining time: {value}").format(value=remaining),
+                    'kind': 'info', 'action': None, 'key': 'fryer_remaining',
+                })
+            elif remaining:
+                items.append({
+                    # Translators: How long the selected cooking programme
+                    # will take, before it has started running. {value} =
+                    # time, e.g. "6 min".
+                    'text': _("Duration: {value}").format(value=remaining),
+                    'kind': 'info', 'action': None, 'key': 'fryer_remaining',
+                })
+            temperature = device.temperature_display()
+            if temperature:
+                items.append({
+                    # Translators: Measured temperature of an air fryer.
+                    # {value} = number with unit.
+                    'text': _("Temperature: {value}").format(value=temperature),
+                    'kind': 'info', 'action': None, 'key': 'fryer_temp',
+                })
+            target = device.target_temperature_display()
+            if target:
+                items.append({
+                    # Translators: Temperature an air fryer was set to, as
+                    # opposed to the one it currently measures. {value} =
+                    # number with unit.
+                    'text': _("Set temperature: {value}").format(value=target),
+                    'kind': 'info', 'action': None, 'key': 'fryer_target',
+                })
+            if device.can_start_cook:
+                items.append({
+                    # Translators: Action entry in the device tree, starts a
+                    # cooking programme.
+                    'text': _("Start programme - Enter"),
+                    'kind': 'action', 'action': 'vesync_start_cook',
+                    'key': 'fryer_start_cook',
+                })
+            if device.can_adjust_cook:
+                items.append({
+                    # Translators: Action entry in the device tree, changes
+                    # the temperature of a loaded cooking programme.
+                    'text': _("Change temperature - Enter"),
+                    'kind': 'action', 'action': 'vesync_set_cook_temp',
+                    'key': 'fryer_set_temp',
+                })
+                items.append({
+                    # Translators: Action entry in the device tree, changes
+                    # the time of a loaded cooking programme.
+                    'text': _("Change cooking time - Enter"),
+                    'kind': 'action', 'action': 'vesync_set_cook_time',
+                    'key': 'fryer_set_time',
+                })
+            if device.can_end_cook:
+                items.append({
+                    # Translators: Action entry in the device tree, stops a
+                    # running cooking programme.
+                    'text': _("Stop programme - Enter"),
+                    'kind': 'action', 'action': 'vesync_end_cook',
+                    'key': 'fryer_end_cook',
+                })
+            if (device.can_end_cook and not device.can_adjust_cook
+                    and (device.cook_status or '').lower() == 'ready'):
+                # The appliance refuses setTimeOrTemp before the programme
+                # runs (its code 11017000), so the two entries are not
+                # offered here. Saying why beats letting the reader hunt
+                # for a control that was there a minute ago.
+                items.append({
+                    # Translators: Tree entry for an air fryer whose
+                    # programme is loaded but not yet running.
+                    'text': _("Time and temperature can only be changed "
+                              "once the programme runs"),
+                    'kind': 'info', 'action': None, 'key': 'fryer_adjust_hint',
+                })
+            if not device.can_start_cook and not device.can_end_cook:
+                # Before the first status reply the appliance has told us
+                # nothing, so neither action can be offered. An entry with
+                # no actions and no explanation reads like a defect, which
+                # is what this line is for.
+                items.append({
+                    # Translators: Tree entry for an air fryer that has not
+                    # reported its state yet.
+                    'text': _("Waiting for the appliance"),
+                    'kind': 'info', 'action': None, 'key': 'fryer_waiting',
+                })
+            items.append(self._compute_vesync_favorite_item(device, is_favorite_view))
+            return items
 
         # ---- 0. Filter warning at the very top (if the remaining life is low)
         # ----
@@ -696,16 +1244,21 @@ class _VeSyncDialogMixin:
         """Computes the favorite entry (add/remove) for a VeSync device."""
         favorites = get_favorites()
         is_fav = favorites.is_favorite(device.unique_id)
+        # One key for both variants: the entry keeps its place when the
+        # device is added to or removed from the favourites, so the focus
+        # stays on it across the rebuild that the changed action triggers.
         if is_favorite_view or is_fav:
             return {
                 # Translators: Action entry in the device tree.
                 'text': _("Remove from favorites - Enter"),
                 'kind': 'action', 'action': 'favorite_remove',
+                'key': 'favorite',
             }
         return {
             # Translators: Action entry in the device tree.
             'text': _("Add to favorites - Enter"),
             'kind': 'action', 'action': 'favorite_add',
+            'key': 'favorite',
         }
 
     def _fill_vesync_device_children(self, device_node, device, is_favorite_view=False):
@@ -720,9 +1273,11 @@ class _VeSyncDialogMixin:
         for item in items:
             kind = item['kind']
             if kind == 'info':
-                self._append_info(device_node, device, item['text'])
+                self._append_info(device_node, device, item['text'],
+                                  key=item.get('key'))
             elif kind == 'action':
-                self._append_action(device_node, device, item['text'], item['action'])
+                self._append_action(device_node, device, item['text'],
+                                    item['action'], key=item.get('key'))
 
     def _live_update_vesync_children(self, device_item, device):
         """Updates a VeSync device without a tree rebuild (for fast poll/refresh).
@@ -759,6 +1314,13 @@ class _VeSyncDialogMixin:
             for ch, exp in zip(children, expected):
                 ch_data = self.tree.GetItemData(ch) or {}
                 ch_type = ch_data.get('type')
+                # Same count is not the same list: one line can drop out
+                # while another appears. Where lines are keyed, the key has
+                # to line up too, otherwise a text swap would quietly turn
+                # the focused line into a different one.
+                if ch_data.get('key') != exp.get('key'):
+                    structure_matches = False
+                    break
                 # 'info' vs 'action' must match
                 if exp['kind'] == 'info' and ch_type != 'info':
                     structure_matches = False

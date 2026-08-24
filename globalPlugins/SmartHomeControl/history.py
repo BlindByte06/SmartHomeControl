@@ -1166,6 +1166,15 @@ def _format_action_text(action, details=""):
         'child_lock_on': _("Child lock switched on"),
         'child_lock_off': _("Child lock switched off"),
         'reset_filter': _("Filter reset"),
+        # Translators: History entry: a cooking programme was stopped from
+        # the add-on.
+        'end_cook': _("Cooking programme stopped"),
+        # Translators: History entry: a cooking programme was started
+        # from the add-on.
+        'start_cook': _("Cooking programme started"),
+        # Translators: History entry: time or temperature of a running
+        # cooking programme was changed.
+        'adjust_cook': _("Cooking programme adjusted"),
         # Water sensors (MS400/MS405)
         'water_detected': _("Water alarm"),
         'water_cleared': _("No water detected any more"),

@@ -181,6 +181,32 @@ class _ContextHelpMixin:
             elif action == 'vesync_toggle':
                 ui.message(_("Turn VeSync device on or off. Press Enter or "
                              "Space to execute."))
+            elif action == 'vesync_end_cook':
+                # Translators: Context help for the tree entry that stops a
+                # cooking programme.
+                ui.message(_("Stop the running cooking programme of the air "
+                             "fryer. Enter asks for confirmation first."))
+            elif action == 'vesync_start_cook':
+                # Translators: Context help for the tree entry that starts a
+                # cooking programme.
+                ui.message(_("Start a cooking programme. Enter offers the "
+                             "programmes this appliance has reported, plus a "
+                             "free start with a temperature and a time. "
+                             "Temperature and time can be adjusted for a "
+                             "programme as well, and everything is confirmed "
+                             "before it is sent. Cosori appliances may "
+                             "require their own start button to be pressed "
+                             "afterwards; the programme state then says "
+                             "“ready to start” instead of "
+                             "“cooking”."))
+            elif action in ('vesync_set_cook_temp', 'vesync_set_cook_time'):
+                # Translators: Context help for the tree entries that
+                # change a loaded cooking programme.
+                ui.message(_("Change the temperature or the cooking time "
+                             "of the loaded programme. Enter asks for the "
+                             "new value and confirms it before sending. "
+                             "The remaining time line then shows what the "
+                             "appliance made of it."))
             elif action == 'vesync_mode':
                 ui.message(_("Choose operating mode. Air purifiers: auto, "
                              "manual or sleep. Fans: normal, turbo, auto or "

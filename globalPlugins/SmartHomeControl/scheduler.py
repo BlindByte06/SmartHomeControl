@@ -425,7 +425,14 @@ class _SchedulerMixin:
             ('co2', ('get_co2',)),
             ('pressure', ('get_pressure',)),
             ('noise', ('get_noise',)),
-            ('pm25', ('air_quality_value',)),
+            # get_pm25 and deliberately NOT the plain attribute as a
+            # fallback: _read_sensor takes the first name that yields
+            # anything, so listing both would let the attribute - which
+            # keeps the last good value for the display - put a stale
+            # reading back into the series the moment the getter withholds
+            # one. Reading the attribute here is what put 32 dropouts (-1)
+            # into one purifier's history before anyone noticed.
+            ('pm25', ('get_pm25',)),
             ('pm10', ('pm10',)),
         )
         # One-time repair of the entries written under the old key. Needs

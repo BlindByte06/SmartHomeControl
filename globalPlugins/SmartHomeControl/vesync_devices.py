@@ -27,6 +27,28 @@ if "_" not in globals():  # fallback outside of NVDA
         return s
 
 
+def _plausible_reading(value, minimum=0):
+    """A sensor reading that can be believed, else None.
+
+    A particulate concentration cannot be negative. Levoit purifiers send
+    -1 for the particulate sensor when it has nothing to report: one Core
+    300S did so on roughly every second hourly poll for days on end, while
+    an identical unit next to it never did. Without this check the value
+    reached the interface as "PM2.5: -1 µg/m³" - announced and put on the
+    braille display - and was written to the history as a measurement,
+    where 32 of 190 stored readings ended up being dropouts.
+
+    Booleans are rejected on purpose: ``isinstance(True, int)`` is true in
+    Python, and a flag that slipped into a numeric field would otherwise
+    be stored as 1.
+    """
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        return None
+    if value < minimum:
+        return None
+    return value
+
+
 # Protection window for user-controlled fields. After a setter,
 # ``apply_status_response`` must not overwrite the affected field from the
 # (often minutes-long cached) bypassV2 cloud cache for this long.
@@ -270,6 +292,26 @@ VESYNC_FAN_TYPES = {
 
 
 # ============================================================
+# Air fryers (Cosori)
+# ============================================================
+# Listed by model family without the regional suffix, so every variant
+# (-KEU, -KUS, -AEUR, -KUK ...) is covered by resolve_device_config.
+#
+# These devices are shown, not operated. What they report is settled (see
+# VeSyncAirFryer): getAirfryerStatus answers with the cooking state, the
+# programme, both temperatures and the remaining time. The open source work
+# on VeSync covers only the older single-element Cosori fryers over a
+# different protocol, so none of that could be taken over as it stood.
+#
+# An account holding only such a device used to come out as "no devices",
+# which reads exactly like a refused login; showing it with its name and
+# state is worth more than the silence, even without a single control.
+VESYNC_FRYER_TYPES = {
+    "CAF-P583S": {"alias": "Cosori Dual Blaze"},
+}
+
+
+# ============================================================
 # Model lookup (regional-variant tolerant)
 # ============================================================
 
@@ -321,7 +363,10 @@ def resolve_device_config(device_type, table):
     if family:
         for key, cfg in table.items():
             if _model_family(key).lower() == family:
-                log.info(
+                # Debug, not info: for the newer entries the tables are
+                # keyed by model family on purpose, so this branch is the
+                # normal path there and fired on every device list refresh.
+                log.debug(
                     f"VeSync: {device_type} not known by name - using "
                     f"the profile of {key} (same model series)")
                 return cfg, key
@@ -482,6 +527,34 @@ class _VeSyncBaseDevice:
                 return False
         return True
 
+    def _log_rejected_command(self, method, data, resp):
+        """Writes down why a command was refused.
+
+        Without this a refusal reaches the log as nothing but the message
+        shown to the user - "the change was not accepted" - which says
+        that something went wrong and nothing about what. A tester's round
+        was spent on exactly that: a temperature change was refused four
+        times and the log could not say whether the payload was wrong, the
+        field name, or the appliance's own state.
+
+        The response carries the cloud's own code and message, and the
+        payload sent is repeated beside it so the two can be read
+        together. Neither contains credentials.
+        """
+        log.info(f"VeSync command {method} refused by {self.name}: {resp}")
+        log.info(f"VeSync command {method} payload was: {data}")
+
+    def _log_accepted_command(self, method, data):
+        """Writes down a command that went through.
+
+        Logging only the refusals looked economical and cost a round: with
+        four calls in a log, two accepted and two refused, the accepted
+        ones carried no payload, so what actually differed between them
+        had to be reconstructed from the dialogs the reader heard. Both
+        halves of the comparison belong in the log.
+        """
+        log.debug(f"VeSync command {method} accepted by {self.name}: {data}")
+
     def _update_status(self):
         """Called by the plugin/dialog to fetch a fresh status"""
         try:
@@ -535,6 +608,11 @@ class VeSyncPurifier(_VeSyncBaseDevice):
         self.filter_life = None  # 0-100 %
         self.air_quality = None  # level 1=excellent ... 4=poor
         self.air_quality_value = None  # PM2.5 in ug/m3
+        # Whether the LAST response carried a usable PM2.5 reading. The
+        # displayed value deliberately survives a dropout (see
+        # _plausible_reading); the history must not, or it would record a
+        # measurement that was never taken.
+        self.air_quality_value_fresh = False
         self.pm1 = None  # PM1.0 (V2 / Sprout only)
         self.pm10 = None  # PM10 (V2 / Sprout only)
         self.aq_percent = None  # air quality percent (V2)
@@ -549,6 +627,21 @@ class VeSyncPurifier(_VeSyncBaseDevice):
         self.fan_rotate_angle = None
         self.auto_preference_type = None  # 'default' / 'efficient' / 'quiet'
         self.auto_room_size = None  # sq ft
+
+    # ------ Readings for the history ------
+    def get_pm25(self):
+        """The PM2.5 reading, but only while it is a current one.
+
+        Deliberately different from what the tree shows. The displayed
+        value survives a sensor dropout, because a line that vanishes and
+        returns every hour is worse to navigate than a slightly old
+        number. A recorded series must not do that: writing the previous
+        reading again would invent a measurement, and the graph would show
+        a steady value where the sensor said nothing at all.
+        """
+        if not self.air_quality_value_fresh:
+            return None
+        return self.air_quality_value
 
     # ------ Feature flags ------
     @property
@@ -718,11 +811,23 @@ class VeSyncPurifier(_VeSyncBaseDevice):
             if "child_lock" in result and not self._is_field_protected('child_lock'):
                 self.child_lock = bool(result.get("child_lock"))
             if self.supports_air_quality:
-                # Sensor values: never protected, always go into the wrapper.
+                # Sensor values: never protected, always go into the wrapper -
+                # but only when they are readings at all, see
+                # _plausible_reading. A dropout leaves the previous value
+                # standing rather than replacing the line with nonsense; the
+                # freshness flag is what keeps it out of the history.
                 if "air_quality" in result:
-                    self.air_quality = result.get("air_quality")
+                    # Levels run 1 (excellent) to 4 (poor). A level of 0 or
+                    # less has not been seen, but it would be displayed as a
+                    # bare number, so it is filtered on the same grounds.
+                    level = _plausible_reading(result.get("air_quality"), minimum=1)
+                    if level is not None:
+                        self.air_quality = level
                 if "air_quality_value" in result:
-                    self.air_quality_value = result.get("air_quality_value")
+                    value = _plausible_reading(result.get("air_quality_value"))
+                    self.air_quality_value_fresh = value is not None
+                    if value is not None:
+                        self.air_quality_value = value
             if "night_light" in result and result.get("night_light") \
                     and not self._is_field_protected('nightlight'):
                 self.nightlight_status = result.get("night_light")
@@ -771,13 +876,17 @@ class VeSyncPurifier(_VeSyncBaseDevice):
                 except (TypeError, ValueError):
                     pass
             if self.supports_air_quality:
-                # Sensor values: no protection window.
-                aq_level = ext.get("airQualityLevel")
+                # Sensor values: no protection window, but the same dropout
+                # filter as in apply_status_response - the device list
+                # carries the identical -1 (see _plausible_reading).
+                aq_level = _plausible_reading(ext.get("airQualityLevel"), minimum=1)
                 if aq_level is not None:
                     self.air_quality = aq_level
-                aq_value = ext.get("airQuality")
-                if aq_value is not None:
-                    self.air_quality_value = aq_value
+                if "airQuality" in ext:
+                    aq_value = _plausible_reading(ext.get("airQuality"))
+                    self.air_quality_value_fresh = aq_value is not None
+                    if aq_value is not None:
+                        self.air_quality_value = aq_value
 
     # ------ Actions ------
     def toggle_switch(self, on):
@@ -1245,3 +1354,559 @@ class VeSyncTowerFan(_VeSyncBaseDevice):
             self.display_on = bool(on)
             self._protect('display')
         return True
+
+
+class VeSyncAirFryer(_VeSyncBaseDevice):
+    """Wrapper for Cosori air fryers - display only.
+
+    Shows what the appliance reports: the switching state and whether it is
+    online from the device list, and from getAirfryerStatus the cooking
+    state, the selected programme, the set and the measured temperature and
+    the remaining time. Nothing is sent to it - see toggle_switch.
+
+    Deliberately not a subclass of the purifier or fan wrapper: those bring
+    modes, fan levels and a filter, none of which exist here, and code that
+    reads them would fail in ways that are hard to trace.
+    """
+
+    # The call the appliance actually answers. Established by asking it:
+    # of seven candidates only this one came back with code 0, the other
+    # six answered result.code = -1 (method unknown). Note the lower case
+    # f - "getAirFryerStatus" is one of the six that do not work.
+    #
+    # Only for the single-basket line. The two-zone TwinFry models answer
+    # "getAirfryerMultiStatus" instead and would fall through here.
+    STATUS_METHOD = "getAirfryerStatus"
+
+    # How far the measured temperature has to move before the displayed
+    # value follows it.
+    #
+    # While the appliance holds its set temperature the reading oscillates
+    # by a few degrees - 195, 194, 195, 193, 195 within one minute of a
+    # logged Steak programme. The tree line carrying it is re-read by the
+    # screen reader on every change, so an undamped value turns the whole
+    # second half of a cook into chatter that says nothing new. The climb
+    # to the set temperature moves in steps of ten to twenty degrees and
+    # still gets through unhindered.
+    TEMP_HYSTERESIS = {"c": 5, "f": 9}
+
+    def __init__(self, raw_data, api, feature_map):
+        super().__init__(raw_data, api, feature_map)
+        self.alias = feature_map.get("alias", self.device_type_raw)
+
+        # Status fields from getAirfryerStatus. Raw API values; what they
+        # are called in the interface is decided when displayed.
+        self.cook_status = None   # 'standby', 'ready', 'cooking', 'cookEnd'
+        # 'normal' on every single reading ever taken, including while a
+        # Steak programme was running. It is NOT the cooking programme -
+        # that one lives in stepArray, see apply_status_response.
+        self.cook_mode = None
+        self.temp_unit = None     # 'c' or 'f' - the appliance decides
+        self.current_temp = None  # measured air temperature
+        # Damped copy of current_temp - this is what gets displayed, see
+        # TEMP_HYSTERESIS.
+        self.display_temp = None
+        self.time_remaining = None  # seconds, see apply_status_response
+
+        # From stepArray[0], i.e. only while a programme is loaded.
+        self.programme = None     # language-neutral key, e.g. 'Steak'
+        self.target_temp = None   # set temperature of the programme
+        self.cook_set_time = None  # total duration in seconds
+
+        self.preheat_temp = None
+
+    # ------ Display ------
+    def get_type_display(self):
+        return self.alias
+
+    @property
+    def is_running(self):
+        """Whether the appliance is doing something.
+
+        'standby' is what a fryer with no programme loaded reports.
+        Anything else counts as running - including 'cookEnd', where the
+        programme is over but the appliance still holds the result and its
+        measured temperature, 'cookStop', which is a pause with the meal
+        still in there, and any value nobody has seen yet.
+        Deliberately that way round: an unknown state announced as idle
+        would be the more expensive mistake.
+        """
+        status = (self.cook_status or "").lower()
+        return bool(status) and status != "standby"
+
+    def cook_status_display(self):
+        """The cooking state as a word, raw value if it is a new one.
+
+        Four states are known (see VESYNC_FRYER_COOK_STATES). An unknown
+        value is passed through unchanged rather than guessed at, and the
+        log then says which one to add.
+        """
+        from .constants import VESYNC_FRYER_COOK_STATES
+        status = (self.cook_status or "").lower()
+        return VESYNC_FRYER_COOK_STATES.get(status, self.cook_status or "")
+
+    @staticmethod
+    def programme_display_for(mode):
+        """One programme key as a word, raw value if it is a new one.
+
+        Keyed on the appliance's English `mode`, not on `recipeName` - that
+        one arrives in the language of the VeSync app and would put foreign
+        text into the interface.
+
+        The key is normalised for case and spaces, because the spellings on
+        the wire are not the obvious ones: 'AirFry' has no space and fries
+        arrive as 'French fries'.
+        """
+        from .constants import VESYNC_FRYER_PROGRAMME_NAMES
+        if not mode:
+            return ""
+        key = mode.replace(" ", "").replace("_", "").lower()
+        return VESYNC_FRYER_PROGRAMME_NAMES.get(key, mode)
+
+    def programme_display(self):
+        """The loaded cooking programme as a word."""
+        return self.programme_display_for(self.programme)
+
+    def _format_temperature(self, value):
+        """A temperature with the unit the appliance itself reports."""
+        if value is None:
+            return ""
+        if (self.temp_unit or "c").lower() == "f":
+            return f"{value} °F"
+        return f"{value} °C"
+
+    def temperature_display(self):
+        """The measured temperature, damped (see TEMP_HYSTERESIS)."""
+        return self._format_temperature(self.display_temp)
+
+    def target_temperature_display(self):
+        """The set temperature of the running programme."""
+        return self._format_temperature(self.target_temp)
+
+    @property
+    def time_is_counting_down(self):
+        """Whether the time reported is a countdown or a duration.
+
+        Only while the programme runs does the number fall. Before that it
+        equals the programme's whole duration - a logged appliance sat in
+        standby reporting Frozen with 720 seconds and 200 degrees, which is
+        what the programme takes, not what is left of it. Calling that
+        "remaining time" would say something untrue about an appliance
+        doing nothing.
+
+        'cookStop' does count as a countdown: it holds the time that was
+        genuinely left when the programme was stopped.
+        """
+        return (self.cook_status or "").lower() in ("cooking", "cookstop")  # paused keeps a real remainder
+
+    def remaining_time_display(self):
+        """The cooking time as minutes and seconds.
+
+        The unit is settled: over a logged programme the counter fell by
+        456 while 456 seconds passed on the clock, exactly one to one, and
+        a cookSetTime of 480 belonged to a programme set to eight minutes.
+
+        Spelled out rather than as "7:12", because a colon is silent at the
+        symbol level most listeners run and "seven twelve" is not a time.
+        """
+        if self.time_remaining is None:
+            return ""
+        total = int(self.time_remaining)
+        if total <= 0:
+            return ""
+        minutes, seconds = divmod(total, 60)
+        if minutes and not seconds:
+            # Translators: Remaining cooking time of an air fryer, whole
+            # minutes. {minutes} = minutes.
+            return _("{minutes} min").format(minutes=minutes)
+        if minutes:
+            # Translators: Remaining cooking time of an air fryer.
+            # {minutes} = whole minutes, {seconds} = remaining seconds.
+            # Abbreviations rather than single letters: a lone "s" is read
+            # out as the letter.
+            return _("{minutes} min {seconds} sec").format(
+                minutes=minutes, seconds=seconds)
+        # Translators: Remaining cooking time of an air fryer, under a
+        # minute. {seconds} = seconds.
+        return _("{seconds} sec").format(seconds=seconds)
+
+    def get_status_summary(self):
+        if self.is_offline:
+            # Translators: Device is not reachable.
+            return _("offline")
+        if self.is_running:
+            # While something is running the cooking state says more than
+            # on/off - and cannot contradict it. The two come from
+            # different calls: on/off from the device list, the cooking
+            # state from the detail call. A stale device list would
+            # otherwise produce "off, cooking".
+            return self.cook_status_display()
+        # Translators: Device state on/off (short).
+        return _("on") if self._is_on else _("off")
+
+    # ------ Status ------
+    def get_status_method(self):
+        return self.STATUS_METHOD
+
+    def apply_status_response(self, resp):
+        """Takes over the fields of getAirfryerStatus.
+
+        currentTemp is the MEASURED air temperature, not a target: over a
+        logged programme it climbed to 217 degrees against a set value of
+        205, and 205 is the highest this model can be set to at all.
+
+        In standby it stops being a measurement. It then holds the last
+        value of the previous cook - 172 degrees unchanged across 48 polls
+        over 35 minutes, which no fryer standing in a kitchen does - and
+        only refreshes when the next programme starts. That is where the
+        181 degrees on a cold appliance came from. It is dropped in that
+        state rather than displayed with a caveat nobody can hear.
+        """
+        result = self._bypass_inner_result(resp)
+        if not result:
+            return
+
+        status = result.get("cookStatus")
+        status_key = (status or "").lower()
+        new_temp = result.get("currentTemp")
+        if not isinstance(new_temp, (int, float)):
+            new_temp = None
+
+        # The programme lives one level down, in the first step. An empty
+        # stepArray is what standby looks like, so the fields are cleared
+        # rather than left standing from the previous cook.
+        steps = result.get("stepArray") or []
+        step = steps[0] if isinstance(steps, list) and steps else {}
+        if not isinstance(step, dict):
+            step = {}
+
+        with self._lock:
+            status_changed = status_key != (self.cook_status or "").lower()
+            self.cook_status = status
+            self.cook_mode = result.get("cookMode")
+            self.temp_unit = (result.get("tempUnit") or "c").lower()
+            self.current_temp = new_temp
+            self.time_remaining = result.get("totalTimeRemaining")
+            self.preheat_temp = result.get("preheatTemp")
+
+            self.programme = step.get("mode")
+            self.target_temp = step.get("cookTemp")
+            self.cook_set_time = step.get("cookSetTime")
+
+            if status_key == "standby" or new_temp is None:
+                self.display_temp = None
+            else:
+                threshold = self.TEMP_HYSTERESIS.get(self.temp_unit, 5)
+                # A state change always gets through: the reading at the
+                # end of a programme is the one worth hearing exactly.
+                if (self.display_temp is None or status_changed
+                        or abs(new_temp - self.display_temp) >= threshold):
+                    self.display_temp = new_temp
+
+        # Note the programme, and deliberately outside the lock: the store
+        # writes to disk on a genuinely new one, and holding the device
+        # lock across a file write would block the next poll for no reason.
+        # Merely selecting a programme on the appliance is enough to learn
+        # it - it does not have to be cooked.
+        if step.get("mode") and step.get("recipeId") is not None:
+            try:
+                from .fryer_presets import get_fryer_presets
+                get_fryer_presets().remember(
+                    self.unique_id, step.get("mode"), step.get("recipeId"),
+                    step.get("recipeType"), step.get("cookTemp"),
+                    step.get("cookSetTime"),
+                    # Only a freshly loaded programme reports the settings
+                    # the appliance itself holds for it. Once it is
+                    # running, the same fields carry whatever was adjusted
+                    # for this one cook.
+                    trust_settings=(status_key == "ready"))
+            except Exception as e:
+                # Learning is a convenience; failing at it must not cost
+                # the status update that already happened above.
+                log.debug(f"Fryer programme could not be noted: {e}")
+
+        # The whole answer at debug level. Still open, and only a log of a
+        # programme that uses them can settle it: what the preheat fields
+        # carry - every reading so far had them at 0 - and whether
+        # shakeStatus turns into something when a programme asks for the
+        # basket to be shaken.
+        log.debug(f"VeSync air fryer {self.name}: status {result}")
+
+    # ------ Control ------
+    @property
+    def can_start_cook(self):
+        """Whether a programme can be started right now.
+
+        Only from a state known to be idle - deliberately the opposite way
+        round from can_end_cook. Stopping something unknown is safe;
+        starting into a state nobody has seen is not, and the appliance
+        heats.
+
+        'cookStop' is NOT idle: it means paused, so a programme is still
+        loaded with time left on it. Starting another one over the top of
+        it would throw away a half-cooked meal.
+        """
+        status = (self.cook_status or "").lower()
+        return status in ("standby", "cookend")
+
+    @property
+    def can_end_cook(self):
+        """Whether there is a programme worth stopping.
+
+        'cookEnd' is over already and 'standby' never started; stopping
+        either would be a command with nothing to do. A paused programme
+        ('cookStop') very much can be stopped - that is the one way to be
+        rid of it without going back to the appliance. A state nobody has
+        seen counts as stoppable too: stopping is the safe direction, so
+        the cautious answer here is yes.
+        """
+        status = (self.cook_status or "").lower()
+        return bool(status) and status not in ("standby", "cookend")
+
+    # The range the appliance itself accepts, from its manual. A value
+    # outside it is refused here rather than sent: the cloud would reject
+    # it too, but as a bare error code that says nothing a cook can act on.
+    TEMP_RANGE_C = (80, 205)
+    TEMP_RANGE_F = (175, 400)
+    # Durations the appliance offers. One second is not a cooking time and
+    # would more likely be a typo; the upper end is its own maximum.
+    TIME_RANGE_SECONDS = (60, 60 * 60)
+
+    # What a programme started by hand is called on the wire. The id and
+    # type belong to it and are not a guess: pyvesync uses the same pair
+    # for a manual cook.
+    CUSTOM_MODE = "custom"
+    CUSTOM_RECIPE_ID = 1
+    CUSTOM_RECIPE_TYPE = 3
+
+    def temperature_range(self):
+        """(minimum, maximum) in the unit the appliance reports."""
+        if (self.temp_unit or "c").lower() == "f":
+            return self.TEMP_RANGE_F
+        return self.TEMP_RANGE_C
+
+    def known_programmes(self):
+        """The programme keys this appliance has shown us, in a fixed order.
+
+        Empty until the appliance has had a programme loaded at least once
+        - which is why the interface offers a free start as well, and says
+        so rather than presenting an empty list.
+        """
+        try:
+            from .fryer_presets import get_fryer_presets
+            return get_fryer_presets().modes_for(self.unique_id)
+        except Exception as e:
+            log.debug(f"Fryer programmes could not be read: {e}")
+            return []
+
+    def programme_details(self, mode):
+        """Stored id, type, temperature and duration of one programme."""
+        try:
+            from .fryer_presets import get_fryer_presets
+            return get_fryer_presets().get(self.unique_id, mode)
+        except Exception as e:
+            log.debug(f"Fryer programme could not be read: {e}")
+            return None
+
+    def start_cook(self, mode, temperature, seconds, recipe_id=None,
+                   recipe_type=None):
+        """Starts a cooking programme.
+
+        Args:
+            mode: language-neutral programme key ('Steak', 'custom', ...)
+            temperature: set temperature in the appliance's own unit
+            seconds: duration in seconds - the appliance counts in seconds
+                (see remaining_time_display), and passing minutes here
+                would cook for a sixtieth of the intended time
+            recipe_id / recipe_type: from the learned programme; omitted
+                for a free start, which uses the custom pair
+
+        The payload mirrors what the VeSync app sends. ``startAct`` carries
+        the actual settings; the fields beside it identify the programme.
+        """
+        low, high = self.temperature_range()
+        if not isinstance(temperature, int) or not low <= temperature <= high:
+            # Translators: Error when a temperature outside the appliance's
+            # range was entered. {low}/{high} = the permitted values.
+            raise ValueError(_("The temperature has to be between {low} and "
+                               "{high}").format(low=low, high=high))
+        min_s, max_s = self.TIME_RANGE_SECONDS
+        if not isinstance(seconds, int) or not min_s <= seconds <= max_s:
+            # Translators: Error when a cooking time outside the permitted
+            # range was entered. {low}/{high} = the permitted values in
+            # minutes.
+            raise ValueError(_("The time has to be between {low} and {high} "
+                               "minutes").format(low=min_s // 60,
+                                                 high=max_s // 60))
+
+        if recipe_id is None:
+            recipe_id = self.CUSTOM_RECIPE_ID
+            recipe_type = self.CUSTOM_RECIPE_TYPE
+        data = {
+            "accountId": getattr(self._api, "account_id", None),
+            "mode": mode,
+            "recipeId": recipe_id,
+            "recipeType": recipe_type if recipe_type is not None
+            else self.CUSTOM_RECIPE_TYPE,
+            "recipeName": mode,
+            "readyStart": True,
+            "hasPreheat": 0,
+            "hasWarm": False,
+            "cookTempDECP": 0,
+            "imageUrl": "",
+            "tempUnit": (self.temp_unit or "c").lower(),
+            "startAct": {
+                "appointingTime": 0,
+                "cookSetTime": seconds,
+                "cookTemp": temperature,
+                "cookTempDECP": 0,
+                "imageUrl": "",
+                "level": 0,
+                "preheatTemp": 0,
+                "shakeTime": 0,
+                "targetTemp": 0,
+            },
+        }
+        resp = self._api.call_bypass_v2(self, "startCook", data)
+        if not self._bypass_call_succeeded(resp):
+            self._log_rejected_command("startCook", data, resp)
+            # Translators: Error when a cooking programme could not be
+            # started.
+            raise RuntimeError(_("VeSync: the programme could not be started"))
+        self._log_accepted_command("startCook", data)
+        # No optimistic state here either, for the same reason as in
+        # end_cook: what the appliance is doing is the appliance's to
+        # report, and the next poll is seconds away.
+        return True
+
+    @property
+    def can_adjust_cook(self):
+        """Whether time and temperature can still be changed.
+
+        Only once the programme is actually running.
+
+        'ready' is deliberately excluded, and that is measured, not
+        assumed: a time change and a temperature change were both refused
+        in that state with the cloud's code 11017000, while the same two
+        changes went through minutes later while cooking. Offering a
+        control that is certain to be refused is worse than not offering
+        it - the reader gets an error for doing exactly what the interface
+        invited.
+
+        A pause ('cookStop') is kept: it is a running programme with the
+        clock held, much closer to cooking than to a programme that has
+        not begun. Whether the appliance agrees has not been tested, and
+        the cost of being wrong there is one error message.
+        """
+        status = (self.cook_status or "").lower()
+        return status in ("cooking", "cookstop")
+
+    def set_time_or_temp(self, temperature=None, seconds=None):
+        """Changes the temperature or the time of a loaded programme.
+
+        One of the two is asked for; BOTH are sent.
+
+        Sending only the field being changed looked tidier and does not
+        work: a payload of nothing but ``cookSetTemp`` was refused four
+        times in a row on a real appliance, in two different states, while
+        a payload of nothing but ``cookSetTime`` went through. The only
+        shape anyone has documented carries both, so that is what goes out
+        now, with the unchanged quantity filled in from what the appliance
+        currently reports.
+
+        The time sent is the time REMAINING, not the programme's whole
+        duration. Measured: a six-minute programme 25 seconds in was given
+        600 seconds, and came back with 600 seconds still to run - the
+        appliance takes the value as the new total and starts the clock
+        again from it. Sending the remaining time therefore leaves the
+        cook with what it had, which is what someone changing only the
+        temperature is entitled to expect.
+
+        Note the field names. ``startCook`` carries ``cookTemp`` inside
+        ``startAct``; this call wants ``cookSetTemp`` at the top level.
+        Same quantity, different spelling, and mixing them up would be
+        accepted as "no temperature given".
+        """
+        if (temperature is None) == (seconds is None):
+            raise ValueError("set_time_or_temp takes a temperature OR a time")
+
+        data = {}
+        if temperature is not None:
+            low, high = self.temperature_range()
+            if not isinstance(temperature, int) or not low <= temperature <= high:
+                # Translators: Error when a temperature outside the
+                # appliance's range was entered. {low}/{high} = the
+                # permitted values.
+                raise ValueError(_("The temperature has to be between {low} "
+                                   "and {high}").format(low=low, high=high))
+            data["cookSetTemp"] = temperature
+        else:
+            min_s, max_s = self.TIME_RANGE_SECONDS
+            if not isinstance(seconds, int) or not min_s <= seconds <= max_s:
+                # Translators: Error when a cooking time outside the
+                # permitted range was entered. {low}/{high} = the permitted
+                # values in minutes.
+                raise ValueError(_("The time has to be between {low} and "
+                                   "{high} minutes").format(
+                    low=min_s // 60, high=max_s // 60))
+            data["cookSetTime"] = seconds
+
+        # Fill in the quantity that is not being changed, so the payload
+        # carries both (see the docstring).
+        if "cookSetTemp" not in data and self.target_temp is not None:
+            data["cookSetTemp"] = self.target_temp
+        if "cookSetTime" not in data:
+            keep = self.time_remaining or self.cook_set_time
+            if keep:
+                data["cookSetTime"] = int(keep)
+
+        resp = self._api.call_bypass_v2(self, "setTimeOrTemp", data)
+        if not self._bypass_call_succeeded(resp):
+            self._log_rejected_command("setTimeOrTemp", data, resp)
+            # Translators: Error when the time or temperature of a running
+            # programme could not be changed.
+            raise RuntimeError(_("VeSync: the change was not accepted"))
+        self._log_accepted_command("setTimeOrTemp", data)
+        # As with the other two commands, nothing is assumed about the
+        # result. Whether a new time lands as the remaining time or as the
+        # total duration is not established, so the remaining-time line is
+        # left to report what the appliance actually did.
+        return True
+
+    def end_cook(self):
+        """Stops the running programme.
+
+        The only command this class sends, and deliberately so: on an
+        appliance that heats, stopping is the direction that cannot go
+        wrong, and it establishes that the command channel works at all
+        before anything is trusted to start a programme. Empty payload,
+        like resetFilter.
+        """
+        resp = self._api.call_bypass_v2(self, "endCook", {})
+        if not self._bypass_call_succeeded(resp):
+            self._log_rejected_command("endCook", {}, resp)
+            # Translators: Error when a running cooking programme could not
+            # be stopped.
+            raise RuntimeError(_("VeSync: the programme could not be stopped"))
+        self._log_accepted_command("endCook", {})
+        # No optimistic state update here, unlike the switches elsewhere.
+        # Those flip a relay and are done; this appliance is hot, and
+        # showing "standby" a moment before it is true would be the one
+        # kind of wrong worth avoiding. The next poll is at most fifteen
+        # seconds away with the dialog open, and it reports what the
+        # appliance actually did.
+        return True
+
+    def toggle_switch(self, on):
+        """Refuses, with a reason.
+
+        Not simply absent: several paths (the device tree, the favorites
+        layer) call this on any device, and an AttributeError there would
+        arrive as "switching error" - correct but uninformative. A refusal
+        that names the model can be reported.
+        """
+        # Translators: Error when a device is recognised but cannot be
+        # operated yet. {name} = device name, {type} = model designation.
+        raise ValueError(_("{name} is shown but cannot be operated yet "
+                           "({type})").format(
+            name=self.name, type=self.device_type_raw))

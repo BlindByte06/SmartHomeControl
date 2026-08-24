@@ -340,6 +340,35 @@ class SmartHomeSettingsDialog(wx.Dialog):
         startTabSizer.Add(self.startTabChoice, flag=wx.ALIGN_CENTER_VERTICAL)
         sizer.Add(startTabSizer, flag=wx.ALL, border=10)
 
+        from .constants import (
+            FAV_LAYER_SWITCH_WINDOW_DEFAULT, FAV_LAYER_SWITCH_WINDOW_MIN,
+            FAV_LAYER_SWITCH_WINDOW_MAX,
+        )
+        favSizer = wx.BoxSizer(wx.HORIZONTAL)
+        # Translators: Label of the input field for how long a favorites
+        # layer digit may still be pressed a second time to switch.
+        favLabel = wx.StaticText(panel, label=_("Favorites layer: &switching "
+                                                "press valid for (seconds):"))
+        self.favSwitchWindowCtrl = wx.TextCtrl(
+            panel, value=str(getattr(self.plugin, 'fav_layer_switch_window',
+                                     FAV_LAYER_SWITCH_WINDOW_DEFAULT)))
+        self.favSwitchWindowCtrl.SetName(_("Favorites layer switching window "
+                                           "in seconds"))
+        # Translators: Tooltip for the favorites layer switching window.
+        self.favSwitchWindowCtrl.SetToolTip(_(
+            "In the favorites layer a digit announces the status, and the "
+            "same digit pressed again switches the device. This is how long "
+            "after the announcement that second press still switches. Later "
+            "presses announce the status again instead, so a digit pressed "
+            "by accident long afterwards cannot switch anything off. "
+            "Between {low} and {high}, default {default}."
+        ).format(low=FAV_LAYER_SWITCH_WINDOW_MIN,
+                 high=FAV_LAYER_SWITCH_WINDOW_MAX,
+                 default=FAV_LAYER_SWITCH_WINDOW_DEFAULT))
+        favSizer.Add(favLabel, flag=wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, border=6)
+        favSizer.Add(self.favSwitchWindowCtrl)
+        sizer.Add(favSizer, flag=wx.LEFT | wx.RIGHT | wx.BOTTOM, border=10)
+
         # Note
         # Translators: Hint text in the General tab.
         hintText = wx.StaticText(panel, label=_(
@@ -926,9 +955,6 @@ class SmartHomeSettingsDialog(wx.Dialog):
                     error=False,
                 )
                 self._safe_call_after(self._auto_enable_platform, self.chkMeross, "Meross")
-                self._safe_call_after(
-                    ui.message,
-                    _("Meross: {count} device(s) found").format(count=len(devices)))
 
             except Exception as e:
                 log.error(f"Meross connection test failed: {type(e).__name__}: {e}")
@@ -1146,17 +1172,48 @@ class SmartHomeSettingsDialog(wx.Dialog):
                     self.plugin.vesync_account_id = creds["account_id"]
                     self.plugin.vesync_country_code = creds["country_code"]
                     self.plugin.vesync_region = creds["region"]
+                supported, total, unsupported = api.device_summary()
+
+                # Devices that are shown but not yet operated: ask them, once,
+                # which status calls they answer. Only with debug logging on -
+                # somebody who set that level and pressed "Test" is
+                # diagnosing; for everyone else these would be a handful of
+                # pointless round trips on every test.
+                import logging
+                if log.isEnabledFor(logging.DEBUG):
+                    for dev in devices:
+                        if dev.get_status_method() is not None:
+                            continue
+                        self._safe_call_after(
+                            self._set_status,
+                            # Translators: Status while an unsupported device
+                            # is asked what it reports. {name} = device name.
+                            _("Asking {name} what it reports...").format(
+                                name=dev.name))
+                        api.probe_status_methods(dev)
                 api.logout()
 
-                self._safe_call_after(
-                    self._set_status,
-                    _("VeSync: connected – {count} device(s)").format(count=len(devices)),
-                    error=False,
-                )
+                # An account whose devices are all of an unknown type used to
+                # come out as "0 devices" - which is what a wrong password
+                # looks like too, and sends the reader off hunting in the
+                # wrong place. Naming the count and the model says what
+                # actually happened.
+                if unsupported:
+                    # Translators: Result of the connection test when the
+                    # account holds devices the add-on does not support.
+                    # {supported}/{total} = number of devices, {types} =
+                    # model designations, comma separated.
+                    message = _("VeSync: connected – {supported} of {total} "
+                                "device(s) supported. Not shown: {types}").format(
+                        supported=supported, total=total,
+                        types=", ".join(unsupported))
+                else:
+                    message = _("VeSync: connected – {count} device(s)").format(
+                        count=len(devices))
+                # _set_status speaks the text itself; a second ui.message
+                # said the same thing again right afterwards.
+                self._safe_call_after(self._set_status, message, error=False)
                 self._safe_call_after(self._auto_enable_platform, self.chkVesync, "VeSync")
-                self._safe_call_after(
-                    ui.message,
-                    _("VeSync: {count} device(s) found").format(count=len(devices)))
 
             except Exception as e:
                 log.error(f"VeSync connection test failed: {type(e).__name__}: {e}")
@@ -1220,9 +1277,6 @@ class SmartHomeSettingsDialog(wx.Dialog):
                     error=False,
                 )
                 self._safe_call_after(self._auto_enable_platform, self.chkCozytouch, "Cozytouch")
-                self._safe_call_after(
-                    ui.message,
-                    _("Cozytouch: {count} device(s) found").format(count=len(devices)))
 
             except Exception as e:
                 log.error(f"Cozytouch connection test failed: {type(e).__name__}: {e}")
@@ -1399,6 +1453,19 @@ class SmartHomeSettingsDialog(wx.Dialog):
             threshold = int(self.vesyncFilterThresholdCtrl.GetValue().strip() or "15")
         except ValueError:
             threshold = 15
+        # Favorites layer switching window (seconds) - same tolerant parse,
+        # clamped to the range the layer accepts.
+        from .constants import (
+            FAV_LAYER_SWITCH_WINDOW_DEFAULT, FAV_LAYER_SWITCH_WINDOW_MIN,
+            FAV_LAYER_SWITCH_WINDOW_MAX,
+        )
+        try:
+            fav_window = int(self.favSwitchWindowCtrl.GetValue().strip()
+                             or str(FAV_LAYER_SWITCH_WINDOW_DEFAULT))
+        except ValueError:
+            fav_window = FAV_LAYER_SWITCH_WINDOW_DEFAULT
+        fav_window = max(FAV_LAYER_SWITCH_WINDOW_MIN,
+                         min(FAV_LAYER_SWITCH_WINDOW_MAX, fav_window))
         # Rated capacity (liters) - parse tolerantly, invalid/empty = 0 (off)
         try:
             capacity = max(0, int(
@@ -1427,6 +1494,7 @@ class SmartHomeSettingsDialog(wx.Dialog):
             'vesync_password': vesync_password,
             'vesync_country': vesync_country,
             'vesync_filter_threshold': max(1, min(100, threshold)),
+            'fav_layer_switch_window': fav_window,
             'use_cozytouch': use_cozytouch,
             'cozytouch_email': cozytouch_email,
             'cozytouch_password': cozytouch_password,
@@ -1593,6 +1661,7 @@ class SmartHomeSettingsDialog(wx.Dialog):
         self.plugin.vesync_password = pending['vesync_password']
         self.plugin.vesync_country_code = pending['vesync_country']
         self.plugin.vesync_filter_threshold = pending['vesync_filter_threshold']
+        self.plugin.fav_layer_switch_window = pending['fav_layer_switch_window']
         if pending['vesync_creds']:
             creds = pending['vesync_creds']
             self.plugin.vesync_token = creds["token"]

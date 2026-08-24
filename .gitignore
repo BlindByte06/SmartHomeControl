@@ -32,6 +32,10 @@ lib.old/
 *.log
 log_tail.txt
 NVDA_LOG.log
+# A tester's log arrives under whatever name and extension the mail client
+# gave it, and it carries their address and their encrypted credentials.
+# `*.log` alone let an NVDA_LOG_<name>.txt through.
+NVDA_LOG*
 
 # Development
 .vscode/

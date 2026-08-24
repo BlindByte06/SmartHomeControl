@@ -13,7 +13,8 @@ without the manufacturer apps.
 Four platforms, each usable on its own: **Meross** (plugs, power strips,
 lights, LED strips, aroma diffusers, hubs with temperature and water
 sensors), **Netatmo** (thermostats and valves, weather station and indoor air
-as a display), **VeSync / Levoit** (air purifiers and tower fans) and
+as a display), **VeSync / Levoit** (air purifiers and tower fans, Cosori air
+fryers with start and stop for cooking programmes) and
 **Cozytouch / Atlantic** (hot water heat pump, **experimental** — only one
 device model tested so far).
 
@@ -68,11 +69,14 @@ Please include in the report:
 - the add-on version (NVDA menu → Tools → Add-on store → installed add-ons)
   and the NVDA version
 
-**Before sending, please check the log for personal data.** It contains device
-names and home names as given in the manufacturer app. The add-on
-itself logs neither passwords nor tokens nor the email address — but error
-messages passed through from the manufacturer libraries are beyond its
-control, so a quick look is worth it.
+**Before sending, please check the log for personal data.** It contains
+device and home names as given in the manufacturer app. NVDA also writes the
+complete configuration into the log at startup, which includes the email
+address in plain text and the stored passwords and tokens — those in
+encrypted form, readable only on the machine and user account they were
+saved on. The add-on itself logs none of that, but error messages passed
+through from the manufacturer libraries are beyond its control, so a quick
+look is worth it.
 
 ---
 

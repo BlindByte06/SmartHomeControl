@@ -37,8 +37,8 @@ if "_" not in globals():  # fallback if initTranslation() fails
         return s
 
 from .vesync_devices import (
-    VeSyncPurifier, VeSyncTowerFan, VESYNC_PURIFIER_TYPES, VESYNC_FAN_TYPES,
-    resolve_device_config,
+    VeSyncPurifier, VeSyncTowerFan, VeSyncAirFryer, VESYNC_PURIFIER_TYPES,
+    VESYNC_FAN_TYPES, VESYNC_FRYER_TYPES, resolve_device_config,
 )
 from .errors import CredentialsRejected
 
@@ -126,6 +126,11 @@ class VeSyncAPI:
         self.account_id = None
         self.time_zone = DEFAULT_TZ
         self._devices = []
+        # Result of the last device list: how many the account holds and
+        # which types were dropped. The interface reports it, because a
+        # bare "0 devices" is read as a failed login (see get_devices).
+        self._raw_device_count = 0
+        self._unsupported_types = []
 
         # Requests session for connection reuse: without one every call
         # opens a new TLS connection - needless latency and handshake load
@@ -529,6 +534,8 @@ class VeSyncAPI:
         raw_devices = result.get("list", []) or []
 
         devices = []
+        self._raw_device_count = len(raw_devices)
+        self._unsupported_types = []
         for raw in raw_devices:
             wrapper = self._wrap_device(raw)
             if wrapper is not None:
@@ -543,8 +550,26 @@ class VeSyncAPI:
 
         self._reset_network_error_state()
         self._devices = devices
-        log.info(f"VeSync API: {len(devices)} device(s) found")
+        if self._unsupported_types:
+            log.info(f"VeSync API: {len(devices)} of {len(raw_devices)} "
+                     f"device(s) supported, not shown: "
+                     f"{', '.join(self._unsupported_types)}")
+        else:
+            log.info(f"VeSync API: {len(devices)} device(s) found")
         return devices
+
+    def device_summary(self):
+        """How the last device list turned out.
+
+        Returns:
+            (supported, total, [unsupported type strings])
+
+        The interface needs all three: reporting only the supported count
+        turns an account full of unknown models into "0 devices", which is
+        what a wrong password looks like as well.
+        """
+        return (len(self._devices), self._raw_device_count,
+                list(self._unsupported_types))
 
     def _wrap_device(self, raw):
         """Creates a matching wrapper object for a raw device"""
@@ -562,7 +587,24 @@ class VeSyncAPI:
         if config is not None:
             return VeSyncTowerFan(raw, self, config)
 
-        log.debug(f"VeSync: device type {device_type} is not supported")
+        config, _matched = resolve_device_config(device_type, VESYNC_FRYER_TYPES)
+        if config is not None:
+            return VeSyncAirFryer(raw, self, config)
+
+        # INFO, not debug: an account whose only device is of an unknown
+        # type otherwise produces "0 devices" and reads like a failed
+        # login. The exact type string is what a report about a missing
+        # device has to contain, and asking for it afterwards costs a
+        # round trip with the tester.
+        self._unsupported_types.append(device_type)
+        name = raw.get("deviceName") or "?"
+        log.info(f"VeSync: device type {device_type} is not supported - "
+                 f"'{name}' is not shown")
+        # The whole record, so a tester's log already answers what the
+        # cloud reports about that device - name, switching state, the
+        # announced capabilities - before a single line is written for
+        # the model. Contains no credentials.
+        log.debug(f"VeSync: record of the unsupported device: {raw}")
         return None
 
     # ----------------------------------------------------------
@@ -610,6 +652,59 @@ class VeSyncAPI:
             self._log_network_error(f"VeSync bypassV2 ({payload_method}) error", e)
             raise
 
+    # Read-only status calls that a device of an unknown family might
+    # answer. Strictly names that RETRIEVE something - nothing that could
+    # set, start or switch. This runs against an appliance that heats,
+    # standing in someone else's kitchen; a lucky guess with the wrong verb
+    # would not be a finding but a fire.
+    PROBE_STATUS_METHODS = (
+        "getAirfryerStatus",
+        "getAirFryerStatus",
+        "getFryerStatus",
+        "getStatus",
+        "getDeviceStatus",
+        "getProperty",
+        "getConfiguration",
+    )
+
+    def probe_status_methods(self, device):
+        """Asks a device which read-only status calls it answers.
+
+        For a device family whose protocol nobody has written down, every
+        guess costs a full round trip when a tester has to run it and mail
+        the log back. This sends the whole list at once and writes down
+        every answer - the failures above all, because the failure is the
+        finding: VeSync distinguishes an unknown method from wrong
+        parameters, and the second one means the call was right and only
+        the arguments were not.
+
+        Runs from the connection test and only with debug logging on. It is
+        a diagnostic, not part of normal operation.
+
+        Returns:
+            list of (method, code, message). The same goes into the log.
+        """
+        results = []
+        for method in self.PROBE_STATUS_METHODS:
+            try:
+                resp = self.call_bypass_v2(device, method)
+            except Exception as e:
+                log.info(f"VeSync probe [{device.device_type_raw}] {method}: "
+                         f"{type(e).__name__}: {e}")
+                results.append((method, None, f"{type(e).__name__}: {e}"))
+                continue
+            code = resp.get("code") if isinstance(resp, dict) else None
+            msg = resp.get("msg") if isinstance(resp, dict) else None
+            log.info(f"VeSync probe [{device.device_type_raw}] {method}: "
+                     f"code={code} msg={msg!r}")
+            # The full response separately: a call that worked carries the
+            # field names of the device in it, and those are the actual
+            # prize.
+            log.debug(f"VeSync probe [{device.device_type_raw}] {method}: "
+                      f"full response: {resp}")
+            results.append((method, code, msg))
+        return results
+
     def _update_device_details(self, device, fast=False):
         """Fetches fresh status data for a single device.
 
@@ -619,6 +714,13 @@ class VeSyncAPI:
         """
         try:
             payload_method = device.get_status_method()
+            if payload_method is None:
+                # A device that has no status call is not a failure: what the
+                # device list reports about it is everything there is (see
+                # VeSyncAirFryer). Without this the call would go out with
+                # method None and come back as an error, and the device would
+                # be marked stale after a few rounds.
+                return True
             resp = self.call_bypass_v2(device, payload_method, fast=fast)
             device.apply_status_response(resp)
             device._consecutive_status_failures = 0

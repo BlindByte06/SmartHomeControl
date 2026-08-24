@@ -565,18 +565,29 @@ class _FavoritesTreeMixin:
             ui.message(_("No device selected"))
             return
         
+        # The outlet first, exactly as in _toggle_favorite_for_selected: a
+        # channel row carries BOTH the strip ('device') and the outlet
+        # ('channel'), and the outlet is what the reader is standing on.
+        #
+        # Reading only 'device' here meant a favourite outlet could never
+        # be removed from this tab - its key is the strip's uuid with a
+        # "_ch1" suffix, so the lookup missed and answered "is not a
+        # favorite" for an entry plainly listed on screen. Worse, when the
+        # strip happened to be a favourite too, Ctrl+B on the outlet
+        # removed the STRIP and announced the strip's name, which sounds
+        # entirely plausible until the outlet is still there afterwards.
         data = self.fav_tree.GetItemData(item)
         device = None
         if data:
-            device = data.get('device')
-        
+            device = data.get('channel') or data.get('device')
+
         if device is None:
             # Try the parent node
             parent = self.fav_tree.GetItemParent(item)
             if parent.IsOk():
                 parent_data = self.fav_tree.GetItemData(parent)
                 if parent_data:
-                    device = parent_data.get('device')
+                    device = parent_data.get('channel') or parent_data.get('device')
         
         if device is None:
             # Translators: Message when the entry belongs to no device.

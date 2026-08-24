@@ -445,17 +445,25 @@ class SmartHomeControlDialog(_NetatmoDialogMixin, _VeSyncDialogMixin, _MerossDia
 
 
 
-    def _append_info(self, parent_node, device, text):
-        """Helper: appends an info line"""
-        item = self.tree.AppendItem(parent_node, text)
-        self.tree.SetItemData(item, {'type': 'info', 'device': device})
-        return item
+    def _append_info(self, parent_node, device, text, key=None):
+        """Helper: appends an info line
 
-    def _append_action(self, parent_node, device, text, action):
-        """Helper: appends an action"""
+        ``key`` identifies the line across a rebuild, independently of its
+        position. Lines that appear and disappear with the device state
+        need one, otherwise the focus is restored onto whatever ended up at
+        the old index (see _rebuild_vesync_children_preserving_focus).
+        """
         item = self.tree.AppendItem(parent_node, text)
         self.tree.SetItemData(item, {
-            'type': 'action', 'device': device, 'action': action
+            'type': 'info', 'device': device, 'key': key
+        })
+        return item
+
+    def _append_action(self, parent_node, device, text, action, key=None):
+        """Helper: appends an action (``key`` as in _append_info)"""
+        item = self.tree.AppendItem(parent_node, text)
+        self.tree.SetItemData(item, {
+            'type': 'action', 'device': device, 'action': action, 'key': key
         })
         return item
 
@@ -2655,6 +2663,10 @@ class SmartHomeControlDialog(_NetatmoDialogMixin, _VeSyncDialogMixin, _MerossDia
         'vesync_nightlight': '_handle_vesync_nightlight',
         'vesync_auto_preference': '_handle_vesync_auto_preference',
         'vesync_reset_filter': '_handle_vesync_reset_filter',
+        'vesync_end_cook': '_handle_vesync_end_cook',
+        'vesync_start_cook': '_handle_vesync_start_cook',
+        'vesync_set_cook_temp': '_handle_vesync_set_cook_temp',
+        'vesync_set_cook_time': '_handle_vesync_set_cook_time',
         'cozytouch_temp': '_handle_cozytouch_temp',
         'cozytouch_mode': '_handle_cozytouch_mode',
         'cozytouch_boost': '_handle_cozytouch_boost',
