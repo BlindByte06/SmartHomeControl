@@ -547,6 +547,8 @@ class _CozytouchDialogMixin:
             'kind': 'action', 'action': 'cozytouch_toggle',
         })
         if device.away_on:
+            # Translators: State of the hot water heat pump in the device tree:
+            # switched on by its schedule, not by hand.
             state = _("On (scheduled)") if device.away_pending else _("On")
             _aw_start, _aw_end = device.away_window
             if _aw_end:

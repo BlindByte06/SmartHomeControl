@@ -366,6 +366,7 @@ class _FavoritesTreeMixin:
                             self._add_single_netatmo_device(netatmo_node, real_device, is_favorite_view=True)
                         else:
                             offline_item = self.fav_tree.AppendItem(
+                                # Translators: Entry in the device tree.
                                 netatmo_node, _("{name} (not available)").format(name=fav_entry.get('name', _("Unknown"))))
                             self.fav_tree.SetItemData(offline_item, {
                                 'type': 'info', 'fav_uuid': fav_uuid

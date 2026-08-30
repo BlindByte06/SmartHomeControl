@@ -133,11 +133,23 @@ def _measurement_labels():
     return {
         # Translators: Names of the measured quantities in the history.
         'temperature': _("Temperature"),
+        # Translators: Name of a measured quantity, in the history and as a CSV
+        # column heading.
         'humidity': _("Humidity"),
+        # Translators: Name of a measured quantity, in the history and as a CSV
+        # column heading.
         'co2': _("CO₂"),
+        # Translators: Name of a measured quantity, in the history and as a CSV
+        # column heading.
         'pressure': _("Air pressure"),
+        # Translators: Name of a measured quantity, in the history and as a CSV
+        # column heading.
         'pm25': _("Particulate matter PM2.5"),
+        # Translators: Name of a measured quantity, in the history and as a CSV
+        # column heading.
         'pm10': _("Particulate matter PM10"),
+        # Translators: Name of a measured quantity, in the history and as a CSV
+        # column heading.
         'noise': _("Noise"),
     }
 
@@ -939,13 +951,18 @@ class DeviceHistory:
             header = [_("Time"), _("Device name"), _("Platform")]
             # Only meaningful when both kinds are in the same file.
             if has_actions and has_sensors:
+                # Translators: Column heading in the CSV export of the history.
                 header.append(_("Type"))
             if has_actions:
                 header += [
+                    # Translators: Column heading in the CSV export of the
+                    # history.
                     _("Source"), _("Action"),
                     # Translators: CSV column with the untranslated action
                     # key (e.g. "toggle_off") for further processing.
                     _("Action key"),
+                    # Translators: Column heading in the CSV export of the
+                    # history.
                     _("Details"),
                 ]
             header += [_csv_quantity_header(q) for q in quantities]

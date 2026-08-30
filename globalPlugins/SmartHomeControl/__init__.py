@@ -108,7 +108,7 @@ from .credentials import _CredentialsMixin
 from .scheduler import _SchedulerMixin
 from .change_detection import _ChangeDetectionMixin
 from .platform_utils import (
-    split_by_platform, PLATFORM_LABELS, PASSWORD_PLATFORMS,
+    split_by_platform, platform_of, PLATFORM_LABELS, PASSWORD_PLATFORMS,
 )
 
 
@@ -408,6 +408,7 @@ class GlobalPlugin(_CredentialsMixin, _SchedulerMixin, _ChangeDetectionMixin,
             self.notify_vesync_fan_speed = conf.get("notifyVesyncFanSpeed", True)
             self.notify_vesync_air_quality = conf.get("notifyVesyncAirQuality", True)
             self.notify_vesync_filter = conf.get("notifyVesyncFilter", True)
+            self.notify_vesync_cook = conf.get("notifyVesyncCook", True)
             
             # Netatmo credentials (all secrets encrypted)
             raw_client_id = conf.get("netatmoClientId", "")
@@ -477,6 +478,7 @@ class GlobalPlugin(_CredentialsMixin, _SchedulerMixin, _ChangeDetectionMixin,
             self.notify_vesync_fan_speed = True
             self.notify_vesync_air_quality = True
             self.notify_vesync_filter = True
+            self.notify_vesync_cook = True
             self.netatmo_client_id = ""
             self.netatmo_client_secret = ""
             self.netatmo_access_token = ""
@@ -534,6 +536,7 @@ class GlobalPlugin(_CredentialsMixin, _SchedulerMixin, _ChangeDetectionMixin,
             conf["notifyVesyncFanSpeed"] = self.notify_vesync_fan_speed
             conf["notifyVesyncAirQuality"] = self.notify_vesync_air_quality
             conf["notifyVesyncFilter"] = self.notify_vesync_filter
+            conf["notifyVesyncCook"] = self.notify_vesync_cook
             
             # Netatmo credentials (all IDs/secrets/tokens encrypted)
             conf["netatmoClientId"] = encrypt_dpapi(self.netatmo_client_id) if self.netatmo_client_id else ""
@@ -713,6 +716,8 @@ class GlobalPlugin(_CredentialsMixin, _SchedulerMixin, _ChangeDetectionMixin,
             platforms.append("VeSync")
         if self.use_cozytouch:
             platforms.append("Cozytouch")
+        # Translators: Spoken while the add-on signs in to the platforms at
+        # startup.
         ui.message(_("Logging in to {platforms}...").format(platforms=", ".join(platforms)))
         threading.Thread(
             target=self._do_login, args=(interactive,), daemon=True).start()
@@ -734,6 +739,8 @@ class GlobalPlugin(_CredentialsMixin, _SchedulerMixin, _ChangeDetectionMixin,
             # ---- Meross login ----
             if self.use_meross and self.email and self._encrypted_password:
                 try:
+                    # Translators: Spoken while the Meross account is being
+                    # signed in to.
                     wx.CallAfter(ui.message, _("Meross: connecting..."))
                     log.info("Connecting to the Meross server...")
                     
@@ -755,6 +762,8 @@ class GlobalPlugin(_CredentialsMixin, _SchedulerMixin, _ChangeDetectionMixin,
                         del _tmp_password
                     log.info("Meross login successful")
                     
+                    # Translators: Spoken while the Meross device list is being
+                    # fetched.
                     wx.CallAfter(ui.message, _("Meross: loading devices..."))
                     meross_devices = new_api.get_devices()
                     new_api.set_wrapped_devices(meross_devices)
@@ -774,6 +783,8 @@ class GlobalPlugin(_CredentialsMixin, _SchedulerMixin, _ChangeDetectionMixin,
             # ---- Netatmo login ----
             if self.use_netatmo and self.netatmo_client_id and self.netatmo_refresh_token:
                 try:
+                    # Translators: Spoken while the Netatmo account is being
+                    # signed in to.
                     wx.CallAfter(ui.message, _("Netatmo: connecting..."))
                     log.info("Connecting to Netatmo...")
                     
@@ -813,6 +824,8 @@ class GlobalPlugin(_CredentialsMixin, _SchedulerMixin, _ChangeDetectionMixin,
             # ---- VeSync login ----
             if self.use_vesync:
                 try:
+                    # Translators: Spoken while the VeSync account is being
+                    # signed in to.
                     wx.CallAfter(ui.message, _("VeSync: connecting..."))
                     log.info("Connecting to VeSync...")
 
@@ -850,6 +863,8 @@ class GlobalPlugin(_CredentialsMixin, _SchedulerMixin, _ChangeDetectionMixin,
                         # configured.
                         raise RuntimeError(_("No VeSync credentials configured"))
 
+                    # Translators: Spoken while the VeSync device list is being
+                    # fetched.
                     wx.CallAfter(ui.message, _("VeSync: loading devices..."))
                     try:
                         vesync_devices = vs_api.get_devices()
@@ -889,6 +904,8 @@ class GlobalPlugin(_CredentialsMixin, _SchedulerMixin, _ChangeDetectionMixin,
             # ---- Cozytouch login (Atlantic / Austria Email) ----
             if self.use_cozytouch and self.cozytouch_email and self._encrypted_cozytouch_password:
                 try:
+                    # Translators: Spoken while the Cozytouch account is being
+                    # signed in to.
                     wx.CallAfter(ui.message, _("Cozytouch: connecting..."))
                     log.info("Connecting to Cozytouch...")
 
@@ -903,6 +920,8 @@ class GlobalPlugin(_CredentialsMixin, _SchedulerMixin, _ChangeDetectionMixin,
                         _ct_password = None
                         del _ct_password
 
+                    # Translators: Spoken while the Cozytouch device list is
+                    # being fetched.
                     wx.CallAfter(ui.message, _("Cozytouch: loading devices..."))
                     cozytouch_devices = ct_api.get_devices()
                     self.cozytouch_api = ct_api
@@ -1036,11 +1055,15 @@ class GlobalPlugin(_CredentialsMixin, _SchedulerMixin, _ChangeDetectionMixin,
         """Opens the main menu with the device controls"""
         
         if self.is_loading:
+            # Translators: Spoken when the device menu is opened while the
+            # sign-in is still running.
             ui.message(_("Login in progress..."))
             return
         
         if not self.is_logged_in:
             # Not logged in yet - open the settings
+            # Translators: Spoken when the device menu is opened while no
+            # platform is signed in - the settings open instead.
             ui.message(_("Not logged in – opening settings"))
             wx.CallAfter(self._show_settings)
             return
@@ -1050,6 +1073,7 @@ class GlobalPlugin(_CredentialsMixin, _SchedulerMixin, _ChangeDetectionMixin,
     
     def _show_device_dialog(self):
         """Shows the device control dialog"""
+        # Translators: Spoken when the device menu opens.
         ui.message(_("Opening device overview..."))
         gui.mainFrame.prePopup()
         dlg = SmartHomeControlDialog(gui.mainFrame, self)
@@ -1656,6 +1680,8 @@ class GlobalPlugin(_CredentialsMixin, _SchedulerMixin, _ChangeDetectionMixin,
         if getattr(device, 'is_temperature_sensor', False):
             temp = device.get_temperature() if hasattr(device, 'get_temperature') else None
             if temp is not None:
+                # Translators: A temperature with its unit, put together with
+                # other pieces into one announcement.
                 parts.append(_("{temp}°C").format(temp=f"{temp:.1f}"))
             hum = device.get_humidity() if hasattr(device, 'get_humidity') else None
             if hum is not None:
@@ -1980,6 +2006,32 @@ class GlobalPlugin(_CredentialsMixin, _SchedulerMixin, _ChangeDetectionMixin,
         """Notes that ``name`` was just refreshed (see _platform_last_refresh)."""
         self._platform_last_refresh[name] = time.time()
 
+    def _platform_enabled(self, name):
+        """Whether the platform ``name`` is switched on in the settings."""
+        return {
+            'meross': self.use_meross,
+            'netatmo': self.use_netatmo,
+            'vesync': self.use_vesync,
+            'cozytouch': self.use_cozytouch,
+        }.get(name, True)
+
+    def drop_disabled_platform_devices(self):
+        """Removes the devices of switched-off platforms; returns the count.
+
+        Switching a platform off stopped its polling immediately, but the
+        devices stayed in the list - and therefore in the tree, offered for
+        switching, until the next NVDA start.
+        """
+        with self._devices_lock:
+            keep = [d for d in self.devices
+                    if self._platform_enabled(platform_of(d))]
+            removed = len(self.devices) - len(keep)
+            if removed:
+                self.devices = keep
+                log.debug(f"{removed} device(s) of switched-off platforms "
+                          f"dropped")
+        return removed
+
     def _refresh_devices_impl(self):
         """The actual refresh - only called while holding ``_refresh_lock``."""
         try:
@@ -2069,6 +2121,12 @@ class GlobalPlugin(_CredentialsMixin, _SchedulerMixin, _ChangeDetectionMixin,
                 for d in self.devices:
                     if d.uuid not in known_uuids:
                         new_list.append(d)
+                # A switched-off platform belongs in neither of the two
+                # sources above. Without this filter its devices survived
+                # every refresh, because the snapshot at the top brought
+                # them back in.
+                new_list = [d for d in new_list
+                            if self._platform_enabled(platform_of(d))]
                 self.devices = new_list
             self._last_refresh_time = time.time()
             log.debug(f"Device refresh finished: {len(self.devices)} devices")

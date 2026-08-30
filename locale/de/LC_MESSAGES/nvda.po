@@ -86,7 +86,8 @@ msgstr "&Ländercode (ISO):"
 msgid "&Cozytouch (experimental)"
 msgstr "&Cozytouch (experimentell)"
 
-#. Device filter
+#. Translators: Label of the device filter in the history. & marks the
+#. accelerator.
 #: dialog_history.py:153
 msgid "&Device:"
 msgstr "&Gerät:"
@@ -168,12 +169,14 @@ msgstr "&Benachrichtigungen"
 msgid "&Password:"
 msgstr "&Passwort:"
 
-#. Time range filter
+#. Translators: Label of the period filter in the history. & marks the
+#. accelerator.
 #: dialog_history.py:168
 msgid "&Period:"
 msgstr "&Zeitraum:"
 
-#. Platform filter
+#. Translators: Label of the platform filter in the history. & marks the
+#. accelerator.
 #: dialog_history.py:161
 msgid "&Platform:"
 msgstr "&Plattform:"
@@ -271,18 +274,24 @@ msgid ""
 msgstr ""
 "Ziffer sagt den Status an, dieselbe Ziffer erneut schaltet, Escape bricht ab"
 
+#. Translators: Error message when the bundled cryptography library is
+#. missing.
 #: security.py:193 security.py:208
 msgid "AES decryption not available (PyCryptodome missing)"
 msgstr "AES-Entschlüsselung nicht verfügbar (PyCryptodome fehlt)"
 
+#. Translators: Error message when the bundled cryptography library is
+#. missing.
 #: security.py:179
 msgid "AES encryption not available (PyCryptodome missing)"
 msgstr "AES-Verschlüsselung nicht verfügbar (PyCryptodome fehlt)"
 
+#. Translators: F1 help for the "Energy consumption" line in the device tree.
 #: dialog_help.py:111
 msgid "Accumulated energy consumption of the device in kilowatt hours."
 msgstr "Aufsummierter Energieverbrauch des Geräts in Kilowattstunden."
 
+#. Translators: Column heading in the CSV export of the history.
 #: history.py:945
 msgid "Action"
 msgstr "Aktion"
@@ -293,38 +302,56 @@ msgstr "Aktion"
 msgid "Action key"
 msgstr "Aktionsschlüssel"
 
+#. Translators: F1 help for any other line in the device tree: the fallback
+#. when none of the more specific texts fits.
 #: dialog_help.py:236
 msgid "Action. Press Enter or Space to execute."
 msgstr "Aktion. Enter oder Leertaste zum Ausführen."
 
+#. Translators: One piece of the device help spoken with F1. The pieces are
+#. joined with ". ", so no full stop at the end.
 #: dialog_help.py:253
 msgid "Action: turn on or off"
 msgstr "Aktion: Ein- oder Ausschalten"
 
+#. Translators: One piece of the device help spoken with F1. The pieces are
+#. joined with ". ", so no full stop at the end.
 #: dialog_help.py:432
 msgid "Action: turn on/off"
 msgstr "Aktion: Ein/Ausschalten"
 
+#. Translators: One piece of the device help spoken with F1. The pieces are
+#. joined with ". ", so no full stop at the end.
 #: dialog_help.py:416
 msgid "Actions: light spray, strong spray, off"
 msgstr "Aktionen: Schwaches Sprühen, Starkes Sprühen, Aus"
 
+#. Translators: One piece of the device help spoken with F1. The pieces are
+#. joined with ". ", so no full stop at the end.
 #: dialog_help.py:430
 msgid "Actions: on/off, brightness, light color"
 msgstr "Aktionen: Ein/Aus, Helligkeit, Lichtfarbe"
 
+#. Translators: One piece of the device help spoken with F1. The pieces are
+#. joined with ". ", so no full stop at the end.
 #: dialog_help.py:302
 msgid "Actions: on/off, mode, fan speed"
 msgstr "Aktionen: Ein/Aus, Modus, Lüftergeschwindigkeit"
 
+#. Translators: One piece of the device help spoken with F1. The pieces are
+#. joined with ". ", so no full stop at the end.
 #: dialog_help.py:313
 msgid "Actions: on/off, mode, fan speed, oscillation"
 msgstr "Aktionen: Ein/Aus, Modus, Lüftergeschwindigkeit, Oszillation"
 
+#. Translators: One piece of the device help spoken with F1. The pieces are
+#. joined with ". ", so no full stop at the end.
 #: dialog_help.py:374
 msgid "Actions: target temperature, heating mode, heating schedule"
 msgstr "Aktionen: Soll-Temperatur, Heizmodus, Heizprogramm"
 
+#. Translators: One piece of the device help spoken with F1. The pieces are
+#. joined with ". ", so no full stop at the end.
 #: dialog_help.py:274
 msgid "Actions: target temperature, mode, boost, on/off, away mode"
 msgstr "Aktionen: Zieltemperatur, Modus, Boost, Ein/Aus, Abwesenheit"
@@ -339,26 +366,36 @@ msgstr "Aktive Plattformen"
 msgid "Add to favorites - Enter"
 msgstr "Zu Favoriten hinzufügen - Enter"
 
+#. Translators: Device type displays for Netatmo modules.
 #: netatmo_api.py:261
 msgid "Additional indoor module"
 msgstr "Zusatz-Innenmodul"
 
+#. Translators: Name of a measured quantity, in the history and as a CSV
+#. column heading.
 #: history.py:138
 msgid "Air pressure"
 msgstr "Luftdruck"
 
+#. Translators: Beginning of the "Air pressure:" line in the device tree. F1
+#. picks its help by this text, so it has to be translated exactly like the
+#. line itself.
 #: dialog_help.py:126
 msgid "Air pressure:"
 msgstr "Luftdruck:"
 
+#. Translators: One piece of the device help spoken with F1. The pieces are
+#. joined with ". ", so no full stop at the end.
 #: device_dialog.py:1781 dialog_help.py:334
 msgid "Air pressure: {pressure} mbar"
 msgstr "Luftdruck: {pressure} mbar"
 
+#. Translators: Category names in the device tree.
 #: device_dialog.py:2129 device_dialog.py:2136
 msgid "Air purifiers"
 msgstr "Luftreiniger"
 
+#. Translators: F1 help for the "Air quality:" line in the device tree.
 #: dialog_help.py:129
 msgid ""
 "Air quality rating of the purifier from excellent to poor. Updates "
@@ -373,6 +410,9 @@ msgstr ""
 msgid "Air quality {level}"
 msgstr "Luftqualität {level}"
 
+#. Translators: Beginning of the "Air quality:" line in the device tree. F1
+#. picks its help by this text, so it has to be translated exactly like the
+#. line itself.
 #: dialog_help.py:128
 msgid "Air quality:"
 msgstr "Luftqualität:"
@@ -403,18 +443,28 @@ msgstr "Alle"
 msgid "All devices"
 msgstr "Alle Geräte"
 
+#. Translators: Time range filter options in the history dialog.
 #: dialog_history.py:171
 msgid "All time"
 msgstr "Alles"
 
+#. Translators: Beginning of the "Amperage:" line in the device tree. F1 picks
+#. its help by this text, so it has to be translated exactly like the line
+#. itself.
 #: dialog_help.py:120
 msgid "Amperage:"
 msgstr "Stromstärke:"
 
+#. Translators: Line in the device tree. F1 finds its help by the beginning of
+#. this text, so it and the "Amperage:" in the help have to be translated the
+#. same way.
 #: device_dialog.py:1883
 msgid "Amperage: {current} A"
 msgstr "Stromstärke: {current} A"
 
+#. Translators: Line in the device tree. F1 finds its help by the beginning of
+#. this text, so it and the "Amperage:" in the help have to be translated the
+#. same way.
 #: device_dialog.py:2319
 msgid "Amperage: {value} A"
 msgstr "Stromstärke: {value} A"
@@ -513,6 +563,7 @@ msgstr ""
 msgid "Announces the status of all smart home devices"
 msgstr "Sagt den Status aller Smart Home Geräte an"
 
+#. Translators: F1 help text of the favorites view (keyboard shortcuts).
 #: dialog_favorites.py:546
 msgid "Arrow keys: navigate, "
 msgstr "Pfeiltasten: Navigation, "
@@ -527,14 +578,18 @@ msgstr "Mindestens eine Plattform muss aktiv sein"
 msgid "Auto"
 msgstr "Auto"
 
+#. Translators: Error message when the device does not know the chosen
+#. automatic profile.
 #: vesync_devices.py:914
 msgid "Auto profile '{value}' is not supported"
 msgstr "Auto-Profil '{value}' wird nicht unterstützt"
 
+#. Translators: The following texts describe actions in the device history.
 #: history.py:1158
 msgid "Auto profile changed"
 msgstr "Auto-Profil geändert"
 
+#. Translators: Error message when the device has no automatic profile.
 #: vesync_devices.py:912
 msgid "Auto profile is not supported by this device"
 msgstr "Auto-Profil wird vom Gerät nicht unterstützt"
@@ -550,6 +605,7 @@ msgstr "Auto-Profil {profile}"
 msgid "Auto profile: {profile} - press Enter to change"
 msgstr "Auto-Profil: {profile} - Enter zum Ändern"
 
+#. Translators: F1 help for the "Hot water supply:" line in the device tree.
 #: dialog_help.py:98
 msgid ""
 "Available hot water supply in percent, optionally with a liter estimate. "
@@ -594,10 +650,12 @@ msgstr "Abwesenheit ein"
 msgid "Away mode scheduled"
 msgstr "Abwesenheit geplant"
 
+#. Translators: The following texts describe actions in the device history.
 #: history.py:1155
 msgid "Away mode switched off"
 msgstr "Abwesenheit ausgeschaltet"
 
+#. Translators: The following texts describe actions in the device history.
 #: history.py:1154
 msgid "Away mode switched on"
 msgstr "Abwesenheit eingeschaltet"
@@ -613,10 +671,12 @@ msgstr "Abwesenheit: {state} - Enter zum Umschalten"
 msgid "Away mode: {state} until {end} - press Enter to turn off"
 msgstr "Abwesenheit: {state} bis {end} - Enter zum Ausschalten"
 
+#. Translators: Choices in the heating mode dialog.
 #: dialog_netatmo.py:451
 msgid "Away – reduced temperature"
 msgstr "Abwesend – reduzierte Temperatur"
 
+#. Translators: The following texts describe actions in the device history.
 #: history.py:1138
 msgid "Back to schedule"
 msgstr "Zurück zum Zeitplan"
@@ -626,19 +686,28 @@ msgstr "Zurück zum Zeitplan"
 msgid "Back to schedule - press Enter to activate"
 msgstr "Zurück zum Zeitplan - Enter zum Aktivieren"
 
+#. Translators: F1 help for the action line "netatmo_back_to_schedule" in the
+#. device tree.
 #: dialog_help.py:179
 msgid "Back to the automatic schedule. Press Enter to execute."
 msgstr "Zurück zum automatischen Zeitplan. Enter zum Ausführen."
 
-#. Netatmo: battery
+#. Translators: Beginning of the "Battery:" line in the device tree. The line
+#. is found again by this text when its value is refreshed, so it has to be
+#. translated exactly like the line itself.
 #: device_dialog.py:905 dialog_help.py:122
 msgid "Battery:"
 msgstr "Batterie:"
 
+#. Translators: Battery level of a hub sensor. {value} = percentage. The
+#. placeholder is shown until the first background battery poll has completed
+#. (battery is fetched separately and cached).
 #: device_dialog.py:1740
 msgid "Battery: checking"
 msgstr "Batterie: wird ermittelt"
 
+#. Translators: One piece of the device help spoken with F1. The pieces are
+#. joined with ". ", so no full stop at the end.
 #: device_dialog.py:1804 device_dialog.py:1760 dialog_help.py:384
 msgid "Battery: {percent}%"
 msgstr "Batterie: {percent}%"
@@ -650,6 +719,7 @@ msgstr "Batterie: {percent}%"
 msgid "Battery: {value}%"
 msgstr "Batterie: {value}%"
 
+#. Translators: Color names for announcing the current lamp color.
 #: dialog_meross.py:52 dialog_meross.py:145
 msgid "Blue"
 msgstr "Blau"
@@ -659,10 +729,13 @@ msgstr "Blau"
 msgid "Blue {value} invalid (0–255)"
 msgstr "Blau {value} ungültig (0–255)"
 
+#. Translators: Rough colour name worked out from the RGB values of a lamp,
+#. spoken with the colour line.
 #: dialog_meross.py:79
 msgid "Bluish"
 msgstr "Bläulich"
 
+#. Translators: F1 help for the "Heating:" line in the device tree.
 #: dialog_help.py:84
 msgid "Boiler status: shows whether the heating is currently active or off."
 msgstr "Boiler-Status: zeigt ob die Heizung gerade aktiv heizt oder aus ist."
@@ -713,10 +786,12 @@ msgstr "Boost aus"
 msgid "Boost on"
 msgstr "Boost ein"
 
+#. Translators: The following texts describe actions in the device history.
 #: history.py:1153
 msgid "Boost switched off"
 msgstr "Boost ausgeschaltet"
 
+#. Translators: The following texts describe actions in the device history.
 #: history.py:1152
 msgid "Boost switched on"
 msgstr "Boost eingeschaltet"
@@ -726,19 +801,22 @@ msgstr "Boost eingeschaltet"
 msgid "Boost: {state} - press Enter to toggle"
 msgstr "Boost: {state} - Enter zum Umschalten"
 
+#. Translators: Color names and descriptions in the color picker dialog.
 #: dialog_meross.py:149
 msgid "Bright pink"
 msgstr "Helles Pink"
 
+#. Translators: Color names and descriptions in the color picker dialog.
 #: dialog_meross.py:150
 msgid "Bright turquoise"
 msgstr "Helles Türkis"
 
+#. Translators: Color names and descriptions in the color picker dialog.
 #: dialog_meross.py:146
 msgid "Bright yellow"
 msgstr "Helles Gelb"
 
-#. Meross light actions (keys as logged in dialog_meross.py/device_dialog.py)
+#. Translators: The following texts describe actions in the device history.
 #: history.py:1147
 msgid "Brightness changed"
 msgstr "Helligkeit geändert"
@@ -753,16 +831,21 @@ msgstr "Helligkeit für {name}"
 msgid "Brightness must be between 0 and 100"
 msgstr "Helligkeit muss zwischen 0 und 100 liegen"
 
-#. Brightness line (as info, not as an action)
+#. Translators: Beginning of the "Brightness:" line in the device tree. The
+#. line is found again by this text when its value is refreshed, so it has to
+#. be translated exactly like the line itself.
 #: device_dialog.py:847
 msgid "Brightness:"
 msgstr "Helligkeit:"
 
-#. Translators: History detail: brightness that was set.
+#. Translators: Line in the device tree: the brightness of a lamp. It has to
+#. keep the beginning it is found by.
 #: device_dialog.py:851
 msgid "Brightness: {value}%"
 msgstr "Helligkeit: {value}%"
 
+#. Translators: Line in the device tree: brightness of a lamp. Enter opens the
+#. input dialog, hence the hint in the text itself.
 #: device_dialog.py:2409 device_dialog.py:719
 msgid "Brightness: {value}% - press Enter to change"
 msgstr "Helligkeit: {value}% - Enter zum Ändern"
@@ -787,10 +870,13 @@ msgstr "Nach Typ"
 msgid "C&lose"
 msgstr "Sc&hließen"
 
+#. Translators: Name of a measured quantity, in the history and as a CSV
+#. column heading.
 #: history.py:137
 msgid "CO₂"
 msgstr "CO₂"
 
+#. Translators: F1 help for the "CO" line in the device tree.
 #: dialog_help.py:125
 msgid "CO₂ concentration in the room air."
 msgstr "CO₂-Konzentration in der Raumluft."
@@ -826,6 +912,8 @@ msgstr "Kategorie. Enter zum Auf- oder Zuklappen. Pfeil rechts zum Öffnen."
 msgid "Change device order"
 msgstr "Reihenfolge der Geräte ändern"
 
+#. Translators: F1 help for the action line "vesync_fan_speed" in the device
+#. tree.
 #: dialog_help.py:189
 msgid ""
 "Change fan speed. Enter opens a list of available levels. Selecting a level "
@@ -834,6 +922,8 @@ msgstr ""
 "Lüftergeschwindigkeit ändern. Enter öffnet eine Auswahlliste der verfügbaren"
 " Stufen. Wechsel auf eine Stufe schaltet automatisch in den Manuell-Modus."
 
+#. Translators: One piece of the device help spoken with F1. The pieces are
+#. joined with ". ", so no full stop at the end.
 #: dialog_help.py:247
 msgid "Channel: {name}"
 msgstr "Kanal: {name}"
@@ -843,10 +933,12 @@ msgstr "Kanal: {name}"
 msgid "Child lock active"
 msgstr "Kindersicherung aktiv"
 
+#. Translators: Error message when the device has no child lock.
 #: vesync_devices.py:876
 msgid "Child lock is not supported by this device"
 msgstr "Kindersicherung wird vom Gerät nicht unterstützt"
 
+#. Translators: VeSync announcement: the child lock locks the buttons.
 #: change_detection.py:665
 msgid "Child lock off"
 msgstr "Kindersicherung aus"
@@ -856,14 +948,18 @@ msgstr "Kindersicherung aus"
 msgid "Child lock on"
 msgstr "Kindersicherung ein"
 
+#. Translators: The following texts describe actions in the device history.
 #: history.py:1167
 msgid "Child lock switched off"
 msgstr "Kindersicherung ausgeschaltet"
 
+#. Translators: The following texts describe actions in the device history.
 #: history.py:1166
 msgid "Child lock switched on"
 msgstr "Kindersicherung eingeschaltet"
 
+#. Translators: Line in the device tree: the child lock is off, Enter turns it
+#. on.
 #: dialog_vesync.py:681
 msgid "Child lock: off - press Enter to turn on"
 msgstr "Kindersicherung: aus - Enter zum Einschalten"
@@ -901,6 +997,8 @@ msgstr "Favorit wählen: Ziffer 1 bis 9"
 msgid "Choose a light color for {name}."
 msgstr "Lichtfarbe für {name} wählen."
 
+#. Translators: F1 help for the action line "vesync_auto_preference" in the
+#. device tree.
 #: dialog_help.py:209
 msgid ""
 "Choose auto profile: default, efficient or quiet. Determines behavior in "
@@ -919,6 +1017,8 @@ msgstr "Heizmodus wählen"
 msgid "Choose heating mode for {name}.\n"
 msgstr "Heizmodus für {name} wählen.\n"
 
+#. Translators: F1 help for the action line "netatmo_therm_mode" in the device
+#. tree.
 #: dialog_help.py:173
 msgid ""
 "Choose heating mode: schedule, away or frost guard. Press Enter to change."
@@ -935,6 +1035,8 @@ msgstr ""
 "Heizprogramm für {name} wählen.\n"
 "{count} Programme verfügbar."
 
+#. Translators: F1 help for the action line "vesync_nightlight" in the device
+#. tree.
 #: dialog_help.py:206
 msgid ""
 "Choose night light mode: off, dimmed or on. Enter opens a selection list."
@@ -942,6 +1044,7 @@ msgstr ""
 "Nachtlicht-Modus wählen: Aus, Gedimmt oder Ein. Enter öffnet eine "
 "Auswahlliste."
 
+#. Translators: F1 help for the action line "vesync_mode" in the device tree.
 #: dialog_help.py:185
 msgid ""
 "Choose operating mode. Air purifiers: auto, manual or sleep. Fans: normal, "
@@ -951,6 +1054,8 @@ msgstr ""
 "Ventilatoren: Normal, Turbo, Auto oder Schlafmodus. Enter öffnet eine "
 "Auswahlliste."
 
+#. Translators: Label of the temperature field in the dialog that sets the
+#. target temperature.
 #: dialog_netatmo.py:71
 msgid "Choose target temperature in 0.5°C steps"
 msgstr "Soll-Temperatur in 0,5°C-Schritten wählen"
@@ -970,6 +1075,8 @@ msgstr "Lüftergeschwindigkeit wählen:"
 msgid "Choose the night light mode:"
 msgstr "Nachtlicht-Modus wählen:"
 
+#. Translators: F1 help for the action line "cozytouch_mode" in the device
+#. tree.
 #: dialog_help.py:221
 msgid ""
 "Choose the operating mode of the hot water heat pump. Enter opens a "
@@ -993,10 +1100,12 @@ msgstr "Client-&ID:"
 msgid "Client &secret:"
 msgstr "Client-&Secret:"
 
+#. Translators: Accessible name of the close button in the device menu.
 #: device_dialog.py:304
 msgid "Close dialog"
 msgstr "Dialog schließen"
 
+#. Translators: The following texts describe actions in the device history.
 #: history.py:1149
 msgid "Color changed"
 msgstr "Farbe geändert"
@@ -1011,36 +1120,52 @@ msgstr "Farbtemperatur für {name}"
 msgid "Color temperature must be between 0 and 100"
 msgstr "Farbtemperatur muss zwischen 0 und 100 liegen"
 
-#. Color temperature line
+#. Translators: Beginning of the "Color temperature:" line in the device tree.
+#. The line is found again by this text when its value is refreshed, so it has
+#. to be translated exactly like the line itself.
 #: device_dialog.py:854
 msgid "Color temperature:"
 msgstr "Farbtemperatur:"
 
+#. Translators: Line in the device tree. F1 finds its help by the beginning of
+#. this text, so it and the "Color temperature:" in the help have to be
+#. translated the same way.
 #: device_dialog.py:858
 msgid "Color temperature: {value}K"
 msgstr "Farbtemperatur: {value}K"
 
-#. RGB color line
+#. Translators: Beginning of the "Color:" line in the device tree. The line is
+#. found again by this text when its value is refreshed, so it has to be
+#. translated exactly like the line itself.
 #: device_dialog.py:861
 msgid "Color:"
 msgstr "Farbe:"
 
+#. Translators: Line in the device tree. F1 finds its help by the beginning of
+#. this text, so it and the "Color:" in the help have to be translated the
+#. same way.
 #: device_dialog.py:865
 msgid "Color: R={r}, G={g}, B={b}"
 msgstr "Farbe: R={r}, G={g}, B={b}"
 
+#. Translators: Line in the device tree: the colour set as an RGB value, where
+#. no name fits. Enter opens the colour picker.
 #: device_dialog.py:2458
 msgid "Color: RGB({r}, {g}, {b}) - press Enter to change"
 msgstr "Farbe: RGB({r}, {g}, {b}) - Enter zum Ändern"
 
+#. Translators: Line in the device tree: the colour set, by name and by RGB
+#. value. Enter opens the colour picker.
 #: device_dialog.py:2454
 msgid "Color: {color} (RGB {r},{g},{b}) - press Enter to change"
 msgstr "Farbe: {color} (RGB {r},{g},{b}) - Enter zum Ändern"
 
+#. Translators: Translations of Netatmo's default zone names.
 #: netatmo_api.py:411 netatmo_api.py:412
 msgid "Comfort"
 msgstr "Komfort"
 
+#. Translators: Translations of Netatmo's default zone names.
 #: netatmo_api.py:413 netatmo_api.py:414 netatmo_api.py:415 netatmo_api.py:416
 msgid "Comfort+"
 msgstr "Komfort+"
@@ -1050,15 +1175,20 @@ msgstr "Komfort+"
 msgid "Confirmation"
 msgstr "Sicherheitsabfrage"
 
+#. Translators: Label before the displayed redirect URI. OAuth connect button
 #. Translators: Button starts the OAuth2 flow in the browser.
 #: settings_panel.py:533
 msgid "Connect to &Netatmo (OAuth2)"
 msgstr "Mit Netatmo &verbinden (OAuth2)"
 
+#. Translators: Accessible name of the Netatmo connect button in the Netatmo
+#. tab of the settings.
 #: settings_panel.py:535
 msgid "Connect to Netatmo"
 msgstr "Mit Netatmo verbinden"
 
+#. Translators: One piece of the device help spoken with F1. The pieces are
+#. joined with ". ", so no full stop at the end.
 #: device_dialog.py:1857 dialog_help.py:410
 msgid "Connected sensors: {count}"
 msgstr "Verbundene Sensoren: {count}"
@@ -1094,10 +1224,14 @@ msgid ""
 "Connection diagnostics: announce the status of all smart home platforms"
 msgstr "Verbindungsdiagnose: Status aller Smart Home Plattformen ansagen"
 
+#. Translators: Network error in plain words, spoken and shown in the status
+#. line.
 #: device_dialog.py:1130
 msgid "Connection interrupted"
 msgstr "Verbindung unterbrochen"
 
+#. Translators: Beginning of the consumption line in the device tree. F1 finds
+#. its help by this text, so it has to read the same in both places.
 #: device_dialog.py:819
 msgid "Consumption last 7 days:"
 msgstr "Verbrauch letzte 7 Tage:"
@@ -1112,8 +1246,9 @@ msgstr "Verbrauch letzte 7 Tage: wird abgerufen..."
 msgid "Consumption last 7 days: {kwh} kWh"
 msgstr "Verbrauch letzte 7 Tage: {kwh} kWh"
 
-#. Consumption lines (today / last 7 days) - replace the placeholder or
-#. refresh values once the background fetch filled the cache.
+#. Translators: Beginning of the "Consumption today:" line in the device tree.
+#. The line is found again by this text when its value is refreshed, so it has
+#. to be translated exactly like the line itself.
 #: device_dialog.py:818 device_dialog.py:825
 msgid "Consumption today:"
 msgstr "Verbrauch heute:"
@@ -1128,11 +1263,12 @@ msgstr "Verbrauch heute: wird abgerufen..."
 msgid "Consumption today: {kwh} kWh"
 msgstr "Verbrauch heute: {kwh} kWh"
 
-#. Translators: Short names of the light colors (for announcement/history).
+#. Translators: Color names for announcing the current lamp color.
 #: constants.py:61 dialog_meross.py:61
 msgid "Cool white"
 msgstr "Kaltweiß"
 
+#. Translators: Choices for the light color (with description).
 #: device_dialog.py:2903
 msgid "Cool white - bright, bluish light for concentration (approx. 6500K)"
 msgstr "Kaltweiß - helles, bläuliches Licht für Konzentration (ca. 6500K)"
@@ -1165,15 +1301,18 @@ msgstr "Cozytouch Verbindungsfehler: {error}"
 msgid "Cozytouch devices, experimental ({count})"
 msgstr "Cozytouch-Geräte, experimentell ({count})"
 
+#. Translators: Accessible name of the Cozytouch email field in the Cozytouch
+#. tab of the settings.
 #: settings_panel.py:679
 msgid "Cozytouch email address"
 msgstr "Cozytouch E-Mail-Adresse"
 
-#. Translators: Error message for a failed Cozytouch login.
+#. Translators: Generic Cozytouch error message with detail text.
 #: dialog_cozytouch.py:90 settings_panel.py:1232 settings_panel.py:1235
 msgid "Cozytouch error: {error}"
 msgstr "Cozytouch-Fehler: {error}"
 
+#. Translators: Favorites group. Brand name, do not translate.
 #: dialog_favorites.py:403
 msgid "Cozytouch favorites ({count})"
 msgstr "Cozytouch-Favoriten ({count})"
@@ -1183,38 +1322,52 @@ msgstr "Cozytouch-Favoriten ({count})"
 msgid "Cozytouch pass&word:"
 msgstr "Cozytouch Pass&wort:"
 
+#. Translators: Name of the password field in the Cozytouch tab of the
+#. settings. The add-on appends to it whether a password is already stored.
 #: settings_panel.py:688
 msgid "Cozytouch password"
 msgstr "Cozytouch Passwort"
 
+#. Translators: Spoken message during the connection test in the settings.
 #: settings_panel.py:1219
 msgid "Cozytouch: connected – {count} device(s)"
 msgstr "Cozytouch: Verbunden – {count} Gerät(e)"
 
+#. Translators: Spoken while the Cozytouch account is being signed in to.
 #: __init__.py:859
 msgid "Cozytouch: connecting..."
 msgstr "Cozytouch: Verbinde..."
 
+#. Translators: Error message of the Cozytouch sign-in: the credentials were
+#. refused.
 #: cozytouch_api.py:187
 msgid "Cozytouch: incorrect email or password"
 msgstr "Cozytouch: E-Mail oder Passwort falsch"
 
+#. Translators: Status line of the settings dialog. It is spoken and stays
+#. readable, so it is a sentence of its own.
 #: settings_panel.py:1349 settings_panel.py:1350
 msgid "Cozytouch: invalid email address"
 msgstr "Cozytouch: Ungültige E-Mail-Adresse"
 
+#. Translators: Error message of the Cozytouch sign-in, shown to the user.
 #: cozytouch_api.py:181
 msgid "Cozytouch: invalid response during login"
 msgstr "Cozytouch: Ungültige Antwort beim Login"
 
+#. Translators: Spoken while the Cozytouch device list is being fetched.
 #: __init__.py:873
 msgid "Cozytouch: loading devices..."
 msgstr "Cozytouch: Lade Geräte..."
 
+#. Translators: Error message of the Cozytouch sign-in with the HTTP status
+#. code.
 #: cozytouch_api.py:188
 msgid "Cozytouch: login failed (HTTP {code})"
 msgstr "Cozytouch: Login fehlgeschlagen (HTTP {code})"
 
+#. Translators: Status line of the settings dialog. It is spoken and stays
+#. readable, so it is a sentence of its own.
 #: settings_panel.py:1355 settings_panel.py:1356
 msgid "Cozytouch: please enter a password"
 msgstr "Cozytouch: Bitte Passwort eingeben"
@@ -1233,34 +1386,43 @@ msgstr "Cozytouch: {count} Gerät(e) geladen"
 msgid "Ctrl+B on a device in the devices tab: add/remove favorite"
 msgstr "Strg+B auf einem Gerät im Geräte-Tab: Favorit hinzufügen/entfernen"
 
+#. Translators: F1 help text of the favorites view (keyboard shortcuts).
 #: dialog_favorites.py:548
 msgid "Ctrl+B: remove favorite, "
 msgstr "Strg+B: Favorit entfernen, "
 
+#. Translators: F1 help text of the favorites view (keyboard shortcuts).
 #: dialog_favorites.py:550
 msgid "Ctrl+H: show history, "
 msgstr "Strg+H: Verlauf anzeigen, "
 
+#. Translators: F1 help text of the favorites view (keyboard shortcuts).
 #: dialog_favorites.py:552
 msgid "Ctrl+T: announce status, "
 msgstr "Strg+T: Status ansagen, "
 
+#. Translators: F1 help text of the favorites view (keyboard shortcuts).
 #: dialog_favorites.py:551
 msgid "Ctrl+Tab: switch to devices tab, "
 msgstr "Strg+Tab: Zum Geräte-Tab wechseln, "
 
+#. Translators: F1 help for the "Air pressure:" line in the device tree.
 #: dialog_help.py:127
 msgid "Current air pressure in millibars."
 msgstr "Aktueller Luftdruck in Millibar."
 
+#. Translators: F1 help for the "Amperage:" line in the device tree.
 #: dialog_help.py:121
 msgid "Current amperage in amps."
 msgstr "Aktuelle Stromstärke in Ampere."
 
+#. Translators: F1 help for the "Battery:" line in the device tree.
 #: dialog_help.py:123
 msgid "Current battery level of the device."
 msgstr "Aktueller Batteriestand des Geräts."
 
+#. Translators: Shown in the dialog that sets the brightness: the value set at
+#. the moment.
 #: device_dialog.py:3014
 msgid "Current brightness: {value}%"
 msgstr "Aktuelle Helligkeit: {value}%"
@@ -1275,10 +1437,12 @@ msgstr "Aktuelle Farbe: RGB({r}, {g}, {b})\n"
 msgid "Current heating target: {temp} degrees"
 msgstr "Aktuelles Heizziel: {temp} Grad"
 
+#. Translators: F1 help for the "Humidity:" line in the device tree.
 #: dialog_help.py:82
 msgid "Current humidity. Updates automatically."
 msgstr "Aktuelle Luftfeuchtigkeit. Wird automatisch aktualisiert."
 
+#. Translators: F1 help for the "Voltage:" line in the device tree.
 #: dialog_help.py:119
 msgid "Current mains voltage in volts."
 msgstr "Aktuelle Netzspannung in Volt."
@@ -1293,10 +1457,12 @@ msgstr "Aktueller Modus: Manuell"
 msgid "Current mode: {mode}"
 msgstr "Aktueller Modus: {mode}"
 
+#. Translators: F1 help for the "Power:" line in the device tree.
 #: dialog_help.py:116
 msgid "Current power consumption in watts. Updates automatically."
 msgstr "Aktueller Stromverbrauch in Watt. Wird automatisch aktualisiert."
 
+#. Translators: F1 help for the "Temperature:" line in the device tree.
 #: dialog_help.py:79
 msgid "Current room temperature from the sensor. Updates automatically."
 msgstr "Aktuelle Raumtemperatur des Sensors. Wird automatisch aktualisiert."
@@ -1306,10 +1472,14 @@ msgstr "Aktuelle Raumtemperatur des Sensors. Wird automatisch aktualisiert."
 msgid "Current room temperature: {temp}°C\n"
 msgstr "Aktuelle Raumtemperatur: {temp}°C\n"
 
+#. Translators: Spoken in the dialog that sets the light colour: what is set
+#. at the moment.
 #: device_dialog.py:2917
 msgid "Current setting: cool white"
 msgstr "Aktuelle Einstellung: Kaltweiß"
 
+#. Translators: Spoken in the dialog that sets the light colour: what is set
+#. at the moment.
 #: device_dialog.py:2915
 msgid "Current setting: daylight"
 msgstr "Aktuelle Einstellung: Tageslicht"
@@ -1324,11 +1494,14 @@ msgstr "Aktuelle Einstellung: Warmweiß"
 msgid "Current target temperature: {temp}°C"
 msgstr "Aktuelle Soll-Temperatur: {temp}°C"
 
+#. Translators: Detail of a measurement series in the history, one line per
+#. figure.
 #: dialog_history.py:514
 msgid "Current: {value}"
 msgstr "Aktuell: {value}"
 
-#. Apply the color
+#. Translators: Name of the entry for a colour entered by hand. The chosen
+#. entry is compared against this text, so both places have to read the same.
 #: dialog_meross.py:338 dialog_meross.py:302
 msgid "Custom"
 msgstr "Benutzerdefiniert"
@@ -1348,19 +1521,22 @@ msgstr "Benutzerdefiniert - RGB-Werte eingeben"
 msgid "Custom RGB color"
 msgstr "Benutzerdefinierte RGB-Farbe"
 
+#. Translators: Color names for announcing the current lamp color.
 #: dialog_meross.py:57 dialog_meross.py:150
 msgid "Cyan"
 msgstr "Cyan"
 
+#. Translators: Color names and descriptions in the color picker dialog.
 #: dialog_meross.py:148
 msgid "Dark purple"
 msgstr "Dunkles Lila"
 
-#. Translators: Short names of the light colors (for announcement/history).
+#. Translators: Name of a white light colour of a lamp.
 #: constants.py:60
 msgid "Daylight"
 msgstr "Tageslicht"
 
+#. Translators: Choices for the light color (with description).
 #: device_dialog.py:2901
 msgid "Daylight - neutral, natural light for working (approx. 4000K)"
 msgstr "Tageslicht - neutrales, natürliches Licht zum Arbeiten (ca. 4000K)"
@@ -1380,10 +1556,12 @@ msgstr "Standard"
 msgid "Delete history"
 msgstr "Verlauf löschen"
 
+#. Translators: Column heading in the CSV export of the history.
 #: history.py:949
 msgid "Details"
 msgstr "Details"
 
+#. Translators: Column headers of the measurement view.
 #: device_dialog.py:1095 dialog_history.py:238 dialog_history.py:244
 msgid "Device"
 msgstr "Gerät"
@@ -1398,6 +1576,7 @@ msgstr "Gerät '{name}' ist offline oder nicht erreichbar"
 msgid "Device favorites"
 msgstr "Geräte-Favoriten"
 
+#. Translators: F1 help text of the favorites view (keyboard shortcuts).
 #: dialog_favorites.py:545
 msgid "Device favorites - keyboard shortcuts: "
 msgstr "Geräte-Favoriten - Tastaturkürzel: "
@@ -1413,6 +1592,7 @@ msgstr "Geräteverlauf"
 msgid "Device is not a diffuser"
 msgstr "Gerät ist kein Diffuser"
 
+#. Translators: Accessible name of the device tree in the device menu.
 #: device_dialog.py:191
 msgid "Device list"
 msgstr "Geräteliste"
@@ -1435,6 +1615,7 @@ msgid ""
 msgstr ""
 "Geräte-Abfrage dauert zu lange - möglicherweise sind zu viele Geräte offline"
 
+#. Translators: F1 help for the "Status:" line in the device tree.
 #: dialog_help.py:114
 msgid "Device status. Updates automatically."
 msgstr "Gerätestatus. Wird automatisch aktualisiert."
@@ -1471,10 +1652,12 @@ msgstr "Gerät {name} ist keine Lampe oder unterstützt keine Farbsteuerung"
 msgid "Devices"
 msgstr "Geräte"
 
+#. Translators: Category names in the device tree.
 #: device_dialog.py:2010 device_dialog.py:2030
 msgid "Diffuser"
 msgstr "Diffuser"
 
+#. Translators: F1 help for the action line "diffuser" in the device tree.
 #: dialog_help.py:157
 msgid "Diffuser action. Press Enter or Space to execute."
 msgstr "Diffuser-Aktion. Enter oder Leertaste zum Ausführen."
@@ -1501,10 +1684,12 @@ msgstr "Diffuser nicht erreichbar - antwortet nicht auf Schaltbefehl"
 msgid "Dimmed"
 msgstr "Gedimmt"
 
+#. Translators: Error message when the device has no display to switch.
 #: vesync_devices.py:856
 msgid "Display control is not supported by this device"
 msgstr "Display-Steuerung wird vom Gerät nicht unterstützt"
 
+#. Translators: VeSync announcement: LED display on the device.
 #: change_detection.py:655
 msgid "Display off"
 msgstr "Display aus"
@@ -1514,14 +1699,18 @@ msgstr "Display aus"
 msgid "Display on"
 msgstr "Display ein"
 
+#. Translators: The following texts describe actions in the device history.
 #: history.py:1165
 msgid "Display switched off"
 msgstr "Display ausgeschaltet"
 
+#. Translators: The following texts describe actions in the device history.
 #: history.py:1164
 msgid "Display switched on"
 msgstr "Display eingeschaltet"
 
+#. Translators: Line in the device tree: the display is off, Enter turns it
+#. on.
 #: dialog_vesync.py:671
 msgid "Display: off - press Enter to turn on"
 msgstr "Display: aus - Enter zum Einschalten"
@@ -1552,6 +1741,7 @@ msgstr ""
 "Cozytouch Account-Zugangsdaten (Atlantic-Gruppe, z. B. Austria Email).\n"
 "Dieselben Zugangsdaten wie in der Cozytouch-App. Daten werden lokal auf diesem Rechner verschlüsselt gespeichert."
 
+#. Translators: Translations of Netatmo's default zone names.
 #: netatmo_api.py:418
 msgid "Eco"
 msgstr "Eco"
@@ -1566,6 +1756,9 @@ msgstr "Eco+"
 msgid "Efficient"
 msgstr "Effizient"
 
+#. Translators: Beginning of the "Electric heating element" line in the device
+#. tree. F1 picks its help by this text, so it has to be translated exactly
+#. like the line itself.
 #: dialog_help.py:104
 msgid "Electric heating element"
 msgstr "Elektro-Heizstab"
@@ -1586,6 +1779,8 @@ msgstr "Elektro-Heizstab aktiv (heizt gerade)"
 msgid "Email and password required"
 msgstr "E-Mail und Passwort erforderlich"
 
+#. Translators: Spoken message when the settings are saved and a field is
+#. missing or wrong.
 #: settings_panel.py:1365
 msgid "Enable at least one platform"
 msgstr "Mindestens eine Plattform aktivieren"
@@ -1596,6 +1791,9 @@ msgstr "Mindestens eine Plattform aktivieren"
 msgid "End time removed"
 msgstr "Endzeit entfernt"
 
+#. Translators: Beginning of the "Energy consumption" line in the device tree.
+#. F1 picks its help by this text, so it has to be translated exactly like the
+#. line itself.
 #: dialog_help.py:110
 msgid "Energy consumption"
 msgstr "Energieverbrauch"
@@ -1623,6 +1821,7 @@ msgstr ""
 msgid "Enter device name:"
 msgstr "Gerätename eingeben:"
 
+#. Translators: F1 help text of the favorites view (keyboard shortcuts).
 #: dialog_favorites.py:547
 msgid "Enter or Space: execute action, "
 msgstr "Enter oder Leertaste: Aktion ausführen, "
@@ -1662,6 +1861,7 @@ msgstr ""
 msgid "Error"
 msgstr "Fehler"
 
+#. Translators: Error message when the heating schedules cannot be fetched.
 #: dialog_netatmo.py:545
 msgid "Error loading heating schedules"
 msgstr "Fehler beim Laden der Heizprogramme"
@@ -1681,6 +1881,7 @@ msgstr "Fehler beim Setzen der Temperatur: {error}"
 msgid "Error switching heating schedule: {error}"
 msgstr "Fehler beim Wechseln des Heizprogramms: {error}"
 
+#. Translators: Error dialog when loading the device list.
 #: device_dialog.py:1958
 msgid "Error while loading: {error}"
 msgstr "Fehler beim Laden: {error}"
@@ -1690,15 +1891,17 @@ msgstr "Fehler beim Laden: {error}"
 msgid "Error: {error}"
 msgstr "Fehler: {error}"
 
-#. Fallback: shorten the original message
+#. Translators: Short error line in the status bar of the device menu.
 #: device_dialog.py:1149
 msgid "Error: {msg}"
 msgstr "Fehler: {msg}"
 
+#. Translators: F1 help text of the favorites view (keyboard shortcuts).
 #: dialog_favorites.py:554
 msgid "Esc: close dialog"
 msgstr "Esc: Dialog schließen"
 
+#. Translators: Column headers of the event view.
 #: dialog_history.py:245
 msgid "Event"
 msgstr "Ereignis"
@@ -1708,14 +1911,19 @@ msgstr "Ereignis"
 msgid "Event loop could not be started"
 msgstr "Event Loop konnte nicht gestartet werden"
 
+#. Translators: Error message when the background loop the Meross library
+#. needs is gone.
 #: meross_api.py:460
 msgid "Event loop not available"
 msgstr "Event Loop nicht verfügbar"
 
+#. Translators: The two views of the history dialog.
 #: dialog_history.py:141
 msgid "Events"
 msgstr "Ereignisse"
 
+#. Translators: One piece of the device help spoken with F1. The pieces are
+#. joined with ". ", so no full stop at the end.
 #: dialog_help.py:422
 msgid "Expand channels for individual control"
 msgstr "Kanäle aufklappen für einzelne Steuerung"
@@ -1740,19 +1948,22 @@ msgstr "Verlauf als CSV exportieren"
 msgid "Export successful"
 msgstr "Export erfolgreich"
 
+#. Translators: F1 help text of the favorites view (keyboard shortcuts).
 #: dialog_favorites.py:553
 msgid "F1: context help, "
 msgstr "F1: Kontexthilfe, "
 
+#. Translators: F1 help text of the favorites view (keyboard shortcuts).
 #: dialog_favorites.py:549
 msgid "F5: refresh, "
 msgstr "F5: Aktualisieren, "
 
+#. Translators: Error message when the device does not have this fan level.
 #: vesync_devices.py:836 vesync_devices.py:1189
 msgid "Fan level {level} is not supported"
 msgstr "Lüfterstufe {level} wird nicht unterstützt"
 
-#. VeSync-specific actions
+#. Translators: The following texts describe actions in the device history.
 #: history.py:1157
 msgid "Fan speed changed"
 msgstr "Lüftergeschwindigkeit geändert"
@@ -1763,6 +1974,8 @@ msgid "Fan speed: automatically controlled - press Enter to set manually"
 msgstr ""
 "Lüftergeschwindigkeit: automatisch geregelt - Enter zum Manuell-Setzen"
 
+#. Translators: One piece of the device help spoken with F1. The pieces are
+#. joined with ". ", so no full stop at the end.
 #: dialog_help.py:291
 msgid "Fan speed: {level}"
 msgstr "Lüftergeschwindigkeit: {level}"
@@ -1772,6 +1985,7 @@ msgstr "Lüftergeschwindigkeit: {level}"
 msgid "Fan speed: {level} - press Enter to change"
 msgstr "Lüftergeschwindigkeit: {level} - Enter zum Ändern"
 
+#. Translators: Category names in the device tree.
 #: device_dialog.py:2130 device_dialog.py:2138
 msgid "Fans"
 msgstr "Ventilatoren"
@@ -1781,7 +1995,8 @@ msgstr "Ventilatoren"
 msgid "Favorite {number} is not assigned"
 msgstr "Favorit {number} ist nicht belegt"
 
-#. Translators: The two choices for the start tab (device list / favorites).
+#. Translators: The two options of the combo box that decides which tab the
+#. device menu opens on.
 #: settings_panel.py:336
 msgid "Favorites"
 msgstr "Favoriten"
@@ -1801,6 +2016,9 @@ msgstr "Filter"
 msgid "Filter device list by type or status"
 msgstr "Geräteliste nach Typ oder Status filtern"
 
+#. Translators: Beginning of the "Filter life:" line in the device tree. F1
+#. picks its help by this text, so it has to be translated exactly like the
+#. line itself.
 #: dialog_help.py:143
 msgid "Filter life:"
 msgstr "Filter-Lebensdauer:"
@@ -1810,11 +2028,12 @@ msgstr "Filter-Lebensdauer:"
 msgid "Filter life: {percent}%"
 msgstr "Filter-Lebensdauer: {percent}%"
 
-#. Translators: History detail: filter life reset.
+#. Translators: The following texts describe actions in the device history.
 #: history.py:1168
 msgid "Filter reset"
 msgstr "Filter zurückgesetzt"
 
+#. Translators: Error message when the device cannot reset its filter counter.
 #: vesync_devices.py:933
 msgid "Filter reset is not supported by this device"
 msgstr "Filter-Reset wird vom Gerät nicht unterstützt"
@@ -1830,6 +2049,8 @@ msgstr "Filterwarnung"
 msgid "Filter: {filter}"
 msgstr "Filter: {filter}"
 
+#. Translators: One piece of the device help spoken with F1. The pieces are
+#. joined with ". ", so no full stop at the end.
 #: dialog_help.py:301
 msgid "Filter: {percent}%"
 msgstr "Filter: {percent}%"
@@ -1844,6 +2065,7 @@ msgstr "Filter: {value}%"
 msgid "Find device"
 msgstr "Gerät suchen"
 
+#. Translators: Accessible name of the search button in the device menu.
 #: device_dialog.py:276
 msgid "Find devices"
 msgstr "Geräte suchen"
@@ -1868,14 +2090,17 @@ msgstr "Gefunden: {item}"
 msgid "Frost guard"
 msgstr "Frostschutz"
 
+#. Translators: Choices in the heating mode dialog.
 #: dialog_netatmo.py:452
 msgid "Frost guard – minimum temperature"
 msgstr "Frostschutz – Minimaltemperatur"
 
+#. Translators: Category names in the device tree.
 #: device_dialog.py:2063 device_dialog.py:2084
 msgid "Gateways"
 msgstr "Gateways"
 
+#. Translators: Color names for announcing the current lamp color.
 #: dialog_meross.py:51 dialog_meross.py:144
 msgid "Green"
 msgstr "Grün"
@@ -1885,6 +2110,8 @@ msgstr "Grün"
 msgid "Green {value} invalid (0–255)"
 msgstr "Grün {value} ungültig (0–255)"
 
+#. Translators: Rough colour name worked out from the RGB values of a lamp,
+#. spoken with the colour line.
 #: dialog_meross.py:77
 msgid "Greenish"
 msgstr "Grünlich"
@@ -1913,10 +2140,13 @@ msgstr "Heizmodus: {mode} - Enter zum Ändern"
 msgid "Heating off"
 msgstr "Heizung aus"
 
+#. Translators: The following texts describe actions in the device history.
 #: history.py:1144
 msgid "Heating schedule switched"
 msgstr "Heizprogramm gewechselt"
 
+#. Translators: Line in the device tree: the active heating schedule of a
+#. Netatmo thermostat. Enter switches to another one.
 #: device_dialog.py:2616
 msgid "Heating schedule: {name} - press Enter to switch"
 msgstr "Heizprogramm: {name} - Enter zum Wechseln"
@@ -1926,7 +2156,9 @@ msgstr "Heizprogramm: {name} - Enter zum Wechseln"
 msgid "Heating schedule: {schedule} - press Enter to switch"
 msgstr "Heizprogramm: {schedule} - Enter zum Wechseln"
 
-#. Netatmo: heating status (boiler)
+#. Translators: Beginning of the "Heating:" line in the device tree. The line
+#. is found again by this text when its value is refreshed, so it has to be
+#. translated exactly like the line itself.
 #: device_dialog.py:868 dialog_help.py:83
 msgid "Heating:"
 msgstr "Heizung:"
@@ -1943,6 +2175,8 @@ msgstr "Heizung: aktiv"
 msgid "Heating: off"
 msgstr "Heizung: aus"
 
+#. Translators: One piece of the device help spoken with F1. The pieces are
+#. joined with ". ", so no full stop at the end.
 #: device_dialog.py:1798 dialog_help.py:350 dialog_help.py:379
 msgid "Heating: {status}"
 msgstr "Heizung: {status}"
@@ -1952,6 +2186,8 @@ msgstr "Heizung: {status}"
 msgid "High"
 msgstr "Hoch"
 
+#. Translators: Detail of a measurement series in the history, one line per
+#. figure.
 #: dialog_history.py:509
 msgid "Highest value: {value}"
 msgstr "Größter Wert: {value}"
@@ -2007,10 +2243,14 @@ msgstr "Warmwasser konnte nicht umgeschaltet werden"
 msgid "Hot water heat pump"
 msgstr "Warmwasser-Wärmepumpe"
 
+#. Translators: Category name in the device tree.
 #: device_dialog.py:2167
 msgid "Hot water heat pumps ({count})"
 msgstr "Warmwasser-Wärmepumpen ({count})"
 
+#. Translators: Beginning of the "Hot water supply:" line in the device tree.
+#. F1 picks its help by this text, so it has to be translated exactly like the
+#. line itself.
 #: dialog_help.py:97
 msgid "Hot water supply:"
 msgstr "Warmwasservorrat:"
@@ -2020,6 +2260,8 @@ msgstr "Warmwasservorrat:"
 msgid "Hot water supply: {percent} percent"
 msgstr "Warmwasservorrat: {percent} Prozent"
 
+#. Translators: One piece of the device help spoken with F1. The pieces are
+#. joined with ". ", so no full stop at the end.
 #: dialog_help.py:264
 msgid "Hot water supply: {percent}%"
 msgstr "Warmwasservorrat: {percent}%"
@@ -2029,28 +2271,40 @@ msgstr "Warmwasservorrat: {percent}%"
 msgid "Hour"
 msgstr "Stunde"
 
+#. Translators: Label of the hours field in the dialog that sets how long the
+#. temperature holds.
 #: dialog_netatmo.py:114
 msgid "Hour until which the temperature should apply"
 msgstr "Stunde bis wann die Temperatur gelten soll"
 
+#. Translators: Category names in the device tree.
 #: device_dialog.py:2013 device_dialog.py:2024
 msgid "Hubs"
 msgstr "Hubs"
 
+#. Translators: Name of a measured quantity, in the history and as a CSV
+#. column heading.
 #: history.py:136
 msgid "Humidity"
 msgstr "Luftfeuchte"
 
-#. Humidity line
+#. Translators: Beginning of the "Humidity:" line in the device tree. The line
+#. is found again by this text when its value is refreshed, so it has to be
+#. translated exactly like the line itself.
 #: device_dialog.py:840 dialog_help.py:81
 msgid "Humidity:"
 msgstr "Luftfeuchtigkeit:"
 
+#. Translators: One piece of the device help spoken with F1. The pieces are
+#. joined with ". ", so no full stop at the end.
 #: device_dialog.py:1775 device_dialog.py:1823 dialog_help.py:328
 #: dialog_help.py:397
 msgid "Humidity: {humidity}%"
 msgstr "Luftfeuchtigkeit: {humidity}%"
 
+#. Translators: Line in the device tree. F1 finds its help by the beginning of
+#. this text, so it and the "Humidity:" in the help have to be translated the
+#. same way.
 #: device_dialog.py:844
 msgid "Humidity: {value:g}%"
 msgstr "Luftfeuchtigkeit: {value:g}%"
@@ -2075,23 +2329,29 @@ msgstr ""
 "Wenn aktiviert, wird NVDA ansagen wenn ein Meross-Gerät über Alexa, die "
 "Meross App oder andere externe Quellen geschaltet wird."
 
+#. Translators: F1 help for the "Off-peak tariff" line in the device tree.
 #: dialog_help.py:102
 msgid ""
 "Indicates that the heat pump is currently heating with off-peak electricity."
 msgstr "Zeigt an, dass die Wärmepumpe gerade mit Niedertarif-Strom heizt."
 
+#. Translators: Category names in the device tree.
 #: device_dialog.py:2064 device_dialog.py:2086
 msgid "Indoor air"
 msgstr "Raumluft"
 
+#. Translators: Device type displays for Netatmo modules.
 #: netatmo_api.py:265
 msgid "Indoor air quality monitor"
 msgstr "Raumluftmonitor"
 
+#. Translators: Network error in plain words, spoken and shown in the status
+#. line.
 #: device_dialog.py:1142
 msgid "Internal connection error - please try again"
 msgstr "Interner Verbindungsfehler - bitte erneut versuchen"
 
+#. Translators: Spoken message during the connection test in the settings.
 #: settings_panel.py:1120
 msgid "Invalid country code"
 msgstr "Ungültiger Ländercode"
@@ -2106,6 +2366,7 @@ msgstr "Ungültige Diffuser-Aktion: {action}"
 msgid "Invalid email address"
 msgstr "Ungültige E-Mail-Adresse"
 
+#. Translators: Error message when the fan level is not a number.
 #: vesync_devices.py:834 vesync_devices.py:1187
 msgid "Invalid fan level"
 msgstr "Ungültige Lüfterstufe"
@@ -2161,6 +2422,7 @@ msgstr "Lampe nicht erreichbar - antwortet nicht auf Befehl"
 msgid "Lamp unreachable - possibly offline"
 msgstr "Lampe nicht erreichbar - möglicherweise offline"
 
+#. Translators: Category names in the device tree.
 #: device_dialog.py:2009 device_dialog.py:2028
 msgid "Lamps and LED strips"
 msgstr "Lampen und LED-Strips"
@@ -2170,14 +2432,17 @@ msgstr "Lampen und LED-Strips"
 msgid "Lamps only"
 msgstr "Nur Lampen"
 
+#. Translators: Time range filter options in the history dialog.
 #: dialog_history.py:171
 msgid "Last 24 hours"
 msgstr "Letzte 24 Stunden"
 
+#. Translators: Time range filter options in the history dialog.
 #: dialog_history.py:172
 msgid "Last 30 days"
 msgstr "Letzte 30 Tage"
 
+#. Translators: Time range filter options in the history dialog.
 #: dialog_history.py:172
 msgid "Last 7 days"
 msgstr "Letzte 7 Tage"
@@ -2187,6 +2452,7 @@ msgstr "Letzte 7 Tage"
 msgid "Last Meross refresh {seconds} seconds ago"
 msgstr "Letzte Meross-Aktualisierung vor {seconds} Sekunden"
 
+#. Translators: Time range filter options in the history dialog.
 #: dialog_history.py:171
 msgid "Last hour"
 msgstr "Letzte Stunde"
@@ -2196,10 +2462,12 @@ msgstr "Letzte Stunde"
 msgid "Latest changes:"
 msgstr "Letzte Änderungen:"
 
+#. Translators: Column headers of the measurement view.
 #: dialog_history.py:239
 msgid "Latest reading"
 msgstr "Letzte Messung"
 
+#. Translators: Column headers of the measurement view.
 #: dialog_history.py:239
 msgid "Latest value"
 msgstr "Letzter Wert"
@@ -2221,18 +2489,25 @@ msgstr "Stufe {level} ({label})"
 msgid "Level {level} – {label}"
 msgstr "Stufe {level} – {label}"
 
+#. Translators: The following texts describe actions in the device history.
 #: history.py:1148
 msgid "Light color changed"
 msgstr "Lichtfarbe geändert"
 
+#. Translators: Line in the device tree: the light colour set. Enter opens the
+#. selection.
 #: device_dialog.py:2431
 msgid "Light color: cool white (bright) - press Enter to change"
 msgstr "Lichtfarbe: Kaltweiß (hell) - Enter zum Ändern"
 
+#. Translators: Line in the device tree: the light colour set. Enter opens the
+#. selection.
 #: device_dialog.py:2427
 msgid "Light color: daylight (neutral) - press Enter to change"
 msgstr "Lichtfarbe: Tageslicht (neutral) - Enter zum Ändern"
 
+#. Translators: Line in the device tree: the light colour set. Enter opens the
+#. selection.
 #: device_dialog.py:2423
 msgid "Light color: warm white (cozy) - press Enter to change"
 msgstr "Lichtfarbe: Warmweiß (gemütlich) - Enter zum Ändern"
@@ -2242,10 +2517,12 @@ msgstr "Lichtfarbe: Warmweiß (gemütlich) - Enter zum Ändern"
 msgid "Light spray"
 msgstr "Schwaches Sprühen"
 
+#. Translators: Spoken message during the connection test in the settings.
 #: settings_panel.py:1206
 msgid "Loading Cozytouch devices..."
 msgstr "Lade Cozytouch-Geräte..."
 
+#. Translators: Spoken message during the connection test in the settings.
 #: settings_panel.py:1138
 msgid "Loading VeSync devices..."
 msgstr "Lade VeSync-Geräte..."
@@ -2277,6 +2554,7 @@ msgstr "Lade Heizprogramme..."
 msgid "Loading..."
 msgstr "Lade..."
 
+#. Translators: Spoken while the add-on signs in to the platforms at startup.
 #: __init__.py:683
 msgid "Logging in to {platforms}..."
 msgstr "Anmeldung bei {platforms}..."
@@ -2287,6 +2565,8 @@ msgstr "Anmeldung bei {platforms}..."
 msgid "Login failed – existing devices remain available"
 msgstr "Anmeldung fehlgeschlagen – bisherige Geräte bleiben verfügbar"
 
+#. Translators: Spoken when the device menu is opened while the sign-in is
+#. still running.
 #: __init__.py:1006
 msgid "Login in progress..."
 msgstr "Anmeldung läuft..."
@@ -2312,6 +2592,7 @@ msgstr "Manuell"
 msgid "Maximum"
 msgstr "Maximum"
 
+#. Translators: The two views of the history dialog.
 #: dialog_history.py:141
 msgid "Measurements"
 msgstr "Messwerte"
@@ -2335,6 +2616,8 @@ msgstr ""
 msgid "Meross devices ({count})"
 msgstr "Meross-Geräte ({count})"
 
+#. Translators: Accessible name of the Meross email field in the Meross tab of
+#. the settings.
 #: settings_panel.py:426
 msgid "Meross email address"
 msgstr "Meross E-Mail-Adresse"
@@ -2349,6 +2632,8 @@ msgstr "Meross Fehler: {error}"
 msgid "Meross favorites ({count})"
 msgstr "Meross-Favoriten ({count})"
 
+#. Translators: Name of the password field in the Meross tab of the settings.
+#. The add-on appends to it whether a password is already stored.
 #: settings_panel.py:436
 msgid "Meross password"
 msgstr "Meross Passwort"
@@ -2365,18 +2650,24 @@ msgstr ""
 msgid "Meross: connected – {count} device(s)"
 msgstr "Meross: Verbunden – {count} Gerät(e)"
 
+#. Translators: Spoken while the Meross account is being signed in to.
 #: __init__.py:704
 msgid "Meross: connecting..."
 msgstr "Meross: Verbinde..."
 
+#. Translators: Spoken while the Meross device list is being fetched.
 #: __init__.py:725
 msgid "Meross: loading devices..."
 msgstr "Meross: Lade Geräte..."
 
+#. Translators: Status line of the settings dialog. It is spoken and stays
+#. readable, so it is a sentence of its own.
 #: settings_panel.py:1276 settings_panel.py:1277
 msgid "Meross: please enter a password"
 msgstr "Meross: Bitte Passwort eingeben"
 
+#. Translators: Status line of the settings dialog. It is spoken and stays
+#. readable, so it is a sentence of its own.
 #: settings_panel.py:1261 settings_panel.py:1262
 msgid "Meross: please enter an email address"
 msgstr "Meross: Bitte E-Mail eingeben"
@@ -2400,15 +2691,18 @@ msgstr "Mi&nute:"
 msgid "Minute"
 msgstr "Minute"
 
+#. Translators: Label of the minutes field in the dialog that sets how long
+#. the temperature holds.
 #: dialog_netatmo.py:132
 msgid "Minute until which the temperature should apply (5-minute steps)"
 msgstr "Minute bis wann die Temperatur gelten soll (5-Minuten-Schritte)"
 
+#. Translators: Error message when the device does not know the chosen mode.
 #: vesync_devices.py:805 vesync_devices.py:1159
 msgid "Mode '{mode}' is not supported by this device"
 msgstr "Modus '{mode}' wird vom Gerät nicht unterstützt"
 
-#. Netatmo-specific actions (keys as logged in dialog_netatmo.py)
+#. Translators: The following texts describe actions in the device history.
 #: history.py:1137 history.py:1143
 msgid "Mode changed"
 msgstr "Modus geändert"
@@ -2446,14 +2740,17 @@ msgstr "Modus: {mode} - Enter zum Ändern"
 msgid "Model ID: {model_id} (unknown model)"
 msgstr "Modell-ID: {model_id} (unbekanntes Modell)"
 
+#. Translators: The following texts describe actions in the device history.
 #: history.py:1163
 msgid "Mute switched off"
 msgstr "Stumm ausgeschaltet"
 
+#. Translators: The following texts describe actions in the device history.
 #: history.py:1162
 msgid "Mute switched on"
 msgstr "Stumm eingeschaltet"
 
+#. Translators: Line in the device tree: the sound is off, Enter turns it on.
 #: dialog_vesync.py:661
 msgid "Mute: off - press Enter to turn on"
 msgstr "Stummschaltung: aus - Enter zum Einschalten"
@@ -2513,14 +2810,20 @@ msgstr "Netatmo-Autorisierung"
 msgid "Netatmo authorization denied: {error}"
 msgstr "Netatmo Autorisierung abgelehnt: {error}"
 
+#. Translators: Accessible name of the Netatmo id field in the Netatmo tab of
+#. the settings.
 #: settings_panel.py:491
 msgid "Netatmo client ID"
 msgstr "Netatmo Client-ID"
 
+#. Translators: Name of the password field in the Netatmo tab of the settings.
+#. The add-on appends to it whether a password is already stored.
 #: settings_panel.py:500
 msgid "Netatmo client secret"
 msgstr "Netatmo Client-Secret"
 
+#. Translators: Spoken message during the Netatmo authorisation in the
+#. settings.
 #: settings_panel.py:1026
 msgid "Netatmo connected"
 msgstr "Netatmo verbunden"
@@ -2530,6 +2833,8 @@ msgstr "Netatmo verbunden"
 msgid "Netatmo connection cancelled"
 msgstr "Netatmo-Verbindung abgebrochen"
 
+#. Translators: Accessible name of the Netatmo status label in the Netatmo tab
+#. of the settings.
 #: settings_panel.py:549
 msgid "Netatmo connection status"
 msgstr "Netatmo-Verbindungsstatus"
@@ -2539,7 +2844,8 @@ msgstr "Netatmo-Verbindungsstatus"
 msgid "Netatmo devices ({count})"
 msgstr "Netatmo-Geräte ({count})"
 
-#. Translators: Error message for a failed Netatmo login.
+#. Translators: Status line of the settings dialog after a failed Netatmo
+#. query.
 #: settings_panel.py:1033 settings_panel.py:1094 settings_panel.py:1097
 msgid "Netatmo error: {error}"
 msgstr "Netatmo Fehler: {error}"
@@ -2560,6 +2866,8 @@ msgstr ""
 msgid "Netatmo redirect URI"
 msgstr "Netatmo Redirect-URI"
 
+#. Translators: Accessible name of the Netatmo port field in the Netatmo tab
+#. of the settings.
 #: settings_panel.py:510
 msgid "Netatmo redirect port"
 msgstr "Netatmo Redirect-Port"
@@ -2601,10 +2909,13 @@ msgstr "Netatmo-Token: abgelaufen, wird bei nächster Abfrage erneuert"
 msgid "Netatmo token: valid for another {minutes} minutes"
 msgstr "Netatmo-Token: noch {minutes} Minuten gültig"
 
+#. Translators: Spoken message during the Netatmo authorisation in the
+#. settings.
 #: settings_panel.py:1022
 msgid "Netatmo: connected"
 msgstr "Netatmo: Verbunden"
 
+#. Translators: Spoken while the Netatmo account is being signed in to.
 #: __init__.py:744
 msgid "Netatmo: connecting..."
 msgstr "Netatmo: Verbinde..."
@@ -2614,14 +2925,18 @@ msgstr "Netatmo: Verbinde..."
 msgid "Netatmo: connection failed – {error}"
 msgstr "Netatmo: Verbindung fehlgeschlagen – {error}"
 
+#. Translators: Status line of the settings dialog. It is spoken and stays
+#. readable, so it is a sentence of its own.
 #: settings_panel.py:1297 settings_panel.py:1298
 msgid "Netatmo: please enter client ID and secret"
 msgstr "Netatmo: Bitte Client-ID und Secret eingeben"
 
+#. Translators: Spoken message during the connection test in the settings.
 #: settings_panel.py:1087
 msgid "Netatmo: {count} device(s)"
 msgstr "Netatmo: {count} Gerät(e)"
 
+#. Translators: Spoken message during the connection test in the settings.
 #: settings_panel.py:1082
 msgid "Netatmo: {count} device(s) found"
 msgstr "Netatmo: {count} Gerät(e) gefunden"
@@ -2631,6 +2946,7 @@ msgstr "Netatmo: {count} Gerät(e) gefunden"
 msgid "Network: offline (failed attempts: {count})"
 msgstr "Netzwerk: offline (Fehlversuche: {count})"
 
+#. Translators: Color names and descriptions in the color picker dialog.
 #: dialog_meross.py:151
 msgid "Neutral white"
 msgstr "Neutrales Weiß"
@@ -2641,6 +2957,8 @@ msgstr "Neutrales Weiß"
 msgid "Next change: {zone} ({temp:.1f}°C) at {time}"
 msgstr "Nächste Änderung: {zone} ({temp:.1f}°C) um {time}"
 
+#. Translators: One piece of the device help spoken with F1. The pieces are
+#. joined with ". ", so no full stop at the end.
 #: dialog_help.py:366
 msgid "Next change: {zone} ({temp}°C) at {time}"
 msgstr "Nächste Änderung: {zone} ({temp}°C) um {time}"
@@ -2651,11 +2969,16 @@ msgstr "Nächste Änderung: {zone} ({temp}°C) um {time}"
 msgid "Next change: {zone} at {time}"
 msgstr "Nächste Änderung: {zone} um {time}"
 
-#. Netatmo: next schedule change
+#. Translators: Beginning of the "Next schedule change:" line in the device
+#. tree. The line is found again by this text when its value is refreshed, so
+#. it has to be translated exactly like the line itself.
 #: device_dialog.py:888 dialog_help.py:93
 msgid "Next schedule change:"
 msgstr "Nächste Planänderung:"
 
+#. Translators: Line in the device tree. F1 finds its help by the beginning of
+#. this text, so it and the "Next schedule change:" in the help have to be
+#. translated the same way.
 #: device_dialog.py:896 device_dialog.py:2569
 msgid "Next schedule change: {zone} ({temp:.1f}°C) at {time}"
 msgstr "Nächste Planänderung: {zone} ({temp:.1f}°C) um {time}"
@@ -2671,18 +2994,23 @@ msgstr "Nächste Planänderung: {zone} ({temp}°C) um {time}"
 msgid "Next schedule change: {zone} at {time}"
 msgstr "Nächste Planänderung: {zone} um {time}"
 
+#. Translators: Translations of Netatmo's default zone names.
 #: netatmo_api.py:417
 msgid "Night"
 msgstr "Nacht"
 
+#. Translators: The following texts describe actions in the device history.
 #: history.py:1159
 msgid "Night light changed"
 msgstr "Nachtlicht geändert"
 
+#. Translators: Error message when the device has no night light.
 #: vesync_devices.py:893
 msgid "Night light is not supported by this device"
 msgstr "Nachtlicht wird vom Gerät nicht unterstützt"
 
+#. Translators: Error message when the device does not know the chosen night
+#. light mode.
 #: vesync_devices.py:895
 msgid "Night light mode '{mode}' is not supported"
 msgstr "Nachtlicht-Modus '{mode}' wird nicht unterstützt"
@@ -2767,14 +3095,20 @@ msgstr "Noch keine Favoriten – im Geräte-Tab mit Strg+B hinzufügen"
 msgid "No heating schedules found"
 msgstr "Keine Heizprogramme gefunden"
 
+#. Translators: Network error in plain words, spoken and shown in the status
+#. line.
 #: device_dialog.py:1115
 msgid "No internet connection - DNS resolution failed"
 msgstr "Keine Internetverbindung - DNS-Auflösung fehlgeschlagen"
 
+#. Translators: Network error in plain words, spoken and shown in the status
+#. line.
 #: device_dialog.py:1134
 msgid "No internet connection - server not responding"
 msgstr "Keine Internetverbindung - Server antwortet nicht"
 
+#. Translators: Network error in plain words, spoken and shown in the status
+#. line.
 #: device_dialog.py:1123
 msgid "No internet connection - server unreachable"
 msgstr "Keine Internetverbindung - Server nicht erreichbar"
@@ -2812,18 +3146,25 @@ msgstr "Keine Auswahl verfügbar"
 msgid "No status available"
 msgstr "Kein Status verfügbar"
 
+#. Translators: One piece of the device help spoken with F1. The pieces are
+#. joined with ". ", so no full stop at the end.
 #: dialog_help.py:401
 msgid "No water detected"
 msgstr "Kein Wasser erkannt"
 
+#. Translators: The following texts describe actions in the device history.
 #: history.py:1171
 msgid "No water detected any more"
 msgstr "Kein Wasser mehr erkannt"
 
+#. Translators: Name of a measured quantity, in the history and as a CSV
+#. column heading.
 #: history.py:141
 msgid "Noise"
 msgstr "Lautstärke"
 
+#. Translators: Line in the device tree: the noise level measured by the
+#. Netatmo indoor module.
 #: device_dialog.py:1779
 msgid "Noise level: {noise} dB"
 msgstr "Lautstärke: {noise} dB"
@@ -2846,11 +3187,14 @@ msgstr "Nicht autorisiert – bitte in Einstellungen mit Netatmo verbinden"
 msgid "Not logged in"
 msgstr "Nicht angemeldet"
 
+#. Translators: Network error in plain words, shown when no platform is signed
+#. in.
 #: device_dialog.py:1146
 msgid "Not logged in - please check settings"
 msgstr "Nicht angemeldet - bitte Einstellungen prüfen"
 
-#. Not logged in yet - open the settings
+#. Translators: Spoken when the device menu is opened while no platform is
+#. signed in - the settings open instead.
 #: __init__.py:1011
 msgid "Not logged in – opening settings"
 msgstr "Nicht angemeldet – öffne Einstellungen"
@@ -2879,6 +3223,9 @@ msgstr ""
 msgid "Off"
 msgstr "Aus"
 
+#. Translators: Beginning of the "Off-peak tariff" line in the device tree. F1
+#. picks its help by this text, so it has to be translated exactly like the
+#. line itself.
 #: dialog_help.py:101
 msgid "Off-peak tariff"
 msgstr "Niedertarif"
@@ -2888,7 +3235,7 @@ msgstr "Niedertarif"
 msgid "Off-peak tariff active"
 msgstr "Niedertarif aktiv"
 
-#. Translators: Spray mode display when the diffuser is offline.
+#. Translators: State of a single sensor on a Meross hub.
 #: device_dialog.py:1724 device_dialog.py:2301 device_dialog.py:2349
 #: meross_devices.py:1470
 msgid "Offline"
@@ -2908,11 +3255,13 @@ msgstr "Nur Offline"
 msgid "On"
 msgstr "Ein"
 
+#. Translators: State of the hot water heat pump in the device tree: switched
+#. on by its schedule, not by hand.
 #: dialog_cozytouch.py:550
 msgid "On (scheduled)"
 msgstr "An (geplant)"
 
-#. Online status (inherits the hub status for untracked types like MS130)
+#. Translators: State of a single sensor on a Meross hub.
 #: device_dialog.py:1724
 msgid "Online"
 msgstr "Online"
@@ -2922,10 +3271,12 @@ msgstr "Online"
 msgid "Online only"
 msgstr "Nur Online"
 
+#. Translators: Accessible name of the history button in the device menu.
 #: device_dialog.py:289
 msgid "Open history"
 msgstr "Verlauf öffnen"
 
+#. Translators: Accessible name of the settings button in the device menu.
 #: device_dialog.py:298
 msgid "Open settings"
 msgstr "Einstellungen öffnen"
@@ -2936,6 +3287,7 @@ msgstr "Einstellungen öffnen"
 msgid "Open window detected"
 msgstr "Offenes Fenster erkannt"
 
+#. Translators: F1 help for the "Open window:" line in the device tree.
 #: dialog_help.py:91
 msgid ""
 "Open window detected: heating is paused automatically to avoid wasting "
@@ -2944,7 +3296,9 @@ msgstr ""
 "Offenes Fenster erkannt: Die Heizung wird automatisch pausiert, um "
 "Energieverschwendung zu vermeiden."
 
-#. Netatmo: open window
+#. Translators: Beginning of the "Open window:" line in the device tree. The
+#. line is found again by this text when its value is refreshed, so it has to
+#. be translated exactly like the line itself.
 #: device_dialog.py:881 dialog_help.py:90
 msgid "Open window:"
 msgstr "Offenes Fenster:"
@@ -2960,10 +3314,13 @@ msgstr "Offenes Fenster: erkannt (Heizung pausiert)"
 msgid "Opening browser for Netatmo authorization..."
 msgstr "Öffne Browser für Netatmo-Autorisierung..."
 
+#. Translators: Spoken message during the Netatmo authorisation in the
+#. settings.
 #: settings_panel.py:1008
 msgid "Opening browser. Please sign in to Netatmo and authorize."
 msgstr "Browser wird geöffnet. Bitte bei Netatmo anmelden und autorisieren."
 
+#. Translators: Spoken when the device menu opens.
 #: __init__.py:1020
 msgid "Opening device overview..."
 msgstr "Öffne Geräteübersicht..."
@@ -3003,14 +3360,18 @@ msgstr "Betrieb: Aus"
 msgid "Operation: on"
 msgstr "Betrieb: Ein"
 
+#. Translators: Color names for announcing the current lamp color.
 #: dialog_meross.py:54 dialog_meross.py:147
 msgid "Orange"
 msgstr "Orange"
 
+#. Translators: Rough colour name worked out from the RGB values of a lamp,
+#. spoken with the colour line.
 #: dialog_meross.py:87
 msgid "Orange tones"
 msgstr "Orange-Töne"
 
+#. Translators: VeSync tower fan announcement: oscillation.
 #: change_detection.py:636
 msgid "Oscillation off"
 msgstr "Oszillation aus"
@@ -3020,10 +3381,12 @@ msgstr "Oszillation aus"
 msgid "Oscillation on"
 msgstr "Oszillation ein"
 
+#. Translators: The following texts describe actions in the device history.
 #: history.py:1161
 msgid "Oscillation switched off"
 msgstr "Oszillation ausgeschaltet"
 
+#. Translators: The following texts describe actions in the device history.
 #: history.py:1160
 msgid "Oscillation switched on"
 msgstr "Oszillation eingeschaltet"
@@ -3033,6 +3396,8 @@ msgstr "Oszillation eingeschaltet"
 msgid "Oscillation: off"
 msgstr "Oszillation: aus"
 
+#. Translators: Line in the device tree: oscillation is off, Enter turns it
+#. on.
 #: dialog_vesync.py:652
 msgid "Oscillation: off - press Enter to turn on"
 msgstr "Oszillation: aus - Enter zum Einschalten"
@@ -3047,15 +3412,19 @@ msgstr "Oszillation: ein"
 msgid "Oscillation: on - press Enter to turn off"
 msgstr "Oszillation: ein - Enter zum Ausschalten"
 
+#. Translators: One piece of the device help spoken with F1. The pieces are
+#. joined with ". ", so no full stop at the end.
 #: dialog_help.py:305
 msgid "Oscillation: {status}"
 msgstr "Oszillation: {status}"
 
+#. Translators: Category names in the device tree.
 #: device_dialog.py:2014 device_dialog.py:2065 device_dialog.py:2131
 #: device_dialog.py:2140 device_dialog.py:2090 device_dialog.py:2032
 msgid "Other devices"
 msgstr "Andere Geräte"
 
+#. Translators: Device type displays for Netatmo modules.
 #: netatmo_api.py:258
 msgid "Outdoor module"
 msgstr "Außenmodul"
@@ -3070,6 +3439,7 @@ msgstr "Ausgang {number}"
 msgid "PM2.5: {value} micrograms per cubic meter"
 msgstr "PM2.5: {value} Mikrogramm pro Kubikmeter"
 
+#. Translators: F1 help for the "PM1.0:" line in the device tree.
 #: dialog_help.py:135
 msgid ""
 "Particulate matter PM1.0: concentration of ultra-fine particles in "
@@ -3078,10 +3448,13 @@ msgstr ""
 "Feinstaub PM1.0: Konzentration ultrafeiner Partikel in Mikrogramm pro "
 "Kubikmeter."
 
+#. Translators: Name of a measured quantity, in the history and as a CSV
+#. column heading.
 #: history.py:140
 msgid "Particulate matter PM10"
 msgstr "Feinstaub PM10"
 
+#. Translators: F1 help for the "PM10:" line in the device tree.
 #: dialog_help.py:139
 msgid ""
 "Particulate matter PM10: concentration of coarse particles in micrograms per"
@@ -3089,10 +3462,13 @@ msgid ""
 msgstr ""
 "Feinstaub PM10: Konzentration grober Partikel in Mikrogramm pro Kubikmeter."
 
+#. Translators: Name of a measured quantity, in the history and as a CSV
+#. column heading.
 #: history.py:139
 msgid "Particulate matter PM2.5"
 msgstr "Feinstaub PM2,5"
 
+#. Translators: F1 help for the "PM2.5:" line in the device tree.
 #: dialog_help.py:132
 msgid ""
 "Particulate matter PM2.5: concentration of very fine particles in micrograms"
@@ -3101,6 +3477,8 @@ msgstr ""
 "Feinstaub PM2.5: Konzentration sehr feiner Partikel in Mikrogramm pro "
 "Kubikmeter."
 
+#. Translators: Spoken message when the settings are saved and a field is
+#. missing or wrong.
 #: settings_panel.py:1285
 msgid "Password too short"
 msgstr "Passwort zu kurz"
@@ -3116,6 +3494,7 @@ msgstr "Passwort zu kurz (min. 6 Zeichen)"
 msgid "Period: {period}"
 msgstr "Zeitraum: {period}"
 
+#. Translators: Operating mode names of a VeSync air purifier.
 #: vesync_devices.py:612
 msgid "Pet"
 msgstr "Haustier"
@@ -3125,11 +3504,12 @@ msgstr "Haustier"
 msgid "Pet mode"
 msgstr "Haustier-Modus"
 
+#. Translators: Color names for announcing the current lamp color.
 #: dialog_meross.py:56 dialog_meross.py:149
 msgid "Pink"
 msgstr "Pink"
 
-#. Translators: Column headers of the CSV export (history).
+#. Translators: Column headers of the event view.
 #: dialog_history.py:244 history.py:939
 msgid "Platform"
 msgstr "Plattform"
@@ -3149,6 +3529,7 @@ msgstr "Bitte gültige Temperatur wählen"
 msgid "Please connect to Netatmo first"
 msgstr "Bitte zuerst mit Netatmo verbinden"
 
+#. Translators: Spoken message during the connection test in the settings.
 #: settings_panel.py:1048
 msgid "Please connect to Netatmo first (OAuth2)"
 msgstr "Bitte zuerst mit Netatmo verbinden (OAuth2)"
@@ -3173,10 +3554,13 @@ msgstr "Bitte Netatmo Client-ID und Secret eingeben"
 msgid "Please enter VeSync email and password"
 msgstr "Bitte VeSync E-Mail und Passwort eingeben"
 
+#. Translators: Spoken message during the Netatmo authorisation in the
+#. settings.
 #: settings_panel.py:968
 msgid "Please enter client ID and secret"
 msgstr "Bitte Client-ID und Secret eingeben"
 
+#. Translators: Spoken message during the connection test in the settings.
 #: settings_panel.py:897 settings_panel.py:1113 settings_panel.py:1187
 msgid "Please enter email and password"
 msgstr "Bitte E-Mail und Passwort eingeben"
@@ -3187,6 +3571,7 @@ msgstr "Bitte E-Mail und Passwort eingeben"
 msgid "Please wait - the previous action is still running"
 msgstr "Bitte warten - die vorherige Aktion läuft noch"
 
+#. Translators: Category names in the device tree.
 #: device_dialog.py:2008 device_dialog.py:2026
 msgid "Plugs"
 msgstr "Steckdosen"
@@ -3208,15 +3593,22 @@ msgstr ""
 "wählen (und ihn auch bei dev.netatmo.com eintragen) oder das blockierende "
 "Programm beenden. ({error})"
 
-#. Power line
+#. Translators: Beginning of the "Power:" line in the device tree. The line is
+#. found again by this text when its value is refreshed, so it has to be
+#. translated exactly like the line itself.
 #: device_dialog.py:810 dialog_help.py:115
 msgid "Power:"
 msgstr "Leistung:"
 
+#. Translators: One piece of the device help spoken with F1. The pieces are
+#. joined with ". ", so no full stop at the end.
 #: device_dialog.py:1879 dialog_help.py:252 dialog_help.py:428
 msgid "Power: {power} W"
 msgstr "Leistung: {power} W"
 
+#. Translators: Line in the device tree. F1 finds its help by the beginning of
+#. this text, so it and the "Power:" in the help have to be translated the
+#. same way.
 #: device_dialog.py:814 device_dialog.py:2309
 msgid "Power: {value} W"
 msgstr "Leistung: {value} W"
@@ -3237,7 +3629,9 @@ msgstr "Vorausheizen beendet"
 msgid "Pre-heating started"
 msgstr "Vorausheizen gestartet"
 
-#. Netatmo: pre-heating (anticipation)
+#. Translators: Beginning of the "Pre-heating:" line in the device tree. The
+#. line is found again by this text when its value is refreshed, so it has to
+#. be translated exactly like the line itself.
 #: device_dialog.py:874 dialog_help.py:86
 msgid "Pre-heating:"
 msgstr "Vorausheizen:"
@@ -3248,6 +3642,7 @@ msgstr "Vorausheizen:"
 msgid "Pre-heating: active"
 msgstr "Vorausheizen: aktiv"
 
+#. Translators: F1 help for the "Pre-heating:" line in the device tree.
 #: dialog_help.py:87
 msgid ""
 "Pre-heating: the heating starts early so the target temperature is already "
@@ -3256,6 +3651,8 @@ msgstr ""
 "Vorausheizen: Die Heizung startet frühzeitig, damit die Soll-Temperatur zum "
 "geplanten Zeitpunkt bereits erreicht ist."
 
+#. Translators: One piece of the device help spoken with F1. The pieces are
+#. joined with ". ", so no full stop at the end.
 #: dialog_help.py:434
 msgid "Press Enter to expand or collapse"
 msgstr "Enter zum Auf- oder Zuklappen"
@@ -3270,10 +3667,12 @@ msgstr "F5 drücken zum Wiederholen"
 msgid "Program"
 msgstr "Programm"
 
+#. Translators: Color names for announcing the current lamp color.
 #: dialog_meross.py:55 dialog_meross.py:148
 msgid "Purple"
 msgstr "Lila"
 
+#. Translators: Column headers of the measurement view.
 #: dialog_history.py:238
 msgid "Quantity"
 msgstr "Größe"
@@ -3288,14 +3687,18 @@ msgstr "Leise"
 msgid "RGB values must be between 0 and 255"
 msgstr "RGB-Werte müssen zwischen 0 und 255 liegen"
 
+#. Translators: Device type displays for Netatmo modules.
 #: netatmo_api.py:263
 msgid "Radiator valve"
 msgstr "Heizkörperventil"
 
+#. Translators: Device type displays for Netatmo modules.
 #: netatmo_api.py:260
 msgid "Rain gauge"
 msgstr "Regenmesser"
 
+#. Translators: One piece of the device help spoken with F1. The pieces are
+#. joined with ". ", so no full stop at the end.
 #: device_dialog.py:1783 dialog_help.py:337
 msgid "Rain: {rain} mm"
 msgstr "Regen: {rain} mm"
@@ -3305,10 +3708,14 @@ msgstr "Regen: {rain} mm"
 msgid "Rated &capacity (liters, 0 = off):"
 msgstr "Nenn&kapazität (Liter, 0 = aus):"
 
+#. Translators: Accessible name of the Cozytouch capacity field in the
+#. Cozytouch tab of the settings.
 #: settings_panel.py:699
 msgid "Rated capacity of the hot water tank in liters"
 msgstr "Nennkapazität des Warmwasserspeichers in Liter"
 
+#. Translators: Detail of a measurement series in the history, one line per
+#. figure.
 #: dialog_history.py:520
 msgid "Readings stored: {count}"
 msgstr "Gespeicherte Messungen: {count}"
@@ -3337,6 +3744,7 @@ msgstr ""
 "\n"
 "Das lässt sich nicht rückgängig machen."
 
+#. Translators: Color names for announcing the current lamp color.
 #: dialog_meross.py:50 dialog_meross.py:143
 msgid "Red"
 msgstr "Rot"
@@ -3346,6 +3754,8 @@ msgstr "Rot"
 msgid "Red {value} invalid (0–255)"
 msgstr "Rot {value} ungültig (0–255)"
 
+#. Translators: Rough colour name worked out from the RGB values of a lamp,
+#. spoken with the colour line.
 #: dialog_meross.py:75
 msgid "Reddish"
 msgstr "Rötlich"
@@ -3355,6 +3765,7 @@ msgstr "Rötlich"
 msgid "Redirect &port:"
 msgstr "Redirect-&Port:"
 
+#. Translators: Accessible name of the refresh button in the device menu.
 #: device_dialog.py:282
 msgid "Refresh devices"
 msgstr "Geräte aktualisieren"
@@ -3379,6 +3790,7 @@ msgstr "Aktualisiere..."
 msgid "Register this redirect URI at dev.netatmo.com:"
 msgstr "Diese Redirect-URI bei dev.netatmo.com eintragen:"
 
+#. Translators: F1 help for the "Filter life:" line in the device tree.
 #: dialog_help.py:144
 msgid ""
 "Remaining life of the HEPA filter in percent. At low values, replace the "
@@ -3409,6 +3821,8 @@ msgstr "Filter wechseln: {list}"
 msgid "Reset filter life"
 msgstr "Filter-Lebensdauer zurücksetzen"
 
+#. Translators: F1 help for the action line "vesync_reset_filter" in the
+#. device tree.
 #: dialog_help.py:213
 msgid ""
 "Reset filter life to 100 percent. Only do this if the filter has actually "
@@ -3440,6 +3854,8 @@ msgstr ""
 msgid "Room {room}"
 msgstr "Raum {room}"
 
+#. Translators: Rough colour name worked out from the RGB values of a lamp,
+#. spoken with the colour line.
 #: dialog_meross.py:83
 msgid "Rose"
 msgstr "Rosa"
@@ -3464,6 +3880,8 @@ msgstr "Zeitplan"
 msgid "Schedule absence – {name}"
 msgstr "Abwesenheit planen – {name}"
 
+#. Translators: F1 help for the action line "cozytouch_away" in the device
+#. tree.
 #: dialog_help.py:231
 msgid ""
 "Schedule or end away mode: reduces hot water production during longer "
@@ -3480,6 +3898,7 @@ msgstr ""
 msgid "Schedule zone: {zone}"
 msgstr "Zeitplan-Zone: {zone}"
 
+#. Translators: Choices in the heating mode dialog.
 #: dialog_netatmo.py:450
 msgid "Schedule – automatic according to heating program"
 msgstr "Zeitplan – automatisch nach Heizprogramm"
@@ -3501,11 +3920,14 @@ msgstr "Suche abgebrochen"
 msgid "Security error: state parameter does not match (CSRF protection)"
 msgstr "Sicherheitsfehler: State-Parameter stimmt nicht überein (CSRF-Schutz)"
 
-#. Name
+#. Translators: Stand-in name for a sensor on a Meross hub that reports no
+#. name of its own.
 #: device_dialog.py:1721
 msgid "Sensor"
 msgstr "Sensor"
 
+#. Translators: One piece of the device help spoken with F1. The pieces are
+#. joined with ". ", so no full stop at the end.
 #: dialog_help.py:398 dialog_help.py:403
 msgid "Sensor - display only"
 msgstr "Sensor - nur Anzeige"
@@ -3515,6 +3937,7 @@ msgstr "Sensor - nur Anzeige"
 msgid "Sensors only"
 msgstr "Nur Sensoren"
 
+#. Translators: F1 help for the action line "light_rgb" in the device tree.
 #: dialog_help.py:166
 msgid ""
 "Set RGB color. Press Enter to open the color picker with presets or custom "
@@ -3523,10 +3946,14 @@ msgstr ""
 "RGB-Farbe einstellen. Enter zum Öffnen der Farbauswahl mit Voreinstellungen "
 "oder benutzerdefinierter Eingabe."
 
+#. Translators: Line in the device tree for a lamp whose brightness is not
+#. known yet. Enter opens the input dialog.
 #: device_dialog.py:2412
 msgid "Set brightness - press Enter to open"
 msgstr "Helligkeit einstellen - Enter zum Öffnen"
 
+#. Translators: F1 help for the action line "light_luminance" in the device
+#. tree.
 #: dialog_help.py:160
 msgid ""
 "Set brightness. Press Enter to open the input dialog. Value from 0 to 100 "
@@ -3535,6 +3962,8 @@ msgstr ""
 "Helligkeit einstellen. Enter zum Öffnen des Eingabedialogs. Wert von 0 bis "
 "100 Prozent."
 
+#. Translators: Line in the device tree for a lamp with no colour set yet.
+#. Enter opens the colour picker.
 #: device_dialog.py:2461
 msgid "Set color - press Enter to open"
 msgstr "Farbe einstellen - Enter zum Öffnen"
@@ -3544,10 +3973,14 @@ msgstr "Farbe einstellen - Enter zum Öffnen"
 msgid "Set color for {name}"
 msgstr "Farbe für {name} einstellen"
 
+#. Translators: Line in the device tree for a lamp in colour mode: Enter
+#. switches to white.
 #: device_dialog.py:2435
 msgid "Set light color (white) - press Enter to open"
 msgstr "Lichtfarbe (Weiß) einstellen - Enter zum Öffnen"
 
+#. Translators: F1 help for the action line "light_temperature" in the device
+#. tree.
 #: dialog_help.py:163
 msgid ""
 "Set light color. Press Enter to choose between warm white, daylight and cool"
@@ -3561,6 +3994,8 @@ msgstr ""
 msgid "Set target temperature"
 msgstr "Soll-Temperatur einstellen"
 
+#. Translators: F1 help for the action line "netatmo_thermostat" in the device
+#. tree.
 #: dialog_help.py:169
 msgid ""
 "Set target temperature. Press Enter to enter a temperature from 5 to 30 "
@@ -3577,6 +4012,8 @@ msgstr ""
 "Zeitraum der Abwesenheit festlegen. Während der Abwesenheit wird die "
 "Warmwasser-Erzeugung reduziert."
 
+#. Translators: F1 help for the action line "cozytouch_temp" in the device
+#. tree.
 #: dialog_help.py:217
 msgid ""
 "Set the target temperature of the hot water heat pump. Press Enter to enter "
@@ -3614,6 +4051,8 @@ msgstr "Beim Öffnen &anzeigen:"
 msgid "Shows the history of all switch actions and sensor readings"
 msgstr "Zeigt den Verlauf aller Schaltaktionen und Sensorwerte"
 
+#. Translators: F1 help for the "Next schedule change:" line in the device
+#. tree.
 #: dialog_help.py:94
 msgid ""
 "Shows the next scheduled temperature change from the heating program: zone, "
@@ -3663,10 +4102,14 @@ msgstr "Smart Home Geräte"
 msgid "Smart home devices ({online}/{total} online)"
 msgstr "Smart Home Geräte ({online}/{total} online)"
 
+#. Translators: One piece of the device help spoken with F1. The pieces are
+#. joined with ". ", so no full stop at the end.
 #: dialog_help.py:405
 msgid "Smart hub - manages sensors"
 msgstr "Smart Hub - verwaltet Sensoren"
 
+#. Translators: Accessible name of the sort order combo box in the device
+#. menu.
 #: device_dialog.py:172
 msgid "Sort order"
 msgstr "Sortierung"
@@ -3676,39 +4119,49 @@ msgstr "Sortierung"
 msgid "Sorted: {sort}"
 msgstr "Sortiert: {sort}"
 
-#. Translators: Status after toggling mute.
+#. Translators: VeSync announcement: sounds (the device's beeps).
 #: change_detection.py:646 dialog_vesync.py:200
 msgid "Sounds on"
 msgstr "Tonsignale ein"
 
+#. Translators: Column headers of the event view.
 #: dialog_history.py:245 history.py:945
 msgid "Source"
 msgstr "Herkunft"
 
+#. Translators: One piece of the device help spoken with F1. The pieces are
+#. joined with ". ", so no full stop at the end.
 #: dialog_help.py:415
 msgid "Spray mode: {mode}"
 msgstr "Sprühmodus: {mode}"
 
+#. Translators: The following texts describe actions in the device history.
 #: device_dialog.py:2385 history.py:1141
 msgid "Spray off"
 msgstr "Sprühen aus"
 
-#. Accessible name; some screen readers use the label of the preceding
-#. StaticText, but the duplication does no harm.
+#. Translators: Accessible name of the status bar in the device menu.
 #: device_dialog.py:265 settings_panel.py:248
 msgid "Status"
 msgstr "Status"
 
+#. Translators: F1 help for any other line in the device tree: the fallback
+#. when none of the more specific texts fits.
 #: dialog_help.py:148
 msgid "Status information. Display only."
 msgstr "Statusinformation. Nur zur Anzeige."
 
-#. Status line
+#. Translators: Beginning of the "Status:" line in the device tree. The line
+#. is found again by this text when its value is refreshed, so it has to be
+#. translated exactly like the line itself.
 #: device_dialog.py:792 device_dialog.py:926 device_dialog.py:1011
 #: device_dialog.py:1043 device_dialog.py:1071 dialog_help.py:113
 msgid "Status:"
 msgstr "Status:"
 
+#. Translators: Line in the device tree. F1 finds its help by the beginning of
+#. this text, so it and the "Status:" in the help have to be translated the
+#. same way.
 #: device_dialog.py:1830
 msgid "Status: WATER ALARM"
 msgstr "Status: WASSERALARM"
@@ -3718,10 +4171,16 @@ msgstr "Status: WASSERALARM"
 msgid "Status: connected"
 msgstr "Status: Verbunden"
 
+#. Translators: Line in the device tree. F1 finds its help by the beginning of
+#. this text, so it and the "Status:" in the help have to be translated the
+#. same way.
 #: device_dialog.py:1825
 msgid "Status: no data"
 msgstr "Status: Keine Daten"
 
+#. Translators: Line in the device tree. F1 finds its help by the beginning of
+#. this text, so it and the "Status:" in the help have to be translated the
+#. same way.
 #: device_dialog.py:1830
 msgid "Status: no water"
 msgstr "Status: Kein Wasser"
@@ -3736,7 +4195,9 @@ msgstr "Status: Nicht verbunden"
 msgid "Status: off"
 msgstr "Status: Aus"
 
-#. Translators: Status entry in the device tree.
+#. Translators: Line in the device tree. F1 finds its help by the beginning of
+#. this text, so it and the "Status:" in the help have to be translated the
+#. same way.
 #: device_dialog.py:1810 device_dialog.py:2369 device_dialog.py:1757
 #: device_dialog.py:1848 dialog_cozytouch.py:440 dialog_help.py:259
 #: dialog_help.py:281 dialog_help.py:321 dialog_help.py:390
@@ -3749,15 +4210,22 @@ msgstr "Status: Offline"
 msgid "Status: on"
 msgstr "Status: Ein"
 
+#. Translators: Line in the device tree. F1 finds its help by the beginning of
+#. this text, so it and the "Status:" in the help have to be translated the
+#. same way.
 #: device_dialog.py:1848
 msgid "Status: online"
 msgstr "Status: Online"
 
+#. Translators: Line in the device tree. F1 finds its help by the beginning of
+#. this text, so it and the "Status:" in the help have to be translated the
+#. same way.
 #: device_dialog.py:1863
 msgid "Status: unknown"
 msgstr "Status: Unbekannt"
 
-#. Update the status text
+#. Translators: Line in the device tree: whether the device is switched on. It
+#. has to keep the beginning it is found by.
 #: device_dialog.py:807 device_dialog.py:1044 device_dialog.py:2302
 #: device_dialog.py:2352 device_dialog.py:2372 device_dialog.py:804
 #: device_dialog.py:928 device_dialog.py:1073 device_dialog.py:1016
@@ -3765,14 +4233,17 @@ msgstr "Status: Unbekannt"
 msgid "Status: {status}"
 msgstr "Status: {status}"
 
+#. Translators: Color names and descriptions in the color picker dialog.
 #: dialog_meross.py:145
 msgid "Strong blue"
 msgstr "Kräftiges Blau"
 
+#. Translators: Color names and descriptions in the color picker dialog.
 #: dialog_meross.py:144
 msgid "Strong green"
 msgstr "Kräftiges Grün"
 
+#. Translators: Color names and descriptions in the color picker dialog.
 #: dialog_meross.py:143
 msgid "Strong red"
 msgstr "Kräftiges Rot"
@@ -3782,6 +4253,7 @@ msgstr "Kräftiges Rot"
 msgid "Strong spray"
 msgstr "Starkes Sprühen"
 
+#. Translators: F1 help for the action line "toggle" in the device tree.
 #: dialog_help.py:154
 msgid "Switch action. Press Enter or Space to turn on or off."
 msgstr "Schaltaktion. Enter oder Leertaste zum Ein- oder Ausschalten."
@@ -3792,23 +4264,30 @@ msgstr "Schaltaktion. Enter oder Leertaste zum Ein- oder Ausschalten."
 msgid "Switch heating schedule"
 msgstr "Heizprogramm wechseln"
 
+#. Translators: F1 help for the action line "netatmo_switch_schedule" in the
+#. device tree.
 #: dialog_help.py:176
 msgid "Switch heating schedule. Press Enter to select a saved heating plan."
 msgstr ""
 "Heizprogramm wechseln. Enter zum Auswählen eines gespeicherten Heizplans."
 
+#. Translators: Line in the device tree for a lamp in white mode: Enter
+#. switches to colour.
 #: device_dialog.py:2463
 msgid "Switch to color mode - press Enter to open"
 msgstr "Auf Farbmodus wechseln - Enter zum Öffnen"
 
+#. Translators: Line in the device tree: Enter puts the lamp into white mode.
 #: device_dialog.py:2441
 msgid "Switch to white mode - press Enter to open"
 msgstr "Auf Weißmodus wechseln - Enter zum Öffnen"
 
+#. Translators: The following texts describe actions in the device history.
 #: history.py:1135
 msgid "Switched off"
 msgstr "Ausgeschaltet"
 
+#. Translators: The following texts describe actions in the device history.
 #: history.py:1134
 msgid "Switched on"
 msgstr "Eingeschaltet"
@@ -3828,7 +4307,7 @@ msgstr "Zieltemperatur konnte nicht gesetzt werden"
 msgid "Target temperature in degrees ({lo} to {hi}):"
 msgstr "Zieltemperatur in Grad ({lo} bis {hi}):"
 
-#. Cozytouch-specific actions (keys as logged in dialog_cozytouch.py)
+#. Translators: The following texts describe actions in the device history.
 #: history.py:1151
 msgid "Target temperature set"
 msgstr "Zieltemperatur gesetzt"
@@ -3858,6 +4337,8 @@ msgstr "Zieltemperatur: {temp} Grad - Enter zum Ändern"
 msgid "Target temperature: {temp}°C"
 msgstr "Zieltemperatur: {temp}°C"
 
+#. Translators: One piece of the device help spoken with F1. The pieces are
+#. joined with ". ", so no full stop at the end.
 #: dialog_help.py:345
 msgid "Target: {temp}°C"
 msgstr "Soll: {temp}°C"
@@ -3872,15 +4353,19 @@ msgstr "Soll: {value:.1f}°C"
 msgid "Temperature"
 msgstr "Temperatur"
 
+#. Translators: Category names in the device tree.
 #: device_dialog.py:2011 device_dialog.py:2020
 msgid "Temperature sensors"
 msgstr "Temperatursensoren"
 
+#. Translators: The following texts describe actions in the device history.
 #: history.py:1136
 msgid "Temperature set"
 msgstr "Temperatur gesetzt"
 
-#. Temperature line
+#. Translators: Beginning of the "Temperature:" line in the device tree. The
+#. line is found again by this text when its value is refreshed, so it has to
+#. be translated exactly like the line itself.
 #: device_dialog.py:833 dialog_help.py:78
 msgid "Temperature:"
 msgstr "Temperatur:"
@@ -3901,14 +4386,20 @@ msgstr "Temperatur: {value:.1f}°C"
 msgid "Test Cozytouch &connection"
 msgstr "Cozytouch Verbindung &prüfen"
 
+#. Translators: Accessible name of the Cozytouch test button in the Cozytouch
+#. tab of the settings.
 #: settings_panel.py:715
 msgid "Test Cozytouch connection"
 msgstr "Cozytouch-Verbindung prüfen"
 
+#. Translators: Accessible name of the Meross test button in the Meross tab of
+#. the settings.
 #: settings_panel.py:445
 msgid "Test Meross connection"
 msgstr "Meross-Verbindung testen"
 
+#. Translators: Accessible name of the Netatmo test button in the Netatmo tab
+#. of the settings.
 #: settings_panel.py:554
 msgid "Test Netatmo connection"
 msgstr "Netatmo-Verbindung testen"
@@ -3918,10 +4409,13 @@ msgstr "Netatmo-Verbindung testen"
 msgid "Test VeSync &connection"
 msgstr "VeSync Verbindung &prüfen"
 
+#. Translators: Accessible name of the VeSync test button in the VeSync tab of
+#. the settings.
 #: settings_panel.py:644
 msgid "Test VeSync connection"
 msgstr "VeSync-Verbindung prüfen"
 
+#. Translators: Spoken message during the connection test in the settings.
 #: settings_panel.py:1192
 msgid "Testing Cozytouch connection..."
 msgstr "Teste Cozytouch-Verbindung..."
@@ -3931,14 +4425,17 @@ msgstr "Teste Cozytouch-Verbindung..."
 msgid "Testing Meross connection..."
 msgstr "Teste Meross Verbindung..."
 
+#. Translators: Spoken message during the connection test in the settings.
 #: settings_panel.py:1057
 msgid "Testing Netatmo connection..."
 msgstr "Teste Netatmo Verbindung..."
 
+#. Translators: Spoken message during the connection test in the settings.
 #: settings_panel.py:1060
 msgid "Testing Netatmo..."
 msgstr "Teste Netatmo..."
 
+#. Translators: Spoken message during the connection test in the settings.
 #: settings_panel.py:1125
 msgid "Testing VeSync connection..."
 msgstr "Teste VeSync-Verbindung..."
@@ -3960,6 +4457,8 @@ msgstr ""
 "\n"
 "Fortfahren?"
 
+#. Translators: F1 help for the "Electric heating element" line in the device
+#. tree.
 #: dialog_help.py:105
 msgid ""
 "The electric backup heating element is currently assisting the heat pump."
@@ -3970,23 +4469,28 @@ msgstr "Der elektrische Zusatz-Heizstab unterstützt gerade die Wärmepumpe."
 msgid "The end must be after the start and in the future"
 msgstr "Das Ende muss nach dem Beginn und in der Zukunft liegen"
 
+#. Translators: Device type displays for Netatmo modules.
 #: netatmo_api.py:262
 msgid "Thermostat"
 msgstr "Thermostat"
 
+#. Translators: Device type displays for Netatmo modules.
 #: netatmo_api.py:264
 msgid "Thermostat relay"
 msgstr "Thermostat-Relay"
 
+#. Translators: Category names in the device tree.
 #: device_dialog.py:2062 device_dialog.py:2082
 msgid "Thermostats"
 msgstr "Thermostate"
 
-#. Translators: Column headers of the CSV export (history).
+#. Translators: Column headers of the event view.
 #: dialog_history.py:244 history.py:939
 msgid "Time"
 msgstr "Zeitpunkt"
 
+#. Translators: Network error in plain words, spoken and shown in the status
+#. line.
 #: device_dialog.py:1138
 msgid "Timeout - please try again"
 msgstr "Zeitüberschreitung - bitte erneut versuchen"
@@ -4001,6 +4505,9 @@ msgstr "Zeitüberschreitung – bitte erneut versuchen"
 msgid "Today"
 msgstr "Heute"
 
+#. Translators: Beginning of the "Today's heating times:" line in the device
+#. tree. F1 picks its help by this text, so it has to be translated exactly
+#. like the line itself.
 #: dialog_help.py:107
 msgid "Today's heating times:"
 msgstr "Heizzeiten heute:"
@@ -4010,6 +4517,8 @@ msgstr "Heizzeiten heute:"
 msgid "Today's heating times: {schedule}"
 msgstr "Heizzeiten heute: {schedule}"
 
+#. Translators: F1 help for the "Today's heating times:" line in the device
+#. tree.
 #: dialog_help.py:108
 msgid "Today's programmed heating time windows of the hot water heat pump."
 msgstr "Die heute programmierten Heizzeitfenster der Warmwasser-Wärmepumpe."
@@ -4030,11 +4539,15 @@ msgstr ""
 msgid "Turbo"
 msgstr "Turbo"
 
+#. Translators: F1 help for the action line "vesync_toggle" in the device
+#. tree.
 #: dialog_help.py:182
 msgid "Turn VeSync device on or off. Press Enter or Space to execute."
 msgstr ""
 "VeSync-Gerät ein- oder ausschalten. Enter oder Leertaste zum Ausführen."
 
+#. Translators: F1 help for the action line "cozytouch_boost" in the device
+#. tree.
 #: dialog_help.py:224
 msgid ""
 "Turn boost mode on or off: quickly heats the water to maximum temperature. "
@@ -4043,6 +4556,8 @@ msgstr ""
 "Boost-Modus ein- oder ausschalten: heizt das Wasser schnell auf "
 "Maximaltemperatur. Enter oder Leertaste zum Umschalten."
 
+#. Translators: F1 help for the action line "vesync_child_lock" in the device
+#. tree.
 #: dialog_help.py:203
 msgid ""
 "Turn child lock on or off. Locks the controls on the device. Press Enter or "
@@ -4051,6 +4566,8 @@ msgstr ""
 "Kindersicherung ein- oder ausschalten. Sperrt die Bedienung am Gerät. Enter "
 "oder Leertaste zum Umschalten."
 
+#. Translators: F1 help for the action line "cozytouch_toggle" in the device
+#. tree.
 #: dialog_help.py:228
 msgid "Turn hot water production on or off. Press Enter or Space to execute."
 msgstr ""
@@ -4067,12 +4584,15 @@ msgstr "Betrieb ausschalten"
 msgid "Turn operation on"
 msgstr "Betrieb einschalten"
 
+#. Translators: F1 help for the action line "vesync_display" in the device
+#. tree.
 #: dialog_help.py:200
 msgid "Turn the device's display on or off. Press Enter or Space to toggle."
 msgstr ""
 "Display-Anzeige am Gerät ein- oder ausschalten. Enter oder Leertaste zum "
 "Umschalten."
 
+#. Translators: F1 help for the action line "vesync_mute" in the device tree.
 #: dialog_help.py:196
 msgid ""
 "Turn tower fan mute on or off. When muted, the device does not play "
@@ -4082,6 +4602,8 @@ msgstr ""
 "Stummschaltung gibt das Gerät keine Bestätigungstöne aus. Enter oder "
 "Leertaste zum Umschalten."
 
+#. Translators: F1 help for the action line "vesync_oscillation" in the device
+#. tree.
 #: dialog_help.py:193
 msgid "Turn tower fan oscillation on or off. Press Enter or Space to toggle."
 msgstr ""
@@ -4102,6 +4624,8 @@ msgstr "{name} ausschalten"
 msgid "Turn {name} on"
 msgstr "{name} einschalten"
 
+#. Translators: Rough colour name worked out from the RGB values of a lamp,
+#. spoken with the colour line.
 #: dialog_meross.py:85
 msgid "Turquoise"
 msgstr "Türkis"
@@ -4115,6 +4639,7 @@ msgstr ""
 "Zwei-Buchstaben-Ländercode (ISO 3166-1 Alpha-2). Beispiele: DE, AT, CH, US, "
 "GB, FR. Bestimmt automatisch die VeSync-Server-Region (EU oder US)."
 
+#. Translators: Column heading in the CSV export of the history.
 #: history.py:942
 msgid "Type"
 msgstr "Typ"
@@ -4124,7 +4649,7 @@ msgstr "Typ"
 msgid "Unexpected response from the Netatmo server"
 msgstr "Unerwartete Antwort vom Netatmo-Server"
 
-#. Translators: Placeholder for an unknown device name.
+#. Translators: Entry in the device tree.
 #: dialog_favorites.py:369 dialog_favorites.py:392 dialog_favorites.py:414
 #: dialog_favorites.py:346 dialog_history.py:366 dialog_netatmo.py:301
 #: history.py:1075 history.py:1026 history.py:1027 history.py:832
@@ -4190,16 +4715,19 @@ msgstr "V&eSync E-Mail:"
 msgid "Valid: 5 to 30 degrees in 0.5°C steps.\n"
 msgstr "Gültig: 5 bis 30 Grad in 0,5°C-Schritten.\n"
 
+#. Translators: Explanation in the dialog that sets the brightness.
 #: device_dialog.py:3011
 msgid "Value between 0 (off) and 100 (maximum brightness)."
 msgstr "Wert zwischen 0 (aus) und 100 (maximale Helligkeit)."
 
-#. The status code is enough - `resp.text` may contain sensitive fields and is
-#. not mirrored into the exception message.
+#. Translators: Error message when the VeSync cloud answers with an HTTP
+#. error.
 #: vesync_api.py:270
 msgid "VeSync API HTTP {code}"
 msgstr "VeSync API HTTP {code}"
 
+#. Translators: Error message when the VeSync cloud answers with something
+#. that is not JSON.
 #: vesync_api.py:277
 msgid "VeSync API: invalid JSON response: {error}"
 msgstr "VeSync API: Ungültige JSON-Antwort: {error}"
@@ -4215,6 +4743,8 @@ msgstr ""
 "Aktuell unterstützt: Levoit Core 200S/300S/400S/500S/600S Luftreiniger und Levoit Tower-Ventilatoren.\n"
 "Daten werden lokal auf diesem Rechner verschlüsselt gespeichert."
 
+#. Translators: Accessible name of the VeSync country field in the VeSync tab
+#. of the settings.
 #: settings_panel.py:612
 msgid "VeSync country code"
 msgstr "VeSync Ländercode"
@@ -4241,6 +4771,8 @@ msgstr "VeSync-Gerät nicht gefunden"
 msgid "VeSync devices ({count})"
 msgstr "VeSync-Geräte ({count})"
 
+#. Translators: Accessible name of the VeSync email field in the VeSync tab of
+#. the settings.
 #: settings_panel.py:593
 msgid "VeSync email address"
 msgstr "VeSync E-Mail-Adresse"
@@ -4258,6 +4790,8 @@ msgstr "VeSync-Fehler: {error}"
 msgid "VeSync favorites ({count})"
 msgstr "VeSync-Favoriten ({count})"
 
+#. Translators: Accessible name of the VeSync filter threshold field in the
+#. VeSync tab of the settings.
 #: settings_panel.py:628
 msgid "VeSync filter warning threshold in percent"
 msgstr "VeSync Filter-Warnschwelle in Prozent"
@@ -4267,7 +4801,7 @@ msgstr "VeSync Filter-Warnschwelle in Prozent"
 msgid "VeSync login failed: no authorizeCode received"
 msgstr "VeSync Anmeldung fehlgeschlagen: Kein authorizeCode erhalten"
 
-#. Translators: Error in the second step of the VeSync login.
+#. Translators: VeSync login error, with the server message as {msg}.
 #: vesync_api.py:416 vesync_api.py:475
 msgid "VeSync login failed: {msg}"
 msgstr "VeSync-Anmeldung fehlgeschlagen: {msg}"
@@ -4277,78 +4811,110 @@ msgstr "VeSync-Anmeldung fehlgeschlagen: {msg}"
 msgid "VeSync pass&word:"
 msgstr "VeSync Pass&wort:"
 
+#. Translators: Name of the password field in the VeSync tab of the settings.
+#. The add-on appends to it whether a password is already stored.
 #: settings_panel.py:602
 msgid "VeSync password"
 msgstr "VeSync Passwort"
 
+#. Translators: Error message after a refused profile change, shown to the
+#. user.
 #: vesync_devices.py:920
 msgid "VeSync: auto profile could not be set"
 msgstr "VeSync: Auto-Profil konnte nicht gesetzt werden"
 
+#. Translators: Error message after a refused child lock command, shown to the
+#. user.
 #: vesync_devices.py:880
 msgid "VeSync: child lock could not be toggled"
 msgstr "VeSync: Kindersicherung konnte nicht geschaltet werden"
 
+#. Translators: Spoken message during the connection test in the settings.
 #: settings_panel.py:1153
 msgid "VeSync: connected – {count} device(s)"
 msgstr "VeSync: Verbunden – {count} Gerät(e)"
 
+#. Translators: Spoken while the VeSync account is being signed in to.
 #: __init__.py:783
 msgid "VeSync: connecting..."
 msgstr "VeSync: Verbinde..."
 
+#. Translators: Status line of the settings dialog. It is spoken and stays
+#. readable, so it is a sentence of its own.
 #: settings_panel.py:1334
 msgid "VeSync: country code must be two letters"
 msgstr "VeSync: Ländercode muss aus zwei Buchstaben bestehen"
 
+#. Translators: Error message after a refused display command, shown to the
+#. user.
 #: vesync_devices.py:861 vesync_devices.py:1240
 msgid "VeSync: display switch command failed"
 msgstr "VeSync: Display-Schaltbefehl fehlgeschlagen"
 
+#. Translators: Error message after a refused fan level change, shown to the
+#. user.
 #: vesync_devices.py:841 vesync_devices.py:1194
 msgid "VeSync: fan level {level} could not be set"
 msgstr "VeSync: Lüfterstufe {level} konnte nicht gesetzt werden"
 
+#. Translators: Error message after a refused filter reset, shown to the user.
 #: vesync_devices.py:936
 msgid "VeSync: filter reset failed"
 msgstr "VeSync: Filter-Reset fehlgeschlagen"
 
+#. Translators: Spoken message when the settings are saved and a field is
+#. missing or wrong.
 #: settings_panel.py:1335
 msgid "VeSync: invalid country code"
 msgstr "VeSync: Ungültiger Ländercode"
 
+#. Translators: Status line of the settings dialog. It is spoken and stays
+#. readable, so it is a sentence of its own.
 #: settings_panel.py:1320 settings_panel.py:1321
 msgid "VeSync: invalid email address"
 msgstr "VeSync: Ungültige E-Mail-Adresse"
 
+#. Translators: Spoken while the VeSync device list is being fetched.
 #: __init__.py:820
 msgid "VeSync: loading devices..."
 msgstr "VeSync: Lade Geräte..."
 
+#. Translators: Error message after a refused mode change, shown to the user.
 #: vesync_devices.py:819 vesync_devices.py:1165
 msgid "VeSync: mode '{mode}' could not be set"
 msgstr "VeSync: Modus '{mode}' konnte nicht gesetzt werden"
 
+#. Translators: Error message after a refused mute command, shown to the user.
 #: vesync_devices.py:1225
 msgid "VeSync: mute toggle failed"
 msgstr "VeSync: Stummschaltung fehlgeschlagen"
 
+#. Translators: Error message after a refused night light command, shown to
+#. the user.
 #: vesync_devices.py:899
 msgid "VeSync: night light could not be set"
 msgstr "VeSync: Nachtlicht konnte nicht gesetzt werden"
 
+#. Translators: Error message after a refused oscillation command, shown to
+#. the user.
 #: vesync_devices.py:1210
 msgid "VeSync: oscillation could not be toggled"
 msgstr "VeSync: Oszillation konnte nicht geschaltet werden"
 
+#. Translators: Status line of the settings dialog. It is spoken and stays
+#. readable, so it is a sentence of its own.
 #: settings_panel.py:1327 settings_panel.py:1328
 msgid "VeSync: please enter a password"
 msgstr "VeSync: Bitte Passwort eingeben"
 
+#. Translators: Status line of the settings dialog. It is spoken and stays
+#. readable, so it is a sentence of its own.
 #: settings_panel.py:1312 settings_panel.py:1313
 msgid "VeSync: please enter an email address"
 msgstr "VeSync: Bitte E-Mail eingeben"
 
+#. Translators: Error message after a refused switch command, shown to the
+#. user.
 #: vesync_devices.py:791 vesync_devices.py:1146
 msgid "VeSync: switch command failed"
 msgstr "VeSync: Schaltbefehl fehlgeschlagen"
@@ -4368,26 +4934,39 @@ msgstr "VeSync: {count} Gerät(e) geladen"
 msgid "View"
 msgstr "Ansicht"
 
+#. Translators: F1 help for the "VOC:" line in the device tree.
 #: dialog_help.py:142
 msgid "Volatile organic compounds in the room air."
 msgstr "Flüchtige organische Verbindungen in der Raumluft."
 
+#. Translators: Beginning of the "Voltage:" line in the device tree. F1 picks
+#. its help by this text, so it has to be translated exactly like the line
+#. itself.
 #: dialog_help.py:118
 msgid "Voltage:"
 msgstr "Spannung:"
 
+#. Translators: Line in the device tree. F1 finds its help by the beginning of
+#. this text, so it and the "Voltage:" in the help have to be translated the
+#. same way.
 #: device_dialog.py:2314
 msgid "Voltage: {value} V"
 msgstr "Spannung: {value} V"
 
+#. Translators: Line in the device tree. F1 finds its help by the beginning of
+#. this text, so it and the "Voltage:" in the help have to be translated the
+#. same way.
 #: device_dialog.py:1881
 msgid "Voltage: {voltage} V"
 msgstr "Spannung: {voltage} V"
 
+#. Translators: One piece of the device help spoken with F1. The pieces are
+#. joined with ". ", so no full stop at the end.
 #: dialog_help.py:401
 msgid "WATER ALARM!"
 msgstr "WASSERALARM!"
 
+#. Translators: Color names and descriptions in the color picker dialog.
 #: dialog_meross.py:147
 msgid "Warm orange"
 msgstr "Warmes Orange"
@@ -4397,6 +4976,7 @@ msgstr "Warmes Orange"
 msgid "Warm white"
 msgstr "Warmweiß"
 
+#. Translators: Choices for the light color (with description).
 #: device_dialog.py:2899
 msgid "Warm white - cozy, warm light like candlelight (approx. 2700K)"
 msgstr "Warmweiß - gemütliches, warmes Licht wie Kerzenschein (ca. 2700K)"
@@ -4407,6 +4987,7 @@ msgstr "Warmweiß - gemütliches, warmes Licht wie Kerzenschein (ca. 2700K)"
 msgid "Warning: replace filter, remaining life {percent}%"
 msgstr "Achtung: Filter wechseln, Restlebensdauer {percent}%"
 
+#. Translators: The following texts describe actions in the device history.
 #: history.py:1170
 msgid "Water alarm"
 msgstr "Wasseralarm"
@@ -4421,23 +5002,29 @@ msgstr "Wasseralarm!"
 msgid "Water alarm: {name}"
 msgstr "Wasseralarm: {name}"
 
+#. Translators: Category names in the device tree.
 #: device_dialog.py:2012 device_dialog.py:2022
 msgid "Water sensors"
 msgstr "Wassersensoren"
 
+#. Translators: Device type displays for Netatmo modules.
 #: netatmo_api.py:257
 msgid "Weather station (indoor)"
 msgstr "Wetterstation (Innen)"
 
+#. Translators: Category names in the device tree.
 #: device_dialog.py:2061 device_dialog.py:2095 device_dialog.py:2095
 #: device_dialog.py:2088
 msgid "Weather stations"
 msgstr "Wetterstationen"
 
+#. Translators: Color names for announcing the current lamp color.
 #: dialog_meross.py:58 dialog_meross.py:151
 msgid "White"
 msgstr "Weiß"
 
+#. Translators: Rough colour name worked out from the RGB values of a lamp,
+#. spoken with the colour line.
 #: dialog_meross.py:89
 msgid "White tones"
 msgstr "Weißtöne"
@@ -4452,10 +5039,13 @@ msgstr "WLAN-Netz: {ssid}"
 msgid "Wi-Fi signal: {dbm} dBm"
 msgstr "WLAN-Signal: {dbm} dBm"
 
+#. Translators: Device type displays for Netatmo modules.
 #: netatmo_api.py:259
 msgid "Wind gauge"
 msgstr "Windmesser"
 
+#. Translators: One piece of the device help spoken with F1. The pieces are
+#. joined with ". ", so no full stop at the end.
 #: device_dialog.py:1785 dialog_help.py:340
 msgid "Wind: {wind} km/h"
 msgstr "Wind: {wind} km/h"
@@ -4470,10 +5060,13 @@ msgstr "Fenster geschlossen"
 msgid "Window open"
 msgstr "Fenster offen"
 
+#. Translators: Color names for announcing the current lamp color.
 #: dialog_meross.py:53 dialog_meross.py:146
 msgid "Yellow"
 msgstr "Gelb"
 
+#. Translators: Rough colour name worked out from the RGB values of a lamp,
+#. spoken with the colour line.
 #: dialog_meross.py:81
 msgid "Yellowish"
 msgstr "Gelblich"
@@ -4483,6 +5076,8 @@ msgstr "Gelblich"
 msgid "Yesterday"
 msgstr "Gestern"
 
+#. Translators: One piece of the device help spoken with F1. The pieces are
+#. joined with ". ", so no full stop at the end.
 #: device_dialog.py:1799 dialog_help.py:351 dialog_help.py:380
 msgid "active"
 msgstr "aktiv"
@@ -4657,6 +5252,7 @@ msgstr "du"
 msgid "{count} day ago"
 msgstr "vor {count} Tag"
 
+#. Translators: Relative time in the history (days).
 #: history.py:1093
 msgid "{count} days ago"
 msgstr "vor {count} Tagen"
@@ -4682,6 +5278,8 @@ msgstr "{count} Geräte geladen, {online} online"
 msgid "{count} events"
 msgstr "{count} Ereignisse"
 
+#. Translators: Status line of the event view. {count} = shown, {total} =
+#. total number of events.
 #: dialog_history.py:385
 msgid "{count} events shown (total: {total})"
 msgstr "{count} Ereignisse angezeigt (gesamt: {total})"
@@ -4691,6 +5289,7 @@ msgstr "{count} Ereignisse angezeigt (gesamt: {total})"
 msgid "{count} hour ago"
 msgstr "vor {count} Stunde"
 
+#. Translators: Relative time in the history (hours).
 #: history.py:1089
 msgid "{count} hours ago"
 msgstr "vor {count} Stunden"
@@ -4716,6 +5315,7 @@ msgstr "{count} Messreihen aus {total} Messungen, {period}"
 msgid "{count} minute ago"
 msgstr "vor {count} Minute"
 
+#. Translators: Relative time in the history (minutes).
 #: history.py:1084
 msgid "{count} minutes ago"
 msgstr "vor {count} Minuten"
@@ -4736,6 +5336,7 @@ msgstr "{field} (gespeichert - leer lassen zum Beibehalten)"
 msgid "{minutes} minutes"
 msgstr "{minutes} Minuten"
 
+#. Translators: Entry in the device tree.
 #: dialog_favorites.py:369 dialog_favorites.py:392 dialog_favorites.py:414
 #: dialog_favorites.py:346
 msgid "{name} (not available)"
@@ -4784,6 +5385,8 @@ msgstr ""
 "{name} ist nicht aktiviert. Die Plattform im Tab \"Allgemein\" einschalten, "
 "um die zugehörigen Benachrichtigungen einzustellen."
 
+#. Translators: One purifier in the filter warning at the top of the device
+#. menu: name and remaining filter life.
 #: device_dialog.py:1281
 msgid "{name} {pct}%"
 msgstr "{name} {pct}%"
@@ -5028,6 +5631,7 @@ msgstr "{name}: Aus Favoriten entfernt"
 msgid "{name}: switching error"
 msgstr "{name}: Schaltfehler"
 
+#. Translators: Title of the target temperature dialog. {name} = device name.
 #: dialog_cozytouch.py:115
 msgid "{name}: target temperature"
 msgstr "{name}: Zieltemperatur"
@@ -5143,6 +5747,8 @@ msgstr "{online} Geräte online, {offline} offline"
 msgid "{online} online, {offline} offline | Updated: {time}"
 msgstr "{online} online, {offline} offline | Aktualisiert: {time}"
 
+#. Translators: One piece of the device help spoken with F1. The pieces are
+#. joined with ". ", so no full stop at the end.
 #: dialog_help.py:420
 msgid "{on} of {total} channels switched on"
 msgstr "{on} von {total} Kanälen eingeschaltet"
@@ -5170,7 +5776,8 @@ msgstr "{platform} vorübergehend nicht erreichbar"
 msgid "{start} to {end}"
 msgstr "{start} bis {end}"
 
-#. Translators: Temperature in the favorites status announcement.
+#. Translators: A temperature with its unit, put together with other pieces
+#. into one announcement.
 #: __init__.py:1593
 msgid "{temp}°C"
 msgstr "{temp}°C"
@@ -5326,13 +5933,13 @@ msgstr "Bereitschaft"
 msgid "Programme state: {state}"
 msgstr "Programmzustand: {state}"
 
-#. Translators: Selected cooking programme of an air fryer. {mode} =
-#. programme name, e.g. "Steak".
+#. Translators: Selected cooking programme of an air fryer. {mode} = programme
+#. name, e.g. "Steak".
 msgid "Programme: {mode}"
 msgstr "Programm: {mode}"
 
-#. Translators: Measured temperature of an air fryer. {value} = number
-#. with unit.
+#. Translators: Measured temperature of an air fryer. {value} = number with
+#. unit.
 msgid "Temperature: {value}"
 msgstr "Temperatur: {value}"
 
@@ -5398,17 +6005,19 @@ msgid "Keep warm"
 msgstr "Warmhalten"
 
 #. Translators: Cooking programme of an air fryer with temperature and time
-#. set by hand rather than by a preset.
+#. set by hand rather than by a preset. Deliberately not just "Manual" - that
+#. msgid already belongs to the purifier operating mode.
 msgid "Manual programme"
 msgstr "Manuelles Programm"
 
 #. Translators: Remaining cooking time of an air fryer. {value} = time, e.g.
-#. "7 min 12 sec".
+#. "7 min 12 s".
 msgid "Remaining time: {value}"
 msgstr "Restzeit: {value}"
 
 #. Translators: Remaining cooking time of an air fryer. {minutes} = whole
-#. minutes, {seconds} = remaining seconds.
+#. minutes, {seconds} = remaining seconds. Abbreviations rather than single
+#. letters: a lone "s" is read out as the letter.
 msgid "{minutes} min {seconds} sec"
 msgstr "{minutes} Min. {seconds} Sek."
 
@@ -5476,8 +6085,8 @@ msgstr "{name}: Programm beendet"
 msgid "VeSync: the programme could not be stopped"
 msgstr "VeSync: Das Programm konnte nicht beendet werden"
 
-#. Translators: History entry: a cooking programme was stopped from the
-#. add-on.
+#. Translators: History entry: a cooking programme was stopped from the add-
+#. on.
 msgid "Cooking programme stopped"
 msgstr "Garprogramm beendet"
 
@@ -5504,8 +6113,8 @@ msgstr "Programm starten"
 msgid "Which programme? The appliance has reported {count} so far."
 msgstr "Welches Programm? Das Gerät hat bisher {count} gemeldet."
 
-#. Translators: Prompt of the programme list when the appliance has not
-#. reported any programme yet.
+#. Translators: Message when a cooking programme is to be started but the
+#. appliance has not reported one yet.
 msgid ""
 "No programme has been reported by this appliance yet. Selecting one on the "
 "appliance itself teaches it to the add-on."
@@ -5554,7 +6163,7 @@ msgstr ""
 "Das Gerät beginnt sofort zu heizen."
 
 #. Translators: Button labels of the prompt before starting a cooking
-#. programme.
+#. programme, when the settings can still be changed.
 msgid "&Yes, start"
 msgstr "&Ja, starten"
 
@@ -5582,8 +6191,8 @@ msgstr "Die Zeit muss zwischen {low} und {high} Minuten liegen"
 msgid "Waiting for the appliance"
 msgstr "Warten auf das Gerät"
 
-#. Translators: History entry: a cooking programme was started from the
-#. add-on.
+#. Translators: History entry: a cooking programme was started from the add-
+#. on.
 msgid "Cooking programme started"
 msgstr "Garprogramm gestartet"
 
@@ -5609,9 +6218,8 @@ msgstr ""
 "Auch bei einem Programm lassen sich Temperatur und Zeit anpassen, und vor "
 "dem Absenden wird alles bestätigt."
 
-#. Translators: Safety prompt before a cooking programme is started. {name} =
-#. device name, {programme} = programme name, {temperature} = set temperature
-#. with unit, {minutes} = duration in minutes.
+#. Translators: Question before a cooking programme is started, with the
+#. programme, the appliance, the temperature and the time.
 msgid ""
 "Start {programme} on {name}?\n"
 "\n"
@@ -5640,8 +6248,8 @@ msgstr ""
 "dieses Gerät gemeldet hat, dazu einen freien Start mit Temperatur und Zeit. "
 "Auch bei einem Programm lassen sich Temperatur und Zeit anpassen, und vor "
 "dem Absenden wird alles bestätigt. Cosori-Geräte verlangen unter Umständen, "
-"dass danach ihre eigene Starttaste gedrückt wird; der Programmzustand "
-"lautet dann „Startbereit“ statt „Garen läuft“."
+"dass danach ihre eigene Starttaste gedrückt wird; der Programmzustand lautet"
+" dann „Startbereit“ statt „Garen läuft“."
 
 #. Translators: Action entry in the device tree, changes the temperature of a
 #. loaded cooking programme.
@@ -5659,12 +6267,16 @@ msgid "Change programme"
 msgstr "Programm ändern"
 
 #. Translators: Safety prompt before the temperature of a running programme is
-#. changed. {name} = device name, {temperature} = new set temperature with unit.
+#. changed. {name} = device name, {temperature} = new set temperature with
+#. unit.
 msgid "Change the temperature on {name} to {temperature}?"
 msgstr "Temperatur auf {name} auf {temperature} ändern?"
 
 #. Translators: Safety prompt before the time of a running programme is
 #. changed. {name} = device name, {minutes} = new time in minutes.
+#. Deliberately "set to" rather than "add": the value sent becomes the new
+#. remaining time, measured twice - it replaces what was left, it is not added
+#. to it.
 msgid "Set the cooking time on {name} to {minutes} minutes?"
 msgstr "Garzeit auf {name} auf {minutes} Minuten setzen?"
 
@@ -5722,7 +6334,8 @@ msgstr "Pausiert"
 msgid "Favorites layer: &switching press valid for (seconds):"
 msgstr "Favoriten-Ebene: &Schaltdruck gültig für (Sekunden):"
 
-#. Translators: Accessible name of the favorites layer switching window field.
+#. Translators: Accessible name of the favorites switch window field in the
+#. General tab of the settings.
 msgid "Favorites layer switching window in seconds"
 msgstr "Schaltfenster der Favoriten-Ebene in Sekunden"
 
@@ -5744,3 +6357,157 @@ msgstr ""
 #. yet running.
 msgid "Time and temperature can only be changed once the programme runs"
 msgstr "Zeit und Temperatur lassen sich erst ändern, wenn das Programm läuft"
+
+#. Translators: Announce the cooking state of an air fryer (started, paused,
+#. finished).
+#: settings_panel.py:879
+msgid "Announce the cooking state of air fryers (running / paused / finished)"
+msgstr ""
+"Kochzustand von Heißluftfritteusen ansagen (läuft / pausiert / fertig)"
+
+#. Translators: Announcement when a cooking programme has finished.
+#: constants.py:183
+msgid "Programme finished"
+msgstr "Programm fertig"
+
+#. Translators: Announcement when a cooking programme was paused at the
+#. appliance.
+#: constants.py:181
+msgid "Programme paused"
+msgstr "Programm pausiert"
+
+#. Translators: Announcement when an air fryer has started cooking.
+#: constants.py:178
+msgid "Programme running"
+msgstr "Garen läuft"
+
+#. Translators: An air fryer accepted a temperature change and did not carry
+#. it out. {value} = the temperature the appliance is still set to, with its
+#. unit.
+#: change_detection.py:544
+msgid "Temperature not applied, the appliance stays at {value}"
+msgstr "Temperatur nicht übernommen, das Gerät bleibt bei {value}"
+
+#. Translators: Tree entry for an air fryer, in place of a control for the
+#. temperature. The appliance accepts no temperature while cooking.
+#: dialog_vesync.py:1071
+msgid ""
+"Temperature only settable when starting the programme, or at the appliance"
+msgstr "Temperatur nur beim Programmstart oder am Gerät einstellbar"
+
+#. Translators: Context help for the tree entry that changes the time of a
+#. loaded cooking programme. The temperature is deliberately not mentioned as
+#. changeable: the appliance does not accept one while it cooks.
+#: dialog_help.py:206
+msgid ""
+"Change the cooking time of the loaded programme. Enter asks for the new "
+"value and confirms it before sending. The remaining time line then shows "
+"what the appliance made of it. The temperature cannot be changed while the "
+"appliance cooks - only when a programme is started, or at the appliance."
+msgstr ""
+"Die Garzeit des geladenen Programms ändern. Enter fragt den neuen Wert ab "
+"und bestätigt ihn vor dem Senden. Die Zeile mit der Restzeit zeigt danach, "
+"was das Gerät daraus gemacht hat. Die Temperatur lässt sich während des "
+"Garens nicht ändern – nur beim Start eines Programms oder am Gerät."
+
+#. Translators: Context help for the tree entry that starts a cooking
+#. programme.
+#: dialog_help.py:192
+msgid ""
+"Start a cooking programme. Enter offers the programmes this appliance has "
+"reported. Temperature and time can be adjusted on the way, and everything is"
+" confirmed before it is sent. Cosori appliances may require their own start "
+"button to be pressed afterwards; the programme state then says “ready to "
+"start” instead of “cooking”."
+msgstr ""
+"Ein Garprogramm starten. Enter bietet die Programme an, die dieses Gerät "
+"gemeldet hat. Temperatur und Zeit lassen sich dabei anpassen, und alles wird"
+" vor dem Senden bestätigt. Bei Cosori-Geräten muss danach unter Umständen "
+"die Taste am Gerät gedrückt werden; der Programmzustand sagt dann "
+"„Startbereit“ statt „Garen läuft“."
+
+#. Translators: Tree entry for an air fryer whose programme is loaded but not
+#. yet running.
+#: dialog_vesync.py:1104
+msgid "The cooking time can only be changed once the programme runs"
+msgstr "Die Garzeit lässt sich erst ändern, wenn das Programm läuft"
+
+#. Translators: Error when a cooking programme is missing the identifier the
+#. appliance needs to start it.
+#: vesync_devices.py:1826
+msgid "VeSync: this programme has no identifier and cannot be started"
+msgstr ""
+"VeSync: Dieses Programm hat keine Kennung und lässt sich nicht starten"
+
+#. Translators: Master switch in the notifications tab.
+#: settings_panel.py:823
+msgid ""
+"&Announce external changes at all (Alexa, the manufacturer app, a switch on "
+"the device)"
+msgstr ""
+"&Externe Änderungen überhaupt ansagen (Alexa, Hersteller-App, Schalter am "
+"Gerät)"
+
+#. Translators: Accessible name of the explanatory text at the top of a
+#. settings tab.
+#: settings_panel.py:331
+msgid "Notes"
+msgstr "Hinweise"
+
+#. Translators: Tooltip explanation of the external changes checkbox.
+#: settings_panel.py:830
+msgid ""
+"Off, and nothing below is announced, whichever platform it belongs to. On, "
+"and the settings below decide what is worth hearing."
+msgstr ""
+"Ausgeschaltet wird nichts von dem angesagt, was darunter steht, gleich "
+"welcher Plattform es gehört. Eingeschaltet entscheiden die Einstellungen "
+"darunter, was zu hören ist."
+
+#. Translators: Explanatory text in the Netatmo tab. Mentions dev.netatmo.com.
+#: settings_panel.py:560
+msgid ""
+"Netatmo OAuth2 credentials.\n"
+"Create an app at https://dev.netatmo.com and enter the client ID and secret here.\n"
+"The app also needs a redirect URI, and it has to match exactly:\n"
+"http://localhost:PORT/callback, with PORT the number set below.\n"
+"The manual explains it under \"Netatmo: redirect URI and port\"."
+msgstr ""
+"Netatmo-OAuth2-Zugangsdaten.\n"
+"Auf https://dev.netatmo.com eine App anlegen und Client-ID und Client-Secret hier eintragen.\n"
+"Die App braucht außerdem eine Redirect-URI, und die muss genau übereinstimmen:\n"
+"http://localhost:PORT/callback, mit dem Port aus dem Feld weiter unten.\n"
+"Das Handbuch erklärt das unter „Netatmo: Redirect-URI und Port\"."
+
+#. Translators: Label in front of the explanatory text at the top of a
+#. settings tab.
+#: settings_panel.py:333
+msgid "Notes:"
+msgstr "Hinweise:"
+
+#. Translators: Description of the add-on in the add-on store.
+#: manifest.ini:description
+msgid ""
+"Control smart home devices (Meross, Netatmo, VeSync, Cozytouch/Atlantic - "
+"Cozytouch experimental) directly from NVDA"
+msgstr ""
+"Smart-Home-Geräte (Meross, Netatmo, VeSync, Cozytouch/Atlantic - Cozytouch "
+"experimentell) direkt aus NVDA steuern"
+
+#. Translators: What's new for this version, shown in the add-on store.
+#. Markdown: NVDA renders it and reads it line by line.
+#: manifest.ini:changelog
+msgid ""
+"- Cosori air fryers of the CAF-P583S series are supported: cooking state, programme, remaining time and both temperatures. A programme can be started with a temperature and a time of its own, its time changed while it runs, and stopped, and the end of it is announced. The programme list is learned from the appliance.\n"
+"- A Meross lamp put into white mode at the lamp or in the app is no longer shown in colour mode.\n"
+"- A sensor dropout of a Levoit purifier is no longer announced as -1 or recorded as a measurement.\n"
+"- In the device menu the selection survives a refresh, a refresh is announced once instead of two or three times, and a platform switched off in the settings leaves the tree at once.\n"
+"- In the favorites layer the switching press has to follow the announcement within a few seconds, and Ctrl+B removes the outlet it stands on rather than the whole power strip.\n"
+"- Changed credentials are proven at the platform before they are saved, and they reach a session that is already running."
+msgstr ""
+"- Cosori-Heißluftfritteusen der Reihe CAF-P583S werden unterstützt: Garzustand, Programm, Restzeit und beide Temperaturen. Ein Programm lässt sich mit eigener Temperatur und Zeit starten, seine Zeit im Lauf ändern und beenden, und sein Ende wird angesagt. Die Programmliste lernt die Erweiterung vom Gerät.\n"
+"- Eine Meross-Lampe, die am Gerät oder in der App in den Weißmodus gestellt wurde, wird nicht mehr im Farbmodus angezeigt.\n"
+"- Der Sensorausfall eines Levoit-Luftreinigers wird nicht mehr als -1 angesagt oder als Messwert aufgezeichnet.\n"
+"- Im Gerätemenü bleibt die Auswahl beim Aktualisieren stehen, eine Aktualisierung wird einmal statt zwei- bis dreimal angesagt, und eine in den Einstellungen abgeschaltete Plattform verlässt den Baum sofort.\n"
+"- In der Favoritenebene muss der Schaltdruck innerhalb weniger Sekunden auf die Ansage folgen, und Strg+B entfernt die Steckdose, auf der es steht, statt der ganzen Steckdosenleiste.\n"
+"- Geänderte Zugangsdaten werden vor dem Speichern bei der Plattform angemeldet und erreichen auch eine bereits laufende Sitzung."

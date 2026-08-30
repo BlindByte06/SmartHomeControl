@@ -3,10 +3,10 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Smart Home Control 26.8.1beta2</title>
+<title>Smart Home Control 26.8.2</title>
 <style>
 body { font-family: Segoe UI, Arial, sans-serif; line-height: 1.6; max-width: 60em; margin: 1.5em auto; padding: 0 1em; }
-h1, h2, h3, h4 { line-height: 1.25; }
+h1, h2, h3, h4, h5 { line-height: 1.25; }
 h1 { border-bottom: 2px solid #ccc; padding-bottom: .2em; }
 h2 { border-bottom: 1px solid #ddd; padding-bottom: .15em; margin-top: 1.6em; }
 code { background: #f2f2f2; padding: .1em .3em; border-radius: 3px; }
@@ -82,8 +82,7 @@ werden bei Bedarf dort mit einem eigenen Kürzel versehen:</p>
 <li><strong>Einstellungen öffnen</strong> – öffnet die
   Smart-Home-Einstellungen direkt, ohne den Umweg über das Geräte-Menü.</li>
 <li><strong>Favoriten-Ebene</strong> – Status ansagen und schalten, ohne das
-  Menü zu öffnen (siehe unten). Für die tägliche Nutzung der lohnendste
-  Befehl.</li>
+  Menü zu öffnen (siehe unten).</li>
 </ul>
 <h3 id="favoriten-ebene">Favoriten-Ebene</h3>
 <p>Nach dem selbst vergebenen Kürzel meldet sich die Erweiterung mit „Favorit
@@ -99,8 +98,7 @@ wählen: Ziffer 1 bis 9" und wartet auf eine Ziffer.</p>
 <li><strong>Dieselbe Ziffer nach Ablauf des Fensters</strong> sagt den Status
   erneut an und öffnet ein neues. Schalten ist also nie unerreichbar, sondern
   zwei zügige Tastendrücke entfernt. Genau das verhindert, dass eine viel
-  später versehentlich gedrückte Ziffer noch etwas abschaltet – der Fall, der
-  zählt, ist eine Steckerleiste mit einem Rechner daran.</li>
+  später versehentlich gedrückte Ziffer noch etwas abschaltet.</li>
 <li><strong>Eine andere Ziffer</strong> sagt deren Status an und wird
   ihrerseits zur gemerkten; „1, 2, 1" schaltet deshalb nichts.</li>
 <li><strong>0</strong> liest vor, welche Ziffer zu welchem Gerät gehört.</li>
@@ -117,7 +115,8 @@ im Geräte-Menü einstellbar".</p>
 <li><strong>Schaltbar:</strong> Meross-Steckdosen, -Lampen und -LED-Strips,
   Aroma-Diffuser; Levoit-Luftreiniger und -Tower-Ventilatoren; die
   Cozytouch-Warmwasser-Wärmepumpe (Warmwasser-Erzeugung ein/aus).</li>
-<li><strong>Bei Mehrfach-Steckdosen</strong> (MSS425/E/F, MSS620, MOP320)
+<li><strong>Bei Steckdosenleisten</strong> (MSS425, MSS425E, MSS425F) und
+  <strong>Doppelsteckdosen</strong> (MSS620, MOP320)
   lässt sich wahlweise <strong>ein einzelner Ausgang</strong> oder
   <strong>das ganze Gerät</strong> zum Favoriten machen – jeweils mit
   eigener Ziffer. Der Ausgang schaltet nur sich selbst, das Gerät
@@ -127,7 +126,9 @@ im Geräte-Menü einstellbar".</p>
   <strong>offline</strong> ist – die Ziffer bleibt dieselbe, sobald es
   wieder erreichbar ist.</li>
 <li><strong>Nicht schaltbar:</strong> Meross-Sensoren (Temperatur/Feuchte,
-  Wasserleck) und Meross-Hubs; sämtliche Netatmo-Geräte. Thermostate und
+  Wasserleck) und Meross-Hubs; sämtliche Netatmo-Geräte; die
+  Cosori-Heißluftfritteuse, die sich nicht ein- und ausschalten, sondern nur
+  mit einem Garprogramm bedienen lässt. Thermostate und
   Heizkörperventile lassen sich zwar verstellen, aber nicht ein- und
   ausschalten; Wetterstation und Raumluft-Monitor sind reine Anzeige. Ihren
   Status sagt der erste Druck wie gewohnt an – einstellen lassen sie sich im
@@ -161,7 +162,7 @@ Schalter am Gerät) werden angesagt.</p>
 <li><strong>MSS315</strong> – Steckdose mit Energiemessung (Leistung, Spannung, Strom)</li>
 <li><strong>MSS425</strong>, <strong>MSS425E</strong>, <strong>MSS425F</strong> – Steckdosenleisten; jede Steckdose ist einzeln schaltbar. Die USB-Anschlüsse dieser Leisten bilden einen gemeinsamen Ausgang und lassen sich daher nur zusammen schalten. Ausgänge, die in der Meross-App einen eigenen Namen haben, erscheinen mit diesem Namen.</li>
 <li><strong>MSS620</strong> – Outdoor-Doppelsteckdose; beide Ausgänge einzeln schaltbar (die Taste am Gerät selbst schaltet immer beide gemeinsam)</li>
-<li><strong>MOP320</strong> – Outdoor-Doppelsteckdose mit Energiemessung; beide Ausgänge einzeln schaltbar</li>
+<li><strong>MOP320</strong> – Outdoor-Doppelsteckdose mit Energiemessung; beide Ausgänge einzeln schaltbar (die Taste am Gerät selbst schaltet immer beide gemeinsam)</li>
 </ul>
 <h4 id="lampen-und-led-strips">Lampen und LED-Strips</h4>
 <ul>
@@ -190,9 +191,12 @@ Meross-App.</p>
 <p>Heizungssteuerung und Wetterstations-Anzeige über das Netatmo-Konto.</p>
 <h4 id="heizung">Heizung</h4>
 <ul>
-<li><strong>NATherm1</strong> – Raum-Thermostat</li>
-<li><strong>NRV</strong> – Smartes Heizkörperventil</li>
-<li><strong>NAPlug</strong> – Relais/Gateway (Bridge, für NATherm1 erforderlich)</li>
+<li><strong>NATherm1</strong> – Raum-Thermostat; im Handel „Smartes
+  Thermostat" bzw. „Smartes modulierendes Thermostat"</li>
+<li><strong>NRV</strong> – Smartes Heizkörperventil; im Handel „Smarte
+  Heizkörperthermostate"</li>
+<li><strong>NAPlug</strong> – Relais/Gateway (Bridge, für NATherm1
+  erforderlich); im Handel schlicht „Relais", es liegt dem Thermostat bei</li>
 </ul>
 <p>Thermostate und Heizkörperventile werden nach den in der Netatmo-App
 vergebenen Räumen gruppiert; der Raumname wird auch im Gerätenamen
@@ -212,10 +216,12 @@ nicht das Raum-Thermostat).</p>
 </ul>
 <p>Angezeigt werden: Temperatur, Luftfeuchtigkeit, CO₂, Lautstärke, Luftdruck,
 Regen und Wind – reine Anzeige, keine Steuerung.</p>
-<h3 id="vesync-levoit">VeSync / Levoit</h3>
+<h3 id="vesync-levoit">VeSync</h3>
 <p>Die Anmeldung erfolgt mit E-Mail, Passwort und Länder-Code des
-VeSync-Kontos.</p>
-<h4 id="luftreiniger-levoit-core">Luftreiniger (Levoit Core)</h4>
+VeSync-Kontos. Unter diesem Konto laufen mehrere Marken; unterstützt werden
+Geräte von Levoit und Cosori.</p>
+<h4 id="levoit">Levoit</h4>
+<h5 id="luftreiniger-levoit-core">Luftreiniger (Core-Reihe)</h5>
 <ul>
 <li><strong>Core200S</strong>, <strong>Core300S</strong>, <strong>Core400S</strong>, <strong>Core500S</strong>, <strong>Core600S</strong></li>
 <li>ebenso die regionalen Varianten dieser Baureihen, die VeSync als <strong>LAP-C201S</strong>, <strong>LAP-C202S</strong>, <strong>LAP-C301S</strong>, <strong>LAP-C302S</strong>, <strong>LAP-C401S</strong>, <strong>LAP-C501S</strong> und <strong>LAP-C601S</strong> meldet – unabhängig vom Länderkürzel am Ende der Modellbezeichnung (z. B. <code>-WEU</code>, <code>-WUSR</code>, <code>-WJP</code>).</li>
@@ -226,47 +232,56 @@ Auto-Profil (Standard/Effizient/Leise), Luftqualität sowie
 Filter-Restlebensdauer mit Warnung bei niedrigem Wert. Der
 <strong>Core200S</strong> (und seine Varianten LAP-C201S/C202S) hat zusätzlich
 ein steuerbares <strong>Nachtlicht</strong> (Ein/Aus/Gedimmt).</p>
-<h4 id="tower-ventilatoren-levoit">Tower-Ventilatoren (Levoit)</h4>
+<h5 id="tower-ventilatoren-levoit">Tower-Ventilatoren</h5>
 <ul>
 <li><strong>LTF-F422S</strong>-Serie, ebenfalls unabhängig vom Länderkürzel (getestet: KEU, WUSR, WJP, WUS)</li>
 </ul>
 <p>Verfügbare Funktionen: Ein/Aus, Modus (Normal, Auto, Turbo, Schlaf),
 Lüfterstufe, Oszillation, Stummschaltung und Display.</p>
-<h4 id="heissluftfritteusen-cosori">Heißluftfritteusen (Cosori)</h4>
+<h4 id="cosori">Cosori</h4>
+<h5 id="heissluftfritteusen-cosori">Heißluftfritteusen</h5>
 <ul>
 <li><strong>CAF-P583S</strong>-Serie (Dual Blaze), unabhängig vom Länderkürzel</li>
 </ul>
 <p><strong>Wird angezeigt, ein laufendes Programm lässt sich beenden.</strong>
-Der Baum zeigt Name, Ein/Aus, Erreichbarkeit und, solange ein Programm
-geladen ist, dessen Zustand (Startbereit, Garen läuft, Fertig, Pausiert), das Programm
+Der Baum zeigt Name, was das Gerät gerade tut, Erreichbarkeit und, solange ein
+Programm geladen ist, dessen Zustand (Startbereit, Garen läuft, Fertig, Pausiert), das Programm
 selbst, die Restzeit sowie beide Temperaturen – die gemessene und die
-eingestellte – in der Einheit, die das Gerät selbst meldet.</p>
+eingestellte – in der Einheit, die das Gerät selbst meldet. Das Ein/Aus der
+Geräteliste tritt zurück, sobald das Gerät einen Garzustand meldet – es sagt
+nichts darüber aus, ob gerade gegart wird.</p>
+<p><strong>Das Ende eines Programms wird angesagt</strong>, ebenso ein
+anlaufendes und ein pausiertes – bei geöffnetem Geräte-Menü innerhalb von
+fünfzehn Sekunden, sonst innerhalb einer Minute, und gleichermaßen, ob die
+Änderung von hier ausging oder von jemandem am Gerät. Ein Schalter unter
+Benachrichtigungen in den Einstellungen schaltet alle drei gemeinsam ab.</p>
 <p><strong>Programm starten</strong> bietet die Garprogramme an, die dieses
-Gerät gemeldet hat, dazu einen freien Start mit eigener Temperatur und Zeit.
-Auch bei einem Programm lassen sich Temperatur und Dauer anpassen; sie stehen
-zunächst auf den Werten, die das Gerät für dieses Programm hält. Eine Änderung
+Gerät gemeldet hat. Temperatur und Dauer lassen sich dabei anpassen; sie
+stehen zunächst auf den Werten, die das Gerät für dieses Programm hält. Eine
+Änderung
 für einen Garvorgang bleibt einmalig – sie benennt das Programm nicht um, die
 gleiche Auswahl bedeutet beim nächsten Mal also dasselbe. Wird das Programm am
 Gerät geändert und neu geladen, ändert es sich sehr wohl mit: dann hat sich die
 Einstellung des Geräts selbst geändert.</p>
-<p>Die Programmliste füllt sich selbst. Um ein Programm namentlich zu starten,
-verlangt die Cloud die Kennung, die das Gerät dafür benutzt, und die lässt
-sich nicht herleiten – auf einer CAF-P583S lauten sie 1, 2, 3, 5, 6, 9, 13,
-14, 15, 16, 17, mit Lücken. Also nennt sie das Gerät selbst: Jedes Mal, wenn
-dort ein Programm geladen wird, werden Name und Kennung notiert, und es steht
-von da an in der Liste. Das Programm am Gerät nur auszuwählen genügt, gegart
-werden muss es nicht. Bis das geschehen ist, führt der freie Start zum Ziel,
-und die Liste sagt das, statt leer zu bleiben.</p>
-<p><strong>Temperatur ändern</strong> und <strong>Garzeit ändern</strong>
-passen ein laufendes Programm an. Sie werden auch nur dann angeboten: Vor dem
-Start lehnt das Gerät beides ab, deshalb sagt der Baum das, statt eine
-Bedienung hinzuhalten, die nicht funktionieren kann.</p>
+<p>Die Programmliste füllt sich selbst. Die Erweiterung bringt keine Liste
+mit, sondern lernt jedes Programm vom Gerät: Jedes Mal, wenn dort eines
+geladen wird, wird es notiert und steht von da an zur Auswahl. Das Programm
+am Gerät nur auszuwählen genügt, gegart werden muss es nicht. Solange noch
+keines gemeldet wurde, sagt die Erweiterung das, statt eine leere Liste zu
+öffnen.</p>
+<p><strong>Garzeit ändern</strong> passt ein laufendes Programm an. Der
+Eintrag wird auch nur dann angeboten: Vor dem Start lehnt das Gerät ihn ab,
+deshalb sagt der Baum das, statt eine Bedienung hinzuhalten, die nicht
+funktionieren kann.</p>
 <p>Eine neue Zeit wird als Gesamtdauer genommen, und der Countdown beginnt neu
 davon – am Gerät gemessen. „Garzeit auf zehn Minuten setzen“ heißt also zehn
-Minuten ab diesem Moment. Das Ändern der Temperatur nimmt die Cloud zwar an,
-am getesteten Gerät wirkte es aber nicht: Der Messwert stieg weiter Richtung
-ursprünglicher Einstellung. Bis das geklärt ist, bleibt der Eintrag – und die
-Zeile mit der gemessenen Temperatur ist die ehrliche Stelle zum Nachsehen.</p>
+Minuten ab diesem Moment.</p>
+<p><strong>Die Temperatur lässt sich während des Garens nicht ändern</strong>
+– das Gerät nimmt sie dann nicht an. Es gibt dafür deshalb keinen Eintrag,
+sondern eine Zeile, die darauf hinweist und nennt, wo sich die Temperatur
+stattdessen setzen lässt: beim Start eines Programms oder an den Tasten des
+Geräts. Um dasselbe von hier aus heißer zu garen, das Programm beenden und
+mit der gewünschten Temperatur neu starten.</p>
 <p><strong>Programm beenden</strong> bricht ein laufendes Programm ab.</p>
 <p>Beides fragt vor dem Absenden nach. Die Rückfrage nennt das Programm und,
 beim Starten, Temperatur und Dauer; „Abbrechen“ ist die vorausgewählte
@@ -274,15 +289,17 @@ Schaltfläche.</p>
 <p><strong>Starten heißt nicht zwangsläufig Heizen.</strong> Cosori gibt an,
 dass sich die Heißluftfritteusen nicht aus der Ferne einschalten lassen – wegen
 einer Sicherheitsnorm, die verhindern soll, dass ein Gerät unbeaufsichtigt zu
-garen beginnt; Temperatur und Zeit sind aus der App dagegen einstellbar. Ob
+garen beginnt; Temperatur und Zeit seien aus der Ferne dagegen einstellbar. Was dieses Gerät
+tatsächlich annimmt, steht oben: eine Zeit immer dann, wenn ein Programm
+läuft, eine Temperatur nur beim Start eines Programms. Ob
 dieses Modell von selbst losläuft oder auf seine eigene Starttaste wartet, ist
 hier nicht belegt. Der Programmzustand sagt es bei der nächsten Aktualisierung:
 <em>Garen läuft</em> – oder <em>Startbereit</em>, dann ist die Taste am Gerät
 noch zu drücken. Der mühsame Teil – Programm, Temperatur und Zeit ohne Blick
 auf ein Tastfeld zu wählen – ist so oder so erledigt.</p>
-<p> Vorheizen und das Ändern von Zeit oder Temperatur eines bereits
-laufenden Programms werden nicht angeboten – die Befehle dafür sind zwar
-dokumentiert, aber nichts davon ist an einem echten Gerät bestätigt.</p>
+<p>Vorheizen wird nicht angeboten. Der Befehl dafür ist zwar dokumentiert,
+aber nichts davon ist an einem echten Gerät bestätigt, und dieses Gerät
+heizt.</p>
 <p>In Bereitschaft misst das Gerät nicht mehr und meldet weiterhin die letzte
 Temperatur des vorigen Garvorgangs, unverändert so lange, wie es unbenutzt
 steht. Dieser Wert wird weggelassen statt so angezeigt, als wäre er
@@ -334,9 +351,9 @@ sein – die Erweiterung übernimmt sie dann aus dem Konto.</p>
 <p>Das Menü wird mit <strong>NVDA + Umschalt + H</strong> geöffnet. Ohne
 bestehende Anmeldung öffnet sich automatisch der Einstellungs-Dialog. Dort
 die gewünschten Plattformen aktivieren und die Zugangsdaten eintragen –
-Details pro Plattform in den folgenden Abschnitten. Zum Schluss: optional
-„Automatische Anmeldung" aktivieren (die Verbindung wird dann bei jedem
-NVDA-Start automatisch aufgebaut) und speichern. Die Geräte werden geladen
+Details pro Plattform in den folgenden Abschnitten. Zum Schluss: im Tab
+„Allgemein" optional „Automatische Anmeldung" aktivieren (die Verbindung wird
+dann bei jedem NVDA-Start automatisch aufgebaut) und speichern. Die Geräte werden geladen
 und stehen sofort im Menü zur Verfügung – ein NVDA-Neustart ist nicht
 nötig.</p>
 <p>Geänderte Zugangsdaten werden vor dem Speichern bei der Plattform
@@ -349,27 +366,30 @@ weil das Passwort in der Hersteller-App geändert wurde –, bietet eine
 Rückfrage die erneute Eingabe an und öffnet die Einstellungen beim
 betroffenen Tab.</p>
 <h3 id="meross-einrichten">Meross einrichten</h3>
-<p>E-Mail und Passwort des Meross-Kontos eintragen – fertig.</p>
+<p>Im Tab „Meross" E-Mail und Passwort des Meross-Kontos eintragen –
+fertig.</p>
 <h3 id="netatmo-einrichten">Netatmo einrichten</h3>
 <p>Netatmo verwendet eine Browser-Anmeldung (OAuth2) statt E-Mail/Passwort in
 der Erweiterung. Einmalig nötig:</p>
 <ol>
 <li>Eine eigene (kostenlose) App auf <code>dev.netatmo.com</code> anlegen;
   dort werden eine <strong>Client-ID</strong> und ein
-  <strong>Client-Secret</strong> ausgestellt.</li>
-<li>Beides im Netatmo-Tab der Erweiterung eintragen.</li>
-<li>Die im Tab angezeigte <strong>Redirect-URI</strong> bei der Netatmo-App
-  hinterlegen – Details und was es mit dem Port auf sich hat, erklärt der
+  <strong>Client-Secret</strong> erstellt.</li>
+<li>Beides im Tab „Netatmo" der Erweiterung eintragen.</li>
+<li>Die <strong>Redirect-URI</strong> bei der Netatmo-App hinterlegen. Sie
+  lautet <code>http://localhost:PORT/callback</code>, mit dem Port aus dem
+  Feld darüber – Details und was es mit dem Port auf sich hat, erklärt der
   Abschnitt <a href="#netatmo-redirect-uri-und-port">Netatmo: Redirect-URI und
   Port</a>.</li>
 <li>Auf „Mit Netatmo verbinden (OAuth2)" gehen, im Browser anmelden und
   bestätigen.</li>
 </ol>
-<h3 id="vesync-einrichten">VeSync / Levoit einrichten</h3>
-<p>E-Mail, Passwort und Länder-Code des VeSync-Kontos eintragen.</p>
+<h3 id="vesync-einrichten">VeSync einrichten</h3>
+<p>Im Tab „VeSync" E-Mail, Passwort und Länder-Code des VeSync-Kontos
+eintragen.</p>
 <h3 id="cozytouch-einrichten">Cozytouch / Atlantic einrichten (experimentell)</h3>
-<p>E-Mail und Passwort des Cozytouch-Kontos eintragen (dieselben wie in der
-Cozytouch-App). Optional: die Nennkapazität des Warmwasserspeichers in
+<p>Im Tab „Cozytouch" E-Mail und Passwort des Cozytouch-Kontos eintragen
+(dieselben wie in der Cozytouch-App). Optional: die Nennkapazität des Warmwasserspeichers in
 Litern, damit der Vorrat zusätzlich in Litern geschätzt wird. Der Reiter ist
 im Einstellungsdialog als „experimentell“ gekennzeichnet – siehe
 <a href="#reifegrad-und-hinweise">Reifegrad und Hinweise</a>.</p>
@@ -377,8 +397,9 @@ im Einstellungsdialog als „experimentell“ gekennzeichnet – siehe
 <h2 id="netatmo-redirect-uri-und-port">Netatmo: Redirect-URI und Port</h2>
 <h3 id="was-ist-die-redirect-uri">Was ist die Redirect-URI?</h3>
 <p>Bei der Browser-Anmeldung schickt Netatmo die Freigabe an eine vorher
-festgelegte Adresse zurück – die Redirect-URI. Die Erweiterung zeigt sie im
-Netatmo-Tab an. Standardmäßig lautet sie <strong>exakt</strong>:</p>
+festgelegte Adresse zurück – die Redirect-URI. Sie ergibt sich aus dem Port,
+der im Tab „Netatmo" eingestellt ist. Standardmäßig lautet sie
+<strong>exakt</strong>:</p>
 <p><code>http://localhost:8474/callback</code></p>
 <p>Genau diese Adresse muss in der Netatmo-App auf <code>dev.netatmo.com</code>
 im Feld „redirect URI" eingetragen werden – am besten unverändert aus der
@@ -457,12 +478,11 @@ gesetzten Filtern. Die Spalten richten sich nach dem Inhalt: eine Datei mit
 Ereignissen trägt keine Messwertspalten, und eine Datei mit Messwerten nur die
 Größen, die tatsächlich vorkommen.</p>
 <p>Zeitstempel stehen in ISO 8601 mit dem „T"
-(<code>2026-08-14T22:20:49</code>). Das ist keine Kosmetik: mit einem
-Leerzeichen erkennt die Tabellenkalkulation ein Datum, formatiert die Zelle um
-und zeigt dann nur noch „##########", weil die Spalte zu schmal ist – genau das
-liest der Screenreader vor. Listen- und Dezimaltrennzeichen folgen den
-Regionseinstellungen, damit Zahlen als Zahlen ankommen. Ohne das liest ein
-deutsches Excel die Temperatur „28.5" als Datum „28. Mai".</p>
+– zum Beispiel <code>2026-08-14T22:20:49</code>. Das ist keine Kosmetik: mit
+einem Leerzeichen darin erkennt die Tabellenkalkulation ein Datum und
+formatiert die Zelle um, statt den Zeitstempel als Text stehen zu lassen.
+Listen- und Dezimaltrennzeichen folgen den Regionseinstellungen, damit Zahlen
+als Zahlen ankommen und nicht als Datum gedeutet werden.</p>
 <hr />
 <h2 id="benachrichtigungen-bei-anderungen">Benachrichtigungen bei Änderungen</h2>
 <p>Auch externe Änderungen werden angesagt – zum Beispiel, wenn ein Gerät über
@@ -504,10 +524,12 @@ vorübergehend ausfallen.</p>
 <p>Die Plattformen sind unterschiedlich weit erprobt:</p>
 <ul>
 <li><strong>Meross</strong> und <strong>Netatmo</strong> gelten als stabil.</li>
-<li><strong>VeSync/Levoit:</strong> Unterstützt werden ausschließlich
-  Levoit-Luftreiniger der Core-Reihe und Levoit-Tower-Ventilatoren. Andere
-  VeSync-Geräte (Steckdosen, Lampen, Luftbefeuchter, Küchengeräte) werden
-  nicht angezeigt.</li>
+<li><strong>VeSync:</strong> Unterstützt werden Levoit-Luftreiniger
+  der Core-Reihe, Levoit-Tower-Ventilatoren und Cosori-Heißluftfritteusen der
+  Reihe CAF-P583S. Die Fritteuse ist gegen genau ein Gerät entwickelt und
+  dort bestätigt; die zweizonigen TwinFry-Modelle sprechen ein anderes
+  Protokoll und werden nicht angezeigt. Andere VeSync-Geräte (Steckdosen,
+  Lampen, Luftbefeuchter, weitere Küchengeräte) ebenfalls nicht.</li>
 <li><strong>Cozytouch/Atlantic (experimentell):</strong> Getestet wurde bisher
   nur die Warmwasser-Wärmepumpe Austria Email Revolution Evo 3. Andere
   Cozytouch-Geräte (z. B. Heizkörper, Klimageräte) werden derzeit fälschlich
@@ -552,8 +574,10 @@ vorübergehend ausfallen.</p>
 <li>was gemacht wurde, was erwartet wurde und was stattdessen passiert ist</li>
 <li>die Plattform und, falls bekannt, das Gerätemodell (z.B. Meross
   MSS425F)</li>
-<li>die Version der Erweiterung (NVDA-Menü → Werkzeuge → Add-on Store →
-  installierte Add-ons) und die NVDA-Version</li>
+<li>die Version der Erweiterung: NVDA-Menü → Werkzeuge → Store für
+  NVDA-Erweiterungen; die Version steht dort in der Liste der installierten
+  Erweiterungen</li>
+<li>die NVDA-Version: NVDA-Menü → Hilfe → Info…</li>
 </ul>
 <p><strong>Vor dem Verschicken bitte einen Blick auf persönliche Daten im
 Protokoll werfen.</strong> Es enthält Geräte- und Haus-Namen so, wie sie in
@@ -584,7 +608,7 @@ dieser Erweiterung gilt die <strong>EDL-1.0</strong> (eine BSD-3-artige Lizenz),
 mit der GPL-2.0 vereinbar ist.</p>
 <hr />
 <p><em>Smart Home Control ist eine Community-Erweiterung und steht in keiner
-Verbindung zu Meross, Netatmo, VeSync/Levoit oder Atlantic/Cozytouch. Alle
+Verbindung zu Meross, Netatmo, VeSync oder Atlantic/Cozytouch. Alle
 genannten Marken- und Produktnamen gehören den jeweiligen Eigentümern.</em></p>
 </body>
 </html>

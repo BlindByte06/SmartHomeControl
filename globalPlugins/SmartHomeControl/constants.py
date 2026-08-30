@@ -57,6 +57,7 @@ DIFFUSER_MODE_NAMES = {
 MEROSS_WHITE_PRESET_NAMES = {
     # Translators: Short names of the light colors (announcement/history).
     'warm': _("Warm white"),
+    # Translators: Name of a white light colour of a lamp.
     'daylight': _("Daylight"),
     'cool': _("Cool white"),
 }
@@ -156,6 +157,33 @@ VESYNC_FRYER_COOK_STATES = {
     'cookstop': _("paused"),
 }
 
+# What is worth saying out loud when the cooking state changes - as
+# opposed to what the tree shows, which is every state.
+#
+# The end is the reason this exists. A cook who cannot look into the
+# basket has nothing else to go by: the tree speaks only the line under
+# the focus, and in a tester's log a whole programme ran to its end with
+# the screen reader saying "Temperature: 196 °C" three times and nothing
+# about the programme being over.
+#
+# Three of the five states are in here. 'standby' is the appliance
+# falling back to nothing afterwards and is no news, and 'ready' only
+# comes about with somebody standing at the appliance turning its dial,
+# who does not need to be told what they just did.
+#
+# One short phrase each, not the programme name as well: the announcement
+# already carries the device name in front of it, and "Sigh fry: Roast:
+# finished" is three things where one will do.
+VESYNC_FRYER_COOK_ANNOUNCEMENTS = {
+    # Translators: Announcement when an air fryer has started cooking.
+    'cooking': _("Programme running"),
+    # Translators: Announcement when a cooking programme was paused at the
+    # appliance.
+    'cookstop': _("Programme paused"),
+    # Translators: Announcement when a cooking programme has finished.
+    'cookend': _("Programme finished"),
+}
+
 # Cooking programmes. The appliance reports the programme twice: as `mode`,
 # which stays English, and as `recipeName`, which arrives in the language of
 # the VeSync app (an ioBroker capture shows mode "Chicken" next to
@@ -169,9 +197,13 @@ VESYNC_FRYER_COOK_STATES = {
 # normalised for case and spaces on lookup, and 'fries' is kept alongside in
 # case a regional variant shortens it.
 #
-# Not yet seen: 'Keep warm'. Left in on the manual's wording; if the
-# appliance calls it something else it will simply be displayed as it comes
-# and the log will say what to add.
+# 'Keep warm' is documented by Cosori for this model - 80 degrees for 30
+# minutes, the twelfth of the twelve functions - and simply has not been
+# loaded on the test appliance yet, which is why no reply has ever carried
+# it. What the wire calls it is therefore still unconfirmed: the key here
+# is the manual's wording with the spaces stripped, and if the appliance
+# spells it differently it will be displayed as it comes and the log will
+# say what to add.
 VESYNC_FRYER_PROGRAMME_NAMES = {
     # Translators: Cooking programme of an air fryer.
     'steak': _("Steak"),
@@ -313,6 +345,18 @@ CONFSPEC = {
     "notifyVesyncFanSpeed": "boolean(default=true)",
     "notifyVesyncAirQuality": "boolean(default=true)",
     "notifyVesyncFilter": "boolean(default=true)",
+    "notifyVesyncCook": "boolean(default=true)",
+
+    # Not a notification: the favorites layer's switching window, in
+    # seconds. It belongs here for the same reason as everything above -
+    # a key without an entry in this table is handed back as the TEXT
+    # that stands in nvda.ini, because there is no declaration to
+    # validate it against. The default mirrors
+    # FAV_LAYER_SWITCH_WINDOW_DEFAULT; the range is not declared because
+    # _fav_layer_switch_window clamps it anyway and a value outside the
+    # range would then fail validation instead of simply being pulled
+    # into it.
+    "favLayerSwitchWindow": "integer(default=5)",
 }
 
 # ============================================================

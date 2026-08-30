@@ -272,6 +272,8 @@ class VeSyncAPI:
         if resp.status_code != 200:
             # The status code is enough - `resp.text` may contain sensitive
             # fields and is not mirrored into the exception message.
+            # Translators: Error message when the VeSync cloud answers with an
+            # HTTP error.
             raise RuntimeError(_(
                 "VeSync API HTTP {code}"
             ).format(code=resp.status_code))
@@ -279,6 +281,8 @@ class VeSyncAPI:
         try:
             data = resp.json()
         except ValueError as e:
+            # Translators: Error message when the VeSync cloud answers with
+            # something that is not JSON.
             raise RuntimeError(_("VeSync API: invalid JSON response: {error}").format(error=e))
 
         # Detect token expiry -> attempt reauth (thread-safe)

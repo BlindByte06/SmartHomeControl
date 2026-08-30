@@ -419,30 +419,36 @@ class _VeSyncDialogMixin:
     def _handle_vesync_start_cook(self, device, item):
         """Starts a cooking programme, after confirmation.
 
-        Two ways in: a programme the appliance has shown us before, or a
-        free start with a temperature and a time. The free start is always
-        offered - it needs no recipe id, and on an appliance that has not
-        been used with the add-on yet it is the only way in.
+        One way in: a programme the appliance has shown us before. Its
+        temperature and its time can still be changed on the way, which is
+        the one moment this appliance does accept a temperature.
+
+        There used to be a second way, a free start with a temperature and
+        a time of one's own, and it never worked: sent as mode "custom"
+        with recipe id 1 - the shape the open documentation gives for a
+        manual cook - the appliance refused it with the cloud's code
+        11000000. It is gone rather than left in, because it sat at the end
+        of four dialogs and produced an error every time.
         """
         modes = device.known_programmes()
-        # Translators: Entry in the programme list for a start with a
-        # temperature and a time entered by hand.
-        manual_label = _("Enter temperature and time")
-        values = list(modes) + ['__manual__']
+        if not modes:
+            # Nothing to offer, and nothing worth inventing. The free start
+            # used to cover exactly this case and is refused by the
+            # appliance, so an empty list plus an explanation is the honest
+            # answer.
+            #
+            # Translators: Message when a cooking programme is to be
+            # started but the appliance has not reported one yet.
+            ui.message(_("No programme has been reported by this appliance "
+                         "yet. Selecting one on the appliance itself teaches "
+                         "it to the add-on."))
+            return
+        values = list(modes)
         labels = {m: device.programme_display_for(m) for m in modes}
-        labels['__manual__'] = manual_label
-
-        if modes:
-            # Translators: Prompt of the programme list. {count} = how many
-            # programmes the appliance has shown so far.
-            prompt = _("Which programme? The appliance has reported {count} "
-                       "so far.").format(count=len(modes))
-        else:
-            # Translators: Prompt of the programme list when the appliance
-            # has not reported any programme yet.
-            prompt = _("No programme has been reported by this appliance "
-                       "yet. Selecting one on the appliance itself teaches "
-                       "it to the add-on.")
+        # Translators: Prompt of the programme list. {count} = how many
+        # programmes the appliance has shown so far.
+        prompt = _("Which programme? The appliance has reported {count} "
+                   "so far.").format(count=len(modes))
         chosen = self._vesync_choose_from_list(
             device,
             # Translators: Title of the dialog that starts a cooking
@@ -455,8 +461,8 @@ class _VeSyncDialogMixin:
             return
 
         low, high = device.temperature_range()
-        details = None if chosen == '__manual__' else device.programme_details(chosen)
-        mode = device.CUSTOM_MODE if chosen == '__manual__' else chosen
+        details = device.programme_details(chosen)
+        mode = chosen
         preset_temp = (details or {}).get('cook_temp')
         preset_time = (details or {}).get('cook_set_time')
         programme_label = labels.get(chosen, chosen)
@@ -534,6 +540,8 @@ class _VeSyncDialogMixin:
             # remotely, and whether this model begins by itself or waits
             # for its own start button is not established. The programme
             # state in the tree answers that within one poll.
+            # Translators: Question before a cooking programme is started, with
+            # the programme, the appliance, the temperature and the time.
             _("Start {programme} on {name}?\n\n"
               "{temperature} for {minutes} minutes.").format(
                 name=device.name, programme=programme_label,
@@ -600,7 +608,16 @@ class _VeSyncDialogMixin:
             ui.message(_("VeSync error: {error}").format(error=str(e)[:80]))
 
     def _handle_vesync_set_cook_temp(self, device, item):
-        """Changes the temperature of a programme that is already loaded."""
+        """Changes the temperature of a programme that is already loaded.
+
+        No longer reachable: the tree stopped offering a temperature
+        control once six attempts had shown the appliance never applies
+        one while it cooks. Kept whole, with its dispatch entry, because
+        the path itself is sound and one log from a model that does
+        accept a temperature would put it straight back - and because
+        deleting a tested route to re-type it later is the more expensive
+        of the two mistakes.
+        """
         low, high = device.temperature_range()
         temperature = self._ask_number(
             # Translators: Title of the temperature entry.
@@ -645,8 +662,8 @@ class _VeSyncDialogMixin:
             # Translators: Safety prompt before the time of a running
             # programme is changed. {name} = device name, {minutes} = new
             # time in minutes. Deliberately "set to" rather than "add":
-            # whether the appliance treats it as the remaining time or as
-            # the whole duration is not established.
+            # the value sent becomes the new remaining time, measured
+            # twice - it replaces what was left, it is not added to it.
             _("Set the cooking time on {name} to {minutes} minutes?").format(
                 name=device.name, minutes=minutes),
             seconds=minutes * 60)
@@ -907,7 +924,21 @@ class _VeSyncDialogMixin:
         if hasattr(device, 'is_offline') and device.is_offline:
             # Translators: Tree label of a device without connection.
             return _("{name} ({type}) - offline").format(name=device.name, type=type_display)
-        on_state = _("on") if device.is_on else _("off")
+        # An air fryer's on/off says nothing about what it is doing. It
+        # reported "off" from the device list through an entire cook in a
+        # tester's log, so the row read "Sigh fry (Cosori Dual Blaze) -
+        # off" while the basket sat at 200 degrees and the line one level
+        # down said "cooking". Its own summary already resolves the two
+        # (see VeSyncAirFryer.get_status_summary) and is no longer.
+        #
+        # Deliberately not for purifiers and fans: their summary runs to
+        # mode, level, air quality and filter life. That belongs in the
+        # favourites announcement, which is asked for once, and not in a
+        # tree row the screen reader repeats on every arrow key.
+        if hasattr(device, 'cook_status'):
+            on_state = device.get_status_summary()
+        else:
+            on_state = _("on") if device.is_on else _("off")
         label = f"{device.name} ({type_display}) - {on_state}"
         if self._vesync_filter_is_low(device):
             # Translators: Filter warning in the device label. {percent} =
@@ -946,11 +977,13 @@ class _VeSyncDialogMixin:
         # press, because an entry with no actions and no explanation reads
         # like a defect.
         if cls_name == 'VeSyncAirFryer':
-            items.append({
-                # Translators: Operating state in the device tree.
-                'text': _("Status: on") if device.is_on else _("Status: off"),
-                'kind': 'info', 'action': None, 'key': 'fryer_switch',
-            })
+            # One state line, not two. The on/off of the device list is
+            # not wrong, it is about something else - it stayed "off"
+            # across a whole cook - and standing first it was the first
+            # thing read out about an appliance that was busy heating,
+            # one line above "Programme state: cooking". It therefore
+            # steps aside as soon as the appliance says what it is doing,
+            # and only stands in until the first status has arrived.
             if device.cook_status:
                 items.append({
                     # Translators: Cooking state of an air fryer. {state} =
@@ -958,6 +991,12 @@ class _VeSyncDialogMixin:
                     'text': _("Programme state: {state}").format(
                         state=device.cook_status_display()),
                     'kind': 'info', 'action': None, 'key': 'fryer_state',
+                })
+            else:
+                items.append({
+                    # Translators: Operating state in the device tree.
+                    'text': _("Status: on") if device.is_on else _("Status: off"),
+                    'kind': 'info', 'action': None, 'key': 'fryer_switch',
                 })
             # The programme, the remaining time and the temperatures only
             # exist while a programme is loaded - in standby the appliance
@@ -1009,6 +1048,28 @@ class _VeSyncDialogMixin:
                     'text': _("Set temperature: {value}").format(value=target),
                     'kind': 'info', 'action': None, 'key': 'fryer_target',
                 })
+                if device.can_adjust_cook:
+                    # There used to be a control for this, and it never
+                    # worked: six attempts in two payload shapes, upwards
+                    # and downwards, cooking and paused - the appliance
+                    # either took the call and kept its own degrees, or
+                    # refused it outright. Four keystrokes to a certain
+                    # disappointment is worse than no control at all.
+                    #
+                    # Right here rather than down among the actions: the
+                    # line the reader has just heard is the set
+                    # temperature, and this is the answer to the question
+                    # that raises. Putting it below would wedge an
+                    # explanation between two Enter entries.
+                    items.append({
+                        # Translators: Tree entry for an air fryer, in
+                        # place of a control for the temperature. The
+                        # appliance accepts no temperature while cooking.
+                        'text': _("Temperature only settable when starting "
+                                  "the programme, or at the appliance"),
+                        'kind': 'info', 'action': None,
+                        'key': 'fryer_temp_hint',
+                    })
             if device.can_start_cook:
                 items.append({
                     # Translators: Action entry in the device tree, starts a
@@ -1018,13 +1079,6 @@ class _VeSyncDialogMixin:
                     'key': 'fryer_start_cook',
                 })
             if device.can_adjust_cook:
-                items.append({
-                    # Translators: Action entry in the device tree, changes
-                    # the temperature of a loaded cooking programme.
-                    'text': _("Change temperature - Enter"),
-                    'kind': 'action', 'action': 'vesync_set_cook_temp',
-                    'key': 'fryer_set_temp',
-                })
                 items.append({
                     # Translators: Action entry in the device tree, changes
                     # the time of a loaded cooking programme.
@@ -1049,8 +1103,8 @@ class _VeSyncDialogMixin:
                 items.append({
                     # Translators: Tree entry for an air fryer whose
                     # programme is loaded but not yet running.
-                    'text': _("Time and temperature can only be changed "
-                              "once the programme runs"),
+                    'text': _("The cooking time can only be changed once "
+                              "the programme runs"),
                     'kind': 'info', 'action': None, 'key': 'fryer_adjust_hint',
                 })
             if not device.can_start_cook and not device.can_end_cook:
@@ -1197,6 +1251,8 @@ class _VeSyncDialogMixin:
                     # Translators: Combined info+action label in the device
                     # tree.
                     'text': (_("Oscillation: on - press Enter to turn off") if device.oscillation_on
+                             # Translators: Line in the device tree:
+                             # oscillation is off, Enter turns it on.
                              else _("Oscillation: off - press Enter to turn on")),
                     'kind': 'action', 'action': 'vesync_oscillation',
                 })
@@ -1206,6 +1262,8 @@ class _VeSyncDialogMixin:
                     # Translators: Combined info+action label in the device
                     # tree.
                     'text': (_("Mute: on - press Enter to turn off") if device.mute_on
+                             # Translators: Line in the device tree: the sound
+                             # is off, Enter turns it on.
                              else _("Mute: off - press Enter to turn on")),
                     'kind': 'action', 'action': 'vesync_mute',
                 })
@@ -1216,6 +1274,8 @@ class _VeSyncDialogMixin:
                     # Translators: Combined info+action label in the device
                     # tree.
                     'text': (_("Display: on - press Enter to turn off") if current_disp
+                             # Translators: Line in the device tree: the
+                             # display is off, Enter turns it on.
                              else _("Display: off - press Enter to turn on")),
                     'kind': 'action', 'action': 'vesync_display',
                 })
@@ -1226,6 +1286,8 @@ class _VeSyncDialogMixin:
                     # Translators: Combined info+action label in the device
                     # tree.
                     'text': (_("Child lock: on - press Enter to turn off") if device.child_lock
+                             # Translators: Line in the device tree: the child
+                             # lock is off, Enter turns it on.
                              else _("Child lock: off - press Enter to turn on")),
                     'kind': 'action', 'action': 'vesync_child_lock',
                 })

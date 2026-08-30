@@ -453,16 +453,47 @@ def check_and_update_logged(subdev_id, current_key):
         return False
 
 
-def get_light_mode(uuid):
-    """Thread-safe access to the global light mode cache."""
+# How long a light mode set from here outranks what the lamp says about
+# itself.
+#
+# The cache exists because the lamp lags: right after a colour or a white
+# has been sent, its own status still describes the previous setting, and
+# the tree would flip back for a poll or two. That part is right.
+#
+# What was wrong is that it never expired, while it is consulted BEFORE
+# the lamp's own capacity value. A mode remembered from an earlier action
+# therefore outranked the device for good, and any change made anywhere
+# else - at the lamp itself, in the Meross app, by a scene - never got
+# through. An MSL450 switched on in white mode was announced as being in
+# colour mode because a colour had been chosen here at some point.
+#
+# Sixty seconds, the same window VeSync uses for its per-field protection
+# (PROTECT_WINDOW there), and comfortably longer than a Meross poll
+# interval of 30 to 45 seconds. Inside it the user's own action wins,
+# outside it the lamp does.
+LIGHT_MODE_WINDOW = 60.0
+
+
+def get_light_mode(uuid, window=LIGHT_MODE_WINDOW):
+    """Thread-safe access to the global light mode cache.
+
+    None once the entry has aged past ``window`` - see LIGHT_MODE_WINDOW
+    for why it expires at all.
+    """
     with _light_lock:
-        return _LIGHT_MODE_CACHE.get(uuid)
+        entry = _LIGHT_MODE_CACHE.get(uuid)
+    if not entry:
+        return None
+    mode, written = entry
+    if time.time() - written > window:
+        return None
+    return mode
 
 
 def set_light_mode_cache(uuid, mode):
     """Thread-safe write access to the global light mode cache."""
     with _light_lock:
-        _LIGHT_MODE_CACHE[uuid] = mode
+        _LIGHT_MODE_CACHE[uuid] = (mode, time.time())
 
 
 # ============================================================
@@ -1215,6 +1246,11 @@ class MerossDevice:
 
         Check order: device type -> global cache -> local cache ->
         capacity value -> fallback heuristic.
+
+        The two caches only hold a mode that was set from here, and the
+        global one only for LIGHT_MODE_WINDOW seconds. Past that the
+        lamp's own capacity value decides, which is what makes a change
+        made at the lamp or in the Meross app visible here at all.
         """
         if not self.is_light:
             return None

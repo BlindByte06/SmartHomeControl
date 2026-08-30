@@ -482,6 +482,10 @@ class _ChangeDetectionMixin:
             'auto_preference_type': getattr(device, 'auto_preference_type', None),
             'air_quality': getattr(device, 'air_quality', None),
             'filter_life': getattr(device, 'filter_life', None),
+            # Air fryer only, absent everywhere else. Without it the one
+            # event a cook cannot see - the programme ending - passed
+            # unnoticed through every path there is.
+            'cook_status': getattr(device, 'cook_status', None),
         }
 
     def get_vesync_filter_warnings(self):
@@ -504,6 +508,52 @@ class _ChangeDetectionMixin:
         warnings.sort(key=lambda x: x[1])
         return warnings
 
+    def _announce_fryer_temp_verdict(self, dev):
+        """Says so when an air fryer kept its own temperature.
+
+        The cloud answers a temperature change with code 0 whether or not
+        the appliance acts on it. Measured on a CAF-P583S: one accepted
+        call carried 180 degrees and 508 seconds while the appliance was
+        cooking at 205, the seconds landed, the degrees did not, and it
+        went on regulating to 205 to the end of the programme. Without
+        this the dialog says "change sent", goes on reading out "Set
+        temperature: 205 °C", and nothing ever joins the two together.
+
+        Not behind a notification switch and not behind
+        ``announce_external_changes``: this is the reply to something the
+        user did a moment ago, in the same class as an error message, not
+        news about the world.
+
+        Dormant since the temperature control was taken out of the tree -
+        nothing calls ``set_time_or_temp`` with a temperature any more, so
+        no verdict is ever produced. Kept for the same reason the control
+        itself is: one log from a model that does apply a temperature puts
+        both back, and this is the half that makes the control honest.
+        """
+        take = getattr(dev, 'take_temperature_verdict', None)
+        if take is None:
+            return  # not an air fryer
+        verdict = take()
+        if not verdict:
+            return
+        requested, kept = verdict
+        # The appliance's own set temperature, formatted the way the tree
+        # shows it - by now target_temp holds exactly the value that came
+        # back, so the announcement and the line the user arrows to
+        # afterwards cannot disagree.
+        kept_text = dev.target_temperature_display()
+        if not kept_text:
+            return
+        # Translators: An air fryer accepted a temperature change and did
+        # not carry it out. {value} = the temperature the appliance is
+        # still set to, with its unit.
+        text = _("Temperature not applied, the appliance stays at "
+                 "{value}").format(value=kept_text)
+        wx.CallAfter(ui.message, "{name}: {text}".format(
+            name=dev.name.replace("WLAN", "W-LAN"), text=text))
+        log.info(f"VeSync air fryer {dev.name}: {requested} not applied, "
+                 f"appliance stays at {kept}")
+
     def _detect_vesync_changes(self, devices):
         """Detects external changes on VeSync devices and announces them.
 
@@ -516,11 +566,19 @@ class _ChangeDetectionMixin:
             VESYNC_PURIFIER_MODE_NAMES, VESYNC_FAN_MODE_NAMES,
             VESYNC_AIR_QUALITY_NAMES, VESYNC_NIGHTLIGHT_MODE_NAMES,
             VESYNC_AUTO_PREFERENCE_NAMES, VESYNC_PURIFIER_LEVEL_LABELS_3,
-            VESYNC_FILTER_WARN_THRESHOLD,
+            VESYNC_FILTER_WARN_THRESHOLD, VESYNC_FRYER_COOK_ANNOUNCEMENTS,
         )
 
         for dev in devices:
             uid = dev.uuid
+
+            # The verdict on a temperature the user sent themselves.
+            # Deliberately ahead of everything below: this is not an
+            # external change, and the local-action suppression a few
+            # lines down would swallow it precisely because the change
+            # was local - which is the one case it is about.
+            self._announce_fryer_temp_verdict(dev)
+
             new_state = self._snapshot_vesync_state(dev)
             old_state = self._previous_vesync_states.get(uid)
 
@@ -555,6 +613,7 @@ class _ChangeDetectionMixin:
             wants_fan_speed = getattr(self, 'notify_vesync_fan_speed', True)
             wants_air_quality = getattr(self, 'notify_vesync_air_quality', True)
             wants_filter = getattr(self, 'notify_vesync_filter', True)
+            wants_cook = getattr(self, 'notify_vesync_cook', True)
 
             changes = []
             on_change = False
@@ -717,6 +776,22 @@ class _ChangeDetectionMixin:
                 changes.append(_("Replace filter soon, remaining life "
                                  "{percent} percent").format(
                     percent=new_filter))
+
+            # Air fryer: the cooking state. Only the transitions that
+            # carry news are spoken (see
+            # VESYNC_FRYER_COOK_ANNOUNCEMENTS) - above all the end of a
+            # programme, which nothing else in the add-on reports.
+            #
+            # old_cook has to be non-empty, as with mode and fan level
+            # above: after a login the first complete snapshot turns None
+            # into 'cooking', and announcing that would report an
+            # appliance as having just started when it has been running
+            # for eight minutes.
+            old_cook = (old_state.get('cook_status') or "").lower()
+            new_cook = (new_state.get('cook_status') or "").lower()
+            if (wants_cook and old_cook and new_cook != old_cook
+                    and new_cook in VESYNC_FRYER_COOK_ANNOUNCEMENTS):
+                changes.append(VESYNC_FRYER_COOK_ANNOUNCEMENTS[new_cook])
 
             if not changes:
                 continue

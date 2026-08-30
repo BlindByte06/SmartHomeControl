@@ -159,7 +159,9 @@ def cmd_relnotes(version=None, out_path=None):
     A GitHub release carries the changelog of its version. There is exactly
     one changelog file and it is English - the official add-on template and
     the larger NVDA add-ons do the same, since release pages are read
-    internationally.
+    internationally. The translated version of the changelog is not here but
+    in the catalogue: it reaches the user through the add-on store, which
+    reads the localised manifests out of the package (see cmd_manifests).
 
     Without --version the version comes from manifest.ini; in the workflow it
     comes from the tag. A missing section is an error rather than a silent
@@ -314,6 +316,51 @@ def cmd_check_min_python(strict=True):
     return True
 
 
+# The three texts of manifest.ini that the add-on store shows: the name of the
+# add-on, its description and its "What's new". They are translatable like
+# every other string, which is how the store comes to show them in the user's
+# language - it reads locale/<lang>/manifest.ini out of the package. The
+# official add-on template keeps them in buildVars.py for the same reason;
+# here manifest.ini is the source and cmd_manifests writes the translated
+# files.
+MANIFEST_TEXTS = {
+    # Translators: Name of the add-on, shown while installing and in the
+    # add-on store.
+    "summary": "Translators: Name of the add-on, shown while installing and "
+               "in the add-on store.",
+    # Translators: Description of the add-on in the add-on store.
+    "description": "Translators: Description of the add-on in the add-on "
+                   "store.",
+    # Translators: What's new for this version, shown in the add-on store.
+    # Markdown: NVDA renders it and reads it line by line.
+    "changelog": "Translators: What's new for this version, shown in the "
+                 "add-on store. Markdown: NVDA renders it and reads it line "
+                 "by line.",
+}
+
+
+def _manifest_texts():
+    """Reads summary, description and changelog out of manifest.ini.
+
+    A parser of its own rather than configobj: the workflow installs polib
+    and nothing else, and a missing import would only show up there. The
+    format is ours anyway - one key per line, the value in quotes, the long
+    ones in triple quotes.
+    """
+    path = os.path.join(ROOT, "manifest.ini")
+    with open(path, encoding="utf-8") as f:
+        text = f.read()
+    found = {}
+    for key in MANIFEST_TEXTS:
+        match = re.search(
+            r'^' + key + r'\s*=\s*(?:"""(.*?)"""|"(.*?)")\s*$',
+            text, re.M | re.S)
+        if not match:
+            raise SystemExit(f"[manifest] no '{key}' in manifest.ini")
+        found[key] = match.group(1) if match.group(1) is not None else match.group(2)
+    return found
+
+
 def _translatable_literals():
     """Every `_("...")` literal in the source, with where it was found.
 
@@ -337,6 +384,10 @@ def _translatable_literals():
             if isinstance(arg, ast.Constant) and isinstance(arg.value, str):
                 found.setdefault(
                     arg.value, f"{os.path.basename(path)}:{node.lineno}")
+    # The store texts are translated through the same catalogue - they are
+    # what the user reads before installing anything.
+    for key, value in _manifest_texts().items():
+        found.setdefault(value, f"manifest.ini:{key}")
     return found
 
 
@@ -347,6 +398,13 @@ def _translatable_entries():
     than the text itself: it says whether "Off" is a device state, a menu
     entry or a button. It is collected upwards from the line above the call
     for as long as comment lines are found there.
+
+    Two lines are looked at, and the second one matters: a literal inside a
+    multi-line expression - a dict of category names, a list of choices -
+    stands on a line of its own, while the comment belongs above the
+    STATEMENT. Without the fallback those texts reached the translators
+    without a word of context although the comment was written, and only the
+    .pot showed it.
     """
     import ast
     entries = {}
@@ -356,17 +414,15 @@ def _translatable_entries():
             source = f.read()
         lines = source.splitlines()
         tree = ast.parse(source, path)
-        for node in ast.walk(tree):
-            if not (isinstance(node, ast.Call)
-                    and isinstance(node.func, ast.Name)
-                    and node.func.id == "_" and node.args):
-                continue
-            arg = node.args[0]
-            if not (isinstance(arg, ast.Constant)
-                    and isinstance(arg.value, str)):
-                continue
+
+        parents = {}
+        for parent in ast.walk(tree):
+            for child in ast.iter_child_nodes(parent):
+                parents[child] = parent
+
+        def comment_above(lineno):
             block = []
-            for i in range(node.lineno - 2, max(-1, node.lineno - 10), -1):
+            for i in range(lineno - 2, max(-1, lineno - 10), -1):
                 line = lines[i].strip()
                 if line.startswith("#"):
                     block.insert(0, line.lstrip("# ").rstrip())
@@ -379,12 +435,36 @@ def _translatable_entries():
             marker = comment.find("Translators")
             if marker > 0:
                 comment = comment[marker:]
+            return comment if comment.startswith("Translators") else ""
+
+        for node in ast.walk(tree):
+            if not (isinstance(node, ast.Call)
+                    and isinstance(node.func, ast.Name)
+                    and node.func.id == "_" and node.args):
+                continue
+            arg = node.args[0]
+            if not (isinstance(arg, ast.Constant)
+                    and isinstance(arg.value, str)):
+                continue
+            comment = comment_above(node.lineno)
+            if not comment:
+                statement = node
+                while (statement is not None
+                       and not isinstance(statement, ast.stmt)):
+                    statement = parents.get(statement)
+                if statement is not None and statement.lineno != node.lineno:
+                    comment = comment_above(statement.lineno)
             entry = entries.setdefault(
                 arg.value, {"occurrences": [], "comment": ""})
             entry["occurrences"].append(
                 (os.path.basename(path), str(node.lineno)))
-            if comment.startswith("Translators") and not entry["comment"]:
+            if comment and not entry["comment"]:
                 entry["comment"] = comment
+    for key, value in _manifest_texts().items():
+        entry = entries.setdefault(value, {"occurrences": [], "comment": ""})
+        entry["occurrences"].append(("manifest.ini", key))
+        if not entry["comment"]:
+            entry["comment"] = MANIFEST_TEXTS[key]
     return entries
 
 
@@ -461,6 +541,55 @@ def cmd_mo():
               f"-> {os.path.basename(mo_path)}")
 
 
+
+def cmd_manifests():
+    """Writes locale/<lang>/manifest.ini from the translated catalogue.
+
+    The add-on store shows the name, the description and "What's new" in the
+    user's language and takes all three out of these files inside the package
+    (validation/_validate/createJson.py in the datastore reads them). They are
+    therefore not maintained by hand: whoever translates the .po translates
+    them along the way, and a new language needs nothing but its catalogue.
+
+    A text the translator has not reached yet is written in English. That is
+    what the store then shows for that language - better than an entry that
+    is missing, which drops the whole language from the store metadata.
+    """
+    try:
+        import polib
+    except ImportError:
+        print("[manifests] polib not installed - step skipped")
+        return
+    texts = _manifest_texts()
+    locale_dir = os.path.join(ROOT, "locale")
+    written = []
+    for lang in sorted(os.listdir(locale_dir)):
+        po_path = os.path.join(locale_dir, lang, "LC_MESSAGES", "nvda.po")
+        if not os.path.isfile(po_path):
+            continue
+        po = polib.pofile(po_path)
+        table = {e.msgid: e.msgstr for e in po if e.msgstr and not e.fuzzy}
+        lines = []
+        untranslated = []
+        for key in ("summary", "description", "changelog"):
+            value = table.get(texts[key])
+            if not value:
+                value = texts[key]
+                untranslated.append(key)
+            if '"""' in value:
+                raise SystemExit(
+                    f"[manifests] {lang}/{key} contains triple quotes - "
+                    f"that would break the ini file")
+            quote = '"' if key == "summary" else '"""'
+            lines.append(f"{key} = {quote}{value}{quote}")
+        out_path = os.path.join(locale_dir, lang, "manifest.ini")
+        with open(out_path, "w", encoding="utf-8", newline="\n") as f:
+            f.write("\n".join(lines) + "\n")
+        note = f" ({', '.join(untranslated)} still English)" if untranslated else ""
+        written.append(lang + note)
+    print(f"[manifests] written: {', '.join(written) if written else 'none'}")
+
+
 def cmd_check_translations(strict=True):
     """Checks every translation under locale/ against the source.
 
@@ -504,6 +633,19 @@ def cmd_check_translations(strict=True):
                 f"{len(pot_missing)} strings in the code are missing from "
                 f"the .pot (e.g. {literals[pot_missing[0]]}) - run "
                 f"'build_addon.py pot'")
+
+    # A text without a "# Translators:" comment reaches the translator naked:
+    # "Off" can be a device state, a list entry or a button, and the .po shows
+    # none of it. 365 of them once did, and the ones that hurt most are the
+    # short line beginnings the tree and the F1 help have to agree on - a
+    # translator has no way of guessing that from the string alone.
+    entries = _translatable_entries()
+    uncommented = sorted(k for k, v in entries.items() if not v["comment"])
+    if uncommented:
+        where = entries[uncommented[0]]["occurrences"][0]
+        problems.append(
+            f"{len(uncommented)} texts have no '# Translators:' comment "
+            f"(e.g. {where[0]}:{where[1]} {uncommented[0][:40]!r})")
 
     langs = sorted(d for d in os.listdir(locale_dir)
                    if os.path.isdir(os.path.join(locale_dir, d)))
@@ -616,6 +758,9 @@ def cmd_pack(out_dir=None):
     # First whether it runs on the minimum version - nobody needs a package
     # that will not start there.
     cmd_check_min_python()
+    # The translated manifests are generated, not maintained: whatever the
+    # catalogue answers is what the store will show.
+    cmd_manifests()
     cmd_check_translations()
     sync_doc_titles(version)
     os.makedirs(DIST_DIR, exist_ok=True)
@@ -674,7 +819,8 @@ def main():
     parser = argparse.ArgumentParser(description="Smart Home Control Build")
     parser.add_argument("command",
                         choices=["libs", "pack", "all", "i18n", "licenses",
-                                 "relnotes", "py311", "pot", "mo"])
+                                 "relnotes", "py311", "pot", "mo",
+                                 "manifests"])
     parser.add_argument("--out", help="additional target folder for the "
                         "finished package; with 'relnotes': target file for "
                         "the text")
@@ -690,6 +836,9 @@ def main():
         return
     if args.command == "i18n":
         cmd_check_translations()
+        return
+    if args.command == "manifests":
+        cmd_manifests()
         return
     if args.command == "pot":
         cmd_pot()

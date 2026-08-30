@@ -897,6 +897,8 @@ class VeSyncPurifier(_VeSyncBaseDevice):
         data = {"enabled": bool(on), "id": 0}
         resp = self._api.call_bypass_v2(self, "setSwitch", data)
         if not self._bypass_call_succeeded(resp):
+            # Translators: Error message after a refused switch command, shown
+            # to the user.
             raise RuntimeError(_("VeSync: switch command failed"))
         with self._lock:
             self._is_on = bool(on)
@@ -911,6 +913,8 @@ class VeSyncPurifier(_VeSyncBaseDevice):
         Other modes via setPurifierMode.
         """
         if mode not in self.modes:
+            # Translators: Error message when the device does not know the
+            # chosen mode.
             raise ValueError(_("Mode '{mode}' is not supported by this device").format(mode=mode))
 
         if mode == PURIFIER_MODE_MANUAL:
@@ -925,6 +929,8 @@ class VeSyncPurifier(_VeSyncBaseDevice):
         data = {"mode": mode}
         resp = self._api.call_bypass_v2(self, "setPurifierMode", data)
         if not self._bypass_call_succeeded(resp):
+            # Translators: Error message after a refused mode change, shown to
+            # the user.
             raise RuntimeError(_("VeSync: mode '{mode}' could not be set").format(mode=mode))
         with self._lock:
             self.mode = mode
@@ -940,13 +946,18 @@ class VeSyncPurifier(_VeSyncBaseDevice):
         try:
             speed_int = int(speed)
         except (TypeError, ValueError):
+            # Translators: Error message when the fan level is not a number.
             raise ValueError(_("Invalid fan level"))
         if speed_int not in self.fan_levels:
+            # Translators: Error message when the device does not have this fan
+            # level.
             raise ValueError(_("Fan level {level} is not supported").format(level=speed_int))
 
         data = {"id": 0, "level": speed_int, "type": "wind"}
         resp = self._api.call_bypass_v2(self, "setLevel", data)
         if not self._bypass_call_succeeded(resp):
+            # Translators: Error message after a refused fan level change,
+            # shown to the user.
             raise RuntimeError(_("VeSync: fan level {level} could not be set").format(level=speed_int))
         with self._lock:
             self.fan_level = speed_int
@@ -962,11 +973,15 @@ class VeSyncPurifier(_VeSyncBaseDevice):
         BypassV2 setDisplay: {'state': bool}
         """
         if not self.supports_display:
+            # Translators: Error message when the device has no display to
+            # switch.
             raise RuntimeError(_("Display control is not supported by this "
                                  "device"))
         data = {"state": bool(on)}
         resp = self._api.call_bypass_v2(self, "setDisplay", data)
         if not self._bypass_call_succeeded(resp):
+            # Translators: Error message after a refused display command, shown
+            # to the user.
             raise RuntimeError(_("VeSync: display switch command failed"))
         # Optimistically update both the desired and the displayed state so the
         # status line in the dialog is correct immediately.
@@ -982,10 +997,13 @@ class VeSyncPurifier(_VeSyncBaseDevice):
         BypassV2 setChildLock: {'child_lock': bool}
         """
         if not self.supports_child_lock:
+            # Translators: Error message when the device has no child lock.
             raise RuntimeError(_("Child lock is not supported by this device"))
         data = {"child_lock": bool(on)}
         resp = self._api.call_bypass_v2(self, "setChildLock", data)
         if not self._bypass_call_succeeded(resp):
+            # Translators: Error message after a refused child lock command,
+            # shown to the user.
             raise RuntimeError(_("VeSync: child lock could not be toggled"))
         with self._lock:
             self.child_lock = bool(on)
@@ -999,12 +1017,17 @@ class VeSyncPurifier(_VeSyncBaseDevice):
         Allowed values: 'on', 'off', 'dim'
         """
         if not self.supports_nightlight:
+            # Translators: Error message when the device has no night light.
             raise RuntimeError(_("Night light is not supported by this device"))
         if mode not in self.nightlight_modes:
+            # Translators: Error message when the device does not know the
+            # chosen night light mode.
             raise ValueError(_("Night light mode '{mode}' is not supported").format(mode=mode))
         data = {"night_light": mode}
         resp = self._api.call_bypass_v2(self, "setNightLight", data)
         if not self._bypass_call_succeeded(resp):
+            # Translators: Error message after a refused night light command,
+            # shown to the user.
             raise RuntimeError(_("VeSync: night light could not be set"))
         with self._lock:
             self.nightlight_status = mode
@@ -1018,14 +1041,20 @@ class VeSyncPurifier(_VeSyncBaseDevice):
         Allowed types: 'default', 'efficient', 'quiet'
         """
         if not self.supports_auto_preference:
+            # Translators: Error message when the device has no automatic
+            # profile.
             raise RuntimeError(_("Auto profile is not supported by this device"))
         if preference not in self.auto_preferences:
+            # Translators: Error message when the device does not know the
+            # chosen automatic profile.
             raise ValueError(_("Auto profile '{value}' is not supported").format(value=preference))
         if room_size is None:
             room_size = self.auto_room_size or 600
         data = {"type": preference, "room_size": int(room_size)}
         resp = self._api.call_bypass_v2(self, "setAutoPreference", data)
         if not self._bypass_call_succeeded(resp):
+            # Translators: Error message after a refused profile change, shown
+            # to the user.
             raise RuntimeError(_("VeSync: auto profile could not be set"))
         with self._lock:
             self.auto_preference_type = preference
@@ -1039,9 +1068,13 @@ class VeSyncPurifier(_VeSyncBaseDevice):
         BypassV2 resetFilter: {} (empty payload)
         """
         if not self.supports_reset_filter:
+            # Translators: Error message when the device cannot reset its
+            # filter counter.
             raise RuntimeError(_("Filter reset is not supported by this device"))
         resp = self._api.call_bypass_v2(self, "resetFilter", {})
         if not self._bypass_call_succeeded(resp):
+            # Translators: Error message after a refused filter reset, shown to
+            # the user.
             raise RuntimeError(_("VeSync: filter reset failed"))
         with self._lock:
             self.filter_life = 100
@@ -1316,6 +1349,8 @@ class VeSyncTowerFan(_VeSyncBaseDevice):
         data = {"oscillationSwitch": int(bool(on))}
         resp = self._api.call_bypass_v2(self, "setOscillationSwitch", data)
         if not self._bypass_call_succeeded(resp):
+            # Translators: Error message after a refused oscillation command,
+            # shown to the user.
             raise RuntimeError(_("VeSync: oscillation could not be toggled"))
         with self._lock:
             self.oscillation_on = bool(on)
@@ -1331,6 +1366,8 @@ class VeSyncTowerFan(_VeSyncBaseDevice):
         data = {"muteSwitch": int(bool(on))}
         resp = self._api.call_bypass_v2(self, "setMuteSwitch", data)
         if not self._bypass_call_succeeded(resp):
+            # Translators: Error message after a refused mute command, shown to
+            # the user.
             raise RuntimeError(_("VeSync: mute toggle failed"))
         with self._lock:
             self.mute_on = bool(on)
@@ -1414,6 +1451,16 @@ class VeSyncAirFryer(_VeSyncBaseDevice):
         self.cook_set_time = None  # total duration in seconds
 
         self.preheat_temp = None
+
+        # A temperature that has been sent and not yet judged. The cloud's
+        # "accepted" says nothing about it: one accepted call carrying
+        # both fields had its time applied and its temperature dropped on
+        # a real appliance, so only the next status can tell. See
+        # _judge_sent_temperature.
+        self._sent_temp = None
+        self._sent_temp_time = None   # the cookSetTime sent alongside it
+        self._sent_temp_at = 0.0
+        self._temp_verdict = None     # (requested, kept), read out once
 
     # ------ Display ------
     def get_type_display(self):
@@ -1593,6 +1640,8 @@ class VeSyncAirFryer(_VeSyncBaseDevice):
             self.target_temp = step.get("cookTemp")
             self.cook_set_time = step.get("cookSetTime")
 
+            self._judge_sent_temperature(step)
+
             if status_key == "standby" or new_temp is None:
                 self.display_temp = None
             else:
@@ -1631,6 +1680,58 @@ class VeSyncAirFryer(_VeSyncBaseDevice):
         # shakeStatus turns into something when a programme asks for the
         # basket to be shaken.
         log.debug(f"VeSync air fryer {self.name}: status {result}")
+
+    # How long a sent temperature waits for the appliance's verdict.
+    # Several polls at the foreground interval - after that the answer is
+    # not coming, and saying nothing beats saying it once the cook has
+    # moved on.
+    TEMP_VERDICT_TIMEOUT = 90
+
+    def _judge_sent_temperature(self, step):
+        """Compares a temperature that was sent with the one that came back.
+
+        Called from apply_status_response, under the lock.
+
+        Dating the response is the hard part. The cloud serves bypassV2
+        answers from a cache for up to a minute, and a cached answer looks
+        exactly like a refused temperature: both carry the old value.
+        The time sent alongside settles it. That one the appliance does
+        apply - a tester's log shows cookSetTime going 600 -> 508 three
+        seconds after the call, in the same reply that kept cookTemp at
+        205 - so a response already carrying it was formed after the
+        command. Anything else is left to the next poll.
+
+        Nothing is judged while the fields are missing (an empty stepArray
+        means the programme is over), and the request then simply expires:
+        a finished cook has no business announcing a temperature.
+        """
+        if self._sent_temp is None:
+            return
+        if time.time() - self._sent_temp_at > self.TEMP_VERDICT_TIMEOUT:
+            self._sent_temp = None
+            return
+        if (self._sent_temp_time is not None
+                and step.get("cookSetTime") != self._sent_temp_time):
+            return  # this response predates the command
+        kept = step.get("cookTemp")
+        if kept != self._sent_temp:
+            self._temp_verdict = (self._sent_temp, kept)
+            log.info(f"VeSync air fryer {self.name}: temperature "
+                     f"{self._sent_temp} was accepted and not applied - "
+                     f"the appliance stays at {kept}")
+        self._sent_temp = None
+
+    def take_temperature_verdict(self):
+        """The pending verdict on a sent temperature, once.
+
+        Returns ``(requested, kept)`` or None. Clearing it here is what
+        keeps it to a single utterance: the poll that produced it comes
+        round again every fifteen seconds.
+        """
+        with self._lock:
+            verdict = self._temp_verdict
+            self._temp_verdict = None
+        return verdict
 
     # ------ Control ------
     @property
@@ -1672,9 +1773,13 @@ class VeSyncAirFryer(_VeSyncBaseDevice):
     # would more likely be a typo; the upper end is its own maximum.
     TIME_RANGE_SECONDS = (60, 60 * 60)
 
-    # What a programme started by hand is called on the wire. The id and
-    # type belong to it and are not a guess: pyvesync uses the same pair
-    # for a manual cook.
+    # What a programme started by hand is called on the wire. Kept, and
+    # no longer used: a startCook carrying this mode with recipe id 1 -
+    # the shape the open documentation gives for a manual cook - was
+    # refused by a CAF-P583S with the cloud's code 11000000, so the free
+    # start is no longer offered. The open documentation puts a manual
+    # cook on the separate `cookMode` method instead, in a different
+    # envelope; should that ever be tried, these are the values it wants.
     CUSTOM_MODE = "custom"
     CUSTOM_RECIPE_ID = 1
     CUSTOM_RECIPE_TYPE = 3
@@ -1689,8 +1794,9 @@ class VeSyncAirFryer(_VeSyncBaseDevice):
         """The programme keys this appliance has shown us, in a fixed order.
 
         Empty until the appliance has had a programme loaded at least once
-        - which is why the interface offers a free start as well, and says
-        so rather than presenting an empty list.
+        - which is why the interface says so in words rather than opening
+        an empty list. There used to be a free start to fall back on here;
+        the appliance refuses it, so the explanation is all there is.
         """
         try:
             from .fryer_presets import get_fryer_presets
@@ -1719,7 +1825,7 @@ class VeSyncAirFryer(_VeSyncBaseDevice):
                 (see remaining_time_display), and passing minutes here
                 would cook for a sixtieth of the intended time
             recipe_id / recipe_type: from the learned programme; omitted
-                for a free start, which uses the custom pair
+                for a programme whose id is not known
 
         The payload mirrors what the VeSync app sends. ``startAct`` carries
         the actual settings; the fields beside it identify the programme.
@@ -1740,12 +1846,29 @@ class VeSyncAirFryer(_VeSyncBaseDevice):
                                                  high=max_s // 60))
 
         if recipe_id is None:
-            recipe_id = self.CUSTOM_RECIPE_ID
-            recipe_type = self.CUSTOM_RECIPE_TYPE
+            # Refuse rather than guess, and that changed with the free
+            # start. While one existed, falling back to the pair a manual
+            # cook uses was the right answer here. Without it the same
+            # line is a trap: id 1 is Steak, so a programme that had lost
+            # its id would have been sent as Steak while the interface
+            # said something else - on an appliance that heats.
+            #
+            # Only reachable with a damaged programme file: the store
+            # refuses to save an entry without an id (see
+            # FryerPresets.remember). Saying so is then the whole of the
+            # safe answer.
+            #
+            # Translators: Error when a cooking programme is missing the
+            # identifier the appliance needs to start it.
+            raise ValueError(_("VeSync: this programme has no identifier "
+                               "and cannot be started"))
         data = {
             "accountId": getattr(self._api, "account_id", None),
             "mode": mode,
             "recipeId": recipe_id,
+            # A missing type, unlike a missing id, is safe to fill in:
+            # every programme this appliance has ever reported came back
+            # with recipeType 3, all eleven of them.
             "recipeType": recipe_type if recipe_type is not None
             else self.CUSTOM_RECIPE_TYPE,
             "recipeName": mode,
@@ -1822,10 +1945,22 @@ class VeSyncAirFryer(_VeSyncBaseDevice):
         cook with what it had, which is what someone changing only the
         temperature is entitled to expect.
 
+        Confirmed a second time on a whole programme: 508 seconds went out
+        with a temperature change, cookSetTime came back as 508 and the
+        countdown carried straight on at 505. The clock did not restart
+        and the meal came out at the time it was going to anyway - only
+        the programme's nominal duration is quietly redefined to what was
+        left of it, which nothing reads out.
+
         Note the field names. ``startCook`` carries ``cookTemp`` inside
         ``startAct``; this call wants ``cookSetTemp`` at the top level.
         Same quantity, different spelling, and mixing them up would be
         accepted as "no temperature given".
+
+        The time lands and the temperature does not - six attempts, two
+        payload shapes, both directions, cooking and paused. The caller
+        is told either way, because ``_judge_sent_temperature`` reads
+        the next status and says so when the appliance kept its own.
         """
         if (temperature is None) == (seconds is None):
             raise ValueError("set_time_or_temp takes a temperature OR a time")
@@ -1860,6 +1995,21 @@ class VeSyncAirFryer(_VeSyncBaseDevice):
             if keep:
                 data["cookSetTime"] = int(keep)
 
+        # Nothing else goes in here, and that is measured rather than
+        # tidy. The payload was once enriched with tempUnit,
+        # cookTempDECP and accountId, on the theory that a temperature
+        # cannot be read without its unit while a number of seconds can -
+        # startCook sends all three and its temperature does land.
+        #
+        # The appliance refused the enriched call outright, with the
+        # cloud's code 11000000, and refused it for a pure TIME change
+        # too - the one thing that had worked reliably four times over.
+        # So the three fields do not help the temperature and they break
+        # the time. The bare pair is the only shape this appliance takes.
+        #
+        # What that leaves: setTimeOrTemp on a CAF-P583S can set the time
+        # and cannot set the temperature, in any shape tried so far.
+
         resp = self._api.call_bypass_v2(self, "setTimeOrTemp", data)
         if not self._bypass_call_succeeded(resp):
             self._log_rejected_command("setTimeOrTemp", data, resp)
@@ -1867,10 +2017,18 @@ class VeSyncAirFryer(_VeSyncBaseDevice):
             # programme could not be changed.
             raise RuntimeError(_("VeSync: the change was not accepted"))
         self._log_accepted_command("setTimeOrTemp", data)
-        # As with the other two commands, nothing is assumed about the
-        # result. Whether a new time lands as the remaining time or as the
-        # total duration is not established, so the remaining-time line is
-        # left to report what the appliance actually did.
+        if temperature is not None:
+            # "Accepted" covers the call, not the temperature in it. One
+            # accepted call sent 180 degrees with 508 seconds while the
+            # appliance was cooking at 205: the seconds landed, the
+            # degrees did not, and it went on regulating to 205 for the
+            # rest of the programme. Only the next status shows which
+            # happened, so the answer is noted and judged there.
+            with self._lock:
+                self._sent_temp = temperature
+                self._sent_temp_time = data.get("cookSetTime")
+                self._sent_temp_at = time.time()
+                self._temp_verdict = None
         return True
 
     def end_cook(self):

@@ -72,20 +72,36 @@ class _MerossDialogMixin:
         # Try to detect the color group
         # Translators: Approximate color group names for the announcement.
         if r > 200 and g < 100 and b < 100:
+            # Translators: Rough colour name worked out from the RGB values of
+            # a lamp, spoken with the colour line.
             return _("Reddish")
         elif r < 100 and g > 200 and b < 100:
+            # Translators: Rough colour name worked out from the RGB values of
+            # a lamp, spoken with the colour line.
             return _("Greenish")
         elif r < 100 and g < 100 and b > 200:
+            # Translators: Rough colour name worked out from the RGB values of
+            # a lamp, spoken with the colour line.
             return _("Bluish")
         elif r > 200 and g > 200 and b < 100:
+            # Translators: Rough colour name worked out from the RGB values of
+            # a lamp, spoken with the colour line.
             return _("Yellowish")
         elif r > 200 and g < 150 and b > 150:
+            # Translators: Rough colour name worked out from the RGB values of
+            # a lamp, spoken with the colour line.
             return _("Rose")
         elif r < 100 and g > 200 and b > 200:
+            # Translators: Rough colour name worked out from the RGB values of
+            # a lamp, spoken with the colour line.
             return _("Turquoise")
         elif r > 200 and g > 100 and b < 100:
+            # Translators: Rough colour name worked out from the RGB values of
+            # a lamp, spoken with the colour line.
             return _("Orange tones")
         elif r > 200 and g > 200 and b > 200:
+            # Translators: Rough colour name worked out from the RGB values of
+            # a lamp, spoken with the colour line.
             return _("White tones")
         
         # No recognized color
@@ -335,6 +351,9 @@ class _MerossDialogMixin:
             
             # Success feedback
             _beep(BEEP_ON)
+            # Translators: Name of the entry for a colour entered by hand. The
+            # chosen entry is compared against this text, so both places have
+            # to read the same.
             if color_name == _("Custom"):
                 # Translators: Confirmation after setting a custom RGB color.
                 ui.message(_("{name}: color set to RGB({r}, {g}, {b})").format(

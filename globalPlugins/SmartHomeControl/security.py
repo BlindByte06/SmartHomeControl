@@ -176,6 +176,8 @@ def _encrypt_aes_v2(plaintext):
     Format: AESV2:<base64(nonce + tag + ciphertext)>
     """
     if not _HAS_AES:
+        # Translators: Error message when the bundled cryptography library is
+        # missing.
         raise RuntimeError(_("AES encryption not available (PyCryptodome "
                              "missing)"))
     key = _derive_machine_key_v2()
@@ -190,6 +192,8 @@ def _encrypt_aes_v2(plaintext):
 def _decrypt_aes_v2(encrypted_b64):
     """Decrypts the AESV2 format (per-installation salt, AAD)."""
     if not _HAS_AES:
+        # Translators: Error message when the bundled cryptography library is
+        # missing.
         raise RuntimeError(_("AES decryption not available (PyCryptodome "
                              "missing)"))
     raw = base64.b64decode(encrypted_b64)

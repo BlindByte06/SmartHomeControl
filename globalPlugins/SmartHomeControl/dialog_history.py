@@ -150,6 +150,8 @@ class HistoryDialog(wx.Dialog):
         filter_sizer = wx.StaticBoxSizer(filter_box, wx.HORIZONTAL)
 
         # Device filter
+        # Translators: Label of the device filter in the history. & marks the
+        # accelerator.
         filter_sizer.Add(wx.StaticText(self, label=_("&Device:")), 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 4)
         self.device_filter = wx.Choice(self)
         # Load the devices from the history (separately, so it can be refreshed
@@ -158,6 +160,8 @@ class HistoryDialog(wx.Dialog):
         filter_sizer.Add(self.device_filter, 1, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 8)
 
         # Platform filter
+        # Translators: Label of the platform filter in the history. & marks the
+        # accelerator.
         filter_sizer.Add(wx.StaticText(self, label=_("&Platform:")), 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 4)
         # Translators: Filter option "All" (platform names are brand names).
         self.platform_filter = wx.Choice(self, choices=[_("All"), "Meross", "Netatmo", "VeSync", "Cozytouch"])
@@ -165,6 +169,8 @@ class HistoryDialog(wx.Dialog):
         filter_sizer.Add(self.platform_filter, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 8)
 
         # Time range filter
+        # Translators: Label of the period filter in the history. & marks the
+        # accelerator.
         filter_sizer.Add(wx.StaticText(self, label=_("&Period:")), 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 4)
         # Translators: Time range filter options in the history dialog.
         self.time_filter = wx.Choice(self, choices=[
@@ -506,17 +512,23 @@ class HistoryDialog(wx.Dialog):
             # Translators: Summary lines in the measurement detail dialog.
             _("Lowest value: {value}").format(
                 value=format_measurement(quantity, rec['min'])),
+            # Translators: Detail of a measurement series in the history, one
+            # line per figure.
             _("Highest value: {value}").format(
                 value=format_measurement(quantity, rec['max'])),
             # Translators: Time-weighted mean of a measurement series.
             _("Average (time-weighted): {value}").format(
                 value=format_measurement(quantity, rec['avg'])),
+            # Translators: Detail of a measurement series in the history, one
+            # line per figure.
             _("Current: {value}").format(
                 value=format_measurement(quantity, rec['last'])),
             # Translators: Period and number of readings in the detail dialog.
             # {period} = from-to, {count} = number of stored readings.
             _("Period: {period}").format(
                 period=self._period_text([rec]) or "-"),
+            # Translators: Detail of a measurement series in the history, one
+            # line per figure.
             _("Readings stored: {count}").format(count=rec['count']),
             "",
             # Translators: Heading of the change point list.

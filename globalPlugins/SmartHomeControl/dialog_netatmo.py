@@ -68,6 +68,8 @@ class _NetatmoDialogMixin:
         temp_ctrl = wx.Choice(dlg, choices=temp_values)
         # Translators: Name/tooltip of the temperature selection list.
         temp_ctrl.SetName(_("Temperature"))
+        # Translators: Label of the temperature field in the dialog that sets
+        # the target temperature.
         temp_ctrl.SetToolTip(_("Choose target temperature in 0.5°C steps"))
         
         # Preselection based on the current temperature
@@ -111,6 +113,8 @@ class _NetatmoDialogMixin:
         hour_ctrl = wx.Choice(dlg, choices=hour_choices)
         # Translators: Name/tooltip of the hour selection.
         hour_ctrl.SetName(_("Hour"))
+        # Translators: Label of the hours field in the dialog that sets how
+        # long the temperature holds.
         hour_ctrl.SetToolTip(_("Hour until which the temperature should apply"))
         # Preselection: from the existing end time or current hour + 1
         now = datetime.datetime.now()
@@ -129,6 +133,8 @@ class _NetatmoDialogMixin:
         minute_ctrl = wx.Choice(dlg, choices=minute_choices)
         # Translators: Name/tooltip of the minute selection.
         minute_ctrl.SetName(_("Minute"))
+        # Translators: Label of the minutes field in the dialog that sets how
+        # long the temperature holds.
         minute_ctrl.SetToolTip(_("Minute until which the temperature should "
                                  "apply (5-minute steps)"))
         if current_end_time and current_end_time > time.time():
@@ -542,6 +548,8 @@ class _NetatmoDialogMixin:
             if isinstance(result, Exception):
                 _beep(BEEP_ERROR)
                 _nvda_log.error(f"Netatmo heating schedules error: {result}")
+                # Translators: Error message when the heating schedules cannot
+                # be fetched.
                 ui.message(_("Error loading heating schedules"))
                 return
             schedules = result

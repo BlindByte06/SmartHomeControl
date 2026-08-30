@@ -42,7 +42,7 @@ from .meross_devices import get_subdevice_battery
 log = _nvda_log
 
 from .dialog_helpers import _beep
-from .platform_utils import split_by_platform
+from .platform_utils import split_by_platform, platform_of
 from .dialog_netatmo import _NetatmoDialogMixin
 from .dialog_vesync import _VeSyncDialogMixin
 from .dialog_meross import _MerossDialogMixin
@@ -83,6 +83,9 @@ class SmartHomeControlDialog(_NetatmoDialogMixin, _VeSyncDialogMixin, _MerossDia
         # Filter warning banner state (see _update_filter_warning_banner).
         self._last_filter_warning_text = None
         self._filter_warning_announced = False
+        # What the tree was last built from (see _tree_signature). None means
+        # "nothing built yet" - then a refresh always rebuilds.
+        self._last_tree_signature = None
         self._create_ui()
         
         # Bind EVT_CLOSE for clean teardown
@@ -169,6 +172,8 @@ class SmartHomeControlDialog(_NetatmoDialogMixin, _VeSyncDialogMixin, _MerossDia
         ])
         self.sort_choice.SetSelection(0)
         self.sort_choice.Bind(wx.EVT_CHOICE, self._on_sort_changed)
+        # Translators: Accessible name of the sort order combo box in the
+        # device menu.
         self.sort_choice.SetName(_("Sort order"))
         # Translators: Tooltip for the sort control.
         self.sort_choice.SetToolTip(_("Change device order"))
@@ -188,6 +193,7 @@ class SmartHomeControlDialog(_NetatmoDialogMixin, _VeSyncDialogMixin, _MerossDia
         self.tree.Bind(wx.EVT_TREE_ITEM_ACTIVATED, self._on_item_activated)
         self.tree.Bind(wx.EVT_CHAR_HOOK, self._on_tree_char)
         self.tree.Bind(wx.EVT_TREE_ITEM_EXPANDING, self._on_item_expanding)
+        # Translators: Accessible name of the device tree in the device menu.
         self.tree.SetName(_("Device list"))
         # Translators: Tooltip with the most important shortcuts for the device
         # list.
@@ -262,6 +268,7 @@ class SmartHomeControlDialog(_NetatmoDialogMixin, _VeSyncDialogMixin, _MerossDia
         self.status_bar.Bind(wx.EVT_CHAR, lambda e: None)
         # Accessible name; some screen readers use the label of the preceding
         # StaticText, but the duplication does no harm.
+        # Translators: Accessible name of the status bar in the device menu.
         self.status_bar.SetName(_("Status"))
         status_sizer.Add(self.status_bar, 1, wx.ALIGN_CENTER_VERTICAL)
 
@@ -273,12 +280,15 @@ class SmartHomeControlDialog(_NetatmoDialogMixin, _VeSyncDialogMixin, _MerossDia
         # Translators: Button for opening the device search (shortcut in
         # parentheses).
         search_btn = wx.Button(panel, label=_("Sear&ch (Ctrl+F)"))
+        # Translators: Accessible name of the search button in the device menu.
         search_btn.SetName(_("Find devices"))
         search_btn.Bind(wx.EVT_BUTTON, lambda e: self._on_search())
         button_sizer.Add(search_btn, 0, wx.ALL, 5)
 
         # Translators: Button for reloading the device status.
         self.refresh_btn = wx.Button(panel, label=_("&Refresh (F5)"))
+        # Translators: Accessible name of the refresh button in the device
+        # menu.
         self.refresh_btn.SetName(_("Refresh devices"))
         self.refresh_btn.Bind(wx.EVT_BUTTON, self._on_refresh)
         button_sizer.Add(self.refresh_btn, 0, wx.ALL, 5)
@@ -286,6 +296,8 @@ class SmartHomeControlDialog(_NetatmoDialogMixin, _VeSyncDialogMixin, _MerossDia
         # Translators: Button opens the history of all switch actions and
         # sensor values.
         history_btn = wx.Button(panel, label=_("&History (Ctrl+H)"))
+        # Translators: Accessible name of the history button in the device
+        # menu.
         history_btn.SetName(_("Open history"))
         history_btn.Bind(wx.EVT_BUTTON, lambda e: self._show_history_dialog())
         # Translators: Tooltip of the history button.
@@ -295,12 +307,15 @@ class SmartHomeControlDialog(_NetatmoDialogMixin, _VeSyncDialogMixin, _MerossDia
 
         # Translators: Button opens the settings dialog (Smart Home).
         settings_btn = wx.Button(panel, label=_("S&ettings (Alt+E)"))
+        # Translators: Accessible name of the settings button in the device
+        # menu.
         settings_btn.SetName(_("Open settings"))
         settings_btn.Bind(wx.EVT_BUTTON, self._on_settings)
         button_sizer.Add(settings_btn, 0, wx.ALL, 5)
 
         # Translators: Button for closing the device dialog.
         close_btn = wx.Button(panel, wx.ID_CLOSE, label=_("&Close (Esc)"))
+        # Translators: Accessible name of the close button in the device menu.
         close_btn.SetName(_("Close dialog"))
         close_btn.Bind(wx.EVT_BUTTON, lambda e: self.Close())
         button_sizer.Add(close_btn, 0, wx.ALL, 5)
@@ -560,7 +575,7 @@ class SmartHomeControlDialog(_NetatmoDialogMixin, _VeSyncDialogMixin, _MerossDia
         # Translators: Message when opening the dialog with cached data.
         ui.message(_("{count} devices loaded from cache").format(count=len(self.plugin.devices)))
     
-    def refresh_all_device_data_live(self):
+    def refresh_all_device_data_live(self, force=False):
         """
         Updates ALL device data in the tree view after a background refresh.
 
@@ -573,6 +588,11 @@ class SmartHomeControlDialog(_NetatmoDialogMixin, _VeSyncDialogMixin, _MerossDia
         - Netatmo thermostat: target temperature, heating mode, device label
 
         If the focused element changed, NVDA is notified.
+
+        Args:
+            force: skips the debounce below. Set by the manual refresh, which
+                is a user action and must not be swallowed by a background
+                tick that happened to arrive a moment earlier.
         """
         if self._is_destroyed:
             return
@@ -592,7 +612,7 @@ class SmartHomeControlDialog(_NetatmoDialogMixin, _VeSyncDialogMixin, _MerossDia
         # update but costs NVDA unnecessary CPU time. Hence ~0.7 s debounce.
         now = time.time()
         last = getattr(self, '_last_live_refresh_ts', 0)
-        if now - last < 0.7:
+        if not force and now - last < 0.7:
             log.debug("Live update debounced (too soon after the previous refresh)")
             return
         self._last_live_refresh_ts = now
@@ -797,6 +817,9 @@ class SmartHomeControlDialog(_NetatmoDialogMixin, _VeSyncDialogMixin, _MerossDia
             updated text, or None if unchanged
         """
         # Status line
+        # Translators: Beginning of the "Status:" line in the device tree. The
+        # line is found again by this text when its value is refreshed, so it
+        # has to be translated exactly like the line itself.
         if current_text.startswith(_("Status:")):
             # Hubs and sensors do NOT have an on/off status: a hub shows
             # "Status: Online/Offline" and a water sensor "Status: Kein Wasser".
@@ -812,18 +835,32 @@ class SmartHomeControlDialog(_NetatmoDialogMixin, _VeSyncDialogMixin, _MerossDia
                     return _("Status: {status}").format(status=", ".join(channel_stati))
             else:
                 is_on = device.is_on if hasattr(device, 'is_on') else False
+                # Translators: Line in the device tree: whether the device is
+                # switched on. It has to keep the beginning it is found by.
                 return _("Status: {status}").format(status=_("On") if is_on else _("Off"))
         
         # Power line
+        # Translators: Beginning of the "Power:" line in the device tree. The
+        # line is found again by this text when its value is refreshed, so it
+        # has to be translated exactly like the line itself.
         if current_text.startswith(_("Power:")):
             if hasattr(device, 'get_power'):
                 power = device.get_power()
                 if power is not None:
+                    # Translators: Line in the device tree. F1 finds its help
+                    # by the beginning of this text, so it and the "Power:" in
+                    # the help have to be translated the same way.
                     return _("Power: {value} W").format(value=power)
 
         # Consumption lines (today / last 7 days) - replace the placeholder
         # or refresh values once the background fetch filled the cache.
+        # Translators: Beginning of the "Consumption today:" line in the device
+        # tree. The line is found again by this text when its value is
+        # refreshed, so it has to be translated exactly like the line itself.
         if (current_text.startswith(_("Consumption today:"))
+                # Translators: Beginning of the consumption line in the device
+                # tree. F1 finds its help by this text, so it has to read the
+                # same in both places.
                 or current_text.startswith(_("Consumption last 7 days:"))):
             api = getattr(self.plugin, 'api', None)
             if api and hasattr(api, 'peek_daily_consumption'):
@@ -838,6 +875,9 @@ class SmartHomeControlDialog(_NetatmoDialogMixin, _VeSyncDialogMixin, _MerossDia
             return None
         
         # Temperature line
+        # Translators: Beginning of the "Temperature:" line in the device tree.
+        # The line is found again by this text when its value is refreshed, so
+        # it has to be translated exactly like the line itself.
         if current_text.startswith(_("Temperature:")):
             if hasattr(device, 'get_temperature'):
                 temp = device.get_temperature()
@@ -845,40 +885,70 @@ class SmartHomeControlDialog(_NetatmoDialogMixin, _VeSyncDialogMixin, _MerossDia
                     return _("Temperature: {value:.1f}°C").format(value=temp)
         
         # Humidity line
+        # Translators: Beginning of the "Humidity:" line in the device tree.
+        # The line is found again by this text when its value is refreshed, so
+        # it has to be translated exactly like the line itself.
         if current_text.startswith(_("Humidity:")):
             if hasattr(device, 'get_humidity'):
                 humidity = device.get_humidity()
                 if humidity is not None:
+                    # Translators: Line in the device tree. F1 finds its help
+                    # by the beginning of this text, so it and the "Humidity:"
+                    # in the help have to be translated the same way.
                     return _("Humidity: {value:g}%").format(value=humidity)
         
         # Brightness line (as info, not as an action)
+        # Translators: Beginning of the "Brightness:" line in the device tree.
+        # The line is found again by this text when its value is refreshed, so
+        # it has to be translated exactly like the line itself.
         if current_text.startswith(_("Brightness:")) and "Enter" not in current_text:
             if hasattr(device, 'get_luminance'):
                 luminance = device.get_luminance()
                 if luminance is not None:
+                    # Translators: Line in the device tree: the brightness of a
+                    # lamp. It has to keep the beginning it is found by.
                     return _("Brightness: {value}%").format(value=luminance)
         
         # Color temperature line
+        # Translators: Beginning of the "Color temperature:" line in the device
+        # tree. The line is found again by this text when its value is
+        # refreshed, so it has to be translated exactly like the line itself.
         if current_text.startswith(_("Color temperature:")):
             if hasattr(device, 'get_color_temperature'):
                 temp = device.get_color_temperature()
                 if temp is not None:
+                    # Translators: Line in the device tree. F1 finds its help
+                    # by the beginning of this text, so it and the "Color
+                    # temperature:" in the help have to be translated the same
+                    # way.
                     return _("Color temperature: {value}K").format(value=temp)
         
         # RGB color line
+        # Translators: Beginning of the "Color:" line in the device tree. The
+        # line is found again by this text when its value is refreshed, so it
+        # has to be translated exactly like the line itself.
         if current_text.startswith(_("Color:")) or current_text.startswith("RGB:"):
             if hasattr(device, 'get_rgb'):
                 rgb = device.get_rgb()
                 if rgb:
+                    # Translators: Line in the device tree. F1 finds its help
+                    # by the beginning of this text, so it and the "Color:" in
+                    # the help have to be translated the same way.
                     return _("Color: R={r}, G={g}, B={b}").format(r=rgb[0], g=rgb[1], b=rgb[2])
         
         # Netatmo: heating status (boiler)
+        # Translators: Beginning of the "Heating:" line in the device tree. The
+        # line is found again by this text when its value is refreshed, so it
+        # has to be translated exactly like the line itself.
         if current_text.startswith(_("Heating:")):
             boiler = device.get_boiler_status() if hasattr(device, 'get_boiler_status') else None
             if boiler is not None:
                 return _("Heating: active") if boiler else _("Heating: off")
         
         # Netatmo: pre-heating (anticipation)
+        # Translators: Beginning of the "Pre-heating:" line in the device tree.
+        # The line is found again by this text when its value is refreshed, so
+        # it has to be translated exactly like the line itself.
         if current_text.startswith(_("Pre-heating:")):
             anticipating = device.is_anticipating() if hasattr(device, 'is_anticipating') else None
             if anticipating:
@@ -886,6 +956,9 @@ class SmartHomeControlDialog(_NetatmoDialogMixin, _VeSyncDialogMixin, _MerossDia
             return None  # remove the item when no longer active
         
         # Netatmo: open window
+        # Translators: Beginning of the "Open window:" line in the device tree.
+        # The line is found again by this text when its value is refreshed, so
+        # it has to be translated exactly like the line itself.
         if current_text.startswith(_("Open window:")):
             open_window = device.is_open_window() if hasattr(device, 'is_open_window') else None
             if open_window:
@@ -893,6 +966,9 @@ class SmartHomeControlDialog(_NetatmoDialogMixin, _VeSyncDialogMixin, _MerossDia
             return None  # remove the item when no longer active
         
         # Netatmo: next schedule change
+        # Translators: Beginning of the "Next schedule change:" line in the
+        # device tree. The line is found again by this text when its value is
+        # refreshed, so it has to be translated exactly like the line itself.
         if current_text.startswith(_("Next schedule change:")):
             next_change = device.get_next_schedule_change() if hasattr(device, 'get_next_schedule_change') else None
             if next_change and next_change.get('time'):
@@ -901,6 +977,10 @@ class SmartHomeControlDialog(_NetatmoDialogMixin, _VeSyncDialogMixin, _MerossDia
                     nc_zone = next_change.get('zone_name', '')
                     nc_temp = next_change.get('temp')
                     if nc_temp is not None:
+                        # Translators: Line in the device tree. F1 finds its
+                        # help by the beginning of this text, so it and the
+                        # "Next schedule change:" in the help have to be
+                        # translated the same way.
                         return _("Next schedule change: {zone} ({temp:.1f}°C) "
                                  "at {time}").format(zone=nc_zone, temp=nc_temp, time=change_time_str)
                     else:
@@ -910,6 +990,9 @@ class SmartHomeControlDialog(_NetatmoDialogMixin, _VeSyncDialogMixin, _MerossDia
             return None
         
         # Netatmo: battery
+        # Translators: Beginning of the "Battery:" line in the device tree. The
+        # line is found again by this text when its value is refreshed, so it
+        # has to be translated exactly like the line itself.
         if current_text.startswith(_("Battery:")):
             battery = device.get_battery_percent() if hasattr(device, 'get_battery_percent') else None
             if battery is not None:
@@ -1120,6 +1203,8 @@ class SmartHomeControlDialog(_NetatmoDialogMixin, _VeSyncDialogMixin, _MerossDia
             'failed to resolve', 'getaddrinfo failed', 'name resolution',
             'nodename nor servname', 'dns',
         ]):
+            # Translators: Network error in plain words, spoken and shown in
+            # the status line.
             return _("No internet connection - DNS resolution failed")
         
         # Connection refused / unreachable
@@ -1128,6 +1213,8 @@ class SmartHomeControlDialog(_NetatmoDialogMixin, _VeSyncDialogMixin, _MerossDia
             'no route to host', 'nicht erreichbar', 'winerror 10065',
             'network is unreachable', 'winerror 10051',
         ]):
+            # Translators: Network error in plain words, spoken and shown in
+            # the status line.
             return _("No internet connection - server unreachable")
         
         # Connection aborted / reset
@@ -1135,25 +1222,36 @@ class SmartHomeControlDialog(_NetatmoDialogMixin, _VeSyncDialogMixin, _MerossDia
             'connection reset', 'connection aborted', 'broken pipe',
             'winerror 10054', 'winerror 10053',
         ]):
+            # Translators: Network error in plain words, spoken and shown in
+            # the status line.
             return _("Connection interrupted")
         
         # Max retries / general connection problems
         if 'max retries exceeded' in msg_lower:
+            # Translators: Network error in plain words, spoken and shown in
+            # the status line.
             return _("No internet connection - server not responding")
         
         # Timeout
         if 'timeout' in msg_lower or 'zeitüberschreitung' in msg_lower:
+            # Translators: Network error in plain words, spoken and shown in
+            # the status line.
             return _("Timeout - please try again")
         
         # Event loop / internal errors
         if 'event loop' in msg_lower:
+            # Translators: Network error in plain words, spoken and shown in
+            # the status line.
             return _("Internal connection error - please try again")
         
         # Not logged in
         if 'nicht angemeldet' in msg_lower or 'not logged' in msg_lower:
+            # Translators: Network error in plain words, shown when no platform
+            # is signed in.
             return _("Not logged in - please check settings")
         
         # Fallback: shorten the original message
+        # Translators: Short error line in the status bar of the device menu.
         return _("Error: {msg}").format(msg=error_msg[:50])
     
     def _show_error_state(self, error_msg):
@@ -1286,6 +1384,8 @@ class SmartHomeControlDialog(_NetatmoDialogMixin, _VeSyncDialogMixin, _MerossDia
             return
         try:
             if warnings:
+                # Translators: One purifier in the filter warning at the top of
+                # the device menu: name and remaining filter life.
                 parts = [_("{name} {pct}%").format(name=n, pct=p) for n, p in warnings]
                 # Translators: Warning banner at the top of the dialog:
                 # affected purifiers and remaining filter life. Prompt to
@@ -1461,13 +1561,123 @@ class SmartHomeControlDialog(_NetatmoDialogMixin, _VeSyncDialogMixin, _MerossDia
         ui.message(_("Sorted: {sort}").format(sort=self.sort_choice.GetStringSelection()))
     
     def _focus_first_tree_item(self):
-        """Sets the focus to the first entry in the tree"""
+        """Sets the focus to the first entry in the tree.
+
+        SetFocus only when the tree does not already have it. A focus event
+        makes NVDA read the entry a second time, on top of the selection -
+        one of the reasons a single refresh was announced twice and three
+        times.
+        """
         root = self.tree.GetRootItem()
         if root.IsOk():
             first_item = self.tree.GetFirstChild(root)[0]
             if first_item.IsOk():
                 self.tree.SelectItem(first_item)
-                self.tree.SetFocus()
+                if not self.tree.HasFocus():
+                    self.tree.SetFocus()
+
+    def _tree_item_identity(self, item):
+        """A name for a tree entry that survives a rebuild.
+
+        Not the label: it carries the values ("Temperature: 21.5 C") and the
+        counts ("Plugs (3)"), so it changes exactly when the identity has not.
+        Devices are recognised by ``unique_id`` - not by ``uuid``, because
+        every sensor of a Meross hub carries the hub's uuid - plus channel and
+        action, which is what tells the outlets of one power strip apart.
+        Structural nodes carry no data at all; for them the label up to the
+        count is the only identity there is.
+        """
+        try:
+            data = self.tree.GetItemData(item)
+        except Exception:
+            return None
+        if isinstance(data, dict):
+            device = data.get('device')
+            if device is not None:
+                key = (getattr(device, 'unique_id', None)
+                       or getattr(device, 'uuid', ''))
+                return '|'.join(('d', str(data.get('type', '')), str(key),
+                                 str(data.get('channel', '')),
+                                 str(data.get('action', ''))))
+        try:
+            text = self.tree.GetItemText(item)
+        except Exception:
+            return None
+        return 'n|' + text.rsplit('(', 1)[0].strip()
+
+    def _capture_selection(self):
+        """The path from the root down to the selected entry, as identities."""
+        try:
+            item = self.tree.GetSelection()
+            root = self.tree.GetRootItem()
+        except Exception:
+            return []
+        if not item or not item.IsOk():
+            return []
+        chain = []
+        while item.IsOk() and item != root:
+            chain.append(self._tree_item_identity(item))
+            item = self.tree.GetItemParent(item)
+        chain.reverse()
+        return chain
+
+    def _restore_selection(self, chain):
+        """Selects the entry ``chain`` names again, as deeply as it still exists.
+
+        A rebuild used to leave the selection on the first entry: whoever
+        stood at the fifth device started over at the top after every refresh.
+        The path is followed as far as it is still there, so a device whose
+        children changed lands on the device itself rather than nowhere.
+        """
+        if not chain:
+            return False
+        node = self.tree.GetRootItem()
+        if not node.IsOk():
+            return False
+        target = None
+        for wanted in chain:
+            if wanted is None:
+                break
+            child, cookie = self.tree.GetFirstChild(node)
+            match = None
+            while child.IsOk():
+                if self._tree_item_identity(child) == wanted:
+                    match = child
+                    break
+                child, cookie = self.tree.GetNextChild(node, cookie)
+            if match is None:
+                break
+            target = match
+            node = match
+        if target is None:
+            return False
+        try:
+            # EnsureVisible expands the parents on its way - after a rebuild
+            # the category the entry sits in is collapsed again.
+            self.tree.EnsureVisible(target)
+            self.tree.SelectItem(target)
+        except Exception as e:
+            log.debug(f"Restoring the selection failed: {e}")
+            return False
+        return True
+
+    def _tree_signature(self, devices):
+        """What the STRUCTURE of the tree is made of - not the values in it.
+
+        Everything a rebuild would arrange differently: which devices exist,
+        their platform, their name and their offline state (it stands in the
+        label and decides the filter), plus filter and sort order. The values
+        are deliberately absent: they are written into the existing entries.
+        """
+        parts = [str(self.filter_mode), str(self.sort_mode)]
+        for d in devices or []:
+            parts.append('|'.join((
+                platform_of(d),
+                str(getattr(d, 'unique_id', None) or getattr(d, 'uuid', '')),
+                str(getattr(d, 'name', '')),
+                '1' if getattr(d, 'is_offline', False) else '0',
+            )))
+        return tuple(parts)
     
     def _on_search(self):
         """Opens the search dialog"""
@@ -1726,9 +1936,12 @@ class SmartHomeControlDialog(_NetatmoDialogMixin, _VeSyncDialogMixin, _MerossDia
         for screen reader users.
         """
         # Name
+        # Translators: Stand-in name for a sensor on a Meross hub that reports
+        # no name of its own.
         name = getattr(subdev, 'name', None) or _("Sensor")
 
         # Online status (inherits the hub status for untracked types like MS130)
+        # Translators: State of a single sensor on a Meross hub.
         status_text = _("Online") if self._meross_subdevice_online(subdev, hub_is_online) else _("Offline")
 
         # Model type (e.g. MS130)
@@ -1784,6 +1997,8 @@ class SmartHomeControlDialog(_NetatmoDialogMixin, _VeSyncDialogMixin, _MerossDia
             if co2 is not None:
                 info.append(f"CO₂: {co2} ppm")
             if noise is not None:
+                # Translators: Line in the device tree: the noise level
+                # measured by the Netatmo indoor module.
                 info.append(_("Noise level: {noise} dB").format(noise=noise))
             if pressure is not None:
                 info.append(_("Air pressure: {pressure} mbar").format(pressure=f"{pressure:.1f}"))
@@ -1830,11 +2045,17 @@ class SmartHomeControlDialog(_NetatmoDialogMixin, _VeSyncDialogMixin, _MerossDia
             if humidity is not None:
                 info.append(_("Humidity: {humidity}%").format(humidity=f"{humidity:g}"))
 
+            # Translators: Line in the device tree. F1 finds its help by the
+            # beginning of this text, so it and the "Status:" in the help have
+            # to be translated the same way.
             return info if info else [_("Status: no data")]
 
         # Water sensor (MS400, MS405)
         elif device.is_water_sensor:
             alarm = device.is_water_detected()
+            # Translators: Line in the device tree. F1 finds its help by the
+            # beginning of this text, so it and the "Status:" in the help have
+            # to be translated the same way.
             return [_("Status: WATER ALARM")] if alarm else [_("Status: no "
                                                                "water")]
         
@@ -1853,6 +2074,9 @@ class SmartHomeControlDialog(_NetatmoDialogMixin, _VeSyncDialogMixin, _MerossDia
                 elif hasattr(device._device, '_online'):
                     is_online = (getattr(getattr(device._device, '_online', None), 'value', None) == 1)
 
+                # Translators: Line in the device tree. F1 finds its help by
+                # the beginning of this text, so it and the "Status:" in the
+                # help have to be translated the same way.
                 info.append(_("Status: online") if is_online else _("Status: "
                                                                     "offline"))
 
@@ -1868,6 +2092,9 @@ class SmartHomeControlDialog(_NetatmoDialogMixin, _VeSyncDialogMixin, _MerossDia
                 except Exception as e:
                     log.debug(f"Ignored error in _get_device_info: {e}")
             except Exception:
+                # Translators: Line in the device tree. F1 finds its help by
+                # the beginning of this text, so it and the "Status:" in the
+                # help have to be translated the same way.
                 info.append(_("Status: unknown"))
 
             return info
@@ -1886,8 +2113,14 @@ class SmartHomeControlDialog(_NetatmoDialogMixin, _VeSyncDialogMixin, _MerossDia
                 if power is not None:
                     info.append(_("Power: {power} W").format(power=power))
                 if voltage is not None:
+                    # Translators: Line in the device tree. F1 finds its help
+                    # by the beginning of this text, so it and the "Voltage:"
+                    # in the help have to be translated the same way.
                     info.append(_("Voltage: {voltage} V").format(voltage=voltage))
                 if current is not None:
+                    # Translators: Line in the device tree. F1 finds its help
+                    # by the beginning of this text, so it and the "Amperage:"
+                    # in the help have to be translated the same way.
                     info.append(_("Amperage: {current} A").format(current=current))
 
                 # Consumption today + last 7 days from the device counter
@@ -1976,6 +2209,12 @@ class SmartHomeControlDialog(_NetatmoDialogMixin, _VeSyncDialogMixin, _MerossDia
         Args:
             devices: list of MerossDevice objects
         """
+        # Where the selection stood, and what the tree is being built
+        # from. Both BEFORE the filter below reassigns ``devices`` - the
+        # signature has to be comparable with the one the caller computes
+        # from the unfiltered list.
+        previous_selection = self._capture_selection()
+        self._last_tree_signature = self._tree_signature(devices)
         # Freeze prevents repaints during the tree construction (performance)
         self.tree.Freeze()
         self.tree.DeleteAllItems()
@@ -2193,6 +2432,9 @@ class SmartHomeControlDialog(_NetatmoDialogMixin, _VeSyncDialogMixin, _MerossDia
             _beep(BEEP_ERROR)
         finally:
             self.tree.Thaw()
+        # After Thaw, so the restored selection reaches the screen reader as
+        # an event of its own and not from inside the frozen rebuild.
+        self._restore_selection(previous_selection)
     
     def _sort_device_list(self, device_list):
         """Sorts a device list based on the current sort mode"""
@@ -2319,11 +2561,17 @@ class SmartHomeControlDialog(_NetatmoDialogMixin, _VeSyncDialogMixin, _MerossDia
                     self.tree.SetItemData(power_item, {'type': 'info', 'device': device, 'channel': channel})
                 voltage = channel.get_voltage() if hasattr(channel, 'get_voltage') else None
                 if voltage is not None:
+                    # Translators: Line in the device tree. F1 finds its help
+                    # by the beginning of this text, so it and the "Voltage:"
+                    # in the help have to be translated the same way.
                     voltage_item = self.tree.AppendItem(node, _("Voltage: "
                                                                 "{value} V").format(value=voltage))
                     self.tree.SetItemData(voltage_item, {'type': 'info', 'device': device, 'channel': channel})
                 current = channel.get_current() if hasattr(channel, 'get_current') else None
                 if current is not None:
+                    # Translators: Line in the device tree. F1 finds its help
+                    # by the beginning of this text, so it and the "Amperage:"
+                    # in the help have to be translated the same way.
                     current_item = self.tree.AppendItem(node, _("Amperage: "
                                                                 "{value} A").format(value=current))
                     self.tree.SetItemData(current_item, {'type': 'info', 'device': device, 'channel': channel})
@@ -2414,9 +2662,15 @@ class SmartHomeControlDialog(_NetatmoDialogMixin, _VeSyncDialogMixin, _MerossDia
                     if device.supports_luminance():
                         luminance = device.get_luminance()
                         if luminance is not None:
+                            # Translators: Line in the device tree: brightness
+                            # of a lamp. Enter opens the input dialog, hence
+                            # the hint in the text itself.
                             lum_text = _("Brightness: {value}% - press Enter "
                                          "to change").format(value=luminance)
                         else:
+                            # Translators: Line in the device tree for a lamp
+                            # whose brightness is not known yet. Enter opens
+                            # the input dialog.
                             lum_text = _("Set brightness - press Enter to open")
                         brightness_item = self.tree.AppendItem(node, lum_text)
                         self.tree.SetItemData(brightness_item, {'type': 'action', 'device': device, 'action': 'light_luminance'})
@@ -2428,24 +2682,37 @@ class SmartHomeControlDialog(_NetatmoDialogMixin, _VeSyncDialogMixin, _MerossDia
                         if not is_in_rgb:
                             if temp is not None and temp > 0:
                                 if temp <= 33:
+                                    # Translators: Line in the device tree: the
+                                    # light colour set. Enter opens the
+                                    # selection.
                                     temp_text = _("Light color: warm white "
                                                   "(cozy) - press Enter to "
                                                   "change")
                                 elif temp <= 66:
+                                    # Translators: Line in the device tree: the
+                                    # light colour set. Enter opens the
+                                    # selection.
                                     temp_text = _("Light color: daylight "
                                                   "(neutral) - press Enter to "
                                                   "change")
                                 else:
+                                    # Translators: Line in the device tree: the
+                                    # light colour set. Enter opens the
+                                    # selection.
                                     temp_text = _("Light color: cool white "
                                                   "(bright) - press Enter to "
                                                   "change")
                             else:
+                                # Translators: Line in the device tree for a
+                                # lamp in colour mode: Enter switches to white.
                                 temp_text = _("Set light color (white) - "
                                               "press Enter to open")
                             temp_item = self.tree.AppendItem(node, temp_text)
                             self.tree.SetItemData(temp_item, {'type': 'action', 'device': device, 'action': 'light_temperature'})
                             action_items['light_temperature'] = temp_item
                         else:
+                            # Translators: Line in the device tree: Enter puts
+                            # the lamp into white mode.
                             temp_text = _("Switch to white mode - press Enter "
                                           "to open")
                             temp_item = self.tree.AppendItem(node, temp_text)
@@ -2459,15 +2726,26 @@ class SmartHomeControlDialog(_NetatmoDialogMixin, _VeSyncDialogMixin, _MerossDia
                             if rgb is not None:
                                 color_name = self._get_color_name_from_rgb(rgb)
                                 if color_name:
+                                    # Translators: Line in the device tree: the
+                                    # colour set, by name and by RGB value.
+                                    # Enter opens the colour picker.
                                     rgb_text = _("Color: {color} (RGB "
                                                  "{r},{g},{b}) - press Enter "
                                                  "to change").format(color=color_name, r=rgb[0], g=rgb[1], b=rgb[2])
                                 else:
+                                    # Translators: Line in the device tree: the
+                                    # colour set as an RGB value, where no name
+                                    # fits. Enter opens the colour picker.
                                     rgb_text = _("Color: RGB({r}, {g}, {b}) - "
                                                  "press Enter to change").format(r=rgb[0], g=rgb[1], b=rgb[2])
                             else:
+                                # Translators: Line in the device tree for a
+                                # lamp with no colour set yet. Enter opens the
+                                # colour picker.
                                 rgb_text = _("Set color - press Enter to open")
                         else:
+                            # Translators: Line in the device tree for a lamp
+                            # in white mode: Enter switches to colour.
                             rgb_text = _("Switch to color mode - press Enter "
                                          "to open")
                         rgb_item = self.tree.AppendItem(node, rgb_text)
@@ -2621,6 +2899,10 @@ class SmartHomeControlDialog(_NetatmoDialogMixin, _VeSyncDialogMixin, _MerossDia
                                 home_id, cached_only=True)
                             for sched in schedules:
                                 if sched.get('selected', False):
+                                    # Translators: Line in the device tree: the
+                                    # active heating schedule of a Netatmo
+                                    # thermostat. Enter switches to another
+                                    # one.
                                     sched_label = _("Heating schedule: {name} "
                                                     "- press Enter to switch").format(name=sched['name'])
                                     break
@@ -2924,8 +3206,12 @@ class SmartHomeControlDialog(_NetatmoDialogMixin, _VeSyncDialogMixin, _MerossDia
                         # Translators: Current light color in the help text.
                         help_text += _("Current setting: warm white") + "\n"
                     elif temp <= 66:
+                        # Translators: Spoken in the dialog that sets the light
+                        # colour: what is set at the moment.
                         help_text += _("Current setting: daylight") + "\n"
                     else:
+                        # Translators: Spoken in the dialog that sets the light
+                        # colour: what is set at the moment.
                         help_text += _("Current setting: cool white") + "\n"
                 # Translators: Usage hint in the light color dialog.
                 help_text += _("Navigate with arrow keys, Enter to confirm.")
@@ -3020,9 +3306,13 @@ class SmartHomeControlDialog(_NetatmoDialogMixin, _VeSyncDialogMixin, _MerossDia
                 # Detailed help text for screen readers
                 # Translators: Help texts in the brightness dialog.
                 help_text = _("Enter the brightness for {name}.").format(name=device.name) + "\n"
+                # Translators: Explanation in the dialog that sets the
+                # brightness.
                 help_text += _("Value between 0 (off) and 100 (maximum "
                                "brightness).") + "\n"
                 if current_luminance is not None:
+                    # Translators: Shown in the dialog that sets the
+                    # brightness: the value set at the moment.
                     help_text += _("Current brightness: {value}%").format(value=current_luminance)
                 
                 dlg = wx.TextEntryDialog(
@@ -3158,8 +3448,19 @@ class SmartHomeControlDialog(_NetatmoDialogMixin, _VeSyncDialogMixin, _MerossDia
         # Stop the loading beep
         self._stop_loading_beep()
         self.last_update_time = time.time()
-        # Use the internal method directly (the devices are already updated)
-        self._load_devices_internal(self.plugin.devices)
+        # A refresh normally changes values, not the list. Rebuilding the
+        # whole tree for that costs the selection and makes NVDA read the
+        # entry again - the deletion and the new first entry each report a
+        # selection of their own. So the structure is compared first: only a
+        # real change (a device added, removed, renamed, gone offline)
+        # rebuilds, everything else is written into the existing entries, the
+        # way the 15-second live refresh does it anyway.
+        if (self._last_tree_signature is not None
+                and (self._tree_signature(self.plugin.devices)
+                     == self._last_tree_signature)):
+            self.refresh_all_device_data_live(force=True)
+        else:
+            self._load_devices_internal(self.plugin.devices)
         self._refresh_favorites_tree()
         self._reset_refresh_button()
         _beep(BEEP_OFF)  # ehemals 600,80 = Erfolg  # formerly 600,80 = success  # success tone (same length as the loading beep)
@@ -3174,8 +3475,10 @@ class SmartHomeControlDialog(_NetatmoDialogMixin, _VeSyncDialogMixin, _MerossDia
             # Translators: Message after a manual refresh.
             ui.message(_("Refreshed - {online} devices online").format(online=online))
         
-        # Set the focus to the tree
-        self._focus_first_tree_item()
+        # No _focus_first_tree_item() here: the selection stays where the
+        # user left it. Only a tree that lost the focus entirely gets it back.
+        if not self.tree.HasFocus():
+            self.tree.SetFocus()
     
     def _reset_refresh_button(self):
         """Resets the refresh button"""
@@ -3280,6 +3583,17 @@ class SmartHomeControlDialog(_NetatmoDialogMixin, _VeSyncDialogMixin, _MerossDia
                 and self.plugin._encrypted_password
                 and (not self.plugin.api or 'meross' in changed)):
             self._init_meross_in_background()
+
+        # A platform switched off keeps its devices otherwise: the polling
+        # stops at once, but a plug that answers nothing any more was still
+        # offered for switching until NVDA was restarted. Dropping them
+        # changes the list, so the tree is rebuilt for it.
+        try:
+            if self.plugin.drop_disabled_platform_devices():
+                self._load_devices_internal(self.plugin.devices)
+                self._refresh_favorites_tree()
+        except Exception as e:
+            log.debug(f"Dropping the switched-off platforms failed: {e}")
 
         # Update the dialog
         if self.plugin.is_logged_in:

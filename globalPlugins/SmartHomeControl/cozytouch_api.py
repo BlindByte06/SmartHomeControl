@@ -178,13 +178,19 @@ class CozytouchAPI:
         try:
             token = resp.json()
         except ValueError:
+            # Translators: Error message of the Cozytouch sign-in, shown to the
+            # user.
             raise RuntimeError(_("Cozytouch: invalid response during login"))
 
         if not isinstance(token, dict) or "access_token" not in token:
             err = token.get("error") if isinstance(token, dict) else None
             if err == "invalid_grant":
                 raise CredentialsRejected(
+                    # Translators: Error message of the Cozytouch sign-in: the
+                    # credentials were refused.
                     _("Cozytouch: incorrect email or password"))
+            # Translators: Error message of the Cozytouch sign-in with the HTTP
+            # status code.
             raise RuntimeError(_("Cozytouch: login failed (HTTP {code})").format(
                 code=resp.status_code))
 

@@ -3,10 +3,10 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Smart Home Control 26.8.1beta2</title>
+<title>Smart Home Control 26.8.2</title>
 <style>
 body { font-family: Segoe UI, Arial, sans-serif; line-height: 1.6; max-width: 60em; margin: 1.5em auto; padding: 0 1em; }
-h1, h2, h3, h4 { line-height: 1.25; }
+h1, h2, h3, h4, h5 { line-height: 1.25; }
 h1 { border-bottom: 2px solid #ccc; padding-bottom: .2em; }
 h2 { border-bottom: 1px solid #ddd; padding-bottom: .15em; margin-top: 1.6em; }
 code { background: #f2f2f2; padding: .1em .3em; border-radius: 3px; }
@@ -81,8 +81,7 @@ and can be assigned there when needed:</p>
 <li><strong>Open the settings</strong> – opens the Smart Home settings
   directly, without the detour through the device menu.</li>
 <li><strong>Favorites layer</strong> – announce status and switch favorites
-  without opening the menu (see below). The most rewarding one to assign for
-  everyday use.</li>
+  without opening the menu (see below).</li>
 </ul>
 <h3 id="favorites-layer">Favorites layer</h3>
 <p>After the assigned shortcut, the add-on prompts with “Choose a
@@ -98,8 +97,7 @@ favorite: digit 1 to 9” and waits for a digit.</p>
 <li><strong>The same digit after that window</strong> announces the status
   again and opens a fresh one, so switching is never out of reach – it is two
   quick presses away. This is what stops a digit pressed by accident long
-  afterwards from switching something off: a power strip carrying a computer
-  is the case worth protecting.</li>
+  afterwards from switching something off.</li>
 <li><strong>A different digit</strong> announces its status and becomes the
   remembered one, so "1, 2, 1" switches nothing.</li>
 <li><strong>0</strong> reads out which digit belongs to which device.</li>
@@ -116,7 +114,8 @@ be switched – adjustable in the device menu".</p>
 <li><strong>Switchable:</strong> Meross plugs, lights and LED strips, aroma
   diffusers; Levoit air purifiers and tower fans; the Cozytouch hot water
   heat pump (hot water production on/off).</li>
-<li><strong>On multi-outlet strips</strong> (MSS425/E/F, MSS620, MOP320)
+<li><strong>On power strips</strong> (MSS425, MSS425E, MSS425F) and
+  <strong>double outlets</strong> (MSS620, MOP320)
   either <strong>a single outlet</strong> or <strong>the whole
   device</strong> can become a favorite – each with its own digit. The outlet
   switches only itself, the device switches all outlets together. For a
@@ -125,7 +124,9 @@ be switched – adjustable in the device menu".</p>
   <strong>offline</strong> too – the digit stays the same once it is
   reachable again.</li>
 <li><strong>Not switchable:</strong> Meross sensors (temperature/humidity,
-  water leak) and Meross hubs; every Netatmo device. Thermostats and radiator
+  water leak) and Meross hubs; every Netatmo device; the Cosori air fryer,
+  which cannot be switched on and off at all and is operated through a
+  cooking programme instead. Thermostats and radiator
   valves can be adjusted but not switched on and off; the weather station and
   the indoor air monitor are display only. Their status is announced on the
   first press as usual – they are adjusted in the device menu.</li>
@@ -157,7 +158,7 @@ physical button on the device) are announced as well.</p>
 <li><strong>MSS315</strong> – plug with energy monitoring (power, voltage, current)</li>
 <li><strong>MSS425</strong>, <strong>MSS425E</strong>, <strong>MSS425F</strong> – power strips; each mains outlet can be switched individually. The USB ports of these strips form a single shared outlet and can therefore only be switched together. Outlets that have their own name in the Meross app appear under that name.</li>
 <li><strong>MSS620</strong> – outdoor dual plug; both outlets switchable individually (the button on the device itself always switches both together)</li>
-<li><strong>MOP320</strong> – outdoor dual plug with energy monitoring; both outlets switchable individually</li>
+<li><strong>MOP320</strong> – outdoor dual plug with energy monitoring; both outlets switchable individually (the button on the device itself always switches both together)</li>
 </ul>
 <h4 id="lights-and-led-strips">Lights and LED strips</h4>
 <ul>
@@ -185,9 +186,12 @@ which hub accepts which sensor is defined by Meross and shown in the Meross app.
 <p>Heating control and weather station display through the Netatmo account.</p>
 <h4 id="heating">Heating</h4>
 <ul>
-<li><strong>NATherm1</strong> – room thermostat</li>
-<li><strong>NRV</strong> – smart radiator valve</li>
-<li><strong>NAPlug</strong> – relay/gateway (bridge, required for NATherm1)</li>
+<li><strong>NATherm1</strong> – room thermostat; sold as the "Smart
+  Thermostat" or "Smart Modulating Thermostat"</li>
+<li><strong>NRV</strong> – smart radiator valve; sold as the "Smart Radiator
+  Valves"</li>
+<li><strong>NAPlug</strong> – relay/gateway (bridge, required for NATherm1);
+  sold simply as the "Relay", and supplied with the thermostat</li>
 </ul>
 <p>Thermostats and radiator valves are grouped by the rooms assigned in
 the Netatmo app; the room name is also announced as part of the device
@@ -207,10 +211,12 @@ the NRV smart radiator valve, not on the room thermostat).</p>
 </ul>
 <p>Displayed: temperature, humidity, CO₂, noise, air pressure, rain and wind –
 display only, no control.</p>
-<h3 id="vesync-levoit">VeSync / Levoit</h3>
+<h3 id="vesync-levoit">VeSync</h3>
 <p>Sign in with the email address, password and country code of the VeSync
-account.</p>
-<h4 id="air-purifiers-levoit-core">Air purifiers (Levoit Core)</h4>
+account. Several brands sit under that account; supported here are devices by
+Levoit and Cosori.</p>
+<h4 id="levoit">Levoit</h4>
+<h5 id="air-purifiers-levoit-core">Air purifiers (Core series)</h5>
 <ul>
 <li><strong>Core200S</strong>, <strong>Core300S</strong>, <strong>Core400S</strong>, <strong>Core500S</strong>, <strong>Core600S</strong></li>
 <li>as well as the regional variants of these series that VeSync reports as <strong>LAP-C201S</strong>, <strong>LAP-C202S</strong>, <strong>LAP-C301S</strong>, <strong>LAP-C302S</strong>, <strong>LAP-C401S</strong>, <strong>LAP-C501S</strong> and <strong>LAP-C601S</strong> – regardless of the country code at the end of the model name (e.g. <code>-WEU</code>, <code>-WUSR</code>, <code>-WJP</code>).</li>
@@ -221,48 +227,53 @@ except the Core200S), fan level, display, child lock, auto profile
 warning at low values. The <strong>Core200S</strong> (and its variants
 LAP-C201S/C202S) additionally has a controllable <strong>night light</strong>
 (on/off/dim).</p>
-<h4 id="tower-fans-levoit">Tower fans (Levoit)</h4>
+<h5 id="tower-fans-levoit">Tower fans</h5>
 <ul>
 <li><strong>LTF-F422S</strong> series, likewise regardless of the country code (tested: KEU, WUSR, WJP, WUS)</li>
 </ul>
 <p>Functions: on/off, mode (normal, auto, turbo, sleep), fan level,
 oscillation, mute and display.</p>
-<h4 id="air-fryers-cosori">Air fryers (Cosori)</h4>
+<h4 id="cosori">Cosori</h4>
+<h5 id="air-fryers-cosori">Air fryers</h5>
 <ul>
 <li><strong>CAF-P583S</strong> series (Dual Blaze), regardless of the country code</li>
 </ul>
 <p><strong>Shown, and a running programme can be stopped.</strong> The tree
-gives the name, on/off, whether the appliance is online and, while a
+gives the name, what the appliance is doing, whether it is online and, while a
 programme is loaded, its state (ready to start, cooking, finished, paused), the
 programme itself, the remaining time and both temperatures – the measured one
-and the one the programme was set to – in the unit the appliance reports.</p>
+and the one the programme was set to – in the unit the appliance reports. The
+on/off of the device list steps aside as soon as the appliance reports a
+cooking state – it says nothing about whether anything is being cooked.</p>
+<p><strong>The end of a programme is announced</strong>, as are one that
+starts running and one that is paused – within fifteen seconds while the
+device menu is open, within a minute while it is closed, and whether the
+announcement was set off from here or by somebody standing at the appliance.
+One switch under Notifications in the settings turns all three off together.</p>
 <p><strong>Start programme</strong> offers the cooking programmes this
-appliance has reported, plus a free start with a temperature and a time of
-one's own. Temperature and duration can be adjusted for a preset programme
-as well; they start out at the values the appliance holds for it. A change
-made for one cook stays a one-off - it does not redefine the programme, so the
+appliance has reported. Temperature and duration can be adjusted on the way;
+they start out at the values the appliance holds for the programme. A change
+made for one cook stays a one-off – it does not redefine the programme, so the
 same choice means the same thing next time. Adjusting it on the appliance and
 loading it again does change it, because then the appliance's own setting has
 changed.</p>
-<p>The programme list fills itself. To start a programme by name the cloud
-wants the id the appliance uses for it, and those ids cannot be worked out -
-on a CAF-P583S they run 1, 2, 3, 5, 6, 9, 13, 14, 15, 16, 17, with gaps. So
-the appliance is left to say them: every time a programme is loaded on it,
-its name and id are noted, and it appears in the list from then on. Merely
-selecting a programme on the appliance is enough; it does not have to be
-cooked. Until that has happened the free start is the way in, and the list
-says so instead of showing nothing.</p>
-<p><strong>Change temperature</strong> and <strong>Change cooking time</strong>
-adjust a programme while it runs. They are offered only then: before the
-programme starts the appliance refuses both, so the tree says so instead of
-holding out a control that cannot work.</p>
+<p>The programme list fills itself. The add-on carries no list of its own
+and learns each programme from the appliance: every time one is loaded there
+it is noted, and it can be chosen from then on. Merely selecting a programme
+on the appliance is enough; it does not have to be cooked. Until one has been
+reported, the add-on says so instead of opening an empty list.</p>
+<p><strong>Change cooking time</strong> adjusts a programme while it runs. It
+is offered only then: before the programme starts the appliance refuses it, so
+the tree says so instead of holding out a control that cannot work.</p>
 <p>A new time is taken as the whole duration and the countdown starts again
-from it - measured on the appliance, so “set the time to ten minutes” means ten
-minutes from that moment. Changing the temperature is accepted by the cloud,
-but on the tested appliance it did not take effect: the measured temperature
-kept climbing towards the original setting. Until that is settled the entry
-stays, and the measured temperature line is the honest place to check what the
-appliance is really doing.</p>
+from it – measured on the appliance, so “set the time to ten minutes” means ten
+minutes from that moment.</p>
+<p><strong>The temperature cannot be changed while the appliance cooks</strong>
+– it does not accept one then. There is therefore no entry for it, but a line
+that says so and names where the temperature can be set instead: when a
+programme is started, or on the appliance’s own buttons. To cook the same
+thing hotter from here, stop the programme and start it again with the
+temperature wanted.</p>
 <p><strong>Stop programme</strong> ends a programme that is running.</p>
 <p>Both ask before anything is sent. The question names the programme and,
 for a start, the temperature and the duration; Cancel is the preselected
@@ -270,15 +281,16 @@ button.</p>
 <p><strong>Starting may not mean heating.</strong> Cosori state that their air
 fryers cannot be switched on remotely, to comply with a safety standard that
 exists so an appliance cannot begin cooking unattended; temperature and time,
-however, are adjustable from the app. Whether this model begins by itself or
+however, they say, are adjustable remotely. What this appliance actually
+accepts is set out above: a time whenever a programme runs, a temperature only
+as a programme is started. Whether this model begins by itself or
 waits for its own start button is not established here. The programme state
 says which it was on the next refresh: <em>cooking</em>, or <em>ready to
 start</em>, in which case the button on the appliance still has to be pressed.
-The hard part - choosing the programme, the temperature and the time without
-reading a touch panel - is done either way.</p>
-<p> Preheating and changing the time or temperature of a programme
-already under way are not offered - the commands for them are documented,
-but nothing about them has been confirmed against a real appliance.</p>
+The hard part – choosing the programme, the temperature and the time without
+reading a touch panel – is done either way.</p>
+<p>Preheating is not offered. The command for it is documented, but nothing
+about it has been confirmed against a real appliance, and this one heats.</p>
 <p>In standby the appliance stops measuring and keeps sending the last
 temperature of the previous cook, unchanged for as long as it stands idle.
 That reading is left out rather than shown as if it were current.</p>
@@ -329,7 +341,8 @@ picks them up from the account.</p>
 <p>Open the menu with <strong>NVDA + Shift + H</strong>. Without a sign-in
 yet, the settings dialog opens automatically. Enable the platforms in use
 and enter the credentials – details per platform in the following sections.
-Finally: optionally enable "Automatic login" (the connection is then
+Finally, in the "General" tab: optionally enable "Automatic login" (the
+connection is then
 established at every NVDA start) and save. The devices are loaded and
 immediately available in the menu – no NVDA restart required.</p>
 <p>Credentials that were changed are signed in at the platform before they
@@ -342,26 +355,29 @@ the manufacturer app, for instance – a question offers to enter the
 credentials again straight away and opens the settings at the affected
 tab.</p>
 <h3 id="set-up-meross">Set up Meross</h3>
-<p>Enter the email address and password of the Meross account – done.</p>
+<p>In the "Meross" tab, enter the email address and password of the Meross
+account – done.</p>
 <h3 id="set-up-netatmo">Set up Netatmo</h3>
 <p>Netatmo uses a browser sign-in (OAuth2) instead of email/password inside
 the add-on. Required once:</p>
 <ol>
 <li>Create a (free) app on <code>dev.netatmo.com</code>; it provides a
   <strong>client ID</strong> and a <strong>client secret</strong>.</li>
-<li>Enter both in the Netatmo tab of the add-on.</li>
-<li>Register the <strong>redirect URI</strong> shown in the tab with the Netatmo
-  app – details, and what the port is about, are explained in the section
+<li>Enter both in the "Netatmo" tab of the add-on.</li>
+<li>Register the <strong>redirect URI</strong> with the Netatmo app. It is
+  <code>http://localhost:PORT/callback</code>, with the port from the field
+  above – details, and what the port is about, are explained in the
+  section
   <a href="#netatmo-redirect-uri-and-port">Netatmo: redirect URI and port</a>.</li>
 <li>Choose "Connect with Netatmo (OAuth2)", sign in in the browser and
   confirm.</li>
 </ol>
-<h3 id="set-up-vesync">Set up VeSync / Levoit</h3>
-<p>Enter the email address, password and country code of the VeSync
-account.</p>
+<h3 id="set-up-vesync">Set up VeSync</h3>
+<p>In the "VeSync" tab, enter the email address, password and country code of
+the VeSync account.</p>
 <h3 id="set-up-cozytouch">Set up Cozytouch / Atlantic (experimental)</h3>
-<p>Enter the email address and password of the Cozytouch account (the same
-as in the Cozytouch app). Optional: the rated capacity of the hot water
+<p>In the "Cozytouch" tab, enter the email address and password of the
+Cozytouch account (the same as in the Cozytouch app). Optional: the rated capacity of the hot water
 tank in litres, so the available hot water is additionally estimated in
 litres. The tab is labelled “experimental” in the settings dialog – see
 <a href="#maturity-and-notes">Maturity and notes</a>.</p>
@@ -369,8 +385,8 @@ litres. The tab is labelled “experimental” in the settings dialog – see
 <h2 id="netatmo-redirect-uri-and-port">Netatmo: redirect URI and port</h2>
 <h3 id="what-is-the-redirect-uri">What is the redirect URI?</h3>
 <p>During the browser sign-in, Netatmo sends the authorisation back to a
-previously registered address – the redirect URI. The add-on shows it in the
-Netatmo tab. By default it is <strong>exactly</strong>:</p>
+previously registered address – the redirect URI. It follows from the port
+set in the "Netatmo" tab. By default it is <strong>exactly</strong>:</p>
 <p><code>http://localhost:8474/callback</code></p>
 <p>Exactly this address has to be entered in the "redirect URI" field of the
 Netatmo app on <code>dev.netatmo.com</code> – best copied unchanged from the
@@ -444,11 +460,10 @@ The columns follow the content: a file of events carries no measurement
 columns, and a file of readings only the quantities that actually occur.</p>
 <p>Timestamps are written in ISO 8601 with the "T"
 (<code>2026-08-14T22:20:49</code>). That is not cosmetic: with a space instead,
-a spreadsheet recognises a date, reformats the cell and then shows nothing but
-"##########" because the column is too narrow – which is exactly what a screen
-reader reads out. List and decimal separators follow the regional settings, so
-numbers arrive as numbers. Without that, a German Excel reads the temperature
-"28.5" as the date "28 May".</p>
+a spreadsheet recognises a date in it and reformats the cell, instead of
+leaving the timestamp standing as text. List and decimal separators follow the
+regional settings, so numbers arrive as numbers rather than being read as
+dates.</p>
 <hr />
 <h2 id="change-announcements">Change announcements</h2>
 <p>External changes are announced as well – for example when a device is
@@ -486,9 +501,12 @@ temporarily fail when the manufacturers change their servers.</p>
 <p>The platforms differ in how well they are field-tested:</p>
 <ul>
 <li><strong>Meross</strong> and <strong>Netatmo</strong> are considered stable.</li>
-<li><strong>VeSync/Levoit:</strong> only Levoit Core series air purifiers and
-  Levoit tower fans are supported. Other VeSync devices (plugs, lights,
-  humidifiers, kitchen appliances) are not shown.</li>
+<li><strong>VeSync:</strong> Levoit Core series air purifiers, Levoit
+  tower fans and Cosori air fryers of the CAF-P583S series are supported. The
+  air fryer was built against exactly one appliance and is confirmed there;
+  the two-zone TwinFry models speak a different protocol and are not shown.
+  Neither are other VeSync devices (plugs, lights, humidifiers, other kitchen
+  appliances).</li>
 <li><strong>Cozytouch/Atlantic (experimental):</strong> the protocol is
   unofficial and reverse engineered; Atlantic can change it at any time.
   Only the Austria Email Revolution Evo 3 hot water heat pump has been
@@ -564,7 +582,7 @@ under the <strong>EDL-1.0</strong> (a BSD-3-style license), which is compatible
 with the GPL-2.0.</p>
 <hr />
 <p><em>Smart Home Control is a community add-on and is not affiliated with
-Meross, Netatmo, VeSync/Levoit or Atlantic/Cozytouch. All brand and product
+Meross, Netatmo, VeSync or Atlantic/Cozytouch. All brand and product
 names belong to their respective owners.</em></p>
 </body>
 </html>

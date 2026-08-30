@@ -457,6 +457,8 @@ class MerossAPI:
         resources.
         """
         if not self.loop or self.loop.is_closed():
+            # Translators: Error message when the background loop the Meross
+            # library needs is gone.
             raise RuntimeError(_("Event loop not available"))
 
         import concurrent.futures

@@ -10,7 +10,7 @@ import re
 import threading
 from logHandler import log
 
-from .constants import netatmo_redirect_uri, NETATMO_REDIRECT_PORT
+from .constants import NETATMO_REDIRECT_PORT
 from .platform_utils import PLATFORM_LABELS, PASSWORD_PLATFORMS
 
 import addonHandler
@@ -66,6 +66,40 @@ def login_error_message(platform, error):
     # brand name, {error} = message from the platform.
     return _("{platform} login failed: {error}").format(
         platform=label, error=text)
+
+
+def _as_bool(value, default=False):
+    """A checkbox value that cannot take the settings dialog down.
+
+    ``wx.CheckBox.SetValue`` raises a TypeError on a string, and that
+    happened: a notification flag added without an entry in CONFSPEC came
+    back from nvda.ini as the text "True", and the whole settings dialog
+    stopped opening - not the one tab, the dialog. The value had been a
+    proper bool on the first run and only turned into text once it had
+    been written to disk once, so nothing showed up until a day later.
+
+    The missing declaration is the real fix and has been made. This is the
+    net underneath it, because the cost of the next one is out of all
+    proportion to a line of coercion.
+
+    Note ``"False"``: a bare ``bool()`` would make that True, which is the
+    trap this walks around.
+    """
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, str):
+        text = value.strip().lower()
+        if text in ("true", "1", "yes", "on"):
+            return True
+        if text in ("false", "0", "no", "off", ""):
+            return False
+        return bool(default)
+    if value is None:
+        return bool(default)
+    try:
+        return bool(value)
+    except Exception:
+        return bool(default)
 
 
 class SmartHomeSettingsDialog(wx.Dialog):
@@ -277,6 +311,41 @@ class SmartHomeSettingsDialog(wx.Dialog):
     # Tab: General
     # -------------------------------------------------------------------------
     # -
+    def _add_help_text(self, panel, sizer, text):
+        """Adds a block of explanation that NVDA can actually reach.
+
+        A ``wx.StaticText`` is not focusable, so tabbing through a tab page
+        walks straight past it and the explanation is never spoken. That is
+        what happened to the notes on every platform tab: they were on
+        screen and inaudible, which for this add-on is the same as absent.
+
+        A read-only multiline field sits in the tab order, reads line by
+        line, follows on a braille display and can be copied with Ctrl+C -
+        the same shape the history uses for its detail view.
+        """
+        # The label carries the name. SetName on a wx.TextCtrl does not
+        # reach the screen reader on Windows - the name of an edit control
+        # comes from the static text in front of it, which is why the field
+        # was announced without one. Both are set: the label for what NVDA
+        # actually reads, SetName for the platforms where it does count.
+        # Translators: Label in front of the explanatory text at the top of a
+        # settings tab.
+        label = wx.StaticText(panel, label=_("Notes:"))
+        sizer.Add(label, flag=wx.LEFT | wx.TOP, border=10)
+        ctrl = wx.TextCtrl(
+            panel, value=text,
+            style=wx.TE_MULTILINE | wx.TE_READONLY | wx.TE_RICH2)
+        # Translators: Accessible name of the explanatory text at the top of
+        # a settings tab.
+        ctrl.SetName(_("Notes"))
+        # Tall enough for the text as it stands, with room for a line that
+        # wraps: nothing worth hearing should need scrolling first.
+        lines = text.count("\n") + 3
+        ctrl.SetMinSize((-1, ctrl.GetCharHeight() * lines + 10))
+        sizer.Add(ctrl, flag=wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM,
+                  border=10)
+        return ctrl
+
     def _create_general_tab(self, panel):
         sizer = wx.BoxSizer(wx.VERTICAL)
 
@@ -333,6 +402,8 @@ class SmartHomeSettingsDialog(wx.Dialog):
         # Translators: The two choices for the start tab (device list / favorites).
         self._startTabValues = ['devices', 'favorites']
         self.startTabChoice = wx.Choice(
+            # Translators: The two options of the combo box that decides which
+            # tab the device menu opens on.
             panel, choices=[_("All devices"), _("Favorites")])
         current_tab = getattr(self.plugin, 'start_tab', 'devices')
         self.startTabChoice.SetSelection(
@@ -352,6 +423,8 @@ class SmartHomeSettingsDialog(wx.Dialog):
         self.favSwitchWindowCtrl = wx.TextCtrl(
             panel, value=str(getattr(self.plugin, 'fav_layer_switch_window',
                                      FAV_LAYER_SWITCH_WINDOW_DEFAULT)))
+        # Translators: Accessible name of the favorites switch window field in
+        # the General tab of the settings.
         self.favSwitchWindowCtrl.SetName(_("Favorites layer switching window "
                                            "in seconds"))
         # Translators: Tooltip for the favorites layer switching window.
@@ -371,7 +444,7 @@ class SmartHomeSettingsDialog(wx.Dialog):
 
         # Note
         # Translators: Hint text in the General tab.
-        hintText = wx.StaticText(panel, label=_(
+        self._add_help_text(panel, sizer, _(
             "Note: Meross, Netatmo, VeSync and Cozytouch can be used "
             "individually or in combination.\nDisabled platforms are skipped "
             "during login.\nA successful connection test in the respective "
@@ -379,7 +452,6 @@ class SmartHomeSettingsDialog(wx.Dialog):
             "experimental - only one hot water heat pump has been tested so "
             "far."
         ))
-        sizer.Add(hintText, flag=wx.ALL, border=10)
 
         panel.SetSizer(sizer)
 
@@ -439,11 +511,10 @@ class SmartHomeSettingsDialog(wx.Dialog):
         sizer = wx.BoxSizer(wx.VERTICAL)
 
         # Translators: Explanatory text in the Meross tab.
-        infoText = wx.StaticText(panel, label=_(
+        self._add_help_text(panel, sizer, _(
             "Meross account credentials.\nThese are stored encrypted locally "
             "on this computer."
         ))
-        sizer.Add(infoText, flag=wx.ALL, border=10)
 
         formSizer = wx.FlexGridSizer(cols=2, hgap=10, vgap=10)
         formSizer.AddGrowableCol(1)
@@ -452,6 +523,8 @@ class SmartHomeSettingsDialog(wx.Dialog):
         # Translators: Label of the email input field (Meross).
         emailLabel = wx.StaticText(panel, label=_("&Email:"))
         self.merossEmailCtrl = wx.TextCtrl(panel, value=self.plugin.email)
+        # Translators: Accessible name of the Meross email field in the Meross
+        # tab of the settings.
         self.merossEmailCtrl.SetName(_("Meross email address"))
         formSizer.Add(emailLabel, flag=wx.ALIGN_CENTER_VERTICAL)
         formSizer.Add(self.merossEmailCtrl, flag=wx.EXPAND)
@@ -462,6 +535,9 @@ class SmartHomeSettingsDialog(wx.Dialog):
         self.merossPasswordCtrl = wx.TextCtrl(
             panel, value="", style=wx.TE_PASSWORD)
         self.merossPasswordCtrl.SetName(self._password_field_name(
+            # Translators: Name of the password field in the Meross tab of the
+            # settings. The add-on appends to it whether a password is already
+            # stored.
             _("Meross password"), bool(self.plugin.password)))
         formSizer.Add(passwordLabel, flag=wx.ALIGN_CENTER_VERTICAL)
         formSizer.Add(self.merossPasswordCtrl, flag=wx.EXPAND)
@@ -471,6 +547,8 @@ class SmartHomeSettingsDialog(wx.Dialog):
         # Test button
         # Translators: Button for testing the Meross connection.
         self.merossTestBtn = wx.Button(panel, label=_("&Test connection"))
+        # Translators: Accessible name of the Meross test button in the Meross
+        # tab of the settings.
         self.merossTestBtn.SetName(_("Test Meross connection"))
         self.merossTestBtn.Bind(wx.EVT_BUTTON, self.on_test_meross)
         sizer.Add(self.merossTestBtn, flag=wx.ALL, border=10)
@@ -478,18 +556,6 @@ class SmartHomeSettingsDialog(wx.Dialog):
         # Announce external changes (Meross-relevant only)
         # Translators: Checkbox: NVDA should announce external switching
         # (Alexa, app).
-        self.announceExternalCheckbox = wx.CheckBox(panel, label=_(
-            "&Announce external changes (Alexa, Meross app, etc.)"
-        ))
-        self.announceExternalCheckbox.SetValue(
-            getattr(self.plugin, 'announce_external_changes', True))
-        # Translators: Tooltip explanation of the external changes checkbox.
-        self.announceExternalCheckbox.SetToolTip(_(
-            "If enabled, NVDA will announce when a Meross device is switched "
-            "via Alexa, the Meross app or other external sources."
-        ))
-        sizer.Add(self.announceExternalCheckbox, flag=wx.LEFT | wx.RIGHT | wx.BOTTOM, border=10)
-
         panel.SetSizer(sizer)
 
     # -------------------------------------------------------------------------
@@ -502,13 +568,14 @@ class SmartHomeSettingsDialog(wx.Dialog):
 
         # Translators: Explanatory text in the Netatmo tab. Mentions
         # dev.netatmo.com.
-        infoText = wx.StaticText(panel, label=_(
+        self._add_help_text(panel, sizer, _(
             "Netatmo OAuth2 credentials.\nCreate an app at "
-            "https://dev.netatmo.com,\nenter the client ID and secret here, "
-            "and register the redirect URI\nshown below with the Netatmo app "
-            "(exactly identical)."
+            "https://dev.netatmo.com and enter the client ID and secret "
+            "here.\nThe app also needs a redirect URI, and it has to match "
+            "exactly:\nhttp://localhost:PORT/callback, with PORT the number "
+            "set below.\nThe manual explains it under \"Netatmo: redirect "
+            "URI and port\"."
         ))
-        sizer.Add(infoText, flag=wx.ALL, border=10)
 
         formSizer = wx.FlexGridSizer(cols=2, hgap=10, vgap=10)
         formSizer.AddGrowableCol(1)
@@ -517,6 +584,8 @@ class SmartHomeSettingsDialog(wx.Dialog):
         idLabel = wx.StaticText(panel, label=_("Client &ID:"))
         self.netatmoIdCtrl = wx.TextCtrl(
             panel, value=getattr(self.plugin, 'netatmo_client_id', ''))
+        # Translators: Accessible name of the Netatmo id field in the Netatmo
+        # tab of the settings.
         self.netatmoIdCtrl.SetName(_("Netatmo client ID"))
         formSizer.Add(idLabel, flag=wx.ALIGN_CENTER_VERTICAL)
         formSizer.Add(self.netatmoIdCtrl, flag=wx.EXPAND)
@@ -526,6 +595,9 @@ class SmartHomeSettingsDialog(wx.Dialog):
         self.netatmoSecretCtrl = wx.TextCtrl(
             panel, value="", style=wx.TE_PASSWORD)
         self.netatmoSecretCtrl.SetName(self._password_field_name(
+            # Translators: Name of the password field in the Netatmo tab of the
+            # settings. The add-on appends to it whether a password is already
+            # stored.
             _("Netatmo client secret"),
             bool(getattr(self.plugin, 'netatmo_client_secret', ''))))
         formSizer.Add(secretLabel, flag=wx.ALIGN_CENTER_VERTICAL)
@@ -536,9 +608,9 @@ class SmartHomeSettingsDialog(wx.Dialog):
         self.netatmoPortCtrl = wx.SpinCtrl(
             panel, min=1024, max=65535,
             initial=int(getattr(self.plugin, 'netatmo_redirect_port', NETATMO_REDIRECT_PORT)))
+        # Translators: Accessible name of the Netatmo port field in the Netatmo
+        # tab of the settings.
         self.netatmoPortCtrl.SetName(_("Netatmo redirect port"))
-        self.netatmoPortCtrl.Bind(wx.EVT_SPINCTRL, self._on_netatmo_port_changed)
-        self.netatmoPortCtrl.Bind(wx.EVT_TEXT, self._on_netatmo_port_changed)
         formSizer.Add(portLabel, flag=wx.ALIGN_CENTER_VERTICAL)
         formSizer.Add(self.netatmoPortCtrl, flag=wx.EXPAND)
 
@@ -547,20 +619,12 @@ class SmartHomeSettingsDialog(wx.Dialog):
         # Display of the redirect URI to register exactly (read-only, focusable
         # via TE_READONLY so the screen reader can read/copy it).
         # Translators: Label before the displayed redirect URI.
-        uriLabel = wx.StaticText(panel, label=_(
-            "Register this redirect URI at dev.netatmo.com:"))
-        sizer.Add(uriLabel, flag=wx.LEFT | wx.TOP, border=10)
-        self.netatmoUriCtrl = wx.TextCtrl(
-            panel,
-            value=netatmo_redirect_uri(self.netatmoPortCtrl.GetValue()),
-            style=wx.TE_READONLY)
-        self.netatmoUriCtrl.SetName(_("Netatmo redirect URI"))
-        sizer.Add(self.netatmoUriCtrl, flag=wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, border=10)
-
         # OAuth connect button
         # Translators: Button starts the OAuth2 flow in the browser.
         self.netatmoConnectBtn = wx.Button(panel, label=_("Connect to "
                                                           "&Netatmo (OAuth2)"))
+        # Translators: Accessible name of the Netatmo connect button in the
+        # Netatmo tab of the settings.
         self.netatmoConnectBtn.SetName(_("Connect to Netatmo"))
         self.netatmoConnectBtn.Bind(wx.EVT_BUTTON, self.on_connect_netatmo)
         sizer.Add(self.netatmoConnectBtn, flag=wx.ALL, border=10)
@@ -575,25 +639,20 @@ class SmartHomeSettingsDialog(wx.Dialog):
                                                                    "not "
                                                                    "connected")
         self.netatmoStatusLabel = wx.StaticText(panel, label=status_label)
+        # Translators: Accessible name of the Netatmo status label in the
+        # Netatmo tab of the settings.
         self.netatmoStatusLabel.SetName(_("Netatmo connection status"))
         sizer.Add(self.netatmoStatusLabel, flag=wx.ALL, border=10)
 
         # Test button
         self.netatmoTestBtn = wx.Button(panel, label=_("&Test connection"))
+        # Translators: Accessible name of the Netatmo test button in the
+        # Netatmo tab of the settings.
         self.netatmoTestBtn.SetName(_("Test Netatmo connection"))
         self.netatmoTestBtn.Bind(wx.EVT_BUTTON, self.on_test_netatmo)
         sizer.Add(self.netatmoTestBtn, flag=wx.ALL, border=10)
 
         panel.SetSizer(sizer)
-
-    def _on_netatmo_port_changed(self, event):
-        """Keeps the displayed redirect URI in sync with the chosen port."""
-        try:
-            self.netatmoUriCtrl.SetValue(
-                netatmo_redirect_uri(self.netatmoPortCtrl.GetValue()))
-        except Exception as e:
-            log.debug(f"Ignored error in _on_netatmo_port_changed: {e}")
-        event.Skip()
 
     # -------------------------------------------------------------------------
     # -
@@ -604,13 +663,12 @@ class SmartHomeSettingsDialog(wx.Dialog):
         sizer = wx.BoxSizer(wx.VERTICAL)
 
         # Translators: Explanatory text in the VeSync tab.
-        infoText = wx.StaticText(panel, label=_(
+        self._add_help_text(panel, sizer, _(
             "VeSync account credentials (e.g. Levoit, Cosori, "
             "Etekcity).\nCurrently supported: Levoit Core "
             "200S/300S/400S/500S/600S air purifiers and Levoit tower "
             "fans.\nData is stored encrypted locally on this computer."
         ))
-        sizer.Add(infoText, flag=wx.ALL, border=10)
 
         formSizer = wx.FlexGridSizer(cols=2, hgap=10, vgap=10)
         formSizer.AddGrowableCol(1)
@@ -619,6 +677,8 @@ class SmartHomeSettingsDialog(wx.Dialog):
         emailLabel = wx.StaticText(panel, label=_("V&eSync email:"))
         self.vesyncEmailCtrl = wx.TextCtrl(
             panel, value=getattr(self.plugin, 'vesync_email', ''))
+        # Translators: Accessible name of the VeSync email field in the VeSync
+        # tab of the settings.
         self.vesyncEmailCtrl.SetName(_("VeSync email address"))
         formSizer.Add(emailLabel, flag=wx.ALIGN_CENTER_VERTICAL)
         formSizer.Add(self.vesyncEmailCtrl, flag=wx.EXPAND)
@@ -628,6 +688,9 @@ class SmartHomeSettingsDialog(wx.Dialog):
         self.vesyncPasswordCtrl = wx.TextCtrl(
             panel, value="", style=wx.TE_PASSWORD)
         self.vesyncPasswordCtrl.SetName(self._password_field_name(
+            # Translators: Name of the password field in the VeSync tab of the
+            # settings. The add-on appends to it whether a password is already
+            # stored.
             _("VeSync password"),
             bool(getattr(self.plugin, 'vesync_password', ''))))
         formSizer.Add(passwordLabel, flag=wx.ALIGN_CENTER_VERTICAL)
@@ -638,6 +701,8 @@ class SmartHomeSettingsDialog(wx.Dialog):
         self.vesyncCountryCtrl = wx.TextCtrl(
             panel,
             value=getattr(self.plugin, 'vesync_country_code', 'DE') or 'DE')
+        # Translators: Accessible name of the VeSync country field in the
+        # VeSync tab of the settings.
         self.vesyncCountryCtrl.SetName(_("VeSync country code"))
         # Translators: Tooltip for the country code field.
         self.vesyncCountryCtrl.SetToolTip(_(
@@ -654,6 +719,8 @@ class SmartHomeSettingsDialog(wx.Dialog):
                                                    "(%):"))
         self.vesyncFilterThresholdCtrl = wx.TextCtrl(
             panel, value=str(getattr(self.plugin, 'vesync_filter_threshold', 15)))
+        # Translators: Accessible name of the VeSync filter threshold field in
+        # the VeSync tab of the settings.
         self.vesyncFilterThresholdCtrl.SetName(_("VeSync filter warning "
                                                  "threshold in percent"))
         # Translators: Tooltip for the filter warning threshold field.
@@ -670,6 +737,8 @@ class SmartHomeSettingsDialog(wx.Dialog):
 
         # Translators: "Test VeSync connection" button.
         self.vesyncTestBtn = wx.Button(panel, label=_("Test VeSync &connection"))
+        # Translators: Accessible name of the VeSync test button in the VeSync
+        # tab of the settings.
         self.vesyncTestBtn.SetName(_("Test VeSync connection"))
         self.vesyncTestBtn.Bind(wx.EVT_BUTTON, self.on_test_vesync)
         sizer.Add(self.vesyncTestBtn, flag=wx.ALL, border=10)
@@ -686,7 +755,7 @@ class SmartHomeSettingsDialog(wx.Dialog):
 
         # Translators: Explanatory text in the Cozytouch tab. Leading line
         # marks the platform as experimental.
-        infoText = wx.StaticText(panel, label=_(
+        self._add_help_text(panel, sizer, _(
             "EXPERIMENTAL: the Cozytouch integration is reverse-engineered "
             "and has so far only been tested with one hot water heat pump "
             "(Austria Email Revolution Evo 3).\nOther Cozytouch devices "
@@ -696,7 +765,6 @@ class SmartHomeSettingsDialog(wx.Dialog):
             "Austria Email).\nSame credentials as in the Cozytouch app. Data "
             "is stored encrypted locally on this computer."
         ))
-        sizer.Add(infoText, flag=wx.ALL, border=10)
 
         formSizer = wx.FlexGridSizer(cols=2, hgap=10, vgap=10)
         formSizer.AddGrowableCol(1)
@@ -705,6 +773,8 @@ class SmartHomeSettingsDialog(wx.Dialog):
         emailLabel = wx.StaticText(panel, label=_("Cozytouch &email:"))
         self.cozytouchEmailCtrl = wx.TextCtrl(
             panel, value=getattr(self.plugin, 'cozytouch_email', ''))
+        # Translators: Accessible name of the Cozytouch email field in the
+        # Cozytouch tab of the settings.
         self.cozytouchEmailCtrl.SetName(_("Cozytouch email address"))
         formSizer.Add(emailLabel, flag=wx.ALIGN_CENTER_VERTICAL)
         formSizer.Add(self.cozytouchEmailCtrl, flag=wx.EXPAND)
@@ -714,6 +784,9 @@ class SmartHomeSettingsDialog(wx.Dialog):
         self.cozytouchPasswordCtrl = wx.TextCtrl(
             panel, value="", style=wx.TE_PASSWORD)
         self.cozytouchPasswordCtrl.SetName(self._password_field_name(
+            # Translators: Name of the password field in the Cozytouch tab of
+            # the settings. The add-on appends to it whether a password is
+            # already stored.
             _("Cozytouch password"),
             bool(getattr(self.plugin, 'cozytouch_password', ''))))
         formSizer.Add(passwordLabel, flag=wx.ALIGN_CENTER_VERTICAL)
@@ -725,6 +798,8 @@ class SmartHomeSettingsDialog(wx.Dialog):
                                                      "(liters, 0 = off):"))
         self.cozytouchCapacityCtrl = wx.TextCtrl(
             panel, value=str(getattr(self.plugin, 'cozytouch_capacity_liters', 0) or 0))
+        # Translators: Accessible name of the Cozytouch capacity field in the
+        # Cozytouch tab of the settings.
         self.cozytouchCapacityCtrl.SetName(_("Rated capacity of the hot water "
                                              "tank in liters"))
         # Translators: Tooltip for the rated capacity field.
@@ -741,6 +816,8 @@ class SmartHomeSettingsDialog(wx.Dialog):
         # Translators: "Test Cozytouch connection" button.
         self.cozytouchTestBtn = wx.Button(panel, label=_("Test Cozytouch "
                                                          "&connection"))
+        # Translators: Accessible name of the Cozytouch test button in the
+        # Cozytouch tab of the settings.
         self.cozytouchTestBtn.SetName(_("Test Cozytouch connection"))
         self.cozytouchTestBtn.Bind(wx.EVT_BUTTON, self.on_test_cozytouch)
         sizer.Add(self.cozytouchTestBtn, flag=wx.ALL, border=10)
@@ -762,12 +839,36 @@ class SmartHomeSettingsDialog(wx.Dialog):
         sizer = wx.BoxSizer(wx.VERTICAL)
 
         # Translators: Explanatory text at the top of the notifications tab.
-        info = wx.StaticText(panel, label=_(
+        self._add_help_text(panel, sizer, _(
             "Sets which external changes NVDA announces. The choice applies "
             "to all devices of that platform.\nNote: only sections for "
             "platforms enabled in the \"General\" tab are shown as active."
         ))
-        sizer.Add(info, flag=wx.ALL, border=10)
+
+        # The master switch over everything below, and it sits here rather
+        # than on the Meross tab where it used to: it is a notification
+        # setting, and it belongs with the notification settings.
+        #
+        # Deliberately NOT inside the Meross box, even though its old label
+        # named Meross. It gates the external-change announcements of every
+        # platform - Meross, Netatmo, VeSync and Cozytouch alike - and a
+        # switch of that reach inside one platform's box would say the
+        # opposite of what it does.
+        # Translators: Master switch in the notifications tab.
+        self.announceExternalCheckbox = wx.CheckBox(panel, label=_(
+            "&Announce external changes at all (Alexa, the manufacturer app, "
+            "a switch on the device)"
+        ))
+        self.announceExternalCheckbox.SetValue(
+            getattr(self.plugin, 'announce_external_changes', True))
+        # Translators: Tooltip explanation of the external changes checkbox.
+        self.announceExternalCheckbox.SetToolTip(_(
+            "Off, and nothing below is announced, whichever platform it "
+            "belongs to. On, and the settings below decide what is worth "
+            "hearing."
+        ))
+        sizer.Add(self.announceExternalCheckbox,
+                  flag=wx.LEFT | wx.RIGHT | wx.BOTTOM, border=10)
 
         self._notify_checkboxes = {}
 
@@ -794,7 +895,8 @@ class SmartHomeSettingsDialog(wx.Dialog):
             else:
                 for attr_name, label, default in items:
                     cb = wx.CheckBox(panel, label=label)
-                    cb.SetValue(getattr(self.plugin, attr_name, default))
+                    cb.SetValue(_as_bool(
+                        getattr(self.plugin, attr_name, default), default))
                     box_sizer.Add(cb, flag=wx.ALL, border=4)
                     self._notify_checkboxes[attr_name] = cb
             sizer.Add(box_sizer, flag=wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, border=10)
@@ -873,6 +975,12 @@ class SmartHomeSettingsDialog(wx.Dialog):
                  # Translators: Announce the VeSync filter life warning.
                  _("Announce filter life warnings"),
                  True),
+                ('notify_vesync_cook',
+                 # Translators: Announce the cooking state of an air fryer
+                 # (started, paused, finished).
+                 _("Announce the cooking state of air fryers "
+                   "(running / paused / finished)"),
+                 True),
             ],
             self.chkVesync.GetValue(),
         )
@@ -923,6 +1031,8 @@ class SmartHomeSettingsDialog(wx.Dialog):
         if not email or not password:
             # Translators: Validation error in the Meross tab.
             self._set_status(_("Please enter Meross email and password"), error=True)
+            # Translators: Spoken message during the connection test in the
+            # settings.
             ui.message(_("Please enter email and password"))
             return
 
@@ -991,6 +1101,8 @@ class SmartHomeSettingsDialog(wx.Dialog):
         if not client_id or not client_secret:
             # Translators: Validation error in the Netatmo OAuth2 tab.
             self._set_status(_("Please enter Netatmo client ID and secret"), error=True)
+            # Translators: Spoken message during the Netatmo authorisation in
+            # the settings.
             ui.message(_("Please enter client ID and secret"))
             return
 
@@ -1031,6 +1143,8 @@ class SmartHomeSettingsDialog(wx.Dialog):
                     _("Opening browser for Netatmo authorization..."),
                 )
                 self._safe_call_after(self._safe_button_disable, self.netatmoConnectBtn)
+                # Translators: Spoken message during the Netatmo authorisation
+                # in the settings.
                 self._safe_call_after(ui.message, _(
                     "Opening browser. Please sign in to Netatmo and authorize."))
 
@@ -1045,10 +1159,14 @@ class SmartHomeSettingsDialog(wx.Dialog):
                 self.plugin.netatmo_refresh_token = tokens['refresh_token']
                 self.plugin.netatmo_token_expiry = tokens['token_expiry']
 
+                # Translators: Spoken message during the Netatmo authorisation
+                # in the settings.
                 self._safe_call_after(self._set_status, _("Netatmo: connected"), error=False)
                 self._safe_call_after(self.netatmoStatusLabel.SetLabel, _("Status: "
                                                                           "connected"))
                 self._safe_call_after(self._auto_enable_platform, self.chkNetatmo, "Netatmo")
+                # Translators: Spoken message during the Netatmo authorisation
+                # in the settings.
                 self._safe_call_after(ui.message, _("Netatmo connected"))
 
             except Exception as e:
@@ -1056,6 +1174,8 @@ class SmartHomeSettingsDialog(wx.Dialog):
                 error_msg = str(e)[:100]
                 self._safe_call_after(
                     self._set_status,
+                    # Translators: Status line of the settings dialog after a
+                    # failed Netatmo query.
                     _("Netatmo error: {error}").format(error=error_msg), error=True)
                 self._safe_call_after(
                     ui.message,
@@ -1071,6 +1191,8 @@ class SmartHomeSettingsDialog(wx.Dialog):
         if not getattr(self.plugin, 'netatmo_access_token', ''):
             # Translators: Validation hint: not yet connected via OAuth2.
             self._set_status(_("Please connect to Netatmo first"), error=True)
+            # Translators: Spoken message during the connection test in the
+            # settings.
             ui.message(_("Please connect to Netatmo first (OAuth2)"))
             return
 
@@ -1080,9 +1202,13 @@ class SmartHomeSettingsDialog(wx.Dialog):
 
         def test_task():
             try:
+                # Translators: Spoken message during the connection test in the
+                # settings.
                 self._safe_call_after(self._set_status, _("Testing Netatmo "
                                                           "connection..."))
                 self._safe_call_after(self._safe_button_disable, self.netatmoTestBtn)
+                # Translators: Spoken message during the connection test in the
+                # settings.
                 self._safe_call_after(ui.message, _("Testing Netatmo..."))
 
                 from .netatmo_api import NetatmoAPI
@@ -1105,11 +1231,15 @@ class SmartHomeSettingsDialog(wx.Dialog):
 
                 self._safe_call_after(
                     self._set_status,
+                    # Translators: Spoken message during the connection test in
+                    # the settings.
                     _("Netatmo: {count} device(s) found").format(count=len(devices)),
                     error=False)
                 self._safe_call_after(self._auto_enable_platform, self.chkNetatmo, "Netatmo")
                 self._safe_call_after(
                     ui.message,
+                    # Translators: Spoken message during the connection test in
+                    # the settings.
                     _("Netatmo: {count} device(s)").format(count=len(devices)))
 
             except Exception as e:
@@ -1143,11 +1273,15 @@ class SmartHomeSettingsDialog(wx.Dialog):
             # Translators: Validation error for the country code (must be 2
             # letters).
             self._set_status(_("Country code must be two letters (e.g. DE)"), error=True)
+            # Translators: Spoken message during the connection test in the
+            # settings.
             ui.message(_("Invalid country code"))
             return
 
         def test_task(_email, _password, _country):
             try:
+                # Translators: Spoken message during the connection test in the
+                # settings.
                 self._safe_call_after(self._set_status, _("Testing VeSync "
                                                           "connection..."))
                 self._safe_call_after(self._safe_button_disable, self.vesyncTestBtn)
@@ -1161,6 +1295,8 @@ class SmartHomeSettingsDialog(wx.Dialog):
                 finally:
                     _password = None
 
+                # Translators: Spoken message during the connection test in the
+                # settings.
                 self._safe_call_after(ui.message, _("Loading VeSync devices..."))
                 devices = api.get_devices()
 
@@ -1208,6 +1344,8 @@ class SmartHomeSettingsDialog(wx.Dialog):
                         supported=supported, total=total,
                         types=", ".join(unsupported))
                 else:
+                    # Translators: Spoken message during the connection test in
+                    # the settings.
                     message = _("VeSync: connected – {count} device(s)").format(
                         count=len(devices))
                 # _set_status speaks the text itself; a second ui.message
@@ -1246,6 +1384,8 @@ class SmartHomeSettingsDialog(wx.Dialog):
 
         def test_task(_email, _password):
             try:
+                # Translators: Spoken message during the connection test in the
+                # settings.
                 self._safe_call_after(self._set_status, _("Testing Cozytouch "
                                                           "connection..."))
                 self._safe_call_after(self._safe_button_disable, self.cozytouchTestBtn)
@@ -1260,6 +1400,8 @@ class SmartHomeSettingsDialog(wx.Dialog):
                 finally:
                     _password = None
 
+                # Translators: Spoken message during the connection test in the
+                # settings.
                 self._safe_call_after(ui.message, _("Loading Cozytouch "
                                                     "devices..."))
                 devices = api.get_devices()
@@ -1273,6 +1415,8 @@ class SmartHomeSettingsDialog(wx.Dialog):
 
                 self._safe_call_after(
                     self._set_status,
+                    # Translators: Spoken message during the connection test in
+                    # the settings.
                     _("Cozytouch: connected – {count} device(s)").format(count=len(devices)),
                     error=False,
                 )
@@ -1312,6 +1456,8 @@ class SmartHomeSettingsDialog(wx.Dialog):
         if use_meross:
             email_pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
             if not email:
+                # Translators: Status line of the settings dialog. It is spoken
+                # and stays readable, so it is a sentence of its own.
                 self._set_status(_("Meross: please enter an email address"), error=True)
                 ui.message(_("Meross: please enter an email address"))
                 self.notebook.SetSelection(self._PLATFORM_TABS['meross'])
@@ -1327,6 +1473,8 @@ class SmartHomeSettingsDialog(wx.Dialog):
                 return
 
             if not password:
+                # Translators: Status line of the settings dialog. It is spoken
+                # and stays readable, so it is a sentence of its own.
                 self._set_status(_("Meross: please enter a password"), error=True)
                 ui.message(_("Meross: please enter a password"))
                 self.notebook.SetSelection(self._PLATFORM_TABS['meross'])
@@ -1336,6 +1484,8 @@ class SmartHomeSettingsDialog(wx.Dialog):
             if len(password) < 6:
                 # Translators: Validation error for a too short password.
                 self._set_status(_("Password too short (min. 6 characters)"), error=True)
+                # Translators: Spoken message when the settings are saved and a
+                # field is missing or wrong.
                 ui.message(_("Password too short"))
                 self.notebook.SetSelection(self._PLATFORM_TABS['meross'])
                 self.merossPasswordCtrl.SetFocus()
@@ -1348,6 +1498,8 @@ class SmartHomeSettingsDialog(wx.Dialog):
             self.netatmoSecretCtrl, getattr(self.plugin, 'netatmo_client_secret', ''))
 
         if use_netatmo and (not netatmo_client_id or not netatmo_client_secret):
+            # Translators: Status line of the settings dialog. It is spoken and
+            # stays readable, so it is a sentence of its own.
             self._set_status(_("Netatmo: please enter client ID and secret"), error=True)
             ui.message(_("Netatmo: please enter client ID and secret"))
             self.notebook.SetSelection(self._PLATFORM_TABS['netatmo'])
@@ -1363,6 +1515,8 @@ class SmartHomeSettingsDialog(wx.Dialog):
 
         if use_vesync:
             if not vesync_email:
+                # Translators: Status line of the settings dialog. It is spoken
+                # and stays readable, so it is a sentence of its own.
                 self._set_status(_("VeSync: please enter an email address"), error=True)
                 ui.message(_("VeSync: please enter an email address"))
                 self.notebook.SetSelection(self._PLATFORM_TABS['vesync'])
@@ -1371,6 +1525,8 @@ class SmartHomeSettingsDialog(wx.Dialog):
 
             email_pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
             if not re.match(email_pattern, vesync_email):
+                # Translators: Status line of the settings dialog. It is spoken
+                # and stays readable, so it is a sentence of its own.
                 self._set_status(_("VeSync: invalid email address"), error=True)
                 ui.message(_("VeSync: invalid email address"))
                 self.notebook.SetSelection(self._PLATFORM_TABS['vesync'])
@@ -1378,6 +1534,8 @@ class SmartHomeSettingsDialog(wx.Dialog):
                 return
 
             if not vesync_password:
+                # Translators: Status line of the settings dialog. It is spoken
+                # and stays readable, so it is a sentence of its own.
                 self._set_status(_("VeSync: please enter a password"), error=True)
                 ui.message(_("VeSync: please enter a password"))
                 self.notebook.SetSelection(self._PLATFORM_TABS['vesync'])
@@ -1385,7 +1543,11 @@ class SmartHomeSettingsDialog(wx.Dialog):
                 return
 
             if len(vesync_country) != 2 or not vesync_country.isalpha():
+                # Translators: Status line of the settings dialog. It is spoken
+                # and stays readable, so it is a sentence of its own.
                 self._set_status(_("VeSync: country code must be two letters"), error=True)
+                # Translators: Spoken message when the settings are saved and a
+                # field is missing or wrong.
                 ui.message(_("VeSync: invalid country code"))
                 self.notebook.SetSelection(self._PLATFORM_TABS['vesync'])
                 self.vesyncCountryCtrl.SetFocus()
@@ -1400,12 +1562,16 @@ class SmartHomeSettingsDialog(wx.Dialog):
         if use_cozytouch:
             email_pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
             if not cozytouch_email or not re.match(email_pattern, cozytouch_email):
+                # Translators: Status line of the settings dialog. It is spoken
+                # and stays readable, so it is a sentence of its own.
                 self._set_status(_("Cozytouch: invalid email address"), error=True)
                 ui.message(_("Cozytouch: invalid email address"))
                 self.notebook.SetSelection(self._PLATFORM_TABS['cozytouch'])
                 self.cozytouchEmailCtrl.SetFocus()
                 return
             if not cozytouch_password:
+                # Translators: Status line of the settings dialog. It is spoken
+                # and stays readable, so it is a sentence of its own.
                 self._set_status(_("Cozytouch: please enter a password"), error=True)
                 ui.message(_("Cozytouch: please enter a password"))
                 self.notebook.SetSelection(self._PLATFORM_TABS['cozytouch'])
@@ -1416,6 +1582,8 @@ class SmartHomeSettingsDialog(wx.Dialog):
         if not use_meross and not use_netatmo and not use_vesync and not use_cozytouch:
             # Translators: Validation error: no platform selected.
             self._set_status(_("At least one platform must be enabled"), error=True)
+            # Translators: Spoken message when the settings are saved and a
+            # field is missing or wrong.
             ui.message(_("Enable at least one platform"))
             self.notebook.SetSelection(0)
             return
