@@ -3,7 +3,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: SmartHomeControl\n"
 "Report-Msgid-Bugs-To: blindbyte06@gmail.com\n"
-"POT-Creation-Date: 2026-08-30 14:57+0000\n"
+"POT-Creation-Date: 2026-09-04 11:44+0000\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
@@ -268,22 +268,22 @@ msgid "(active)"
 msgstr ""
 
 #. Translators: Current amperage in amps.
-#: __init__.py:1954
+#: __init__.py:1991
 msgid ", {current} amps"
 msgstr ""
 
 #. Translators: Relative humidity in percent.
-#: __init__.py:1902
+#: __init__.py:1939
 msgid ", {humidity:.1f}% humidity"
 msgstr ""
 
 #. Translators: Current power consumption in watts.
-#: __init__.py:1948
+#: __init__.py:1985
 msgid ", {power} watts"
 msgstr ""
 
 #. Translators: Current voltage in volts.
-#: __init__.py:1951
+#: __init__.py:1988
 msgid ", {voltage} volts"
 msgstr ""
 
@@ -291,12 +291,8 @@ msgstr ""
 #. Markdown: NVDA renders it and reads it line by line.
 #: manifest.ini:changelog
 msgid ""
-"- Cosori air fryers of the CAF-P583S series are supported: cooking state, programme, remaining time and both temperatures. A programme can be started with a temperature and a time of its own, its time changed while it runs, and stopped, and the end of it is announced. The programme list is learned from the appliance.\n"
-"- A Meross lamp put into white mode at the lamp or in the app is no longer shown in colour mode.\n"
-"- A sensor dropout of a Levoit purifier is no longer announced as -1 or recorded as a measurement.\n"
-"- In the device menu the selection survives a refresh, a refresh is announced once instead of two or three times, and a platform switched off in the settings leaves the tree at once.\n"
-"- In the favorites layer the switching press has to follow the announcement within a few seconds, and Ctrl+B removes the outlet it stands on rather than the whole power strip.\n"
-"- Changed credentials are proven at the platform before they are saved, and they reach a session that is already running."
+"- Credentials no longer live in NVDA's configuration but in a file of their own. NVDA writes the complete configuration into the log when it starts, so the email address used to travel with every log that was sent in. Existing credentials move by themselves on the first start, and nothing has to be entered again.\n"
+"- The device menu no longer opens a second time on top of the first. The shortcut brings the menu that is already open to the front instead; the one left standing used to stop being updated without saying so."
 msgstr ""
 
 #. Translators: As above, in case the device name is unavailable.
@@ -308,7 +304,7 @@ msgstr ""
 
 #. Translators: Usage hint at the end of the favorites layer overview
 #. (announced after pressing 0 in the layer).
-#: __init__.py:1546
+#: __init__.py:1583
 msgid ""
 "A digit announces the status, the same digit again toggles, Escape cancels"
 msgstr ""
@@ -599,14 +595,14 @@ msgstr ""
 
 #. Translators: Description of the script in the NVDA input gestures dialog.
 #. No default gesture - the user assigns one if needed.
-#: __init__.py:1135
+#: __init__.py:1172
 msgid ""
 "Announces the energy consumption of the metering plugs (today and last 7 "
 "days)"
 msgstr ""
 
 #. Translators: Description of the script in the NVDA input gestures dialog.
-#: __init__.py:1720
+#: __init__.py:1757
 msgid "Announces the status of all smart home devices"
 msgstr ""
 
@@ -953,7 +949,7 @@ msgid "CSV files (*.csv)|*.csv"
 msgstr ""
 
 #. Translators: Message when the user cancels an action.
-#: __init__.py:1445 __init__.py:1559 dialog_cozytouch.py:302
+#: __init__.py:1482 __init__.py:1596 dialog_cozytouch.py:302
 #: dialog_vesync.py:460 dialog_vesync.py:499 dialog_vesync.py:514
 #: dialog_vesync.py:520 dialog_vesync.py:631 dialog_vesync.py:658
 #: dialog_vesync.py:695 dialog_vesync.py:766 dialog_vesync.py:345
@@ -1092,7 +1088,7 @@ msgstr ""
 #. gestures dialog. Keep it short: the input gestures dialog shows a list in
 #. which every entry is read out in one go. Details are in the manual and are
 #. announced in the layer by key 0.
-#: __init__.py:1340
+#: __init__.py:1377
 msgid ""
 "Choose a favorite by digit (a digit announces its status, the same digit "
 "again toggles it)"
@@ -1100,7 +1096,7 @@ msgstr ""
 
 #. Translators: Announced when the favorites layer opens and waits for a
 #. digit. Keep it short - it is spoken on every use.
-#: __init__.py:1373
+#: __init__.py:1410
 msgid "Choose a favorite: digit 1 to 9"
 msgstr ""
 
@@ -1319,7 +1315,7 @@ msgstr ""
 
 #. Translators: Description of the script in the NVDA input gestures dialog.
 #. No default gesture - the user assigns one if needed.
-#: __init__.py:1245
+#: __init__.py:1282
 msgid ""
 "Connection diagnostics: announce the status of all smart home platforms"
 msgstr ""
@@ -1470,7 +1466,7 @@ msgid "Cozytouch: connected – {count} device(s)"
 msgstr ""
 
 #. Translators: Spoken while the Cozytouch account is being signed in to.
-#: __init__.py:909
+#: __init__.py:925
 msgid "Cozytouch: connecting..."
 msgstr ""
 
@@ -1492,7 +1488,7 @@ msgid "Cozytouch: invalid response during login"
 msgstr ""
 
 #. Translators: Spoken while the Cozytouch device list is being fetched.
-#: __init__.py:925
+#: __init__.py:941
 msgid "Cozytouch: loading devices..."
 msgstr ""
 
@@ -1720,13 +1716,19 @@ msgstr ""
 
 #. Translators: Error message when a diffuser action is accidentally executed
 #. on another device type.
-#: __init__.py:2285
+#: __init__.py:2322
 msgid "Device is not a diffuser"
 msgstr ""
 
 #. Translators: Accessible name of the device tree in the device menu.
 #: device_dialog.py:197
 msgid "Device list"
+msgstr ""
+
+#. Translators: Spoken when the shortcut for the device menu is pressed while
+#. the menu is already open.
+#: __init__.py:1106
+msgid "Device menu is already open"
 msgstr ""
 
 #. Translators: Column headers of the CSV export (history).
@@ -1736,7 +1738,7 @@ msgstr ""
 
 #. Translators: Error message when a device can no longer be found in the
 #. device list via its UUID (e.g. after a reload).
-#: __init__.py:2188 __init__.py:2280
+#: __init__.py:2225 __init__.py:2317
 msgid "Device not found"
 msgstr ""
 
@@ -1978,7 +1980,7 @@ msgstr ""
 
 #. Translators: Generic fallback when the status query for a single device
 #. fails.
-#: __init__.py:1964 device_dialog.py:2200
+#: __init__.py:2001 device_dialog.py:2200
 msgid "Error"
 msgstr ""
 
@@ -2008,7 +2010,7 @@ msgid "Error while loading: {error}"
 msgstr ""
 
 #. Translators: Generic error message with detail text.
-#: __init__.py:1831 dialog_netatmo.py:660
+#: __init__.py:1868 dialog_netatmo.py:660
 msgid "Error: {error}"
 msgstr ""
 
@@ -2111,7 +2113,7 @@ msgid "Fans"
 msgstr ""
 
 #. Translators (bestehende msgid)
-#: __init__.py:1502 __init__.py:1590 __init__.py:1648
+#: __init__.py:1539 __init__.py:1627 __init__.py:1685
 msgid "Favorite {number} is not assigned"
 msgstr ""
 
@@ -2134,7 +2136,7 @@ msgid "Favorites layer: &switching press valid for (seconds):"
 msgstr ""
 
 #. Translators: Announced while the energy data is being fetched.
-#: __init__.py:1148
+#: __init__.py:1185
 msgid "Fetching energy data..."
 msgstr ""
 
@@ -2373,7 +2375,7 @@ msgid "Home or room ID missing"
 msgstr ""
 
 #. Translators: Error message when toggling hot water production fails.
-#: __init__.py:2210 dialog_cozytouch.py:275
+#: __init__.py:2247 dialog_cozytouch.py:275
 msgid "Hot water could not be toggled"
 msgstr ""
 
@@ -2494,7 +2496,7 @@ msgid "Invalid country code"
 msgstr ""
 
 #. Translators: Error message for an unknown diffuser action.
-#: __init__.py:2297
+#: __init__.py:2334
 msgid "Invalid diffuser action: {action}"
 msgstr ""
 
@@ -2589,7 +2591,7 @@ msgid "Last 7 days"
 msgstr ""
 
 #. Translators: Diagnostics: seconds since the last successful Meross refresh.
-#: __init__.py:1307
+#: __init__.py:1344
 msgid "Last Meross refresh {seconds} seconds ago"
 msgstr ""
 
@@ -2674,7 +2676,7 @@ msgid "Loading devices, please wait."
 msgstr ""
 
 #. Translators: Placeholder entry while the device list is loading.
-#: __init__.py:1759 device_dialog.py:380 device_dialog.py:390
+#: __init__.py:1796 device_dialog.py:380 device_dialog.py:390
 #: device_dialog.py:262 device_dialog.py:549 settings_panel.py:1056
 msgid "Loading devices..."
 msgstr ""
@@ -2696,19 +2698,19 @@ msgid "Loading..."
 msgstr ""
 
 #. Translators: Spoken while the add-on signs in to the platforms at startup.
-#: __init__.py:721
+#: __init__.py:737
 msgid "Logging in to {platforms}..."
 msgstr ""
 
 #. Translators: Announcement when a renewed login fails but the previous
 #. device list remains in use.
-#: __init__.py:955
+#: __init__.py:971
 msgid "Login failed – existing devices remain available"
 msgstr ""
 
 #. Translators: Spoken when the device menu is opened while the sign-in is
 #. still running.
-#: __init__.py:1060
+#: __init__.py:1076
 msgid "Login in progress..."
 msgstr ""
 
@@ -2796,12 +2798,12 @@ msgid "Meross: connected – {count} device(s)"
 msgstr ""
 
 #. Translators: Spoken while the Meross account is being signed in to.
-#: __init__.py:744
+#: __init__.py:760
 msgid "Meross: connecting..."
 msgstr ""
 
 #. Translators: Spoken while the Meross device list is being fetched.
-#: __init__.py:767
+#: __init__.py:783
 msgid "Meross: loading devices..."
 msgstr ""
 
@@ -2993,7 +2995,7 @@ msgid "Netatmo favorites ({count})"
 msgstr ""
 
 #. Translators: Error message: Netatmo authorization expired.
-#: __init__.py:1289 netatmo_api.py:869
+#: __init__.py:1326 netatmo_api.py:869
 msgid "Netatmo login is no longer valid. Please reconnect in the settings."
 msgstr ""
 
@@ -3028,12 +3030,12 @@ msgstr ""
 
 #. Translators: Diagnostics: Netatmo token expired (auto-renewal happens on
 #. the next request).
-#: __init__.py:1301
+#: __init__.py:1338
 msgid "Netatmo token: expired, will be renewed on the next request"
 msgstr ""
 
 #. Translators: Diagnostics: Netatmo token remaining lifetime.
-#: __init__.py:1295
+#: __init__.py:1332
 msgid "Netatmo token: valid for another {minutes} minutes"
 msgstr ""
 
@@ -3050,7 +3052,7 @@ msgid "Netatmo: connected"
 msgstr ""
 
 #. Translators: Spoken while the Netatmo account is being signed in to.
-#: __init__.py:788
+#: __init__.py:804
 msgid "Netatmo: connecting..."
 msgstr ""
 
@@ -3076,7 +3078,7 @@ msgid "Netatmo: {count} device(s) found"
 msgstr ""
 
 #. Translators: Diagnostics: network considered offline.
-#: __init__.py:1275
+#: __init__.py:1312
 msgid "Network: offline (failed attempts: {count})"
 msgstr ""
 
@@ -3167,7 +3169,7 @@ msgstr ""
 
 #. Translators: Error message when VeSync was enabled but neither a token nor
 #. email/password are configured.
-#: __init__.py:864
+#: __init__.py:880
 msgid "No VeSync credentials configured"
 msgstr ""
 
@@ -3179,7 +3181,7 @@ msgstr ""
 
 #. Translators: Announced when a device currently provides no sensor/status
 #. data.
-#: __init__.py:1861 history.py:1124
+#: __init__.py:1898 history.py:1124
 msgid "No data"
 msgstr ""
 
@@ -3195,7 +3197,7 @@ msgstr ""
 
 #. Translators: Announced when the login succeeded but there are no devices in
 #. the account.
-#: __init__.py:999 __init__.py:1815 device_dialog.py:2424
+#: __init__.py:1015 __init__.py:1852 device_dialog.py:2424
 msgid "No devices found"
 msgstr ""
 
@@ -3205,7 +3207,7 @@ msgid "No devices loaded"
 msgstr ""
 
 #. Translators: Message when no energy data is available.
-#: __init__.py:1215
+#: __init__.py:1252
 msgid "No energy data available. Metering plugs must be connected."
 msgstr ""
 
@@ -3220,7 +3222,7 @@ msgid "No fan speed available"
 msgstr ""
 
 #. Translators (existing msgid from the favorites tab)
-#: __init__.py:1358 dialog_favorites.py:303
+#: __init__.py:1395 dialog_favorites.py:303
 msgid "No favorites yet – add them in the devices tab with Ctrl+B"
 msgstr ""
 
@@ -3253,7 +3255,7 @@ msgid "No measurements found"
 msgstr ""
 
 #. Translators: Diagnostics: no platform is enabled.
-#: __init__.py:1311
+#: __init__.py:1348
 msgid "No platform enabled"
 msgstr ""
 
@@ -3320,8 +3322,8 @@ msgid "Not authorized – please connect to Netatmo in the settings"
 msgstr ""
 
 #. Translators: Diagnostics: not logged in at all.
-#: __init__.py:1253 __init__.py:1353 __init__.py:1585 __init__.py:1644
-#: __init__.py:1729 __init__.py:2228 meross_api.py:641 meross_api.py:1098
+#: __init__.py:1290 __init__.py:1390 __init__.py:1622 __init__.py:1681
+#: __init__.py:1766 __init__.py:2265 meross_api.py:641 meross_api.py:1098
 #: meross_api.py:1457 meross_api.py:1548 meross_api.py:1603 vesync_api.py:505
 #: vesync_api.py:633 vesync_api.py:768
 msgid "Not logged in"
@@ -3335,7 +3337,7 @@ msgstr ""
 
 #. Translators: Spoken when the device menu is opened while no platform is
 #. signed in - the settings open instead.
-#: __init__.py:1067
+#: __init__.py:1083
 msgid "Not logged in – opening settings"
 msgstr ""
 
@@ -3474,17 +3476,17 @@ msgid "Opening browser. Please sign in to Netatmo and authorize."
 msgstr ""
 
 #. Translators: Spoken when the device menu opens.
-#: __init__.py:1077
+#: __init__.py:1114
 msgid "Opening device overview..."
 msgstr ""
 
 #. Translators: Description of the script in the NVDA input gestures dialog.
-#: __init__.py:1051
+#: __init__.py:1067
 msgid "Opens the Smart Home Control menu"
 msgstr ""
 
 #. Translators: Description of the script in the NVDA input gestures dialog.
-#: __init__.py:1126
+#: __init__.py:1163
 msgid "Opens the Smart Home settings"
 msgstr ""
 
@@ -4245,7 +4247,7 @@ msgstr ""
 
 #. Translators: Category name in the NVDA input gestures dialog. Brand name,
 #. do not translate.
-#: __init__.py:163 manifest.ini:summary
+#: __init__.py:164 manifest.ini:summary
 msgid "Smart Home Control"
 msgstr ""
 
@@ -4539,7 +4541,7 @@ msgid "Switched on"
 msgstr ""
 
 #. Translators: Error message when toggling a favorite fails.
-#: __init__.py:1637
+#: __init__.py:1674
 msgid "Switching failed: {error}"
 msgstr ""
 
@@ -5123,7 +5125,7 @@ msgid ""
 msgstr ""
 
 #. Translators: Spoken while the VeSync account is being signed in to.
-#: __init__.py:829
+#: __init__.py:845
 msgid "VeSync: connecting..."
 msgstr ""
 
@@ -5163,7 +5165,7 @@ msgid "VeSync: invalid email address"
 msgstr ""
 
 #. Translators: Spoken while the VeSync device list is being fetched.
-#: __init__.py:868
+#: __init__.py:884
 msgid "VeSync: loading devices..."
 msgstr ""
 
@@ -5310,7 +5312,7 @@ msgid "Water alarm"
 msgstr ""
 
 #. Translators: Meross water sensor: water was detected (alarm).
-#: __init__.py:1912
+#: __init__.py:1949
 msgid "Water alarm!"
 msgstr ""
 
@@ -5411,12 +5413,12 @@ msgid "automatic"
 msgstr ""
 
 #. Translators: Battery level in the status announcement.
-#: __init__.py:1714
+#: __init__.py:1751
 msgid "battery {percent}%"
 msgstr ""
 
 #. Translators: Diagnostics: platform is connected.
-#: __init__.py:1265
+#: __init__.py:1302
 msgid "connected"
 msgstr ""
 
@@ -5432,12 +5434,12 @@ msgid "current heating target: {temp} degrees"
 msgstr ""
 
 #. Translators: Diagnostics: platform is disconnected.
-#: __init__.py:1268
+#: __init__.py:1305
 msgid "disconnected"
 msgstr ""
 
 #. Translators: Water leak sensor state in the status announcement.
-#: __init__.py:1695
+#: __init__.py:1732
 msgid "dry"
 msgstr ""
 
@@ -5466,7 +5468,7 @@ msgstr ""
 
 #. Translators: Status announcement for a Meross hub (it only relays its
 #. sensors). {count} = number of connected sensors.
-#: __init__.py:1700
+#: __init__.py:1737
 msgid "hub with {count} sensors"
 msgstr ""
 
@@ -5491,17 +5493,17 @@ msgid "no data"
 msgstr ""
 
 #. Translators: Meross water sensor: water was detected (alarm).
-#: __init__.py:1912
+#: __init__.py:1949
 msgid "no water detected"
 msgstr ""
 
 #. Translators: Placeholder when no devices are listed per platform.
-#: __init__.py:1850 cozytouch_devices.py:135
+#: __init__.py:1887 cozytouch_devices.py:135
 msgid "none"
 msgstr ""
 
 #. Translators: Diagnostics: platform has not polled yet.
-#: __init__.py:1271
+#: __init__.py:1308
 msgid "not polled yet"
 msgstr ""
 
@@ -5511,8 +5513,8 @@ msgid "not yet updated"
 msgstr ""
 
 #. Translators: Status "switched on" for smart home devices (short).
-#: __init__.py:2250 __init__.py:2194 __init__.py:2211 __init__.py:1704
-#: __init__.py:1934 change_detection.py:220 change_detection.py:626
+#: __init__.py:2287 __init__.py:2231 __init__.py:2248 __init__.py:1741
+#: __init__.py:1971 change_detection.py:220 change_detection.py:626
 #: device_dialog.py:2022 dialog_cozytouch.py:240 dialog_cozytouch.py:260
 #: dialog_cozytouch.py:285 dialog_help.py:486 dialog_help.py:555
 #: dialog_help.py:596 dialog_vesync.py:43 dialog_vesync.py:180
@@ -5523,15 +5525,15 @@ msgid "off"
 msgstr ""
 
 #. Translators: Announced when a device is currently unreachable.
-#: __init__.py:1863 __init__.py:1657 cozytouch_devices.py:391
+#: __init__.py:1900 __init__.py:1694 cozytouch_devices.py:391
 #: netatmo_api.py:392 vesync_devices.py:691 vesync_devices.py:1128
 #: vesync_devices.py:1583
 msgid "offline"
 msgstr ""
 
 #. Translators: Status "switched on" for smart home devices (short).
-#: __init__.py:2250 __init__.py:2194 __init__.py:2211 __init__.py:1704
-#: __init__.py:1934 change_detection.py:220 change_detection.py:626
+#: __init__.py:2287 __init__.py:2231 __init__.py:2248 __init__.py:1741
+#: __init__.py:1971 change_detection.py:220 change_detection.py:626
 #: dialog_cozytouch.py:240 dialog_cozytouch.py:260 dialog_help.py:486
 #: dialog_vesync.py:43 dialog_vesync.py:180 dialog_vesync.py:221
 #: dialog_vesync.py:240 dialog_vesync.py:941 vesync_devices.py:1592
@@ -5540,7 +5542,7 @@ msgid "on"
 msgstr ""
 
 #. Translators: Meross hub connection status.
-#: __init__.py:1929
+#: __init__.py:1966
 msgid "online"
 msgstr ""
 
@@ -5587,7 +5589,7 @@ msgid "until {time}"
 msgstr ""
 
 #. Translators: Water leak sensor state in the status announcement.
-#: __init__.py:1695
+#: __init__.py:1732
 msgid "water detected"
 msgstr ""
 
@@ -5610,7 +5612,7 @@ msgstr ""
 
 #. Translators: Introduction of the status announcement. {count} = total,
 #. {detail} = breakdown per platform.
-#: __init__.py:1853
+#: __init__.py:1890
 msgid "{count} devices ({detail}). "
 msgstr ""
 
@@ -5734,7 +5736,7 @@ msgid "{name} - offline"
 msgstr ""
 
 #. Translators: Fallback display name for a device channel.
-#: __init__.py:2244
+#: __init__.py:2281
 msgid "{name} channel {number}"
 msgstr ""
 
@@ -5834,7 +5836,7 @@ msgstr ""
 
 #. Translators: Message when the user tries to switch a device that cannot be
 #. switched on/off (sensors, Netatmo devices).
-#: __init__.py:1608
+#: __init__.py:1645
 msgid "{name}: cannot be switched – adjustable in the device menu"
 msgstr ""
 
@@ -5875,7 +5877,7 @@ msgid "{name}: connection error"
 msgstr ""
 
 #. Translators: Message when the favorite's device is not loaded.
-#: __init__.py:1594 __init__.py:1651
+#: __init__.py:1631 __init__.py:1688
 msgid "{name}: device not available"
 msgstr ""
 
@@ -5940,7 +5942,7 @@ msgid "{name}: level {level}"
 msgstr ""
 
 #. Translators: Success feedback after a diffuser mode change.
-#: __init__.py:2319
+#: __init__.py:2356
 msgid "{name}: mode set"
 msgstr ""
 
@@ -5975,7 +5977,7 @@ msgid "{name}: no water detected any more"
 msgstr ""
 
 #. Translators: Message when the device is offline.
-#: __init__.py:1619 device_dialog.py:3014 dialog_meross.py:392
+#: __init__.py:1656 device_dialog.py:3014 dialog_meross.py:392
 msgid "{name}: offline"
 msgstr ""
 
@@ -6051,14 +6053,14 @@ msgstr ""
 
 #. Translators: Energy summary from the device's own meter without a current
 #. power value.
-#: __init__.py:1189
+#: __init__.py:1226
 msgid ""
 "{name}: today {today} kilowatt hours, last 7 days {week} kilowatt hours"
 msgstr ""
 
 #. Translators: Energy summary from the device's own meter. {name} = device,
 #. {today}/{week} = kWh, {watt} = current watts.
-#: __init__.py:1178
+#: __init__.py:1215
 msgid ""
 "{name}: today {today} kilowatt hours, last 7 days {week} kilowatt hours, "
 "currently {watt} watts"
@@ -6066,7 +6068,7 @@ msgstr ""
 
 #. Translators: Energy summary estimated from background samples (only covers
 #. the time NVDA was running).
-#: __init__.py:1203
+#: __init__.py:1240
 msgid ""
 "{name}: today {today} kilowatt hours, last 7 days {week} kilowatt hours, "
 "currently {watt} watts (estimated, only recorded while NVDA was running)"
@@ -6104,7 +6106,7 @@ msgid "{name}: {programme} set"
 msgstr ""
 
 #. Translators: Announcement of an external switch state change.
-#: __init__.py:2256 __init__.py:2201 __init__.py:2215 device_dialog.py:1328
+#: __init__.py:2293 __init__.py:2238 __init__.py:2252 device_dialog.py:1328
 #: dialog_vesync.py:44 dialog_vesync.py:201
 msgid "{name}: {status}"
 msgstr ""
@@ -6189,7 +6191,7 @@ msgstr ""
 
 #. Translators: A temperature with its unit, put together with other pieces
 #. into one announcement.
-#: __init__.py:1685
+#: __init__.py:1722
 msgid "{temp}°C"
 msgstr ""
 
@@ -6200,7 +6202,7 @@ msgstr ""
 
 #. Translators: Success message after login. {total} = number of devices,
 #. {detail} = breakdown per platform (e.g. "3 Meross, 1 Netatmo").
-#: __init__.py:992
+#: __init__.py:1008
 msgid "{total} devices ready ({detail})"
 msgstr ""
 
@@ -6220,12 +6222,12 @@ msgid "{value} mm rain"
 msgstr ""
 
 #. Translators: Relative humidity in the status announcement.
-#: __init__.py:1689 netatmo_api.py:280
+#: __init__.py:1726 netatmo_api.py:280
 msgid "{value}% humidity"
 msgstr ""
 
 #. Translators: Current power draw in the status announcement.
-#: __init__.py:1708
+#: __init__.py:1745
 msgid "{watt} watts"
 msgstr ""
 

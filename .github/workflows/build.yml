@@ -51,6 +51,21 @@ jobs:
         python -m pyflakes globalPlugins/SmartHomeControl
         python build_addon.py py311
 
+    # The checks under tools/checks/ assert what has already broken in this
+    # add-on once - a translation without context, a cached lamp mode, a
+    # sensor dropout, a tree that loses its selection. They need neither NVDA
+    # nor an account, so they run here. PYTHONIOENCODING because the runner's
+    # console is not UTF-8 and one of them prints CO2 with a subscript.
+    - name: Run the checks
+      env:
+        PYTHONIOENCODING: utf-8
+      run: |
+        Get-ChildItem tools/checks/*.py | ForEach-Object {
+          Write-Host "--- $($_.Name)"
+          python $_.FullName
+          if ($LASTEXITCODE -ne 0) { exit 1 }
+        }
+
     # Builds from manifest.ini, globalPlugins/, lib/, doc/ and locale/ - NOT
     # from the whole repository. Checks translations and package integrity
     # along the way and fails on any problem.

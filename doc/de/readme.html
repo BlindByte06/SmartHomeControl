@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Smart Home Control 26.8.2</title>
+<title>Smart Home Control 26.9.1</title>
 <style>
 body { font-family: Segoe UI, Arial, sans-serif; line-height: 1.6; max-width: 60em; margin: 1.5em auto; padding: 0 1em; }
 h1, h2, h3, h4, h5 { line-height: 1.25; }
@@ -540,7 +540,9 @@ vorübergehend ausfallen.</p>
 <ul>
 <li>Die Zugangsdaten werden ausschließlich <strong>lokal auf dem
   Rechner</strong> und <strong>verschlüsselt</strong> gespeichert. Passwörter
-  liegen nie im Klartext in der Konfiguration.</li>
+  liegen nie im Klartext in der Konfiguration. Sie stehen überhaupt nicht in
+  der NVDA-Konfiguration, sondern in einer eigenen Datei neben der
+  Erweiterung – so geraten sie auch nicht ins Protokoll.</li>
 <li>Die Kommunikation läuft direkt mit den jeweiligen Hersteller-Clouds – es
   werden keine Daten an Dritte gesendet.</li>
 </ul>
@@ -582,10 +584,10 @@ vorübergehend ausfallen.</p>
 <p><strong>Vor dem Verschicken bitte einen Blick auf persönliche Daten im
 Protokoll werfen.</strong> Es enthält Geräte- und Haus-Namen so, wie sie in
 der Hersteller-App vergeben wurden. NVDA schreibt beim Start außerdem die
-vollständige Konfiguration ins Protokoll, darin die E-Mail-Adresse im
-Klartext sowie die gespeicherten Passwörter und Tokens – letztere
-verschlüsselt und nur auf dem Rechner und Benutzerkonto lesbar, auf dem sie
-abgelegt wurden. Die Erweiterung selbst protokolliert nichts davon;
+vollständige Konfiguration ins Protokoll. Die Zugangsdaten sind darin
+nicht mehr enthalten: E-Mail-Adressen, Passwörter und Tokens liegen seit
+26.9.1 in einer eigenen Datei neben der Erweiterung, die das Protokoll nie
+zu sehen bekommt. Die Erweiterung selbst protokolliert nichts davon;
 Fehlermeldungen, die aus den Hersteller-Bibliotheken durchgereicht werden,
 liegen aber außerhalb ihrer Kontrolle.</p>
 <h2 id="lizenz-und-verwendete-komponenten">Lizenz und verwendete Komponenten</h2>

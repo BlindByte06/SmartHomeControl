@@ -47,6 +47,25 @@ opens it in the reader's language. In this repository it lives under
 
 [CHANGELOG.md](CHANGELOG.md) lists what changed per version.
 
+## Translating
+
+The source language is English; an interface without a matching translation
+stays English rather than turning German. A new language needs one file:
+
+1. Take the template
+   [locale/SmartHomeControl.pot](locale/SmartHomeControl.pot). Every one of
+   its texts carries a `# Translators:` comment saying what it is and where
+   it appears - the short line beginnings matter, because the F1 help finds
+   its text by the start of the tree line and the two have to match.
+2. Translate it with Poedit or any gettext tool into
+   `locale/<language>/LC_MESSAGES/nvda.po`.
+3. Send it as a pull request or attach it to an issue.
+
+Three of the texts are the name, the description and the "What's new" of the
+add-on store; translating them is enough to make the store show the add-on in
+that language. The manual (`doc/<language>/readme.html`) is optional - NVDA
+falls back to the English one.
+
 ---
 
 ## Reporting a problem

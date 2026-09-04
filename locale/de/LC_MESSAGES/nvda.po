@@ -6511,3 +6511,19 @@ msgstr ""
 "- Im Gerätemenü bleibt die Auswahl beim Aktualisieren stehen, eine Aktualisierung wird einmal statt zwei- bis dreimal angesagt, und eine in den Einstellungen abgeschaltete Plattform verlässt den Baum sofort.\n"
 "- In der Favoritenebene muss der Schaltdruck innerhalb weniger Sekunden auf die Ansage folgen, und Strg+B entfernt die Steckdose, auf der es steht, statt der ganzen Steckdosenleiste.\n"
 "- Geänderte Zugangsdaten werden vor dem Speichern bei der Plattform angemeldet und erreichen auch eine bereits laufende Sitzung."
+
+#. Translators: Spoken when the shortcut for the device menu is pressed while
+#. the menu is already open.
+#: __init__.py:1090
+msgid "Device menu is already open"
+msgstr "Gerätemenü ist bereits geöffnet"
+
+#. Translators: What's new for this version, shown in the add-on store.
+#. Markdown: NVDA renders it and reads it line by line.
+#: manifest.ini:changelog
+msgid ""
+"- Credentials no longer live in NVDA's configuration but in a file of their own. NVDA writes the complete configuration into the log when it starts, so the email address used to travel with every log that was sent in. Existing credentials move by themselves on the first start, and nothing has to be entered again.\n"
+"- The device menu no longer opens a second time on top of the first. The shortcut brings the menu that is already open to the front instead; the one left standing used to stop being updated without saying so."
+msgstr ""
+"- Die Zugangsdaten liegen nicht mehr in NVDAs Konfiguration, sondern in einer eigenen Datei. NVDA schreibt die vollständige Konfiguration beim Start ins Protokoll, die E-Mail-Adresse reiste also in jedem eingeschickten Log mit. Vorhandene Zugangsdaten ziehen beim ersten Start von selbst um, neu eingeben muss man nichts.\n"
+"- Das Gerätemenü öffnet sich nicht mehr ein zweites Mal über dem ersten. Das Tastenkürzel holt stattdessen das offene Menü nach vorn; das stehengebliebene wurde vorher stillschweigend nicht mehr aktualisiert."

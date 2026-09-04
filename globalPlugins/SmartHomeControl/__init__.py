@@ -110,6 +110,7 @@ from .change_detection import _ChangeDetectionMixin
 from .platform_utils import (
     split_by_platform, platform_of, PLATFORM_LABELS, PASSWORD_PLATFORMS,
 )
+from . import credential_store
 
 
 def _addon_version():
@@ -378,13 +379,19 @@ class GlobalPlugin(_CredentialsMixin, _SchedulerMixin, _ChangeDetectionMixin,
         """Load the settings from the NVDA config"""
         try:
             conf = config.conf["smartHomeControl"]
-            self.email = conf.get("email", "")
+            # Credentials do not live in nvda.ini: NVDA writes the whole
+            # configuration into the log at startup, and the email address
+            # stood there in plain text. credential_store keeps them in a
+            # file of its own and moves them out of the configuration the
+            # first time it runs.
+            secrets = credential_store.load(conf)
+            self.email = secrets.get("email", "")
             
             # Keep the password encrypted in memory (never as plain text). It
             # is only decrypted on demand at login time via the password
             # property. set_encrypted_password() checks the format cleanly (no
             # blind prefix heuristic).
-            self.set_encrypted_password(conf.get("password", ""))
+            self.set_encrypted_password(secrets.get("password", ""))
             
             self.auto_login = conf.get("autoLogin", True)
             self.announce_external_changes = conf.get("announceExternalChanges", True)
@@ -411,29 +418,29 @@ class GlobalPlugin(_CredentialsMixin, _SchedulerMixin, _ChangeDetectionMixin,
             self.notify_vesync_cook = conf.get("notifyVesyncCook", True)
             
             # Netatmo credentials (all secrets encrypted)
-            raw_client_id = conf.get("netatmoClientId", "")
+            raw_client_id = secrets.get("netatmoClientId", "")
             if raw_client_id and is_encrypted(raw_client_id):
                 self.netatmo_client_id = decrypt_dpapi(raw_client_id)
             else:
                 # Legacy: plain text, will be encrypted on the next save
                 self.netatmo_client_id = raw_client_id
-            encrypted_secret = conf.get("netatmoClientSecret", "")
+            encrypted_secret = secrets.get("netatmoClientSecret", "")
             self.netatmo_client_secret = decrypt_dpapi(encrypted_secret) if encrypted_secret else ""
             
-            encrypted_access = conf.get("netatmoAccessToken", "")
+            encrypted_access = secrets.get("netatmoAccessToken", "")
             self.netatmo_access_token = decrypt_dpapi(encrypted_access) if encrypted_access else ""
-            encrypted_refresh = conf.get("netatmoRefreshToken", "")
+            encrypted_refresh = secrets.get("netatmoRefreshToken", "")
             self.netatmo_refresh_token = decrypt_dpapi(encrypted_refresh) if encrypted_refresh else ""
             self.netatmo_token_expiry = conf.get("netatmoTokenExpiry", 0)
             self.netatmo_redirect_port = conf.get("netatmoRedirectPort", NETATMO_REDIRECT_PORT)
 
             # VeSync credentials (password and token encrypted)
-            self.vesync_email = conf.get("vesyncEmail", "")
-            self.set_encrypted_vesync_password(conf.get("vesyncPassword", ""))
+            self.vesync_email = secrets.get("vesyncEmail", "")
+            self.set_encrypted_vesync_password(secrets.get("vesyncPassword", ""))
             self.vesync_country_code = conf.get("vesyncCountryCode", "DE") or "DE"
-            encrypted_vs_token = conf.get("vesyncToken", "")
+            encrypted_vs_token = secrets.get("vesyncToken", "")
             self.vesync_token = decrypt_dpapi(encrypted_vs_token) if encrypted_vs_token else ""
-            encrypted_vs_account = conf.get("vesyncAccountId", "")
+            encrypted_vs_account = secrets.get("vesyncAccountId", "")
             self.vesync_account_id = decrypt_dpapi(encrypted_vs_account) if encrypted_vs_account else ""
             self.vesync_region = conf.get("vesyncRegion", "")
             self.vesync_filter_threshold = conf.get("vesyncFilterThreshold", 15)
@@ -443,9 +450,9 @@ class GlobalPlugin(_CredentialsMixin, _SchedulerMixin, _ChangeDetectionMixin,
 
             # Cozytouch credentials (password and token encrypted)
             self.use_cozytouch = conf.get("useCozytouch", False)
-            self.cozytouch_email = conf.get("cozytouchEmail", "")
-            self.set_encrypted_cozytouch_password(conf.get("cozytouchPassword", ""))
-            encrypted_ct_token = conf.get("cozytouchToken", "")
+            self.cozytouch_email = secrets.get("cozytouchEmail", "")
+            self.set_encrypted_cozytouch_password(secrets.get("cozytouchPassword", ""))
+            encrypted_ct_token = secrets.get("cozytouchToken", "")
             self.cozytouch_token = decrypt_dpapi(encrypted_ct_token) if encrypted_ct_token else ""
             self.cozytouch_capacity_liters = conf.get("cozytouchCapacityLiters", 0)
             self.notify_cozytouch_mode = conf.get("notifyCozytouchMode", True)
@@ -509,10 +516,14 @@ class GlobalPlugin(_CredentialsMixin, _SchedulerMixin, _ChangeDetectionMixin,
         """Save the settings to the NVDA config (passwords encrypted with DPAPI)"""
         try:
             conf = config.conf["smartHomeControl"]
-            conf["email"] = self.email
+            # The secrets go into the credential store, not into the
+            # configuration - see load_settings. The dictionary is filled
+            # here and written in one go further down.
+            secrets = {}
+            secrets["email"] = self.email
             
             # Password (already encrypted in memory - store directly)
-            conf["password"] = self._encrypted_password if self._encrypted_password else ""
+            secrets["password"] = self._encrypted_password if self._encrypted_password else ""
             
             conf["autoLogin"] = self.auto_login
             conf["announceExternalChanges"] = self.announce_external_changes
@@ -539,29 +550,34 @@ class GlobalPlugin(_CredentialsMixin, _SchedulerMixin, _ChangeDetectionMixin,
             conf["notifyVesyncCook"] = self.notify_vesync_cook
             
             # Netatmo credentials (all IDs/secrets/tokens encrypted)
-            conf["netatmoClientId"] = encrypt_dpapi(self.netatmo_client_id) if self.netatmo_client_id else ""
-            conf["netatmoClientSecret"] = encrypt_dpapi(self.netatmo_client_secret) if self.netatmo_client_secret else ""
-            conf["netatmoAccessToken"] = encrypt_dpapi(self.netatmo_access_token) if self.netatmo_access_token else ""
-            conf["netatmoRefreshToken"] = encrypt_dpapi(self.netatmo_refresh_token) if self.netatmo_refresh_token else ""
+            secrets["netatmoClientId"] = encrypt_dpapi(self.netatmo_client_id) if self.netatmo_client_id else ""
+            secrets["netatmoClientSecret"] = encrypt_dpapi(self.netatmo_client_secret) if self.netatmo_client_secret else ""
+            secrets["netatmoAccessToken"] = encrypt_dpapi(self.netatmo_access_token) if self.netatmo_access_token else ""
+            secrets["netatmoRefreshToken"] = encrypt_dpapi(self.netatmo_refresh_token) if self.netatmo_refresh_token else ""
             conf["netatmoTokenExpiry"] = self.netatmo_token_expiry
             conf["netatmoRedirectPort"] = self.netatmo_redirect_port
 
             # VeSync credentials (password and token encrypted)
-            conf["vesyncEmail"] = self.vesync_email
-            conf["vesyncPassword"] = self._encrypted_vesync_password if self._encrypted_vesync_password else ""
+            secrets["vesyncEmail"] = self.vesync_email
+            secrets["vesyncPassword"] = self._encrypted_vesync_password if self._encrypted_vesync_password else ""
             conf["vesyncCountryCode"] = self.vesync_country_code or "DE"
-            conf["vesyncToken"] = encrypt_dpapi(self.vesync_token) if self.vesync_token else ""
-            conf["vesyncAccountId"] = encrypt_dpapi(self.vesync_account_id) if self.vesync_account_id else ""
+            secrets["vesyncToken"] = encrypt_dpapi(self.vesync_token) if self.vesync_token else ""
+            secrets["vesyncAccountId"] = encrypt_dpapi(self.vesync_account_id) if self.vesync_account_id else ""
             conf["vesyncRegion"] = self.vesync_region or ""
             conf["vesyncFilterThreshold"] = self.vesync_filter_threshold
             conf["favLayerSwitchWindow"] = self.fav_layer_switch_window
 
             # Cozytouch credentials (password and token encrypted)
             conf["useCozytouch"] = self.use_cozytouch
-            conf["cozytouchEmail"] = self.cozytouch_email
-            conf["cozytouchPassword"] = self._encrypted_cozytouch_password if self._encrypted_cozytouch_password else ""
-            conf["cozytouchToken"] = encrypt_dpapi(self.cozytouch_token) if self.cozytouch_token else ""
+            secrets["cozytouchEmail"] = self.cozytouch_email
+            secrets["cozytouchPassword"] = self._encrypted_cozytouch_password if self._encrypted_cozytouch_password else ""
+            secrets["cozytouchToken"] = encrypt_dpapi(self.cozytouch_token) if self.cozytouch_token else ""
             conf["cozytouchCapacityLiters"] = self.cozytouch_capacity_liters
+            # Everything collected above goes into the credential store, and
+            # the same call clears whatever is still standing in nvda.ini.
+            # A failure only means the file stays as it was - the values are
+            # in memory and the next save tries again.
+            credential_store.save(conf, secrets)
             conf["notifyCozytouchMode"] = self.notify_cozytouch_mode
             conf["notifyCozytouchTemp"] = self.notify_cozytouch_temp
             conf["notifyCozytouchBoost"] = self.notify_cozytouch_boost
@@ -1072,7 +1088,28 @@ class GlobalPlugin(_CredentialsMixin, _SchedulerMixin, _ChangeDetectionMixin,
         wx.CallAfter(self._show_device_dialog)
     
     def _show_device_dialog(self):
-        """Shows the device control dialog"""
+        """Shows the device control dialog.
+
+        Opening it twice used to build a second dialog on top of the first.
+        The menu is modal, but a global NVDA gesture reaches the add-on
+        anyway, so the shortcut kept working while the menu was open. Two of
+        them are not only confusing to listen to: the second one takes over
+        ``_active_dialog`` and clears it when it closes, and the dialog left
+        standing then silently stopped being updated - the tree in front of
+        the user was frozen while the devices went on changing.
+        """
+        open_dialog = self._active_dialog
+        if (open_dialog is not None
+                and not getattr(open_dialog, "_is_destroyed", False)):
+            # Translators: Spoken when the shortcut for the device menu is
+            # pressed while the menu is already open.
+            ui.message(_("Device menu is already open"))
+            try:
+                open_dialog.Raise()
+                open_dialog.SetFocus()
+            except Exception as e:
+                log.debug(f"Could not bring the open device menu forward: {e}")
+            return
         # Translators: Spoken when the device menu opens.
         ui.message(_("Opening device overview..."))
         gui.mainFrame.prePopup()

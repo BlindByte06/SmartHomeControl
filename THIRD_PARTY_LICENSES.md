@@ -1,5 +1,11 @@
 # Bundled third-party components
 
+Smart Home Control itself is licensed under the GNU General Public License,
+version 2 or later; see `LICENSE`. The libraries bundled in the `lib`
+directory retain their own licenses (MIT, BSD, Apache-2.0, MPL-2.0, PSF).
+Their full license texts are included in the respective `*.dist-info`
+directories.
+
 Generated with `python build_addon.py licenses --write` from the `*.dist-info/METADATA` fields of the bundled packages.
 
 | Package | Version | Licence |

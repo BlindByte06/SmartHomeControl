@@ -2,6 +2,36 @@
 
 The GitHub release notes are built from the section of the released version.
 
+## 26.9.1 (September 2026)
+
+### Fixed
+
+- **The device menu no longer opens twice.** The menu is modal, but a global
+  NVDA gesture reaches the add-on anyway, so pressing the shortcut again built
+  a second dialog on top of the first. Two of them are not only confusing to
+  listen to: the second one took over the reference the live update hangs on
+  and cleared it when it closed, so the dialog left standing silently stopped
+  being updated. The shortcut now brings the open menu to the front.
+
+### Changed
+
+- **Credentials are no longer kept in NVDA's configuration.** NVDA writes the
+  complete configuration into the log when it starts, so everything stored
+  there travels with every log a user sends in - the email address in plain
+  text. Email addresses, passwords and tokens now live in a file of their own
+  beside the add-on, which the log never sees. What is stored has not changed:
+  passwords and tokens stay encrypted and readable only on the machine and
+  user account they were saved on. Existing credentials move by themselves on
+  the first start; if that file cannot be written, they stay where they were
+  rather than being lost.
+- **The checks are part of the repository now** and run in the build workflow.
+  Ten scripts that assert what has already broken in this add-on once - a
+  translation without context, a lamp that remembered its colour mode, a
+  sensor dropout, a tree that lost its selection. They used to live on one
+  disk and only ran when someone remembered them.
+- **The readme says how to translate the add-on**: where the template is,
+  what a `.po` file needs, and that the manual is optional.
+
 ## 26.8.2 (August 2026)
 
 ### Cosori air fryers

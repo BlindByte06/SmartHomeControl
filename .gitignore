@@ -79,7 +79,13 @@ pyvesync/
 .sconf_temp/
 
 # Working material that does not belong in the public repository: the
-# project notes and the check scripts. They travel to the other machines
-# over Synology Drive, not over git.
+# project notes. They travel to the other machines over Synology Drive, not
+# over git.
+#
+# tools/checks/ is the exception and belongs in here: those scripts are the
+# add-on's memory of every fault it has had, they need neither NVDA nor an
+# account, and the workflow runs them on every push. On one disk and run by
+# hand they were worth much less.
 CLAUDE.md
-tools/
+tools/*
+!tools/checks/

@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Smart Home Control 26.8.2</title>
+<title>Smart Home Control 26.9.1</title>
 <style>
 body { font-family: Segoe UI, Arial, sans-serif; line-height: 1.6; max-width: 60em; margin: 1.5em auto; padding: 0 1em; }
 h1, h2, h3, h4, h5 { line-height: 1.25; }
@@ -519,7 +519,9 @@ temporarily fail when the manufacturers change their servers.</p>
 <ul>
 <li>The credentials are stored exclusively <strong>locally on the
   computer</strong> and <strong>encrypted</strong>. Passwords are never stored in
-  plain text in the configuration.</li>
+  plain text in the configuration. They are not in the NVDA configuration at
+  all, but in a file of their own beside the add-on – which keeps them out of
+  the log as well.</li>
 <li>Communication goes directly to the respective manufacturer clouds – no
   data is sent to third parties.</li>
 </ul>
@@ -556,10 +558,10 @@ temporarily fail when the manufacturers change their servers.</p>
 </ul>
 <p><strong>Before sending, please check the log for personal data.</strong> It
 contains device and home names as given in the manufacturer app. NVDA also
-writes the complete configuration into the log at startup, which includes the
-email address in plain text and the stored passwords and tokens – those in
-encrypted form, readable only on the machine and user account they were saved
-on. The add-on itself logs none of that, but error messages passed through
+writes the complete configuration into the log at startup. The credentials
+are no longer part of it: since 26.9.1 email addresses, passwords and tokens
+live in a file of their own beside the add-on, which the log never sees. The
+add-on itself logs none of that either, but error messages passed through
 from the manufacturer libraries are beyond its control, so a quick look is
 worth it.</p>
 <h2 id="license-and-bundled-components">License and bundled components</h2>

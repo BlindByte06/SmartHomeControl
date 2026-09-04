@@ -11,10 +11,6 @@ but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 GNU General Public License for more details.
 
-Bundled third-party libraries in the "lib" directory retain their own
-licenses (MIT, BSD, Apache-2.0, MPL-2.0, PSF). The full license texts
-are included in the respective *.dist-info directories.
-
 ======================================================================
 
 GNU GENERAL PUBLIC LICENSE
