@@ -103,7 +103,7 @@ from .settings_panel import (
     SmartHomeSettingsDialog, is_credentials_error, login_error_message,
     offer_credential_reentry,
 )
-from .security import encrypt_dpapi, decrypt_dpapi, is_encrypted
+from .security import encrypt_dpapi, decrypt_dpapi_checked, is_encrypted
 from .credentials import _CredentialsMixin
 from .scheduler import _SchedulerMixin
 from .change_detection import _ChangeDetectionMixin
@@ -417,20 +417,35 @@ class GlobalPlugin(_CredentialsMixin, _SchedulerMixin, _ChangeDetectionMixin,
             self.notify_vesync_filter = conf.get("notifyVesyncFilter", True)
             self.notify_vesync_cook = conf.get("notifyVesyncCook", True)
             
+            # A value that cannot be decrypted here keeps its ciphertext,
+            # and save_settings writes THAT back instead of the empty string
+            # the decryption returned. DPAPI fails whenever the Windows
+            # account or the machine is another one - a portable NVDA on a
+            # stick reaches a second machine that way, and the credential
+            # file travels beside the add-on folder. Without this the first
+            # save on that machine would overwrite values that were still
+            # good on the first one, the Netatmo client id and secret among
+            # them, which are typed in by hand and cannot be fetched again.
+            self._unreadable_secrets = set()
+
+            def _secret(key):
+                """Decrypted value; notes the key when it cannot be read."""
+                plaintext, ok = decrypt_dpapi_checked(secrets.get(key, ""))
+                if not ok:
+                    self._unreadable_secrets.add(key)
+                return plaintext
+
             # Netatmo credentials (all secrets encrypted)
             raw_client_id = secrets.get("netatmoClientId", "")
             if raw_client_id and is_encrypted(raw_client_id):
-                self.netatmo_client_id = decrypt_dpapi(raw_client_id)
+                self.netatmo_client_id = _secret("netatmoClientId")
             else:
                 # Legacy: plain text, will be encrypted on the next save
                 self.netatmo_client_id = raw_client_id
-            encrypted_secret = secrets.get("netatmoClientSecret", "")
-            self.netatmo_client_secret = decrypt_dpapi(encrypted_secret) if encrypted_secret else ""
-            
-            encrypted_access = secrets.get("netatmoAccessToken", "")
-            self.netatmo_access_token = decrypt_dpapi(encrypted_access) if encrypted_access else ""
-            encrypted_refresh = secrets.get("netatmoRefreshToken", "")
-            self.netatmo_refresh_token = decrypt_dpapi(encrypted_refresh) if encrypted_refresh else ""
+            self.netatmo_client_secret = _secret("netatmoClientSecret")
+
+            self.netatmo_access_token = _secret("netatmoAccessToken")
+            self.netatmo_refresh_token = _secret("netatmoRefreshToken")
             self.netatmo_token_expiry = conf.get("netatmoTokenExpiry", 0)
             self.netatmo_redirect_port = conf.get("netatmoRedirectPort", NETATMO_REDIRECT_PORT)
 
@@ -438,10 +453,8 @@ class GlobalPlugin(_CredentialsMixin, _SchedulerMixin, _ChangeDetectionMixin,
             self.vesync_email = secrets.get("vesyncEmail", "")
             self.set_encrypted_vesync_password(secrets.get("vesyncPassword", ""))
             self.vesync_country_code = conf.get("vesyncCountryCode", "DE") or "DE"
-            encrypted_vs_token = secrets.get("vesyncToken", "")
-            self.vesync_token = decrypt_dpapi(encrypted_vs_token) if encrypted_vs_token else ""
-            encrypted_vs_account = secrets.get("vesyncAccountId", "")
-            self.vesync_account_id = decrypt_dpapi(encrypted_vs_account) if encrypted_vs_account else ""
+            self.vesync_token = _secret("vesyncToken")
+            self.vesync_account_id = _secret("vesyncAccountId")
             self.vesync_region = conf.get("vesyncRegion", "")
             self.vesync_filter_threshold = conf.get("vesyncFilterThreshold", 15)
             from .constants import FAV_LAYER_SWITCH_WINDOW_DEFAULT
@@ -452,8 +465,7 @@ class GlobalPlugin(_CredentialsMixin, _SchedulerMixin, _ChangeDetectionMixin,
             self.use_cozytouch = conf.get("useCozytouch", False)
             self.cozytouch_email = secrets.get("cozytouchEmail", "")
             self.set_encrypted_cozytouch_password(secrets.get("cozytouchPassword", ""))
-            encrypted_ct_token = secrets.get("cozytouchToken", "")
-            self.cozytouch_token = decrypt_dpapi(encrypted_ct_token) if encrypted_ct_token else ""
+            self.cozytouch_token = _secret("cozytouchToken")
             self.cozytouch_capacity_liters = conf.get("cozytouchCapacityLiters", 0)
             self.notify_cozytouch_mode = conf.get("notifyCozytouchMode", True)
             self.notify_cozytouch_temp = conf.get("notifyCozytouchTemp", True)
@@ -461,9 +473,22 @@ class GlobalPlugin(_CredentialsMixin, _SchedulerMixin, _ChangeDetectionMixin,
             self.notify_cozytouch_power = conf.get("notifyCozytouchPower", True)
             self.notify_cozytouch_away = conf.get("notifyCozytouchAway", True)
 
+            if self._unreadable_secrets:
+                # Names only, never values. The list is what tells a reader
+                # of the log apart the two cases that look alike from
+                # outside: nothing stored, or stored on another machine.
+                names = ", ".join(sorted(self._unreadable_secrets))
+                log.warning(
+                    f"Stored credentials cannot be decrypted on this Windows "
+                    f"account or machine and are kept untouched: {names}")
+
             log.debug(f"Settings loaded: Meross={self.use_meross}, Netatmo={self.use_netatmo}, VeSync={self.use_vesync}, Cozytouch={self.use_cozytouch}, auto login={self.auto_login}")
         except Exception as e:
             log.error(f"Failed to load the settings: {e}")
+            # Nothing is known about the stored values after a failed load,
+            # so nothing may be overwritten either: save_settings keeps
+            # every secret key as it stands (see _unreadable_secrets).
+            self._unreadable_secrets = set(credential_store.SECRET_KEYS)
             self.email = ""
             self._encrypted_password = ""
             self.auto_login = True
@@ -573,11 +598,40 @@ class GlobalPlugin(_CredentialsMixin, _SchedulerMixin, _ChangeDetectionMixin,
             secrets["cozytouchPassword"] = self._encrypted_cozytouch_password if self._encrypted_cozytouch_password else ""
             secrets["cozytouchToken"] = encrypt_dpapi(self.cozytouch_token) if self.cozytouch_token else ""
             conf["cozytouchCapacityLiters"] = self.cozytouch_capacity_liters
+            # A secret this machine could not decrypt is dropped from the
+            # dictionary rather than written: credential_store.save leaves a
+            # key it is not given exactly as it stands. Writing the empty
+            # string the decryption returned would destroy a ciphertext that
+            # is still good on the machine it was made on.
+            #
+            # Only while it is still empty. Anything that has since put a
+            # real value there - the settings dialog, a re-auth - wins, and
+            # the value gets written. What this does not cover is emptying
+            # such a key on purpose: the old ciphertext stays. It is inert,
+            # since it never decrypts here, and the alternative is a table
+            # of which key belongs to which platform, kept in step by hand.
+            for key in getattr(self, '_unreadable_secrets', ()):
+                if not secrets.get(key):
+                    secrets.pop(key, None)
+
+            if not secrets:
+                # Nothing left to contribute - the load failed and no field
+                # has been filled in since. Saving anyway would clear the
+                # configuration (that is the second half of the call) while
+                # putting nothing in its place, and a migration that had not
+                # run yet would lose everything it was about to move.
+                log.warning("No credentials to save - the stored file and the "
+                            "configuration are both left as they are")
             # Everything collected above goes into the credential store, and
             # the same call clears whatever is still standing in nvda.ini.
             # A failure only means the file stays as it was - the values are
-            # in memory and the next save tries again.
-            credential_store.save(conf, secrets)
+            # in memory and the next save tries again. It is said out loud
+            # nonetheless: the one value that gets lost this way is a token
+            # the cloud rotated, and a silent debug line is not enough to
+            # explain a sign-in that asks for the password again.
+            elif not credential_store.save(conf, secrets):
+                log.error("Credentials were NOT written - the stored file "
+                          "keeps its previous contents")
             conf["notifyCozytouchMode"] = self.notify_cozytouch_mode
             conf["notifyCozytouchTemp"] = self.notify_cozytouch_temp
             conf["notifyCozytouchBoost"] = self.notify_cozytouch_boost
@@ -2071,6 +2125,7 @@ class GlobalPlugin(_CredentialsMixin, _SchedulerMixin, _ChangeDetectionMixin,
 
     def _refresh_devices_impl(self):
         """The actual refresh - only called while holding ``_refresh_lock``."""
+        from .history import _device_key
         try:
             with self._devices_lock:
                 by_platform = split_by_platform(self.devices)
@@ -2154,9 +2209,13 @@ class GlobalPlugin(_CredentialsMixin, _SchedulerMixin, _ChangeDetectionMixin,
                 # Keep devices that a scheduler poll running in parallel
                 # discovered/appended between the snapshot and the reassignment
                 # (otherwise a lost update: they would silently drop out).
-                known_uuids = {d.uuid for d in new_list}
+                # _device_key and not uuid: every sensor on a Meross hub
+                # carries the hub's uuid, so a single sensor in the new list
+                # made all its siblings count as known, and a second sensor
+                # the parallel poll had found dropped out silently.
+                known_keys = {_device_key(d) for d in new_list}
                 for d in self.devices:
-                    if d.uuid not in known_uuids:
+                    if _device_key(d) not in known_keys:
                         new_list.append(d)
                 # A switched-off platform belongs in neither of the two
                 # sources above. Without this filter its devices survived

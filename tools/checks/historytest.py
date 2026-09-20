@@ -11,6 +11,18 @@ import os
 import sys
 import types
 
+# A Windows console is cp1252 by default, and this script prints readings
+# with their units - the micro of ug/m3 and the subscript of CO2 among them.
+# Without this the run dies on an UnicodeEncodeError halfway through and
+# exits non-zero, which reads exactly like a failed check while the checks
+# after it never ran at all. The build workflow sets PYTHONIOENCODING for
+# the same reason; this makes the plain call in the README work too.
+for _stream in (sys.stdout, sys.stderr):
+    try:
+        _stream.reconfigure(encoding='utf-8', errors='replace')
+    except Exception:
+        pass
+
 BASE = os.environ.get(
     'SHC',
     os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(
@@ -251,13 +263,42 @@ def test_measurements():
     env2 = {}
     import ast as _ast
     for node in _ast.parse(hist).body:
-        if isinstance(node, _ast.FunctionDef) and node.name == '_csv_number':
+        if (isinstance(node, _ast.FunctionDef)
+                and node.name in ('_csv_number', '_csv_safe_text')):
             exec(compile(_ast.Module([node], []), 'h', 'exec'), env2)
     cn = env2['_csv_number']
     check('28.5 wird zu 28,5 (sonst Datum "28. Mai")', cn(28.5, ',') == '28,5', cn(28.5, ','))
     check('ganze Zahl bleibt', cn(812, ',') == '812')
     check('leer bleibt leer', cn('', ',') == '' and cn(None, ',') == '')
     check('Punkt-Gebietsschema unveraendert', cn(28.5, '.') == '28.5')
+
+    print('== Keine Formel kommt durch den Export ==')
+    # Die Freitextspalten waren entschaerft, die Zahlenspalte verliess sich
+    # auf eine Pruefung in einer anderen Funktion. Ein Export wird
+    # weitergegeben; eine Zelle "=cmd|..." waere dann eine lebende Formel
+    # in der Tabelle dessen, der sie oeffnet.
+    safe = env2.get('_csv_safe_text')
+    check('_csv_safe_text gibt es', callable(safe))
+    GEFAEHRLICH = ('=', '+', '-', '@', '\t', '\r')
+    ANGRIFFE = ['=HYPERLINK("http://x","k")', "=cmd|'/c calc'!A1", '+1+1',
+                '@SUM(1:9)', '\tTab', '\rCR']
+    if callable(safe):
+        for roh in ANGRIFFE:
+            aus = safe(roh)
+            check(f'Freitext entschaerft: {roh[:20]!r}',
+                  bool(aus) and aus[0] not in GEFAEHRLICH, repr(aus))
+    for roh in ANGRIFFE:
+        aus = cn(roh, ',')
+        check(f'Zahlenspalte entschaerft: {roh[:20]!r}',
+              bool(aus) and aus[0] not in GEFAEHRLICH, repr(aus))
+    # Echte Zahlen muessen Zahlen bleiben, sonst rechnet die Tabelle nicht.
+    for roh, erwartet in ((22.5, '22,5'), (0, '0'), (-1, '-1'),
+                          ('28.5', '28,5'), ('-3.5', '-3,5')):
+        check(f'Zahl bleibt Zahl: {roh!r}', cn(roh, ',') == erwartet,
+              repr(cn(roh, ',')))
+    check('die Regel steht an genau einer Stelle',
+          'return _csv_safe_text(value)' in hist,
+          'sonst driften Freitext- und Zahlenspalte auseinander')
     check('Dateiname nennt die Ansicht',
           '_("smart-home-readings.csv")' in dlg and '_("smart-home-events.csv")' in dlg)
     check('kein hartkodierter deutscher Dateiname',

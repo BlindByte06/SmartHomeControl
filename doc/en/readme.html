@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Smart Home Control 26.9.1</title>
+<title>Smart Home Control 26.9.2</title>
 <style>
 body { font-family: Segoe UI, Arial, sans-serif; line-height: 1.6; max-width: 60em; margin: 1.5em auto; padding: 0 1em; }
 h1, h2, h3, h4, h5 { line-height: 1.25; }
@@ -518,10 +518,13 @@ temporarily fail when the manufacturers change their servers.</p>
 <h2 id="privacy-and-security">Privacy and security</h2>
 <ul>
 <li>The credentials are stored exclusively <strong>locally on the
-  computer</strong> and <strong>encrypted</strong>. Passwords are never stored in
-  plain text in the configuration. They are not in the NVDA configuration at
-  all, but in a file of their own beside the add-on – which keeps them out of
-  the log as well.</li>
+  computer</strong>. They are not in the NVDA configuration at all, but in a
+  file of their own beside the add-on – which keeps them out of the log as
+  well. Passwords and tokens are <strong>encrypted</strong> there and can be
+  read back only on the machine and user account they were saved on; the
+  email addresses stand in plain text, because they are what the sign-in is
+  addressed to. The file is taken off the inherited access rights when it is
+  written, so other accounts on the same computer cannot read it.</li>
 <li>Communication goes directly to the respective manufacturer clouds – no
   data is sent to third parties.</li>
 </ul>

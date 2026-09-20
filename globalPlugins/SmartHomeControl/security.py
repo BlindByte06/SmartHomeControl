@@ -353,6 +353,30 @@ def decrypt_dpapi(encrypted):
         return ""
 
 
+def decrypt_dpapi_checked(value):
+    """Like ``decrypt_dpapi``, but says whether it worked.
+
+    Returns ``(plaintext, ok)``. ``ok`` is False only when a value that
+    carries a known prefix could not be decrypted - which on DPAPI means a
+    different Windows account or a different machine, not a damaged value.
+    A portable NVDA on a stick reaches a second machine that way, and the
+    credential file travels with it.
+
+    The distinction matters because the caller saves what it loaded: with
+    ``decrypt_dpapi`` alone, an unreadable value comes back as "" and the
+    next save writes that empty string over a ciphertext that was still
+    perfectly good on the machine it was made on. The Netatmo client id and
+    secret are the ones that hurt - they are typed in by hand from the
+    developer portal and no re-login can fetch them again.
+    """
+    if not value:
+        return "", True
+    plaintext = decrypt_dpapi(value)
+    if plaintext == "" and is_encrypted(value):
+        return "", False
+    return plaintext, True
+
+
 def is_encrypted(value):
     """True if the string already carries a known encryption format.
 

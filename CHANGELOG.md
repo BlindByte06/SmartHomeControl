@@ -2,6 +2,78 @@
 
 The GitHub release notes are built from the section of the released version.
 
+## 26.9.2 (September 2026)
+
+### Fixed
+
+- **Every leak sensor on a hub is told apart from the others.** Two or more
+  of them on one Meross hub - MS400, MS405, in any combination - shared a
+  single alarm state, so an alarm repeated on every poll pass while another
+  sensor was announced as dry in the same breath, both of them landing in
+  the history each time. A single sensor was never affected. The same
+  identity now also keeps a sensor from dropping out of a refresh that runs
+  while another one is still going, which covers the MS100 and MS130 as
+  well.
+- **Credentials survive two things writing at once.** Saving also runs on
+  background threads, and two of them writing together lost the newer
+  value - a token the cloud had just renewed is exactly what went missing.
+  Writing is serialised now, a failed write says so instead of passing in
+  silence, and no stray file with an email address in it is left behind.
+- **A credential that cannot be decrypted is no longer overwritten.**
+  Passwords and tokens can be read back only on the machine and user
+  account they were saved on, and the file travels beside the add-on - a
+  portable NVDA on a stick reaches a second machine that way. Such a value
+  is now left as it stands instead of being replaced with nothing; the
+  Netatmo client ID and secret are typed in by hand and no fresh sign-in
+  can fetch them again.
+
+### Security
+
+- **The bundled libraries carry three fixed CVEs.** urllib3 goes from 2.7.0
+  to 2.8.0, which closes two high-severity issues and one medium one: the
+  TLS configuration of an HTTPS proxy could be ignored or overridden, a
+  chunk-size line could be buffered without a limit, and chunked deflate
+  streaming could enter an infinite loop. The last two are denial of
+  service from a server that answers badly - and a denial of service in a
+  screen reader takes away the screen. aiohttp goes from 3.14.1 to 3.14.3,
+  which stops sensitive headers being carried into a cross-origin redirect
+  when more than one of them is present, and picks up a newer HTTP parser.
+  certifi is current again, which drops a withdrawn root certificate
+  (Atos TrustedRoot 2011) and adds four; idna 3.20 rejects A-labels that
+  are not the canonical encoding of their name. multidict, yarl, propcache
+  and charset-normalizer follow the same stack.
+- **A reading can no longer smuggle a formula into the export.** Free-text
+  columns were already defused, the numeric ones relied on a check in a
+  different module to keep anything but a number out. The guard now sits
+  where the cell is written, so a stored value of `=cmd|...` reaches the
+  spreadsheet as text - which matters because an export is made to be
+  passed on to someone else.
+- **The local sign-in callback answers only its own address.** The small
+  web server that receives the Netatmo authorization runs on this machine
+  for the two minutes the sign-in takes, and every page open in the browser
+  can reach it in that time. It now replies to the registered callback path
+  alone, so a request to any other address is a 404 and leaves the sign-in
+  alone, and the comparison of the one-time value is a constant-time one.
+- **The credentials file is taken off the inherited access rights** when it
+  is written, the way the encryption key file already was. Its passwords
+  and tokens are encrypted, but the email addresses are not - and they were
+  the reason the file exists.
+
+### Changed
+
+- **The manual says which credentials are encrypted and which are not.**
+  Passwords and tokens are, and only on the machine they were saved on; the
+  email addresses are not, because the sign-in is addressed to them. The
+  section used to call all of it encrypted, which promised more than the
+  add-on delivers - and matters to anyone carrying the folder to a second
+  computer.
+- **Twelve checks instead of ten**, and the existing ones cover the faults
+  above. A new one verifies the bundled libraries: every file against the
+  checksum from its wheel, the bundled versions against the pinned ones,
+  and both architectures for completeness. `historytest.py` also runs on a
+  console that is not UTF-8 now, instead of dying halfway through on a unit
+  symbol and looking like a failed check.
+
 ## 26.9.1 (September 2026)
 
 ### Fixed

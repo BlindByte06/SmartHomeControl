@@ -96,7 +96,7 @@ class _ChangeDetectionMixin:
         The state therefore lands in the history as an EVENT (that is what it
         is) and is announced. Runs after every poll pass.
         """
-        from .history import get_history, SOURCE_SYSTEM
+        from .history import get_history, SOURCE_SYSTEM, _device_key
         for device in devices:
             if not getattr(device, 'is_water_sensor', False):
                 continue
@@ -107,9 +107,16 @@ class _ChangeDetectionMixin:
                 continue
             if wet is None:
                 continue
-            uuid = getattr(device, 'uuid', '')
-            previous = self._previous_water_states.get(uuid)
-            self._previous_water_states[uuid] = wet
+            # _device_key, not uuid: every sensor on a Meross hub carries
+            # the hub's uuid, so two leak sensors on one hub (MS400, MS405,
+            # in any combination) shared one entry here and overwrote each
+            # other on every pass. Both then counted as changed: an alarm
+            # AND the opposite all-clear for the other sensor, plus two
+            # history entries, on every pass. The history has used this key
+            # since the same fault merged its measurement series.
+            key = _device_key(device)
+            previous = self._previous_water_states.get(key)
+            self._previous_water_states[key] = wet
             if previous is None or previous == wet:
                 continue  # first reading or unchanged - nothing to report
 

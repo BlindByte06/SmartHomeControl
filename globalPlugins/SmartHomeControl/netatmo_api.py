@@ -12,6 +12,7 @@ Supported devices:
 
 import os
 import base64
+import hmac
 import html
 import re
 import threading
@@ -40,7 +41,8 @@ if "_" not in globals():  # fallback if initTranslation() fails
 
 from .constants import (
     NETATMO_AUTH_URL, NETATMO_TOKEN_URL, NETATMO_API_BASE,
-    NETATMO_REDIRECT_HOST, NETATMO_REDIRECT_PORT, netatmo_redirect_uri,
+    NETATMO_REDIRECT_HOST, NETATMO_REDIRECT_PORT, NETATMO_REDIRECT_PATH,
+    netatmo_redirect_uri,
     NETATMO_DEFAULT_SCOPES, NETATMO_MODE_NAMES, HOMESDATA_CACHE_SECONDS,
     NETATMO_FULL_REFRESH_SECONDS,
 )
@@ -444,11 +446,31 @@ class _OAuthCallbackHandler(BaseHTTPRequestHandler):
     """Local HTTP handler for the OAuth2 redirect callback.
 
     State is accessed via self.server.oauth_state (instance-based).
+
+    The server listens on localhost only, so nothing on the network can
+    reach it - but every page open in the browser can, for the two
+    minutes the flow lasts. Two things follow from that. Only the
+    registered callback path is answered, so a stray request to any other
+    path (a favicon, an image tag pointing at the port) gets a 404 and
+    leaves the flow alone. And the code is worthless without the state,
+    which is 32 random bytes the page cannot know - a forged code is
+    therefore rejected further down rather than exchanged.
+
+    What is left is that such a page can end this one sign-in attempt by
+    sending ``?error=``, since an error carries no state to check against
+    in every server's answer. The cost of that is a sign-in that has to
+    be started again, and the alternative - ignoring errors without a
+    matching state - would swallow the real ones.
     """
 
     def do_GET(self):
         parsed = urlparse(self.path)
         params = parse_qs(parsed.query)
+
+        if parsed.path != NETATMO_REDIRECT_PATH:
+            self.send_response(404)
+            self.end_headers()
+            return
 
         if 'code' in params:
             self.server.oauth_state.auth_code = params['code'][0]
@@ -775,7 +797,10 @@ class NetatmoAPI:
                 "No response received from Netatmo. Timeout or browser window "
                 "closed."))
 
-        if server.oauth_state.auth_state != state:
+        # compare_digest rather than != : the comparison is against a
+        # secret, and a length-dependent one is the kind of detail that is
+        # cheap to get right and awkward to revisit.
+        if not hmac.compare_digest(server.oauth_state.auth_state or '', state):
             # Translators: Security error message when the OAuth2 CSRF state
             # parameter does not match. Should only happen on attack attempts.
             raise RuntimeError(_(

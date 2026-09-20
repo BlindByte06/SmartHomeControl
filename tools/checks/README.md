@@ -1,6 +1,6 @@
 # Checks
 
-Ten scripts that verify invariants which are easy to break and expensive
+Twelve scripts that verify invariants which are easy to break and expensive
 to notice late. They need no NVDA and no cloud account: most of them read the
 shipped source with `ast` and check properties of it, while `fryertest.py` and
 `sensortest.py` import a module with the two NVDA-only modules stubbed. Either way they
@@ -17,6 +17,8 @@ python tools/checks/configtest.py
 python tools/checks/lighttest.py
 python tools/checks/treetest.py
 python tools/checks/credentialstest.py
+python tools/checks/wateralarmtest.py
+python tools/checks/libstest.py
 ```
 
 Each prints one line per check and ends with `GESAMT: ALLE TESTS OK` or a
@@ -76,7 +78,33 @@ own. The dangerous part is the one-time move: clear the configuration before
 the file is really written and the user has to type everything again. These
 checks cover the move, the second start, saving, a broken file - and the case
 that matters most, a failing write, where the values have to stay in the
-configuration.
+configuration. Since then two more ways to lose a value that was already
+stored: two threads writing at once, which used to fight over one fixed
+temporary file and drop the newer value with nothing but a log line (a
+rotated token is exactly what goes missing that way), and a value this
+machine cannot decrypt, which came back as "" and was written over a
+ciphertext that is still good on the machine it was made on.
+
+**wateralarmtest.py** - the leak sensors. Every sensor on a Meross hub
+carries the hub's uuid, so two leak sensors on one hub (MS400, MS405, in
+any combination) shared one entry in the alarm detection and overwrote
+each other on every pass. Both then counted as
+changed: the wet one alarmed again and the dry one beside it was announced
+as dry "again" - every fifteen seconds with the device menu open, because
+the check runs after each poll of any platform and reads cached state. These checks hold each sensor
+to its own identity, and hold the alarm to being said once.
+
+**libstest.py** - the bundled libraries. The add-on ships its
+dependencies inside the package, so nothing here is ever updated by pip on
+a user's machine: what is in `lib/` at build time runs until the next
+release. The checks verify every file against the SHA256 in its wheel's
+RECORD (which catches both a library edited after unpacking and the far
+likelier accident, a line-ending conversion - the reason `.gitattributes`
+marks `lib/**` as `-text`), that the bundled versions are the ones pinned
+in `requirements-bundle.txt` with no folder of an earlier version left
+behind, and that both architectures carry every compiled package. It does
+not ask the internet about newer versions or CVEs: that is a decision with
+a release attached to it, and the check has to pass offline.
 
 **refreshtest.py** — the polling scheduler: that two refreshes of the same
 platform coalesce instead of queueing, and that the cache lifetime stays

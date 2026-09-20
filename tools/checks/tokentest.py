@@ -203,6 +203,24 @@ def main():
     test_plugin_persists()
     test_diagnostics()
     test_callback_registered()
+    print('== Der lokale Rueckrufserver ==')
+    # Er laeuft zwei Minuten auf localhost, und jede im Browser offene Seite
+    # kann ihn in dieser Zeit erreichen.
+    net = io.open(os.path.join(BASE, 'netatmo_api.py'), encoding='utf-8').read()
+    check('er antwortet nur auf dem registrierten Pfad',
+          'if parsed.path != NETATMO_REDIRECT_PATH:' in net,
+          'sonst stoert jede Anfrage an den Port die Anmeldung')
+    check('und schickt sonst eine 404', 'self.send_response(404)' in net)
+    check('der state wird in konstanter Zeit verglichen',
+          'hmac.compare_digest(' in net)
+    check('hmac ist dafuer importiert', '\nimport hmac\n' in net)
+    check('der state kommt aus os.urandom', 'os.urandom(32)' in net)
+    check('die Fehlerseite wird maskiert (reflektiertes XSS)',
+          'html.escape(err_raw' in net)
+    check('der Server bindet nur an localhost',
+          'NETATMO_REDIRECT_HOST = "localhost"' in io.open(
+              os.path.join(BASE, 'constants.py'), encoding='utf-8').read())
+
     print()
     if FAILED:
         print(f'FEHLGESCHLAGEN: {len(FAILED)} -> {FAILED}')
