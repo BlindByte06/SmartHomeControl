@@ -114,10 +114,18 @@ def main():
 
     print('== Der Schluessel: unique_id, nicht uuid ==')
     init = source('__init__')
-    check('die Rettungsschleife schluesselt nach unique_id',
-          "known_ids = {getattr(d, 'unique_id', None) or d.uuid" in init)
+    check('die Rettungsschleife schluesselt nach der Identitaet, nicht nach '
+          'der uuid',
+          'known_keys = {_device_key(d) for d in new_list}' in init)
     check('die alte Fassung nach uuid ist fort',
           'known_uuids = {d.uuid for d in new_list}' not in init)
+    # _device_key ist der gemeinsame Schluessel des Add-ons (history.py) und
+    # nimmt unique_id vor uuid - genau das, woran die Schleife haengt.
+    hist = source('history')
+    body = hist.partition('def _device_key')[2][:600]
+    check('und _device_key nimmt unique_id vor uuid',
+          'unique_id' in body and body.index('unique_id') < body.index('uuid',
+                                                                      body.index('unique_id') + 1))
 
     print('== Die Uebernahme ist verdrahtet ==')
     check('bei der Anmeldung', init.count('carry_over_hub_subdevices(') >= 2,

@@ -224,6 +224,27 @@ def _csv_quantity_header(quantity):
     return f"{label} ({unit})" if unit else label
 
 
+def _csv_safe_text(value):
+    """Defuses spreadsheet formula injection in an exported cell.
+
+    Device names come from the manufacturer cloud (the user types them in
+    the Meross/Netatmo/VeSync app), so they are external input. Excel and
+    LibreOffice interpret any cell starting with = + - @ or a leading
+    tab/CR as a FORMULA, not as text - a device named
+    ``=HYPERLINK("http://evil","click")`` would become an active link on
+    opening the export, and DDE-style payloads are possible too (CWE-1236).
+
+    Prefixing with an apostrophe is the standard mitigation: spreadsheets
+    show the plain text and never evaluate it.
+    """
+    if value is None:
+        return ''
+    text = str(value)
+    if text and text[0] in ('=', '+', '-', '@', '\t', '\r'):
+        return "'" + text
+    return text
+
+
 def _csv_number(value, decimal_point):
     """Number for the CSV in the decimal notation of the system locale.
 
@@ -231,9 +252,24 @@ def _csv_number(value, decimal_point):
     "28.5" is not a number at all but matches the date pattern day.month -
     the temperature 28.5 °C silently became "28 May" (cell value 46170,
     measured). With a comma it is a number that can be calculated with.
+
+    Anything that is not a number goes through ``_csv_safe_text`` instead
+    of being written raw. Readings pass a ``float()`` on the way in (see
+    ``_is_change_point``), so in a healthy history this branch is never
+    taken - but that check sits in another function, and the stored file
+    is plain JSON in the user's profile that any process running as the
+    user can edit. A cell reading ``=cmd|...`` would then be a live
+    formula in the spreadsheet of whoever the export is passed on to, and
+    an export is made to be passed on. The guard belongs where the cell
+    is written, not one module away.
     """
     if value is None or value == '':
         return ''
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        try:
+            float(value)
+        except (TypeError, ValueError):
+            return _csv_safe_text(value)
     text = str(value)
     return text.replace('.', decimal_point) if decimal_point != '.' else text
 
@@ -871,24 +907,13 @@ class DeviceHistory:
     # ------------------------------------------------------------------
     @staticmethod
     def _csv_safe(value):
-        """Defuses spreadsheet formula injection in an exported cell.
+        """Defuses spreadsheet formula injection - see ``_csv_safe_text``.
 
-        Device names come from the manufacturer cloud (the user types them in
-        the Meross/Netatmo/VeSync app), so they are external input. Excel and
-        LibreOffice interpret any cell starting with = + - @ or a leading
-        tab/CR as a FORMULA, not as text - a device named
-        ``=HYPERLINK("http://evil","click")`` would become an active link on
-        opening the export, and DDE-style payloads are possible too (CWE-1236).
-
-        Prefixing with an apostrophe is the standard mitigation: spreadsheets
-        show the plain text and never evaluate it.
+        Kept as a method because the export calls it as ``self._csv_safe``.
+        The rule itself lives in one place, so the numeric column and the
+        free-text columns cannot drift apart.
         """
-        if value is None:
-            return ''
-        text = str(value)
-        if text and text[0] in ('=', '+', '-', '@', '\t', '\r'):
-            return "'" + text
-        return text
+        return _csv_safe_text(value)
 
     def export_csv(self, filepath=None, device_uuid=None, since_hours=None,
                    platform=None, event_type=None):
