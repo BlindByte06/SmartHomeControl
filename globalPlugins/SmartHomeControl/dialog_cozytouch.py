@@ -321,6 +321,310 @@ class _CozytouchDialogMixin:
             on_success_on,
             _("Away mode could not be toggled"))
 
+    # ---------------- Time program ----------------
+    # The names live in constants.py: the history needs them too, to render
+    # a stored time program in the current language.
+    from .constants import WEEKDAY_NAMES
+
+    @staticmethod
+    def _minutes_to_text(minutes):
+        return "%02d:%02d" % (int(minutes) // 60, int(minutes) % 60)
+
+    @staticmethod
+    def _text_to_minutes(text):
+        """'07:30' -> 450. None when it cannot be read."""
+        text = (text or "").strip().replace(".", ":")
+        if not text:
+            return None
+        parts = text.split(":")
+        if len(parts) != 2:
+            return False
+        try:
+            hours, minutes = int(parts[0]), int(parts[1])
+        except ValueError:
+            return False
+        if not (0 <= hours <= 23 and 0 <= minutes <= 59):
+            return False
+        return hours * 60 + minutes
+
+    def _handle_cozytouch_schedule(self, device, item):
+        """Lets the user change one heating window of the time program."""
+        from .cozytouch_devices import _format_schedule_windows
+        import json as _json
+
+        choice = self._prompt_cozytouch_schedule(device)
+        if choice is None:
+            # Translators: Message when the user cancels an action.
+            ui.message(_("Cancelled"))
+            return
+        days, windows, before = choice
+
+        result = {"done": [], "failed": [], "actual": None}
+
+        def write():
+            # The verdict is not the return value: the cloud confirms the
+            # execution, which the air fryer taught us is not the same as the
+            # appliance having done it. set_schedule_windows reads the
+            # program back, and what it found is reported below.
+            for day in days:
+                ok, actual = device.set_schedule_windows(day, windows)
+                result["actual"] = actual
+                (result["done"] if ok else result["failed"]).append(day)
+                if not ok:
+                    # One refusal is enough: the appliance will not take the
+                    # remaining days either, and every further attempt costs
+                    # the read-back's patience over again.
+                    break
+            return True
+
+        def on_success():
+            actual = result.get("actual") or []
+            actual_text = _format_schedule_windows(actual) or "?"
+            wanted_text = _format_schedule_windows(windows) or "?"
+            names = ", ".join(self.WEEKDAY_NAMES[d] for d in result["done"])
+            if result["done"] and not result["failed"]:
+                _beep(BEEP_ON)
+                # Translators: Confirmation after changing the time program.
+                # {days} = the weekdays it was written to, {schedule} = the
+                # new windows.
+                ui.message(_("{days}: heating times now {schedule}").format(
+                    days=names, schedule=actual_text))
+                self.plugin._record_local_cozytouch_action(device.uuid)
+                get_history().log_action(
+                    device, 'set_schedule',
+                    # Language-neutral: the weekday numbers and the windows
+                    # in minutes. _detail_text renders it in the language the
+                    # history is read in - "Monday, Saturday: 07:20-17:50".
+                    f"{','.join(str(d) for d in result['done'])} "
+                    f"{_json.dumps(actual, separators=(',', ':'))}")
+            elif actual == before:
+                _beep(BEEP_ERROR)
+                # Translators: The appliance accepted the command but kept
+                # its old time program. {schedule} = what still stands there.
+                ui.message(_("The appliance did not take the change. The "
+                             "heating times are still {schedule}").format(
+                    schedule=actual_text))
+            else:
+                _beep(BEEP_ERROR)
+                # Translators: The appliance stored something other than what
+                # was asked for. {schedule} = what it holds now, {wanted} =
+                # what was asked for.
+                ui.message(_("The appliance stored {schedule} instead of "
+                             "{wanted}").format(
+                    schedule=actual_text, wanted=wanted_text))
+            self._rebuild_cozytouch_device_children(item, device)
+
+        self._run_cozytouch_cloud_action(
+            write, on_success,
+            # Translators: Error message when the time program could not be
+            # changed.
+            _("The time program could not be changed"))
+
+    def _prompt_cozytouch_schedule(self, device):
+        """Accessible dialog for one heating window.
+
+        Returns (weekday, windows, before) - the day, the complete new set of
+        windows and the set as it was - or None when cancelled.
+        """
+        from .cozytouch_devices import (_schedule_windows_valid,
+                                        SCHEDULE_SLOTS)
+        import datetime as _dt
+
+        today = _dt.date.today().weekday()
+        state = {"weekday": today}
+
+        def windows_for(day):
+            got = device.schedule_windows(day)
+            if got is None:
+                got = [[0, 0] for _ in range(SCHEDULE_SLOTS)]
+            return [list(w) for w in got]
+
+        # Translators: Title of the dialog that changes the time program.
+        # {name} = device name.
+        dlg = wx.Dialog(self, title=_("Heating times – {name}").format(
+            name=device.name))
+        sizer = wx.BoxSizer(wx.VERTICAL)
+        # Translators: Help text in the dialog that changes the time program.
+        intro = _("Hot water is heated inside these windows. Times as HH:MM.\n"
+                  "Leaving both fields empty deletes the window.")
+        sizer.Add(wx.StaticText(dlg, label=intro), 0, wx.ALL, 8)
+
+        grid = wx.FlexGridSizer(4, 2, 6, 6)
+        # Translators: Label of the weekday box in the time program dialog.
+        grid.Add(wx.StaticText(dlg, label=_("&Day:")), 0,
+                 wx.ALIGN_CENTER_VERTICAL)
+        day_ctrl = wx.Choice(dlg, choices=list(self.WEEKDAY_NAMES))
+        day_ctrl.SetSelection(today)
+        grid.Add(day_ctrl, 1, wx.EXPAND)
+
+        # Translators: Label of the window box in the time program dialog.
+        grid.Add(wx.StaticText(dlg, label=_("&Window:")), 0,
+                 wx.ALIGN_CENTER_VERTICAL)
+        window_ctrl = wx.Choice(dlg, choices=[])
+        grid.Add(window_ctrl, 1, wx.EXPAND)
+
+        # Translators: Label of the start field in the time program dialog.
+        grid.Add(wx.StaticText(dlg, label=_("&Start:")), 0,
+                 wx.ALIGN_CENTER_VERTICAL)
+        start_ctrl = wx.TextCtrl(dlg, value="")
+        grid.Add(start_ctrl, 1, wx.EXPAND)
+
+        # Translators: Label of the end field in the time program dialog.
+        grid.Add(wx.StaticText(dlg, label=_("&End:")), 0,
+                 wx.ALIGN_CENTER_VERTICAL)
+        end_ctrl = wx.TextCtrl(dlg, value="")
+        grid.Add(end_ctrl, 1, wx.EXPAND)
+        grid.AddGrowableCol(1)
+        sizer.Add(grid, 0, wx.EXPAND | wx.LEFT | wx.RIGHT, 8)
+
+        # The same windows can go to several days at once - a program is
+        # usually the same from Monday to Friday, and setting it seven times
+        # by hand is seven times the same dialog.
+        #
+        # Seven separate check boxes rather than a wx.CheckListBox: the list
+        # box says nothing usable when arrowing through it - in a recorded
+        # session twenty arrow keys in it produced no speech at all, and the
+        # ticked state was never announced. A check box is a check box to the
+        # screen reader: it reads its name and its state, and space toggles
+        # it. Seven tab stops are the price, and the group heading tells the
+        # user what they are for.
+        # Translators: Heading of the day group in the time program dialog.
+        # The edited windows are written to every day ticked here.
+        day_box = wx.StaticBoxSizer(
+            wx.VERTICAL, dlg, label=_("Apply to these days"))
+        day_checks = []
+        for index, day_name in enumerate(self.WEEKDAY_NAMES):
+            check = wx.CheckBox(day_box.GetStaticBox(), label=day_name)
+            check.SetValue(index == today)
+            day_box.Add(check, 0, wx.ALL, 2)
+            day_checks.append(check)
+        sizer.Add(day_box, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.TOP, 8)
+
+        btns = dlg.CreateButtonSizer(wx.OK | wx.CANCEL)
+        sizer.Add(btns, 0, wx.ALIGN_RIGHT | wx.ALL, 8)
+        dlg.SetSizerAndFit(sizer)
+
+        def fill_windows(select=0):
+            state["windows"] = windows_for(state["weekday"])
+            labels = []
+            for index, (start, end) in enumerate(state["windows"], start=1):
+                if start == 0 and end == 0:
+                    # Translators: Entry for an unused window in the time
+                    # program dialog. {number} = 1, 2 or 3. The number has to
+                    # stay: two entries reading the same make the arrow keys
+                    # sound as if nothing happened.
+                    labels.append(_("Window {number}: unused").format(
+                        number=index))
+                else:
+                    # Translators: Entry for a window in the time program
+                    # dialog. {number} = 1, 2 or 3, {times} = e.g. 07:00-17:00.
+                    labels.append(_("Window {number}: {times}").format(
+                        number=index,
+                        times="%s-%s" % (self._minutes_to_text(start),
+                                         self._minutes_to_text(end))))
+            window_ctrl.Set(labels)
+            window_ctrl.SetSelection(min(select, len(labels) - 1))
+            fill_times()
+
+        def fill_times():
+            index = max(0, window_ctrl.GetSelection())
+            start, end = state["windows"][index]
+            if start == 0 and end == 0:
+                start_ctrl.SetValue("")
+                end_ctrl.SetValue("")
+            else:
+                start_ctrl.SetValue(self._minutes_to_text(start))
+                end_ctrl.SetValue(self._minutes_to_text(end))
+
+        def checked_days():
+            return [i for i, check in enumerate(day_checks) if check.GetValue()]
+
+        def on_day(event):
+            previous = state["weekday"]
+            state["weekday"] = day_ctrl.GetSelection()
+            # As long as only the shown day is ticked, the tick follows it -
+            # otherwise a day chosen to look at would silently be written to.
+            checked = checked_days()
+            if checked in ([], [previous]):
+                if previous in checked:
+                    day_checks[previous].SetValue(False)
+                day_checks[state["weekday"]].SetValue(True)
+            fill_windows()
+            event.Skip()
+
+        def on_window(event):
+            fill_times()
+            event.Skip()
+
+        day_ctrl.Bind(wx.EVT_CHOICE, on_day)
+        window_ctrl.Bind(wx.EVT_CHOICE, on_window)
+        fill_windows()
+
+        result = {}
+
+        def on_ok(event):
+            start = self._text_to_minutes(start_ctrl.GetValue())
+            end = self._text_to_minutes(end_ctrl.GetValue())
+            if start is False or end is False:
+                _beep(BEEP_ERROR)
+                # Translators: Error message for an invalid time in the time
+                # program dialog.
+                ui.message(_("Invalid time. Expected HH:MM, for example "
+                             "07:00"))
+                start_ctrl.SetFocus()
+                return
+            if (start is None) != (end is None):
+                _beep(BEEP_ERROR)
+                # Translators: Validation error in the time program dialog.
+                ui.message(_("Enter both times, or leave both empty to delete "
+                             "the window"))
+                (end_ctrl if end is None else start_ctrl).SetFocus()
+                return
+            index = max(0, window_ctrl.GetSelection())
+            windows = [list(w) for w in state["windows"]]
+            windows[index] = [0, 0] if start is None else [start, end]
+            problem = _schedule_windows_valid(windows)
+            if problem == "order":
+                _beep(BEEP_ERROR)
+                # Translators: Validation error in the time program dialog.
+                ui.message(_("The end has to be after the start"))
+                end_ctrl.SetFocus()
+                return
+            if problem == "overlap":
+                _beep(BEEP_ERROR)
+                # Translators: Validation error in the time program dialog.
+                ui.message(_("The windows of one day must not overlap"))
+                start_ctrl.SetFocus()
+                return
+            if problem:
+                _beep(BEEP_ERROR)
+                # Translators: Validation error in the time program dialog.
+                ui.message(_("Times have to lie within one day"))
+                start_ctrl.SetFocus()
+                return
+            if windows == state["windows"]:
+                _beep(BEEP_ERROR)
+                # Translators: Message when nothing was changed in the time
+                # program dialog.
+                ui.message(_("Nothing changed"))
+                return
+            days = checked_days()
+            if not days:
+                days = [state["weekday"]]
+            result["choice"] = (days, windows,
+                                [list(w) for w in state["windows"]])
+            dlg.EndModal(wx.ID_OK)
+
+        dlg.Bind(wx.EVT_BUTTON, on_ok, id=wx.ID_OK)
+        day_ctrl.SetFocus()
+        try:
+            code = self._show_modal_safely(dlg)
+        finally:
+            dlg.Destroy()
+        if code != wx.ID_OK:
+            return None
+        return result.get("choice")
+
     def _prompt_away_schedule(self, device):
         """Accessible dialog for scheduling the away period.
 
@@ -471,10 +775,12 @@ class _CozytouchDialogMixin:
                                     "(currently heating)"), 'kind': 'info', 'action': None})
         sched = device.today_schedule_text
         if sched:
-            # Translators: Today's heating time windows. {schedule} = window
-            # text.
-            items.append({'text': _("Today's heating times: {schedule}").format(schedule=sched),
-                          'kind': 'info', 'action': None})
+            # Translators: Today's heating time windows, changeable with
+            # Enter. {schedule} = window text. The beginning of this line has
+            # to stay the same as in the F1 help.
+            items.append({'text': _("Today's heating times: {schedule} - press "
+                                    "Enter to change").format(schedule=sched),
+                          'kind': 'action', 'action': 'cozytouch_schedule'})
         kwh = device.energy_total_kwh
         if kwh is not None:
             items.append({

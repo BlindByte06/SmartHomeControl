@@ -149,14 +149,29 @@ class Dev:
 
 
 METHODS = ('_tree_item_identity', '_capture_selection', '_restore_selection',
-           '_tree_signature')
+           '_tree_signature', '_platform_node_label')
 
 
-def make_dialog(tree, filter_mode='all', sort_mode='name'):
-    env = {'log': Log(), 'platform_of': platform_of}
+def load_health():
+    """Das echte platform_health - es kommt ohne NVDA aus."""
+    spec = importlib.util.spec_from_file_location(
+        'platform_health_probe', os.path.join(BASE, 'platform_health.py'))
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
+PH = load_health()
+
+
+def make_dialog(tree, filter_mode='all', sort_mode='name', health=None):
+    env = {'log': Log(), 'platform_of': platform_of, 'platform_health': PH}
     grab(os.path.join(BASE, 'device_dialog.py'), METHODS, env)
 
     class Dlg:
+        pass
+
+    class Plugin:
         pass
 
     for name in METHODS:
@@ -165,6 +180,10 @@ def make_dialog(tree, filter_mode='all', sort_mode='name'):
     dlg.tree = tree
     dlg.filter_mode = filter_mode
     dlg.sort_mode = sort_mode
+    # Der Zustand der Plattformen steht in der Beschriftung ihrer Knoten und
+    # gehoert damit zur Struktur.
+    dlg.plugin = Plugin()
+    dlg.plugin.platform_health = health or PH.PlatformHealth()
     return dlg
 
 
@@ -328,7 +347,18 @@ def test_signature():
           other._tree_signature(devices) != base)
 
     check('eine leere Liste ist nicht "keine Signatur"',
-          dlg._tree_signature([]) == ('all', 'name'))
+          dlg._tree_signature([])[:2] == ('all', 'name'))
+
+    health = PH.PlatformHealth()
+    sick = make_dialog(FakeTree(), health=health)
+    quiet = sick._tree_signature(devices)
+    health.update('netatmo', True)
+    check('eine unveraenderte Plattform laesst sie gleich',
+          sick._tree_signature(devices) == quiet)
+    health.update('netatmo', False)
+    check('ein Ausfall aendert sie - er steht in der Beschriftung des '
+          'Plattformknotens und muss den Baum neu aufbauen',
+          sick._tree_signature(devices) != quiet)
 
 
 # ------------------------------------------------ abgeschaltete Plattformen --

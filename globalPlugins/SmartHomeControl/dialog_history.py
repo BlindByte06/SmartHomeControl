@@ -139,6 +139,8 @@ class HistoryDialog(wx.Dialog):
         # Translators: The two views of the history dialog.
         self.view_choice = wx.Choice(self, choices=[
             _("Events"), _("Measurements")])
+        # Translators: Accessible name of the view selector.
+        self.view_choice.SetName(_("View"))
         self.view_choice.SetSelection(VIEW_EVENTS)
         self.view_choice.Bind(wx.EVT_CHOICE, self._on_view_changed)
         view_sizer.Add(self.view_choice, 0, wx.ALIGN_CENTER_VERTICAL)
@@ -233,6 +235,11 @@ class HistoryDialog(wx.Dialog):
     def _build_columns(self):
         """Rebuilds the columns to match the current view."""
         self.list_ctrl.ClearAll()
+        # The same words as the entry in the view selector: whoever tabs into
+        # the list hears which of the two they are standing in.
+        self.list_ctrl.SetName(
+            _("Measurements") if self._current_view() == VIEW_MEASUREMENTS
+            else _("Events"))
         if self._current_view() == VIEW_MEASUREMENTS:
             # Deliberately only four columns: a screen reader reads EVERY
             # column of the focused row on each arrow key, so eight of them
@@ -295,9 +302,15 @@ class HistoryDialog(wx.Dialog):
             event.Skip()
 
     def _on_view_changed(self, event):
+        """Rebuilds the list for the chosen view - and leaves the focus alone.
+
+        wx.Choice fires this on every arrow key while the box is closed, so
+        moving the focus to the list here took the focus away mid-selection:
+        the chosen entry was never read out, and the second arrow key went to
+        the list instead of to the next view.
+        """
         self._build_columns()
         self._apply_filters()
-        self.list_ctrl.SetFocus()
 
     def _get_filter_values(self):
         """Returns the current filter values"""

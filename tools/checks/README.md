@@ -1,6 +1,6 @@
 # Checks
 
-Ten scripts that verify invariants which are easy to break and expensive
+Thirteen scripts that verify invariants which are easy to break and expensive
 to notice late. They need no NVDA and no cloud account: most of them read the
 shipped source with `ast` and check properties of it, while `fryertest.py` and
 `sensortest.py` import a module with the two NVDA-only modules stubbed. Either way they
@@ -17,6 +17,9 @@ python tools/checks/configtest.py
 python tools/checks/lighttest.py
 python tools/checks/treetest.py
 python tools/checks/credentialstest.py
+python tools/checks/scheduletest.py
+python tools/checks/healthtest.py
+python tools/checks/hubtest.py
 ```
 
 Each prints one line per check and ends with `GESAMT: ALLE TESTS OK` or a
@@ -77,6 +80,44 @@ the file is really written and the user has to type everything again. These
 checks cover the move, the second start, saving, a broken file - and the case
 that matters most, a failing write, where the values have to stay in the
 configuration.
+
+**scheduletest.py** - the time program of the hot water heat pump, the
+only place where this add-on writes a schedule into a heating appliance. The
+cloud confirms an execution, which the air fryer taught is not the same as the
+appliance having done it, so the program is read back and compared. The trap
+is the protection window: `apply_capabilities` skips fields that were just
+changed locally, so a read-back through it would compare the request with
+itself and always agree. These checks cover the parser, the validation
+(reversed, overlapping and out-of-range windows), a refusing cloud, a cloud
+that confirms while the appliance keeps its old program, an appliance that
+stores something else - and that the protection window does not blind the
+read-back.
+
+**healthtest.py** - whether an unreachable platform is noticed, and whether
+the add-on stays quiet where nothing is wrong. The Netatmo cloud answers with
+two services, the weather station and the heating; on 2026-09-09 the weather
+half answered 503 while the heating was fine, and nothing was said, because a
+poll counts as a success as long as one half comes through. Later both halves
+failed, no device came back at all - and the platform was still reported as
+merely incomplete, because `get_devices()` raises nothing of its own. The same
+log shows the other direction: one Meross device out of twenty-two timed out on
+roughly every second poll and produced a fault and a recovery three times in
+nine minutes. These checks cover the record behind it, the texts it produces,
+and the wiring, because a record nobody feeds reports "all fine" for ever. Held
+down as well: a device skipped for its hourly budget is not a device that
+failed, an account without a thermostat is never told its heating is
+unreachable, and a single device that misses a poll is written into the device
+list rather than announced.
+
+**hubtest.py** - the sensors on a Meross hub, which all carry the HUB's
+uuid; only `unique_id` appends the subdevice id. Three things hung on that: a
+rescue loop keyed by `uuid` dropped every sensor as soon as its hub was in the
+new list, a discovery while the hub was silent replaced the list without them,
+and they only came back on the next NVDA start, because a rediscovery runs
+only when no Meross device is left at all. In the favourites they then read
+"(not available)". These checks cover the carry-over - which must not
+resurrect a device that really left the account, nor anything from another
+account - and the three places it is wired into.
 
 **refreshtest.py** — the polling scheduler: that two refreshes of the same
 platform coalesce instead of queueing, and that the cache lifetime stays

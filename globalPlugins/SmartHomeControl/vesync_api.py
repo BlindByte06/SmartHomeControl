@@ -779,6 +779,8 @@ class VeSyncAPI:
         vesync_devs = [d for d in devices if getattr(d, "is_vesync", False)]
         ok_count = 0
         fail_count = 0
+        answered = []
+        missing = []
         if vesync_devs:
             # ThreadPoolExecutor per tick: low overhead cost, clean cleanup via
             # context manager, no persistent worker thread.
@@ -792,14 +794,19 @@ class VeSyncAPI:
                     for dev in vesync_devs
                 }
                 for fut in concurrent.futures.as_completed(futures):
+                    dev = futures[fut]
                     try:
                         success = fut.result()
                     except Exception:
                         success = False
+                    who = (getattr(dev, 'unique_id', None) or dev.uuid,
+                           getattr(dev, 'name', None))
                     if success:
                         ok_count += 1
+                        answered.append(who)
                     else:
                         fail_count += 1
+                        missing.append(who)
 
             # Stale marking: devices that have not delivered fresh data for
             # ``STALE_THRESHOLD`` polls in a row get a ``_status_stale=True``
@@ -812,6 +819,10 @@ class VeSyncAPI:
             'devicelist_ok': devicelist_ok,
             'devices_ok': ok_count,
             'devices_failed': fail_count,
+            # Which ones, not just how many: the platform status names the
+            # device that did not answer.
+            'answered': answered,
+            'missing': missing,
         }
 
     def _fetch_devicelist_raw(self, fast=False):

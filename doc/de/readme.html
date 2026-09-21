@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Smart Home Control 26.9.1</title>
+<title>Smart Home Control 26.10.1</title>
 <style>
 body { font-family: Segoe UI, Arial, sans-serif; line-height: 1.6; max-width: 60em; margin: 1.5em auto; padding: 0 1em; }
 h1, h2, h3, h4, h5 { line-height: 1.25; }
@@ -43,6 +43,7 @@ gespeichert.</p>
 <li><a href="#reifegrad-und-hinweise">Reifegrad und Hinweise</a></li>
 <li><a href="#datenschutz-und-sicherheit">Datenschutz und Sicherheit</a></li>
 <li><a href="#fehlerbehebung">Fehlerbehebung</a></li>
+<li><a href="#plattform-status">Plattform-Status</a></li>
 <li><a href="#fehler-melden">Fehler melden</a></li>
 <li><a href="#lizenz-und-verwendete-komponenten">Lizenz und verwendete Komponenten</a></li>
 </ul>
@@ -57,6 +58,8 @@ im Geräte-Menü erreichbar.</p>
 <p>Im geöffneten Geräte-Menü wirken zusätzlich diese Tasten:</p>
 <ul>
 <li><strong>Strg + H</strong>: Geräteverlauf (siehe unten)</li>
+<li><strong>Strg + P</strong>: Plattform-Status – was gestört war und welche
+  Geräte nicht geantwortet haben (siehe unten)</li>
 <li><strong>Strg + T</strong>: Statuszeile erneut ansagen</li>
 <li><strong>Strg + F</strong>: Gerät suchen</li>
 <li><strong>Strg + B</strong>: das gewählte Gerät oder den gewählten Ausgang zu
@@ -78,7 +81,8 @@ werden bei Bedarf dort mit einem eigenen Kürzel versehen:</p>
   gekennzeichnet, da sie nur die NVDA-Laufzeit abdecken).</li>
 <li><strong>Verbindungsdiagnose</strong> – sagt pro Plattform den
   Verbindungsstatus an, dazu Netzwerkstatus und die Restlaufzeit des
-  Netatmo-Tokens.</li>
+  Netatmo-Tokens. Bei einer Störung steht dabei, seit wann sie besteht und
+  was fehlt – etwa „Netatmo: Wetterstation antwortet nicht".</li>
 <li><strong>Einstellungen öffnen</strong> – öffnet die
   Smart-Home-Einstellungen direkt, ohne den Umweg über das Geräte-Menü.</li>
 <li><strong>Favoriten-Ebene</strong> – Status ansagen und schalten, ohne das
@@ -337,11 +341,18 @@ Nennkapazität (in Litern) lässt sich in den Einstellungen hinterlegen.</p>
 <li><strong>Manuell</strong> – heizt dauerhaft auf die eingestellte Zieltemperatur.</li>
 <li><strong>Eco+</strong> – heizt energiesparend mit abgesenktem Heizziel; das
   tatsächliche Heizziel wird im Geräteeintrag angezeigt.</li>
-<li><strong>Programm</strong> – heizt nur innerhalb der Zeitfenster, die in der
-  Cozytouch-App festgelegt wurden (bis zu drei pro Tag, z. B. für
-  Niedertarif-Zeiten). Die Zeitfenster selbst lassen sich nur in der
-  Cozytouch-App bearbeiten; die Erweiterung zeigt die heute programmierten
-  Heizzeiten im Geräteeintrag an.</li>
+<li><strong>Programm</strong> – heizt nur innerhalb der Zeitfenster des
+  Zeitprogramms (bis zu drei pro Tag, z. B. für Niedertarif-Zeiten). Der
+  Geräteeintrag zeigt die heutigen Heizzeiten und lässt sie mit der
+  Eingabetaste ändern: Tag, Beginn und Ende eines Fensters, Zeiten als HH:MM.
+  Beide Zeiten leer zu lassen löscht das Fenster. Darunter steht eine Liste
+  der Wochentage – angekreuzt werden alle Tage, die dieselben Fenster
+  bekommen sollen, ein Programm für Montag bis Freitag ist also eine
+  Eingabe.
+  <p>Die Erweiterung liest das Zeitprogramm nach dem Schreiben vom Gerät
+  zurück und sagt, was dort wirklich steht. Übernimmt das Gerät die Änderung
+  nicht – möglich, denn dieses Schreiben ist bisher an einem einzigen
+  Modell erprobt –, wird das gesagt, statt einen Erfolg zu melden.</p></li>
 </ul>
 <hr />
 <h2 id="einrichtung">Einrichtung</h2>
@@ -497,6 +508,15 @@ Ereignis im Verlauf festgehalten („Wasseralarm" oder „Kein Wasser mehr
 erkannt"). Da ein Leckagesensor, der schweigt, sinnlos ist, ist das
 voreingestellt an; abschalten lässt es sich unter Benachrichtigungen → Meross →
 „Wasseralarm der Wassersensoren ansagen".</p>
+<p>Störungen einer Plattform stehen im selben Tab in einem eigenen Abschnitt
+„Störungen" – getrennt von den Änderungen darunter, denn eine Störung ist
+keine Änderung, und der Hauptschalter für externe Änderungen betrifft sie
+nicht. Vier Schalter: überhaupt ansagen, nicht mehr erreichbar, nur teilweise
+erreichbar, wieder erreichbar. Voreingestellt sind alle an.</p>
+<p>Was hier abgeschaltet ist, wird trotzdem festgehalten: der Gerätebaum, die
+Statuszeile und der <a href="#plattform-status">Plattform-Status</a> zeigen es
+weiterhin. „Aus" heißt also „nicht dazwischenreden", nicht „nicht
+mitschreiben".</p>
 <hr />
 <h2 id="hinweise-zu-cloud-limits">Hinweise zu Cloud-Limits</h2>
 <p>Meross begrenzt die Cloud auf <strong>200 Nachrichten pro Stunde und
@@ -557,8 +577,48 @@ vorübergehend ausfallen.</p>
 <li><strong>Eine Plattform meldet „nicht erreichbar":</strong> meist eine
   vorübergehende Cloud-/Netzwerkstörung – die Erweiterung verbindet sich
   automatisch wieder und sagt an, sobald die Plattform wieder verbunden
-  ist.</li>
+  ist. Die Ansage kommt nur einmal; nachsehen lässt sich der Zustand jederzeit
+  an der Plattform-Zeile im Gerätebaum („Netatmo-Geräte (7) – seit 11:30 nicht
+  erreichbar"), in der Statuszeile (Strg + T) und in der Verbindungsdiagnose.
+  Sind die Werte darunter merklich alt geworden, steht an derselben Zeile
+  zusätzlich, von wann sie stammen.</li>
+<li><strong>Eine Plattform antwortet nur teilweise:</strong> die Netatmo-Cloud
+  liefert Wetterstation und Heizung getrennt, und eine der beiden kann
+  ausfallen, während die andere normal antwortet. Das steht als eigener
+  Zustand an der Plattform-Zeile – „Wetterstation antwortet nicht" – und wird
+  einmal angesagt. Die Werte der ausgefallenen Hälfte bleiben so lange stehen,
+  wie sie zuletzt gelesen wurden.</li>
+<li><strong>Ein einzelnes Gerät antwortet nicht:</strong> das ist keine Störung
+  der Plattform und wird deshalb nicht angesagt – ein langsames Gerät, das bei
+  jeder zweiten Abfrage in seine Zeitüberschreitung läuft, ergäbe sonst alle
+  paar Minuten eine Meldung. Nachzulesen ist es im Plattform-Status unter
+  „Geräte, die nicht geantwortet haben"; im Geräte-Menü stehen so lange die
+  zuletzt bekannten Werte.</li>
+<li><strong>Sensoren eines Hubs fehlen:</strong> antwortet der Hub gerade
+  nicht, bleiben seine Sensoren mit ihrem letzten Stand in der Liste und sind
+  als nicht erreichbar gekennzeichnet – die Favoriten dazu bleiben benutzbar.
+  Sobald der Hub wieder antwortet, kommen sie von selbst zurück, ohne
+  NVDA-Neustart.</li>
 </ul>
+<h2 id="plattform-status">Plattform-Status</h2>
+<p><strong>Strg + P</strong> im Geräte-Menü, oder die Schaltfläche neben dem
+Verlauf. Eine Ansage ist vorbei, sobald sie gesprochen wurde – hier lässt sich
+nachlesen, was war. Zwei Ansichten, umschaltbar im Auswahlfeld „Ansicht":</p>
+<ul>
+<li><strong>Ereignisse</strong> – jede Zustandsänderung seit der Anmeldung,
+  die neueste zuerst: welche Plattform, wann, und was los war. So lässt sich
+  auch nachträglich sehen, ob eine Heizung wirklich eine halbe Stunde nicht
+  erreichbar war.</li>
+<li><strong>Geräte, die nicht geantwortet haben</strong> – die Geräte, die
+  mindestens eine Abfrage verpasst haben; noch ausgefallene zuerst, dazu die
+  Uhrzeit der letzten Antwort. Ein Gerät, das immer geantwortet hat, steht
+  nicht in der Liste.</li>
+</ul>
+<p>Enter auf einer Zeile öffnet die Einzelheiten in einem Textfeld, das sich
+Zeile für Zeile lesen und mit Strg + C kopieren lässt. <strong>F5</strong>
+liest neu ein. Beide Listen gelten für die laufende NVDA-Sitzung: beim
+Abmelden wird der Stand verworfen, damit nach einer neuen Anmeldung nichts
+gemeldet wird, das niemand ausfallen gesehen hat.</p>
 <h2 id="fehler-melden">Fehler melden</h2>
 <p>Fehlermeldungen sind willkommen – am besten als Issue unter
 <a href="https://github.com/BlindByte06/SmartHomeControl/issues">github.com/BlindByte06/SmartHomeControl/issues</a>.</p>

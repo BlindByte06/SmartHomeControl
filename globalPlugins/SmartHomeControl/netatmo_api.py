@@ -504,6 +504,13 @@ class NetatmoAPI:
         self.refresh_token = None
         self.token_expiry = 0
         self._devices = []
+        # Which halves of the cloud this account really uses, and which of
+        # them did not answer on the last poll. The weather station and the
+        # heating are separate services: one can fail while the other is fine,
+        # and the poll still looks like a success (see get_devices).
+        self._known_parts = set()
+        self.last_failed_parts = ()
+        self.last_poll_ok = True
         # Notified on every token renewal so the caller can persist the
         # rotated tokens (see set_token_update_callback).
         self._token_update_callback = None
@@ -1353,9 +1360,11 @@ class NetatmoAPI:
             # log output and buried the lines that actually matter.
             log.debug(f"Netatmo: {len(devices)} weather station module(s) found")
             weather_ok = True
+            weather_count = len(devices)
 
         except Exception as e:
             weather_ok = False
+            weather_count = 0
             self._log_network_error("Netatmo weather station data error", e)
 
         # 2. Energy / thermostat
@@ -1455,6 +1464,28 @@ class NetatmoAPI:
         except Exception as e:
             energy_ok = False
             self._log_network_error("Netatmo energy data error", e)
+
+        # Which half did not answer. Only halves this account really has:
+        # a part counts as known once it has answered with devices, so an
+        # account without a thermostat is never told that its heating is
+        # unreachable. Without this the failure stayed invisible entirely -
+        # the device list simply comes back without that half, the poll counts
+        # as a success, and the last known values keep being read out as if
+        # they had just arrived.
+        if weather_ok and weather_count:
+            self._known_parts.add('weather')
+        if energy_ok and energy_count:
+            self._known_parts.add('energy')
+        self.last_failed_parts = tuple(
+            key for key, ok in (('weather', weather_ok), ('energy', energy_ok))
+            if not ok and key in self._known_parts)
+
+        # Nothing came back at all: on 2026-09-09 both halves answered 503,
+        # the device list was empty - and because get_devices() does not
+        # raise, the poll still counted as a success and the platform was
+        # reported as merely incomplete ("heating not answering") while in
+        # truth nothing was reachable. The caller reads this.
+        self.last_poll_ok = bool(weather_ok or energy_ok)
 
         # Reset the network status when at least one API call succeeded
         if weather_ok or energy_ok:

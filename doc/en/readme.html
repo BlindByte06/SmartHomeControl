@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Smart Home Control 26.9.1</title>
+<title>Smart Home Control 26.10.1</title>
 <style>
 body { font-family: Segoe UI, Arial, sans-serif; line-height: 1.6; max-width: 60em; margin: 1.5em auto; padding: 0 1em; }
 h1, h2, h3, h4, h5 { line-height: 1.25; }
@@ -41,6 +41,7 @@ stored encrypted, locally on the computer.</p>
 <li><a href="#maturity-and-notes">Maturity and notes</a></li>
 <li><a href="#privacy-and-security">Privacy and security</a></li>
 <li><a href="#troubleshooting">Troubleshooting</a></li>
+<li><a href="#platform-status">Platform status</a></li>
 <li><a href="#reporting-a-problem">Reporting a problem</a></li>
 <li><a href="#license-and-bundled-components">License and bundled components</a></li>
 </ul>
@@ -55,6 +56,8 @@ the device menu.</p>
 <p>Inside the open device menu these keys work as well:</p>
 <ul>
 <li><strong>Ctrl + H</strong>: device history (see below)</li>
+<li><strong>Ctrl + P</strong>: platform status – what had a fault and which
+  devices did not answer (see below)</li>
 <li><strong>Ctrl + T</strong>: repeat the status line</li>
 <li><strong>Ctrl + F</strong>: search for a device</li>
 <li><strong>Ctrl + B</strong>: add the selected device or outlet to the
@@ -77,7 +80,8 @@ and can be assigned there when needed:</p>
   "estimated", since they only cover the time NVDA was running).</li>
 <li><strong>Connection diagnostics</strong> – announces the connection state
   per platform, plus network state and the remaining Netatmo token
-  lifetime.</li>
+  lifetime. During a fault it also says since when it has lasted and what is
+  missing – for instance "Netatmo: weather station not answering".</li>
 <li><strong>Open the settings</strong> – opens the Smart Home settings
   directly, without the detour through the device menu.</li>
 <li><strong>Favorites layer</strong> – announce status and switch favorites
@@ -328,10 +332,16 @@ the settings.</p>
   temperature.</li>
 <li><strong>Eco+</strong> – heats economically with a lowered heating target;
   the actual heating target is shown in the device entry.</li>
-<li><strong>Program</strong> – heats only within the time windows configured
-  in the Cozytouch app (up to three per day, e.g. for off-peak hours). The
-  time windows themselves can only be edited in the Cozytouch app; the
-  add-on shows today's programmed heating windows in the device entry.</li>
+<li><strong>Program</strong> – heats only within the windows of the time
+  program (up to three per day, e.g. for off-peak hours). The device entry
+  shows today's heating times and lets Enter change them: day, start and end
+  of one window, times as HH:MM. Leaving both times empty deletes the window.
+  Below that is a list of weekdays: tick every day that is to get the same
+  windows, so a program for Monday to Friday is one entry rather than five.
+  <p>After writing, the add-on reads the time program back from the appliance
+  and says what really stands there. If the appliance does not take the
+  change – possible, since this write has been tried on a single model so far
+  – it says so instead of reporting success.</p></li>
 </ul>
 <hr />
 <h2 id="setup">Setup</h2>
@@ -478,6 +488,14 @@ history as an event ("water alarm" or "no water detected any more"). Since a
 leak sensor that stays silent is pointless, this is on by default; it can be
 switched off under Notifications → Meross → "Announce water alarm of the water
 sensors".</p>
+<p>Faults of a platform have their own section "Faults" in the same tab -
+separate from the changes below, because a fault is not a change, and the
+master switch for external changes does not cover it. Four switches: announce
+at all, no longer reachable, answering only in part, reachable again. All on by
+default.</p>
+<p>Whatever is switched off here is still recorded: the device tree, the status
+line and the <a href="#platform-status">platform status</a> keep showing it.
+"Off" means "do not interrupt", not "do not keep track".</p>
 <hr />
 <h2 id="cloud-limits">Notes on cloud limits</h2>
 <p>Meross limits its cloud to <strong>200 messages per hour and device</strong> –
@@ -535,8 +553,42 @@ temporarily fail when the manufacturers change their servers.</p>
   manufacturer app.</li>
 <li><strong>A platform reports "unreachable":</strong> usually a temporary
   cloud/network issue – the add-on reconnects automatically and announces
-  when the platform is connected again.</li>
+  when the platform is connected again. The announcement comes once; the state
+  can be looked up at any time on the platform's line in the device tree
+  ("Netatmo devices (7) - unreachable since 11:30"), in the status line
+  (Ctrl + T) and in the connection diagnostics. Once the values below it have
+  grown noticeably old, the same line also says when they arrived.</li>
+<li><strong>A platform answers only in part:</strong> the Netatmo cloud serves
+  the weather station and the heating separately, and one of them can fail
+  while the other answers normally. This is a state of its own on the
+  platform's line - "weather station not answering" - and is announced once.
+  The values of the failed half stay as they were last read.</li>
+<li><strong>A single device does not answer:</strong> that is not a fault of
+  the platform and is therefore not announced - a slow device timing out on
+  every second poll would otherwise produce a message every few minutes. It
+  can be read in the platform status under "Devices that did not answer"; the
+  device menu keeps the last known values until it answers again.</li>
+<li><strong>Sensors of a hub are missing:</strong> while the hub does not
+  answer, its sensors stay in the list with their last state, marked as
+  unreachable - their favourites keep working. Once the hub answers again they
+  come back on their own, without an NVDA restart.</li>
 </ul>
+<h2 id="platform-status">Platform status</h2>
+<p><strong>Ctrl + P</strong> in the device menu, or the button next to the
+history. An announcement is gone once it has been spoken; this is where it can
+be read afterwards. Two views, switched in the "View" box:</p>
+<ul>
+<li><strong>Events</strong> - every state change since signing in, newest
+  first: which platform, when, and what happened. That also answers afterwards
+  whether a heating really was unreachable for half an hour.</li>
+<li><strong>Devices that did not answer</strong> - the devices that missed at
+  least one poll, still failing ones first, with the time of their last
+  answer. A device that answered every poll is not in the list.</li>
+</ul>
+<p>Enter on a row opens the detail in a text field that can be read line by
+line and copied with Ctrl + C. <strong>F5</strong> reloads. Both lists cover
+the running NVDA session: the record is cleared on sign-out, so nothing is
+reported after a new sign-in that nobody saw fail.</p>
 <h2 id="reporting-a-problem">Reporting a problem</h2>
 <p>Problem reports are welcome – please open an issue at
 <a href="https://github.com/BlindByte06/SmartHomeControl/issues">github.com/BlindByte06/SmartHomeControl/issues</a>.</p>

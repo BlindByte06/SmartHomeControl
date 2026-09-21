@@ -116,6 +116,66 @@ def _min_to_hhmm(minutes):
     return f"{m // 60:02d}:{m % 60:02d}"
 
 
+SCHEDULE_SLOTS = 3          # the appliance stores three windows per day
+# How patiently the written time program is read back. The cloud confirms the
+# execution before its own copy of the capability has caught up, so a single
+# immediate read reported "not taken" for a value that might still arrive.
+SCHEDULE_READBACK_TRIES = 4
+SCHEDULE_READBACK_PAUSE = 3.0
+_SCHEDULE_MAX_MINUTE = 24 * 60 - 1
+
+
+def _parse_schedule_windows(raw):
+    """Reads a time program value into a list of [start, end] in minutes.
+
+    The value looks like '[[420,1020],[0,0],[0,0]]' - three slots, an unused
+    one being [0,0]. Always returns SCHEDULE_SLOTS entries so a write can put
+    them back in the same shape; None when the value cannot be read at all.
+    """
+    try:
+        windows = json.loads(raw) if isinstance(raw, str) else raw
+    except (ValueError, TypeError):
+        return None
+    if not isinstance(windows, list):
+        return None
+    out = []
+    for w in windows[:SCHEDULE_SLOTS]:
+        if not (isinstance(w, list) and len(w) == 2):
+            return None
+        try:
+            out.append([int(w[0]), int(w[1])])
+        except (TypeError, ValueError):
+            return None
+    while len(out) < SCHEDULE_SLOTS:
+        out.append([0, 0])
+    return out
+
+
+def _schedule_windows_valid(windows):
+    """Checks a set of windows before it is written to the appliance.
+
+    Returns None when everything is fine, otherwise the reason. An empty
+    window is [0, 0] and means "unused"; anything else has to start before it
+    ends, stay inside the day, and not overlap another window - the appliance
+    is not asked to sort that out.
+    """
+    used = []
+    for start, end in windows:
+        if start == 0 and end == 0:
+            continue
+        if not (0 <= start <= _SCHEDULE_MAX_MINUTE
+                and 0 <= end <= _SCHEDULE_MAX_MINUTE):
+            return "range"
+        if start >= end:
+            return "order"
+        used.append((start, end))
+    for i, (start, end) in enumerate(used):
+        for other_start, other_end in used[i + 1:]:
+            if start < other_end and other_start < end:
+                return "overlap"
+    return None
+
+
 def _format_schedule_windows(raw):
     """Formats a time program value like '[[420,1020],[0,0],[0,0]]'.
 
@@ -246,6 +306,7 @@ class CozytouchWaterHeater:
             CAP_DHW_ON: "dhw",
             CAP_AWAY: "away",
             CAP_AWAY_TS: "away",
+            **{CAP_SCHEDULE_BASE + day: "schedule" for day in range(7)},
         }.get(int(cap_id))
 
     def _protect(self, field):
@@ -369,6 +430,89 @@ class CozytouchWaterHeater:
         """Boost duration (CAP 232). Unit unconfirmed; 0 = not set."""
         v = _to_float(self._cap(CAP_BOOST_TOTAL_TIME))
         return v if v else None
+
+    def schedule_windows(self, weekday=None):
+        """The heating windows of one day as [[start, end], ...] in minutes.
+
+        Without ``weekday`` the current day. None when the appliance has not
+        reported a time program for it.
+        """
+        if weekday is None:
+            weekday = datetime.date.today().weekday()
+        raw = self._cap(CAP_SCHEDULE_BASE + int(weekday))
+        if raw is None:
+            return None
+        return _parse_schedule_windows(raw)
+
+    def set_schedule_windows(self, weekday, windows):
+        """Writes the heating windows of one day and reads back what stuck.
+
+        Writing a time program is the one thing here that has never been
+        confirmed on an appliance: the reference implementation only reads
+        these capabilities. The cloud answers an accepted write with an
+        execution it reports as completed - which the air fryer taught us is
+        not the same as the appliance having done it. So the value is read
+        back from the cloud afterwards and compared, and the caller is told
+        what really stands there rather than what was asked for.
+
+        Returns (ok, actual_windows): ok is True only when the appliance
+        really holds the requested windows afterwards.
+        """
+        weekday = int(weekday)
+        cap = CAP_SCHEDULE_BASE + weekday
+        wanted = [[int(a), int(b)] for a, b in windows][:SCHEDULE_SLOTS]
+        while len(wanted) < SCHEDULE_SLOTS:
+            wanted.append([0, 0])
+        value = json.dumps(wanted, separators=(",", ":"))
+
+        before_raw = self._cap(cap)
+        log.info(f"Cozytouch: writing the time program of day {weekday} "
+                 f"(capability {cap}): {value!r}, so far {before_raw!r}")
+
+        if not self._api.set_capability(self.device_id, cap, value):
+            log.warning("Cozytouch: the cloud refused the time program")
+            return False, self.schedule_windows(weekday)
+
+        # Read back BEFORE the protection window is set: apply_capabilities
+        # skips protected fields, so protecting first would compare the
+        # request against itself and always agree.
+        #
+        # And read back more than once. The cloud reports the execution as
+        # completed while its own copy of the capability can still be the old
+        # one - the first attempt said "not taken" for a value that may
+        # simply not have arrived yet. Every attempt is logged, so a report
+        # says whether the appliance refuses the value or only takes its time.
+        actual = wanted
+        for attempt in range(SCHEDULE_READBACK_TRIES):
+            if attempt:
+                time.sleep(SCHEDULE_READBACK_PAUSE)
+            raw = None
+            try:
+                caps = self._api._fetch_capabilities(self.device_id)
+                if isinstance(caps, list):
+                    for c in caps:
+                        if (isinstance(c, dict)
+                                and c.get("capabilityId") is not None
+                                and int(c["capabilityId"]) == cap):
+                            raw = c.get("value")
+                            break
+            except Exception as e:
+                log.debug(f"Cozytouch: reading the time program back failed: {e}")
+            parsed = _parse_schedule_windows(raw) if raw is not None else None
+            log.info(f"Cozytouch: read back {attempt + 1}/"
+                     f"{SCHEDULE_READBACK_TRIES}: {raw!r}")
+            if parsed is not None:
+                actual = parsed
+                if actual == wanted:
+                    break
+
+        with self._lock:
+            self._caps[cap] = json.dumps(actual, separators=(",", ":"))
+        self._protect("schedule")
+        took = actual == wanted
+        log.info(f"Cozytouch: the appliance {'took' if took else 'did NOT take'} "
+                 f"the time program of day {weekday}; it now holds {actual}")
+        return took, actual
 
     @property
     def today_schedule_text(self):

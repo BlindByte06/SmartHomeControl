@@ -1168,6 +1168,10 @@ def _format_action_text(action, details=""):
         'set_target_temp': _("Target temperature set"),
         'boost_on': _("Boost switched on"),
         'boost_off': _("Boost switched off"),
+        # Translators: History entry: the duration of the boost was set.
+        'set_boost_duration': _("Boost duration set"),
+        # Translators: History entry: the heating time program was changed.
+        'set_schedule': _("Heating times changed"),
         'away_on': _("Away mode switched on"),
         'away_off': _("Away mode switched off"),
         # VeSync-specific actions
@@ -1214,6 +1218,54 @@ def _detail_is_redundant(action):
     return action.endswith(('_on', '_off'))
 
 
+def _schedule_detail_text(value):
+    """Renders a stored time program: "Monday, Saturday: 07:20-17:50".
+
+    Stored is "<day numbers> <windows in minutes>", e.g. "0,5
+    [[440,1070],[0,0],[0,0]]". The first entries written carried the day
+    numbers as a Python list ("[0, 5] ..."), which is why the brackets and
+    spaces are stripped rather than parsed strictly - an entry that cannot be
+    read falls back to being shown as it stands.
+    """
+    import json as _json
+    from .constants import WEEKDAY_NAMES
+    if value.startswith("["):
+        # The first entries written carried the day numbers as a Python list,
+        # "[0, 5] [[440,1070],...]" - with a space inside them, so splitting
+        # on the first space would tear the list apart.
+        close = value.find("]")
+        head, tail = value[:close + 1], value[close + 1:]
+    else:
+        head, _sep, tail = value.partition(" ")
+    try:
+        numbers = [int(part) for part in
+                   head.strip("[]").replace(" ", "").split(",") if part != ""]
+        windows = _json.loads(tail.strip())
+    except (ValueError, TypeError):
+        return None
+    if not numbers or not isinstance(windows, list):
+        return None
+    days = ", ".join(WEEKDAY_NAMES[n] for n in numbers
+                     if 0 <= n < len(WEEKDAY_NAMES))
+    times = []
+    for window in windows:
+        if (isinstance(window, list) and len(window) == 2
+                and not (window[0] == 0 and window[1] == 0)):
+            try:
+                start, end = int(window[0]), int(window[1])
+            except (TypeError, ValueError):
+                return None
+            times.append(f"{start // 60:02d}:{start % 60:02d}-"
+                         f"{end // 60:02d}:{end % 60:02d}")
+    if not days:
+        return None
+    # Translators: Heating windows in the history when a day has none left.
+    schedule = ", ".join(times) if times else _("no heating times")
+    # Translators: A changed time program in the history. {days} = the
+    # weekdays it was written to, {schedule} = the windows.
+    return _("{days}: {schedule}").format(days=days, schedule=schedule)
+
+
 def _detail_text(action, details):
     """Renders a detail in the CURRENT language where that is possible.
 
@@ -1238,6 +1290,10 @@ def _detail_text(action, details):
         if digits:
             # Translators: Fan level in the history. {level} = level number.
             return _("Level {level}").format(level=digits)
+    if action == 'set_schedule':
+        rendered = _schedule_detail_text(value)
+        if rendered:
+            return rendered
     if action == 'set_boost_duration':
         digits = ''.join(c for c in value if c.isdigit())
         if digits:

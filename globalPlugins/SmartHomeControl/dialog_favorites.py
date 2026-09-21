@@ -24,6 +24,7 @@ from .favorites import get_favorites
 from .dialog_helpers import _beep
 from .constants import BEEP_ON
 from .platform_utils import split_by_platform
+from . import platform_health
 
 
 class _FavoritesTreeMixin:
@@ -246,6 +247,26 @@ class _FavoritesTreeMixin:
         self.fav_tree.SetItemHasChildren(item, True)  # lazy: built on expand
         self.fav_tree.Collapse(item)
 
+    def _unavailable_favorite_label(self, fav_entry, platform):
+        """Label of a favourite whose device is not in the list right now.
+
+        "(not available)" covered two rather different situations: a device
+        removed from the account, and a platform that is simply not answering
+        at the moment. When the record knows the reason, it is named.
+        """
+        # Translators: Name shown for a favourite whose device is unknown.
+        name = fav_entry.get('name', _("Unknown"))
+        health = getattr(self.plugin, 'platform_health', None)
+        reason = platform_health.status_suffix(health.get(platform)) if health \
+            else ""
+        if reason:
+            # Translators: Favourite whose device is missing, with the reason,
+            # e.g. "Kitchen (unreachable since 11:30)".
+            return _("{name} ({reason})").format(name=name, reason=reason)
+        # Translators: Favourite whose device is not in the current device
+        # list.
+        return _("{name} (not available)").format(name=name)
+
     def _prefix_fav_slot(self, platform_node, fav_entry):
         """Prefixes the slot number to the entry inserted last.
 
@@ -343,7 +364,9 @@ class _FavoritesTreeMixin:
                             self._add_single_meross_device(meross_node, real_device, is_favorite_view=True)
                         else:
                             offline_item = self.fav_tree.AppendItem(
-                                meross_node, _("{name} (not available)").format(name=fav_entry.get('name', _("Unknown"))))
+                                meross_node,
+                                self._unavailable_favorite_label(
+                                    fav_entry, 'meross'))
                             self.fav_tree.SetItemData(offline_item, {
                                 'type': 'info', 'fav_uuid': fav_uuid
                             })
@@ -366,8 +389,9 @@ class _FavoritesTreeMixin:
                             self._add_single_netatmo_device(netatmo_node, real_device, is_favorite_view=True)
                         else:
                             offline_item = self.fav_tree.AppendItem(
-                                # Translators: Entry in the device tree.
-                                netatmo_node, _("{name} (not available)").format(name=fav_entry.get('name', _("Unknown"))))
+                                netatmo_node,
+                                self._unavailable_favorite_label(
+                                    fav_entry, 'netatmo'))
                             self.fav_tree.SetItemData(offline_item, {
                                 'type': 'info', 'fav_uuid': fav_uuid
                             })
@@ -390,7 +414,9 @@ class _FavoritesTreeMixin:
                             self._add_single_vesync_device(vesync_node, real_device, is_favorite_view=True)
                         else:
                             offline_item = self.fav_tree.AppendItem(
-                                vesync_node, _("{name} (not available)").format(name=fav_entry.get('name', _("Unknown"))))
+                                vesync_node,
+                                self._unavailable_favorite_label(
+                                    fav_entry, 'vesync'))
                             self.fav_tree.SetItemData(offline_item, {
                                 'type': 'info', 'fav_uuid': fav_uuid
                             })
@@ -412,7 +438,9 @@ class _FavoritesTreeMixin:
                             self._add_single_cozytouch_device(cozytouch_node, real_device, is_favorite_view=True)
                         else:
                             offline_item = self.fav_tree.AppendItem(
-                                cozytouch_node, _("{name} (not available)").format(name=fav_entry.get('name', _("Unknown"))))
+                                cozytouch_node,
+                                self._unavailable_favorite_label(
+                                    fav_entry, 'cozytouch'))
                             self.fav_tree.SetItemData(offline_item, {
                                 'type': 'info', 'fav_uuid': fav_uuid
                             })

@@ -2,6 +2,60 @@
 
 The GitHub release notes are built from the section of the released version.
 
+## 26.10.1 (October 2026)
+
+### All platforms
+
+- **New: platform status** - Ctrl+P in the device menu, or the button next to
+  the history. Two views: the faults since signing in with the time they
+  started and ended, and the devices that did not answer, still failing ones
+  first, with the time of their last answer. Enter opens the detail of a row.
+- An unreachable platform is shown at the platform in the device tree
+  ("Netatmo devices (7) - unreachable since 11:30"), in the status line and in
+  the connection diagnostics; values that have grown old are marked with the
+  time they arrived.
+- A platform that answers only in part counts as a fault: the Netatmo cloud
+  serves the weather station and the heating separately, and the missing
+  service is named.
+- A poll where nothing at all answers is reported as a fault - for Meross and
+  Netatmo it used to pass as a success.
+- A single device that misses a poll is recorded in the platform status
+  instead of being announced.
+- Which faults are announced can be set: a "Faults" section in the
+  notifications tab switches the announcement as a whole, and separately for
+  no longer reachable, answering only in part, and reachable again. What is
+  switched off is still recorded and stays readable in the platform status.
+
+### Meross
+
+- Sensors of a hub no longer disappear when the hub does not answer. They stay
+  in the device list marked as unreachable, and their favourites keep working
+  instead of turning into "not available".
+- A hub sensor that is missing comes back during normal polling, without an
+  NVDA restart.
+
+### Cozytouch
+
+- **The heating times can be changed.** The device entry shows today's windows
+  and Enter opens the input for one of them: day, start and end as HH:MM, and
+  leaving both empty deletes the window. Up to three windows a day; overlapping
+  or reversed ones are refused. A check box per weekday puts the same windows
+  on several days at once.
+- The program is read back from the appliance afterwards and what really
+  stands there is announced - the cloud confirms an execution about three to
+  five seconds before its own copy catches up.
+
+### Fixed
+
+- Changes made outside the add-on reach the history for Netatmo, VeSync and
+  Cozytouch too; only Meross recorded them.
+- The boost duration and a changed time program are readable in the history
+  instead of showing their internal values.
+- The view selector of the history keeps the focus while a view is chosen.
+- A duplicated version heading in the changelog stops the build.
+- The bundled aiohttp is updated to 3.14.3 (security fix in the C parser for
+  HTTP responses).
+
 ## 26.9.1 (September 2026)
 
 ### Fixed

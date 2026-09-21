@@ -1527,3 +1527,35 @@ class MerossOfflineDevice(MerossDevice):
 
     def get_channels(self):
         return self._channels
+
+
+def carry_over_hub_subdevices(previous, fresh):
+    """Sensors of a hub that is still there but did not list them this time.
+
+    A discovery replaces the device list as a whole, and a hub that was slow
+    or unreachable at that moment contributes no subdevices at all. The
+    sensors were then gone for the rest of the session - together with their
+    favourites, which turned into "(not available)" - because a rediscovery
+    only ever runs when NO Meross device is left.
+
+    Carried over are only sensors whose hub IS in the fresh list. A device
+    that really left the account brings no hub of its own along, and neither
+    does a sign-in with different credentials, so nothing is resurrected that
+    should be gone. Across an NVDA restart the list is built from the cloud
+    again, so a sensor that was genuinely removed disappears then.
+
+    Returns the carried-over wrappers, marked offline.
+    """
+    fresh_ids = {d.unique_id for d in fresh}
+    hub_uuids = {d.uuid for d in fresh if getattr(d, 'is_hub', False)}
+    carried = []
+    for device in previous:
+        if not getattr(device, '_subdevice_id', None):
+            continue        # not a hub sensor
+        if device.uuid not in hub_uuids:
+            continue        # its hub is gone too - then it really is gone
+        if device.unique_id in fresh_ids:
+            continue
+        device.is_offline = True
+        carried.append(device)
+    return carried

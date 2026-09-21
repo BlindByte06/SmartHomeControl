@@ -255,21 +255,30 @@ class CozytouchAPI:
         """
         ok_count = 0
         total = 0
+        answered = []
+        missing = []
         for dev in devices:
             if not getattr(dev, "is_cozytouch", False):
                 continue
             total += 1
+            who = (getattr(dev, "unique_id", None) or dev.uuid,
+                   getattr(dev, "name", None))
             try:
                 caps = self._fetch_capabilities(dev.device_id)
                 if caps is not None:
                     dev.apply_capabilities(caps)
                     dev.is_offline = False
                     ok_count += 1
+                    answered.append(who)
                 else:
                     dev.is_offline = True
+                    missing.append(who)
             except Exception as e:
+                missing.append(who)
                 log.debug(f"Cozytouch: status update for {dev.name} failed: {e}")
-        return {"devices_ok": ok_count, "devices_total": total}
+        # Which ones, not just how many.
+        return {"devices_ok": ok_count, "devices_total": total,
+                "answered": answered, "missing": missing}
 
     # ---------------- Control ----------------
     @staticmethod

@@ -23,6 +23,7 @@ if "_" not in globals():  # fallback if initTranslation() fails
         return s
 
 from .platform_utils import platform_of, PLATFORM_LABELS
+from . import platform_health
 from .constants import (
     BACKGROUND_REFRESH_INTERVAL, SCHEDULER_TICK, SCHEDULER_MAX_SLEEP,
     PLATFORM_INTERVALS,
@@ -93,10 +94,18 @@ class _SchedulerMixin:
         return max(SCHEDULER_TICK, min(remaining, SCHEDULER_MAX_SLEEP))
 
     def _announce_platform_state(self, platform_name, ok, attempted):
-        """Announces platform status changes once (connected <-> disconnected).
+        """Announces platform status changes once, and keeps the record.
 
-        Called by the background loop after every refresh attempt.
-        Speaks ONLY on the transition, not on repeated failures/successes.
+        Called by the background loop after every refresh attempt. Speaks
+        ONLY on the transition, not on repeated failures/successes.
+
+        The record behind it (see platform_health) decides, not the bare
+        boolean: a poll can succeed and still be missing half its data, and
+        that used to be announced as nothing at all. It also keeps the state
+        and since when it holds, which the device tree, the status line and
+        the connection diagnostics read afterwards - an announcement is gone
+        the moment it has been spoken, and anyone who missed it had no way to
+        ask what is reachable right now.
 
         Args:
             platform_name: 'meross', 'netatmo', 'vesync' or 'cozytouch'
@@ -106,33 +115,39 @@ class _SchedulerMixin:
         if not attempted:
             return  # do not change the status when not checked (e.g. skipped)
 
-        attr = f"_{platform_name}_connected"
-        prev = getattr(self, attr)
+        state = self.platform_health.update(platform_name, ok)
+        # Kept in step: the connection diagnostics read this.
+        setattr(self, f"_{platform_name}_connected",
+                None if ok is None else bool(ok))
+        if state is None:
+            return  # nothing changed, or the very first observation
 
-        if prev is None:
-            # First initialization after login: set the status without an
-            # announcement
-            setattr(self, attr, ok)
-            return
-
-        if prev == ok:
-            return  # no change
-
-        setattr(self, attr, ok)
         # Platform names are brand names -> do not translate.
         label = PLATFORM_LABELS.get(platform_name, platform_name)
-        if ok:
-            # Translators: Announced when a smart home platform is reachable
-            # again after a connection loss. {platform} is
-            # Meross/Netatmo/VeSync.
-            msg = _("{platform} reconnected").format(platform=label)
+        entry = self.platform_health.get(platform_name)
+        msg = platform_health.announcement(label, state, entry)
+        if state == platform_health.OK:
             log.info(f"Platform status: {label} reconnected")
         else:
-            # Translators: Announced when a smart home platform is temporarily
-            # unreachable.
-            msg = _("{platform} temporarily unreachable").format(platform=label)
-            log.warning(f"Platform status: {label} unreachable")
-        wx.CallAfter(ui.message, msg)
+            log.warning(f"Platform status: {label} {state} - {msg}")
+        if self._fault_announcement_wanted(state):
+            wx.CallAfter(ui.message, msg)
+
+    def _fault_announcement_wanted(self, state):
+        """Whether this change is spoken, according to the settings.
+
+        The record above is written either way. Switching an announcement off
+        means "do not interrupt me", not "do not keep track": the device tree,
+        the status line and the platform status still have to be able to say
+        what happened.
+        """
+        if not getattr(self, 'notify_faults', True):
+            return False
+        if state == platform_health.OK:
+            return bool(getattr(self, 'notify_fault_recovered', True))
+        if state == platform_health.PARTIAL:
+            return bool(getattr(self, 'notify_fault_partial', True))
+        return bool(getattr(self, 'notify_fault_unreachable', True))
 
     def _start_background_refresh(self):
         """Starts the unified polling scheduler for automatic updates.
@@ -340,6 +355,7 @@ class _SchedulerMixin:
         self._netatmo_connected = None
         self._vesync_connected = None
         self._cozytouch_connected = None
+        self.platform_health.reset()
         # Discard ALL state snapshots. This way, after a renewed login no old
         # comparison data can fake an external change that is in truth only the
         # initial value.
@@ -487,11 +503,50 @@ class _SchedulerMixin:
         try:
             self.api.update_device_status(meross_devs)
             self._log_power_samples(meross_devs)
+            report = getattr(self.api, 'last_update_report', None) or {}
+            self.platform_health.note_devices(
+                'meross', report.get('answered'), report.get('missing'))
+            self._adopt_meross_devices(report.get('discovered'))
             log.debug(f"Scheduler Meross: {len(meross_devs)} devices updated")
+            # Not one device answered: that is the platform, not the devices.
+            # Meross used to report success here whatever came back, because
+            # update_device_status() swallows every single failure.
+            total = report.get('devices_total')
+            if total and not report.get('devices_ok'):
+                log.warning("Scheduler Meross: none of "
+                            f"{total} devices answered")
+                return False
             return True
         except Exception as e:
             log.debug(f"Scheduler Meross failed: {e}")
             return False
+
+    def _adopt_meross_devices(self, found):
+        """Takes sensors that a hub named while it was polled.
+
+        Without this a hub sensor missing since the sign-in only came back on
+        the next NVDA start: every rediscovery is gated on there being no
+        Meross device left at all, and the hub itself is of course there.
+        """
+        if not found:
+            return
+        with self._devices_lock:
+            known = {getattr(d, 'unique_id', None) or d.uuid
+                     for d in self.devices}
+            fresh = [d for d in found if d.unique_id not in known]
+            if fresh:
+                self.devices.extend(fresh)
+                meross_devs = [d for d in self.devices
+                               if platform_of(d) == 'meross']
+        if not fresh:
+            return
+        log.info(f"{len(fresh)} hub sensor(s) added back to the device list")
+        # The push routing reads this list; without it the new sensors would
+        # be updated but their pushes dropped.
+        try:
+            self.api.set_wrapped_devices(meross_devs)
+        except Exception as e:
+            log.debug(f"Could not hand over the device list: {e}")
 
     def _refresh_netatmo(self):
         if not (self.netatmo_api and self.use_netatmo):
@@ -527,8 +582,12 @@ class _SchedulerMixin:
                 for fresh_dev in fresh_netatmo_devs:
                     if fresh_dev.uuid not in existing_uuids:
                         self.devices.append(fresh_dev)
+            self.platform_health.note_parts(
+                'netatmo', getattr(self.netatmo_api, 'last_failed_parts', ()))
             log.debug(f"Scheduler Netatmo: {len(fresh_netatmo_devs)} devices updated")
-            return True
+            # get_devices() does not raise when a half fails, so True here
+            # used to mean "the call returned", not "something answered".
+            return bool(getattr(self.netatmo_api, 'last_poll_ok', True))
         except Exception as e:
             log.debug(f"Scheduler Netatmo failed: {e}")
             return False
@@ -551,6 +610,8 @@ class _SchedulerMixin:
             # Successful if the deviceList came through OR at least one detail
             # call succeeded.
             ok = bool(report.get('devicelist_ok')) or bool(report.get('devices_ok'))
+            self.platform_health.note_devices(
+                'vesync', report.get('answered'), report.get('missing'))
             self._detect_vesync_changes(vesync_devs)
             log.debug(f"Scheduler VeSync: {len(vesync_devs)} devices, ok={ok}, fast={fg}")
             return ok
@@ -568,6 +629,8 @@ class _SchedulerMixin:
         try:
             report = self.cozytouch_api.update_device_status(cozytouch_devs) or {}
             ok = bool(report.get('devices_ok'))
+            self.platform_health.note_devices(
+                'cozytouch', report.get('answered'), report.get('missing'))
             self._detect_cozytouch_changes(cozytouch_devs)
             log.debug(f"Scheduler Cozytouch: {len(cozytouch_devs)} devices, ok={ok}")
             return ok

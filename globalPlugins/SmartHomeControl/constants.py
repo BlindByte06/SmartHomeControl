@@ -331,6 +331,15 @@ CONFSPEC = {
     "notifyCozytouchBoost": "boolean(default=true)",
     "notifyCozytouchPower": "boolean(default=true)",
     "notifyCozytouchAway": "boolean(default=true)",
+    # Faults: whether a platform going away, coming back or answering only
+    # in part is spoken. Separate from the notifications above, which are
+    # about changes someone MADE - a fault is not a change, and switching the
+    # external announcements off must not silence it.
+    "notifyFaults": "boolean(default=true)",
+    "notifyFaultUnreachable": "boolean(default=true)",
+    "notifyFaultPartial": "boolean(default=true)",
+    "notifyFaultRecovered": "boolean(default=true)",
+
     # Fine-grained notification settings per platform / event. Maintained by
     # the "Notifications" tab in the settings.
     "notifyMerossToggle": "boolean(default=true)",
@@ -506,3 +515,13 @@ BEEP_ERROR = (200, 200)       # an error occurred
 BEEP_SUCCESS = (880, 80)      # success confirmation (e.g. status query finished)
 BEEP_LOADING = (440, 80)      # loading/wait indicator (periodic)
 BEEP_EXTERNAL_CHANGE = (700, 80)  # external change detected (Alexa / app / physical)
+
+
+# Weekday names, used by the time program of the hot water heat pump: in its
+# dialog, and in the history when a stored program is rendered. They live here
+# because both need them and neither should own the other's texts.
+# Translators: Weekday names for the time program of the hot water heat pump.
+WEEKDAY_NAMES = (
+    _("Monday"), _("Tuesday"), _("Wednesday"), _("Thursday"),
+    _("Friday"), _("Saturday"), _("Sunday"),
+)

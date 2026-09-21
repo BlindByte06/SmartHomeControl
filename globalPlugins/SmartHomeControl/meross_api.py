@@ -1098,6 +1098,14 @@ class MerossAPI:
             raise RuntimeError(_("Not logged in"))
         
         log.debug(f"Meross API: updating the status of {len(devices)} devices...")
+
+        # What the platform health reads afterwards. Set to "unknown" first:
+        # if the poll runs into its timeout below, the counting never happens,
+        # and the numbers of the previous poll would be reported as if they
+        # were this one's.
+        self.last_update_report = {'devices_ok': None, 'devices_total': None,
+                                   'answered': [], 'missing': [],
+                                   'discovered': []}
         
         async def _update_status():
             # Import for specific exception types
@@ -1119,7 +1127,12 @@ class MerossAPI:
                                             reserve=MEROSS_BUDGET_RESERVE):
                     if self._budget_exhausted(meross_device.uuid, 1):
                         self._notify_throttle(getattr(meross_device, 'name', None))
-                    return (False, None)
+                    # None, not False: nothing was asked, so nothing failed.
+                    # Counted as a failure it would look like an unreachable
+                    # device to the platform health - and a busy hour with the
+                    # budget reserve in effect would announce a fault that is
+                    # in truth the rate limit doing its job.
+                    return (None, None)
 
                 try:
                     # Find the original device
@@ -1232,19 +1245,35 @@ class MerossAPI:
             # Count the successes and collect the hubs
             updated = 0
             failed = 0
+            answered = []
+            missing = []
+            # Sensors a hub names that are not in the list yet, see
+            # update_single_hub.
+            discovered = []
+            known_ids = {d.unique_id for d in devices}
             hubs = {}
             
-            for result in results:
+            # zip: gather() keeps the order of the tasks, so a result still
+            # knows which device it belongs to. A count cannot say whether it
+            # is the same device every time - which is the whole difference
+            # between a device to look at and one unlucky poll.
+            for grp, result in zip(uuid_groups.values(), results):
+                who = (grp[0].uuid, getattr(grp[0], 'name', None))
                 if isinstance(result, tuple):
                     success, hub_device = result
+                    if success is None:
+                        continue      # skipped for the budget, not asked
                     if success:
                         updated += 1
+                        answered.append(who)
                         if hub_device and hasattr(hub_device, 'uuid'):
                             hubs[hub_device.uuid] = hub_device
                     else:
                         failed += 1
+                        missing.append(who)
                 else:
                     failed += 1
+                    missing.append(who)
             
             # Update all hubs for fresh subdevice data (important for MS130!)
             if hubs:
@@ -1278,6 +1307,32 @@ class MerossAPI:
                     except Exception as e:
                         log.debug(f"Ignored error during the battery poll: {e}")
 
+                    # A hub that answers lists what hangs on it. A sensor it
+                    # names that is not in our list is handed to the caller:
+                    # after a start where the hub was slow or unreachable the
+                    # sensors were missing for the whole session, because a
+                    # rediscovery only runs when NO Meross device is left at
+                    # all. The hub itself is the source here - nothing is
+                    # invented.
+                    try:
+                        subdevices = (list(hub_device.get_subdevices())
+                                      if hasattr(hub_device, 'get_subdevices')
+                                      else [])
+                        for subdev in subdevices:
+                            subdev_type = (getattr(subdev, 'type', '') or '').lower()
+                            if not is_sensor_type(subdev_type):
+                                continue
+                            wrapper = MerossDevice(subdev)
+                            if wrapper.unique_id in known_ids:
+                                continue
+                            known_ids.add(wrapper.unique_id)
+                            discovered.append(wrapper)
+                            log.info(f"Hub sensor back: {wrapper.name} "
+                                     f"({wrapper.type})")
+                    except Exception as e:
+                        log.debug(f"Subdevice check for "
+                                  f"{getattr(hub_device, 'name', '?')} failed: {e}")
+
                     return updated_ok
                 
                 # Update all hubs IN PARALLEL
@@ -1285,6 +1340,10 @@ class MerossAPI:
                 await asyncio.gather(*hub_tasks, return_exceptions=True)
             
             log.debug(f"Status update finished: {updated} successful, {failed} failed")
+            self.last_update_report = {
+                'devices_ok': updated, 'devices_total': updated + failed,
+                'answered': answered, 'missing': missing,
+                'discovered': discovered}
         
         try:
             # PARALLEL updates are MUCH faster - aggressive timeout! Only

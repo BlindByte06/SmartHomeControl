@@ -106,11 +106,14 @@ from .settings_panel import (
 from .security import encrypt_dpapi, decrypt_dpapi, is_encrypted
 from .credentials import _CredentialsMixin
 from .scheduler import _SchedulerMixin
+from .platform_health import PlatformHealth
+from . import platform_health
 from .change_detection import _ChangeDetectionMixin
 from .platform_utils import (
     split_by_platform, platform_of, PLATFORM_LABELS, PASSWORD_PLATFORMS,
 )
 from . import credential_store
+from .meross_devices import carry_over_hub_subdevices
 
 
 def _addon_version():
@@ -251,6 +254,12 @@ class GlobalPlugin(_CredentialsMixin, _SchedulerMixin, _ChangeDetectionMixin,
         self._netatmo_connected = None
         self._vesync_connected = None
         self._cozytouch_connected = None
+
+        # The same knowledge in a form that can be looked up: which platform
+        # is answering, since when it is not, and which part of it is missing.
+        # Written by the scheduler, read by the device tree, the status line
+        # and the connection diagnostics.
+        self.platform_health = PlatformHealth()
         
         # Push notification system for external changes (Alexa, app, etc.)
         self._last_announced_change = None  # prevents duplicate announcements
@@ -395,6 +404,10 @@ class GlobalPlugin(_CredentialsMixin, _SchedulerMixin, _ChangeDetectionMixin,
             
             self.auto_login = conf.get("autoLogin", True)
             self.announce_external_changes = conf.get("announceExternalChanges", True)
+            self.notify_faults = conf.get("notifyFaults", True)
+            self.notify_fault_unreachable = conf.get("notifyFaultUnreachable", True)
+            self.notify_fault_partial = conf.get("notifyFaultPartial", True)
+            self.notify_fault_recovered = conf.get("notifyFaultRecovered", True)
             self.start_tab = conf.get("startTab", "devices")
 
             # Platform flags
@@ -468,6 +481,10 @@ class GlobalPlugin(_CredentialsMixin, _SchedulerMixin, _ChangeDetectionMixin,
             self._encrypted_password = ""
             self.auto_login = True
             self.announce_external_changes = True
+            self.notify_faults = True
+            self.notify_fault_unreachable = True
+            self.notify_fault_partial = True
+            self.notify_fault_recovered = True
             self.start_tab = "devices"
             self.use_meross = False
             self.use_netatmo = False
@@ -527,6 +544,10 @@ class GlobalPlugin(_CredentialsMixin, _SchedulerMixin, _ChangeDetectionMixin,
             
             conf["autoLogin"] = self.auto_login
             conf["announceExternalChanges"] = self.announce_external_changes
+            conf["notifyFaults"] = self.notify_faults
+            conf["notifyFaultUnreachable"] = self.notify_fault_unreachable
+            conf["notifyFaultPartial"] = self.notify_fault_partial
+            conf["notifyFaultRecovered"] = self.notify_fault_recovered
             conf["startTab"] = getattr(self, 'start_tab', 'devices')
 
             # Platform flags
@@ -972,6 +993,17 @@ class GlobalPlugin(_CredentialsMixin, _SchedulerMixin, _ChangeDetectionMixin,
                                                "devices remain available"))
                     return
 
+            # A hub that did not answer lists no sensors, and the list is
+            # replaced as a whole - the sensors were gone for the rest of the
+            # session, and their favourites with them.
+            with self._devices_lock:
+                previous = list(self.devices)
+            carried = carry_over_hub_subdevices(previous, new_devices)
+            if carried:
+                log.warning(f"{len(carried)} hub sensor(s) kept: their hub "
+                            "did not list them this time")
+                new_devices = new_devices + carried
+
             with self._devices_lock:
                 self.devices = new_devices
 
@@ -1289,15 +1321,21 @@ class GlobalPlugin(_CredentialsMixin, _SchedulerMixin, _ChangeDetectionMixin,
             # Translators: Diagnostics: not logged in at all.
             parts.append(_("Not logged in"))
         platform_states = (
-            ('Meross', self.use_meross, self._meross_connected),
-            ('Netatmo', self.use_netatmo, self._netatmo_connected),
-            ('VeSync', self.use_vesync, self._vesync_connected),
-            ('Cozytouch', self.use_cozytouch, self._cozytouch_connected),
+            ('meross', 'Meross', self.use_meross, self._meross_connected),
+            ('netatmo', 'Netatmo', self.use_netatmo, self._netatmo_connected),
+            ('vesync', 'VeSync', self.use_vesync, self._vesync_connected),
+            ('cozytouch', 'Cozytouch', self.use_cozytouch, self._cozytouch_connected),
         )
-        for label, active, connected in platform_states:
+        for name, label, active, connected in platform_states:
             if not active:
                 continue
-            if connected is True:
+            # The record knows more than the flag: since when a platform has
+            # been silent, and whether only a part of it is missing.
+            entry = self.platform_health.get(name)
+            detail = platform_health.status_suffix(entry)
+            if detail:
+                state = detail
+            elif connected is True:
                 # Translators: Diagnostics: platform is connected.
                 state = _("connected")
             elif connected is False:
@@ -1815,6 +1853,8 @@ class GlobalPlugin(_CredentialsMixin, _SchedulerMixin, _ChangeDetectionMixin,
                     # same list in parallel (consistent with all other write
                     # sites).
                     with self._devices_lock:
+                        all_devs = all_devs + carry_over_hub_subdevices(
+                            self.devices, all_devs)
                         self.devices = all_devs
                     self._last_refresh_time = time.time()
                 else:
@@ -2154,9 +2194,14 @@ class GlobalPlugin(_CredentialsMixin, _SchedulerMixin, _ChangeDetectionMixin,
                 # Keep devices that a scheduler poll running in parallel
                 # discovered/appended between the snapshot and the reassignment
                 # (otherwise a lost update: they would silently drop out).
-                known_uuids = {d.uuid for d in new_list}
+                #
+                # By unique_id, not uuid: every sensor on a Meross hub carries
+                # the HUB's uuid, so as soon as the hub was in the new list all
+                # of its sensors counted as "known" here and were dropped.
+                known_ids = {getattr(d, 'unique_id', None) or d.uuid
+                             for d in new_list}
                 for d in self.devices:
-                    if d.uuid not in known_uuids:
+                    if (getattr(d, 'unique_id', None) or d.uuid) not in known_ids:
                         new_list.append(d)
                 # A switched-off platform belongs in neither of the two
                 # sources above. Without this filter its devices survived

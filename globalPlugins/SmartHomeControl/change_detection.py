@@ -29,6 +29,45 @@ from .constants import (
 )
 
 
+# What an external change is worth recording as, per platform: the field in
+# the snapshot, the action key it goes into the history under, and whether a
+# value belongs with it.
+#
+# Only settings someone can change are in here - the ones the add-on can set
+# itself. A boiler starting or a filter running low is the appliance's own
+# doing and belongs to the readings, not to the question the history is
+# opened for: "was that me or someone else?"
+#
+# The action key and the detail are language-neutral on purpose. What the
+# history shows is translated when it is displayed; an entry written under a
+# German interface used to stay German for good.
+_EXTERNAL_ACTIONS = {
+    'cozytouch': (
+        ('is_on', ('toggle_on', 'toggle_off'), False),
+        ('boost', ('boost_on', 'boost_off'), False),
+        ('away', ('away_on', 'away_off'), False),
+        ('target_temp', 'set_target_temp', True),
+        ('mode', 'set_mode', True),
+    ),
+    'vesync': (
+        ('is_on', ('toggle_on', 'toggle_off'), False),
+        ('oscillation_on', ('oscillation_on', 'oscillation_off'), False),
+        ('mute_on', ('mute_on', 'mute_off'), False),
+        ('display_on', ('display_on', 'display_off'), False),
+        ('child_lock', ('child_lock_on', 'child_lock_off'), False),
+        ('mode', 'set_mode', True),
+        ('fan_level', 'set_fan_speed', True),
+        ('nightlight_status', 'set_nightlight', True),
+        ('auto_preference_type', 'set_auto_preference', True),
+    ),
+    'netatmo': (
+        ('setpoint', 'set_temp', True),
+        ('mode', 'therm_mode', True),
+        ('zone_name', 'switch_schedule', True),
+    ),
+}
+
+
 class _ChangeDetectionMixin:
     """Compares state snapshots and announces external changes."""
 
@@ -133,6 +172,36 @@ class _ChangeDetectionMixin:
                     name=device.name)
                 log.info(f"Water sensor dry again: {device.name}")
             wx.CallAfter(ui.message, msg)
+
+    def _log_external_state_changes(self, platform, device, prev, new):
+        """Writes what changed outside the add-on into the history.
+
+        Until now only Meross did this, because its changes arrive as a push
+        message and that path logged them. The other three platforms notice
+        their changes by comparing snapshots while polling - they announced
+        them and then dropped them. The history could answer "was that me or
+        someone else?" for one platform out of four.
+
+        Runs from the polling thread, so it is fully guarded: a history that
+        cannot be written must not cost the announcement.
+        """
+        try:
+            from .history import get_history
+            history = get_history()
+            for field, keys, with_value in _EXTERNAL_ACTIONS.get(platform, ()):
+                before, after = prev.get(field), new.get(field)
+                if after is None or before == after:
+                    continue
+                if with_value:
+                    action, detail = keys, str(after)
+                else:
+                    # A pair: the first key for switched on, the second for off.
+                    action, detail = keys[0] if after else keys[1], ""
+                history.log_external_action(
+                    getattr(device, 'unique_id', None) or device.uuid,
+                    device.name, platform, action, detail)
+        except Exception as e:
+            log.debug(f"History entry (external, {platform}) failed: {e}")
 
     def _log_external_change(self, device_uuid, device_name, new_state):
         """Writes an externally triggered switch to the history.
@@ -415,6 +484,8 @@ class _ChangeDetectionMixin:
                     wx.CallAfter(_beep, BEEP_EXTERNAL_CHANGE)
                     wx.CallAfter(ui.message, f"{dev.name}: {change_text}")
                     log.info(f"Netatmo external change: {dev.name} - {change_text}")
+                    self._log_external_state_changes(
+                        'netatmo', dev, old_state, new_state)
                     # Also refresh the boiler cooldown on combined changes
                     if boiler_changed:
                         self._last_boiler_announce_time[uid] = time.time()
@@ -818,6 +889,8 @@ class _ChangeDetectionMixin:
             wx.CallAfter(_beep, beep_const)
             wx.CallAfter(ui.message, f"{display_name}: {change_text}")
             log.info(f"VeSync external change: {dev.name} - {change_text}")
+            self._log_external_state_changes('vesync', dev, old_state,
+                                             new_state)
 
             # LIVE UPDATE: nudge the open dialog so the tree nodes show the new
             # status immediately (analogous to Meross/Netatmo).
@@ -938,4 +1011,5 @@ class _ChangeDetectionMixin:
             wx.CallAfter(_beep, BEEP_EXTERNAL_CHANGE)
             wx.CallAfter(ui.message, f"{dev.name}: {change_text}")
             log.info(f"Cozytouch external change: {dev.name} - {change_text}")
+            self._log_external_state_changes('cozytouch', dev, prev, new_state)
 

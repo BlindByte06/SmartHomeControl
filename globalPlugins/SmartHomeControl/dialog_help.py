@@ -386,6 +386,15 @@ class _ContextHelpMixin:
                              "production during longer absences. Enter opens "
                              "the period input (start and end); when away "
                              "mode is active or scheduled, Enter turns it off."))
+            elif action == 'cozytouch_schedule':
+                # Translators: F1 help for the action line
+                # "cozytouch_schedule" in the device tree.
+                ui.message(_("Heating times: the windows in which the "
+                             "appliance heats hot water. Enter opens the "
+                             "input for one window - day, start and end. "
+                             "Leaving both times empty deletes the window. "
+                             "The add-on reads the program back afterwards "
+                             "and says what the appliance really took."))
             else:
                 # Translators: F1 help for any other line in the device tree:
                 # the fallback when none of the more specific texts fits.

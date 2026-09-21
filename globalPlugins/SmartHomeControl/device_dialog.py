@@ -42,7 +42,8 @@ from .meross_devices import get_subdevice_battery
 log = _nvda_log
 
 from .dialog_helpers import _beep
-from .platform_utils import split_by_platform, platform_of
+from .platform_utils import split_by_platform, platform_of, PLATFORM_LABELS
+from . import platform_health
 from .dialog_netatmo import _NetatmoDialogMixin
 from .dialog_vesync import _VeSyncDialogMixin
 from .dialog_meross import _MerossDialogMixin
@@ -50,6 +51,7 @@ from .dialog_cozytouch import _CozytouchDialogMixin
 from .dialog_help import _ContextHelpMixin
 from .dialog_favorites import _FavoritesTreeMixin
 from .dialog_history import HistoryDialog  # noqa: F401 (re-export, used below)
+from .dialog_platform_status import PlatformStatusDialog
 
 class SmartHomeControlDialog(_NetatmoDialogMixin, _VeSyncDialogMixin, _MerossDialogMixin,
                          _CozytouchDialogMixin, _ContextHelpMixin, _FavoritesTreeMixin,
@@ -304,6 +306,18 @@ class SmartHomeControlDialog(_NetatmoDialogMixin, _VeSyncDialogMixin, _MerossDia
         history_btn.SetToolTip(_("Shows the history of all switch actions and "
                                  "sensor readings"))
         button_sizer.Add(history_btn, 0, wx.ALL, 5)
+
+        # Translators: Button opens the list of platform faults and the
+        # devices that did not answer.
+        status_btn = wx.Button(panel, label=_("&Platform status (Ctrl+P)"))
+        # Translators: Accessible name of the platform status button.
+        status_btn.SetName(_("Open the platform status"))
+        status_btn.Bind(wx.EVT_BUTTON,
+                        lambda e: self._show_platform_status_dialog())
+        # Translators: Tooltip of the platform status button.
+        status_btn.SetToolTip(_("Shows which platforms had a fault and which "
+                                "devices did not answer"))
+        button_sizer.Add(status_btn, 0, wx.ALL, 5)
 
         # Translators: Button opens the settings dialog (Smart Home).
         settings_btn = wx.Button(panel, label=_("S&ettings (Alt+E)"))
@@ -1453,6 +1467,11 @@ class SmartHomeControlDialog(_NetatmoDialogMixin, _VeSyncDialogMixin, _MerossDia
             ui.message(page_name)
             return
         
+        # Ctrl+P: platform status (also outside the tree)
+        if event.ControlDown() and keycode == ord('P'):
+            self._show_platform_status_dialog()
+            return
+
         # Ctrl+T: announce the status (also outside the tree)
         if event.ControlDown() and keycode == ord('T'):
             self._announce_status_bar()
@@ -1485,6 +1504,11 @@ class SmartHomeControlDialog(_NetatmoDialogMixin, _VeSyncDialogMixin, _MerossDia
             self._show_history_dialog()
             return
         
+        # Ctrl+P: platform status
+        if event.ControlDown() and keycode == ord('P'):
+            self._show_platform_status_dialog()
+            return
+
         # Ctrl+B: add/remove the current device to/from the favorites
         if event.ControlDown() and keycode == ord('B'):
             self._toggle_favorite_for_selected()
@@ -1661,6 +1685,25 @@ class SmartHomeControlDialog(_NetatmoDialogMixin, _VeSyncDialogMixin, _MerossDia
             return False
         return True
 
+    def _platform_node_label(self, platform, base):
+        """Appends the state of a platform to its node in the device tree.
+
+        An announcement is gone the moment it has been spoken. This line is
+        where it can be looked up: it is passed on the way to every device of
+        that platform, and says what is wrong and since when - nothing more,
+        because it is read out every single time.
+        """
+        health = getattr(self.plugin, 'platform_health', None)
+        if health is None:
+            return base
+        entry = health.get(platform)
+        extra = [text for text in (platform_health.status_suffix(entry),
+                                   platform_health.values_age_suffix(entry))
+                 if text]
+        if not extra:
+            return base
+        return base + " - " + " - ".join(extra)
+
     def _tree_signature(self, devices):
         """What the STRUCTURE of the tree is made of - not the values in it.
 
@@ -1670,6 +1713,13 @@ class SmartHomeControlDialog(_NetatmoDialogMixin, _VeSyncDialogMixin, _MerossDia
         are deliberately absent: they are written into the existing entries.
         """
         parts = [str(self.filter_mode), str(self.sort_mode)]
+        # The state of a platform stands in its node, so a platform falling
+        # over changes the labels and has to rebuild. It changes on a
+        # transition only, not on every poll.
+        health = getattr(self.plugin, 'platform_health', None)
+        if health is not None:
+            for name in ('meross', 'netatmo', 'vesync', 'cozytouch'):
+                parts.append(self._platform_node_label(name, ''))
         for d in devices or []:
             parts.append('|'.join((
                 platform_of(d),
@@ -1879,6 +1929,17 @@ class SmartHomeControlDialog(_NetatmoDialogMixin, _VeSyncDialogMixin, _MerossDia
         status_text = _("{online} online, {offline} offline | Updated: {time}").format(
             online=online, offline=offline, time=time_text,
         )
+
+        # Which platform the numbers really come from. Without it a line
+        # saying "12 online, updated 11:47" reads exactly the same whether
+        # every cloud answered or one of them has been silent since eleven.
+        summary = platform_health.summary_text(
+            getattr(self.plugin, 'platform_health', None),
+            [name for name in ('meross', 'netatmo', 'vesync', 'cozytouch')
+             if getattr(self.plugin, f"use_{name}", False)],
+            PLATFORM_LABELS)
+        if summary:
+            status_text = f"{status_text} | {summary}"
 
         self._set_status_text(status_text)
 
@@ -2245,8 +2306,9 @@ class SmartHomeControlDialog(_NetatmoDialogMixin, _VeSyncDialogMixin, _MerossDia
             if meross_devices:
                 # Translators: Platform main node. Brand name, do not
                 # translate.
-                meross_root = self.tree.AppendItem(root, _("Meross devices "
-                                                           "({count})").format(count=len(meross_devices)))
+                meross_root = self.tree.AppendItem(root, self._platform_node_label(
+                    'meross', _("Meross devices "
+                                "({count})").format(count=len(meross_devices))))
                 self.tree.SetItemData(meross_root, None)
                 
                 # Group Meross devices by type
@@ -2298,8 +2360,9 @@ class SmartHomeControlDialog(_NetatmoDialogMixin, _VeSyncDialogMixin, _MerossDia
             if netatmo_devices:
                 # Translators: Platform main node. Brand name, do not
                 # translate.
-                netatmo_root = self.tree.AppendItem(root, _("Netatmo devices "
-                                                            "({count})").format(count=len(netatmo_devices)))
+                netatmo_root = self.tree.AppendItem(root, self._platform_node_label(
+                    'netatmo', _("Netatmo devices "
+                                 "({count})").format(count=len(netatmo_devices))))
                 self.tree.SetItemData(netatmo_root, None)
                 
                 # Group Netatmo devices by type
@@ -2366,8 +2429,9 @@ class SmartHomeControlDialog(_NetatmoDialogMixin, _VeSyncDialogMixin, _MerossDia
             if vesync_devices:
                 # Translators: Platform main node. Brand name, do not
                 # translate.
-                vesync_root = self.tree.AppendItem(root, _("VeSync devices "
-                                                           "({count})").format(count=len(vesync_devices)))
+                vesync_root = self.tree.AppendItem(root, self._platform_node_label(
+                    'vesync', _("VeSync devices "
+                                "({count})").format(count=len(vesync_devices))))
                 self.tree.SetItemData(vesync_root, None)
 
                 # Group VeSync devices by type (air purifiers / fans)
@@ -2403,10 +2467,11 @@ class SmartHomeControlDialog(_NetatmoDialogMixin, _VeSyncDialogMixin, _MerossDia
                 # Translators: Platform main node. Brand name, do not
                 # translate; the parenthesis marks the platform as
                 # experimental.
-                cozytouch_root = self.tree.AppendItem(root, _("Cozytouch "
-                                                              "devices, "
-                                                              "experimental "
-                                                              "({count})").format(count=len(cozytouch_devices)))
+                cozytouch_root = self.tree.AppendItem(root, self._platform_node_label(
+                    'cozytouch', _("Cozytouch "
+                                   "devices, "
+                                   "experimental "
+                                   "({count})").format(count=len(cozytouch_devices))))
                 self.tree.SetItemData(cozytouch_root, None)
                 self._sort_device_list(cozytouch_devices)
                 # Translators: Category name in the device tree.
@@ -2458,6 +2523,16 @@ class SmartHomeControlDialog(_NetatmoDialogMixin, _VeSyncDialogMixin, _MerossDia
     def _show_history_dialog(self):
         """Shows the history dialog (accessible for screen readers)"""
         dlg = HistoryDialog(self, self.plugin)
+        dlg.ShowModal()
+        dlg.Destroy()
+
+    def _show_platform_status_dialog(self):
+        """Shows what had a fault and which devices did not answer.
+
+        The announcement of a fault is gone once it has been spoken; this is
+        where it can be looked up afterwards.
+        """
+        dlg = PlatformStatusDialog(self, self.plugin)
         dlg.ShowModal()
         dlg.Destroy()
     
@@ -2955,6 +3030,7 @@ class SmartHomeControlDialog(_NetatmoDialogMixin, _VeSyncDialogMixin, _MerossDia
         'cozytouch_boost_time': '_handle_cozytouch_boost_time',
         'cozytouch_toggle': '_handle_cozytouch_toggle',
         'cozytouch_away': '_handle_cozytouch_away',
+        'cozytouch_schedule': '_handle_cozytouch_schedule',
         'netatmo_thermostat': '_handle_netatmo_thermostat',
         'netatmo_therm_mode': '_handle_netatmo_therm_mode',
         'netatmo_switch_schedule': '_handle_netatmo_switch_schedule',

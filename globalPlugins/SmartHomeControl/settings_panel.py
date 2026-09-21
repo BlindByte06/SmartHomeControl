@@ -840,9 +840,10 @@ class SmartHomeSettingsDialog(wx.Dialog):
 
         # Translators: Explanatory text at the top of the notifications tab.
         self._add_help_text(panel, sizer, _(
-            "Sets which external changes NVDA announces. The choice applies "
-            "to all devices of that platform.\nNote: only sections for "
-            "platforms enabled in the \"General\" tab are shown as active."
+            "Sets which external changes NVDA announces, and which faults. "
+            "The choice applies to all devices of that platform.\nNote: only "
+            "sections for platforms enabled in the \"General\" tab are shown "
+            "as active."
         ))
 
         # The master switch over everything below, and it sits here rather
@@ -900,6 +901,41 @@ class SmartHomeSettingsDialog(wx.Dialog):
                     box_sizer.Add(cb, flag=wx.ALL, border=4)
                     self._notify_checkboxes[attr_name] = cb
             sizer.Add(box_sizer, flag=wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, border=10)
+
+        # Faults, above the platforms: they are not tied to one of them,
+        # and they are not external changes - the master switch above does not
+        # gate them. Whatever is switched off here is still recorded and can
+        # be read in the platform status (Ctrl+P in the device menu); off
+        # means "do not interrupt me", not "do not keep track".
+        add_section(
+            # Translators: Box in the notifications tab for faults of a
+            # platform (unreachable, answering only in part, back again).
+            _("Faults"),
+            "",
+            [
+                ('notify_faults',
+                 # Translators: Notification option: announce faults at all.
+                 _("Announce faults of a platform at all"),
+                 True),
+                ('notify_fault_unreachable',
+                 # Translators: Notification option: a platform does not
+                 # answer at all.
+                 _("Announce when a platform is no longer reachable"),
+                 True),
+                ('notify_fault_partial',
+                 # Translators: Notification option: only a part of a platform
+                 # answers, e.g. the Netatmo weather station but not the
+                 # heating.
+                 _("Announce when only a part of a platform answers (e.g. the "
+                   "Netatmo weather station)"),
+                 True),
+                ('notify_fault_recovered',
+                 # Translators: Notification option: a platform answers again.
+                 _("Announce when a platform is reachable again"),
+                 True),
+            ],
+            True,
+        )
 
         # Meross
         add_section(

@@ -30,8 +30,10 @@ def _dicts_from(path):
     mod = types.ModuleType('m')
     mod.__dict__['_'] = lambda s: s
     tree = ast.parse(io.open(path, encoding='utf-8').read())
+    # Dicts and tuples: the name tables are dicts, the weekday names a tuple.
     keep = [n for n in tree.body
-            if isinstance(n, ast.Assign) and isinstance(n.value, ast.Dict)]
+            if isinstance(n, ast.Assign)
+            and isinstance(n.value, (ast.Dict, ast.Tuple))]
     exec(compile(ast.Module(keep, []), path, 'exec'), mod.__dict__)
     return mod
 
@@ -335,6 +337,223 @@ def test_measurements():
           "('get_temperature', 'temperature')" in sched)
 
 
+# ------------------------------------------- Aenderungen von aussen ---------
+def test_external_changes():
+    """Was ausserhalb des Add-ons passiert, muss auch in die Chronik.
+
+    Lange tat das nur Meross - dessen Aenderungen kommen als Push-Nachricht,
+    und dieser Weg schrieb mit. Die drei anderen Plattformen erkennen ihre
+    Aenderungen beim Abfragen, sagten sie an und liessen sie dann fallen. In
+    einer echten Chronik standen 206 externe Meross-Eintraege und null von
+    VeSync, Netatmo und Cozytouch.
+    """
+    print('== Aenderungen von aussen landen in der Chronik ==')
+    import ast
+    import textwrap
+
+    src = io.open(os.path.join(BASE, 'change_detection.py'),
+                  encoding='utf-8').read()
+    tree = ast.parse(src)
+
+    # Die Tabelle und die Methode aus der echten Quelle holen.
+    table_src = None
+    method_src = None
+    for node in ast.walk(tree):
+        if (isinstance(node, ast.Assign) and node.targets
+                and isinstance(node.targets[0], ast.Name)
+                and node.targets[0].id == '_EXTERNAL_ACTIONS'):
+            table_src = ast.get_source_segment(src, node)
+        if (isinstance(node, ast.FunctionDef)
+                and node.name == '_log_external_state_changes'):
+            method_src = textwrap.dedent(ast.get_source_segment(src, node))
+    check('die Tabelle ist da', table_src is not None)
+    check('die Methode ist da', method_src is not None)
+    if not (table_src and method_src):
+        return
+
+    written = []
+
+    class History:
+        def log_external_action(self, uuid, name, platform, action, detail=""):
+            written.append((platform, action, detail))
+
+    class Device:
+        uuid = 'ct-1'
+        unique_id = 'ct-1'
+        name = 'Revolution'
+
+    class Log:
+        def _noop(self, *a, **k):
+            pass
+        debug = info = warning = error = _noop
+
+    # Die Methode holt sich die Chronik ueber "from .history import ..." -
+    # dafuer muss die Paketkette in sys.modules stehen.
+    import types
+    package = sys.modules.setdefault(
+        'globalPlugins', types.ModuleType('globalPlugins'))
+    package.__path__ = []
+    addon = sys.modules.setdefault(
+        'globalPlugins.SmartHomeControl',
+        types.ModuleType('globalPlugins.SmartHomeControl'))
+    addon.__path__ = []
+    stub = types.ModuleType('globalPlugins.SmartHomeControl.history')
+    stub.get_history = lambda: History()
+    sys.modules['globalPlugins.SmartHomeControl.history'] = stub
+
+    env = {'log': Log(),
+           '__name__': 'globalPlugins.SmartHomeControl.change_detection',
+           '__package__': 'globalPlugins.SmartHomeControl'}
+    exec(compile(ast.parse(table_src), 'table', 'exec'), env)
+    exec(compile(ast.parse(method_src), 'method', 'exec'), env)
+
+    class Mixin:
+        pass
+
+    Mixin._log_external_state_changes = env['_log_external_state_changes']
+    mixin = Mixin()
+
+    def run(platform, prev, new):
+        written.clear()
+        Mixin._log_external_state_changes(mixin, platform, Device(), prev, new)
+        return list(written)
+
+    got = run('cozytouch',
+              {'boost': False, 'is_on': True, 'away': False,
+               'target_temp': 55, 'mode': 'auto'},
+              {'boost': True, 'is_on': True, 'away': False,
+               'target_temp': 55, 'mode': 'auto'})
+    check('Boost ein wird geschrieben',
+          got == [('cozytouch', 'boost_on', '')], str(got))
+
+    got = run('cozytouch',
+              {'boost': True, 'is_on': True, 'away': False,
+               'target_temp': 55, 'mode': 'auto'},
+              {'boost': False, 'is_on': True, 'away': False,
+               'target_temp': 58, 'mode': 'auto'})
+    check('Boost aus und neue Solltemperatur, beides',
+          sorted(a for _p, a, _d in got) == ['boost_off', 'set_target_temp'],
+          str(got))
+    check('die Temperatur steht als Zahl dabei, nicht als Satz',
+          ('cozytouch', 'set_target_temp', '58') in got, str(got))
+
+    got = run('cozytouch',
+              {'boost': False, 'is_on': True, 'away': False,
+               'target_temp': 55, 'mode': 'auto'},
+              {'boost': False, 'is_on': True, 'away': False,
+               'target_temp': 55, 'mode': 'auto'})
+    check('ohne Aenderung wird nichts geschrieben', got == [], str(got))
+
+    got = run('cozytouch',
+              {'boost': False, 'target_temp': 55},
+              {'boost': None, 'target_temp': None})
+    check('ein fehlender Wert schreibt nichts', got == [], str(got))
+
+    got = run('vesync',
+              {'is_on': True, 'mute_on': False, 'fan_level': 1},
+              {'is_on': False, 'mute_on': True, 'fan_level': 3})
+    actions = sorted(a for _p, a, _d in got)
+    check('VeSync: Aus, stumm und Stufe',
+          actions == ['mute_on', 'set_fan_speed', 'toggle_off'], str(actions))
+
+    got = run('netatmo',
+              {'setpoint': 20.0, 'mode': 'schedule', 'zone_name': 'Tag'},
+              {'setpoint': 21.5, 'mode': 'manual', 'zone_name': 'Tag'})
+    actions = sorted(a for _p, a, _d in got)
+    check('Netatmo: Solltemperatur und Modus',
+          actions == ['set_temp', 'therm_mode'], str(actions))
+
+    # Und die Verdrahtung: alle drei Schleifen rufen es auch wirklich auf.
+    for platform in ('netatmo', 'vesync', 'cozytouch'):
+        check(f'die {platform}-Schleife ruft es auf',
+              f"_log_external_state_changes('{platform}'" in src
+              or f"_log_external_state_changes(\n                        '{platform}'" in src
+              or f"'{platform}', dev," in src)
+
+    # Jede Aktion der Tabelle muss die Anzeige auch benennen koennen.
+    hist = io.open(os.path.join(BASE, 'history.py'), encoding='utf-8').read()
+    unknown = []
+    for entries in env['_EXTERNAL_ACTIONS'].values():
+        for _field, keys, with_value in entries:
+            for key in ((keys,) if with_value else keys):
+                if f"'{key}':" not in hist:
+                    unknown.append(key)
+    check('jede Aktion hat eine Beschriftung in der Anzeige',
+          not unknown, ', '.join(sorted(set(unknown))))
+
+
+# --------------------------------------- Zeitprogramm in der Chronik --------
+def test_schedule_detail():
+    """Ein gespeichertes Zeitprogramm muss lesbar herauskommen.
+
+    Gespeichert wird neutral - Tagesnummern und Minuten -, damit ein Eintrag
+    nicht in der Sprache erstarrt, in der er entstanden ist. Angezeigt werden
+    muss er dann aber auch: roh sah er aus wie
+    "[0, 5] [[440,1070],[0,0],[0,0]]".
+    """
+    print('== Das Zeitprogramm in der Chronik ==')
+    import ast
+    import textwrap
+    import types
+
+    src = io.open(os.path.join(BASE, 'history.py'), encoding='utf-8').read()
+    fn = None
+    for node in ast.walk(ast.parse(src)):
+        if (isinstance(node, ast.FunctionDef)
+                and node.name == '_schedule_detail_text'):
+            fn = textwrap.dedent(ast.get_source_segment(src, node))
+    check('der Formatierer ist da', fn is not None)
+    if fn is None:
+        return
+
+    package = sys.modules.setdefault(
+        'globalPlugins', types.ModuleType('globalPlugins'))
+    package.__path__ = []
+    addon = sys.modules.setdefault(
+        'globalPlugins.SmartHomeControl',
+        types.ModuleType('globalPlugins.SmartHomeControl'))
+    addon.__path__ = []
+    constants = types.ModuleType('globalPlugins.SmartHomeControl.constants')
+    constants.WEEKDAY_NAMES = ('Monday', 'Tuesday', 'Wednesday', 'Thursday',
+                               'Friday', 'Saturday', 'Sunday')
+    sys.modules['globalPlugins.SmartHomeControl.constants'] = constants
+
+    env = {'_': lambda text: text,
+           '__name__': 'globalPlugins.SmartHomeControl.history',
+           '__package__': 'globalPlugins.SmartHomeControl'}
+    exec(compile(ast.parse(fn), 'schedule', 'exec'), env)
+    render = env['_schedule_detail_text']
+
+    check('ein Tag und ein Fenster',
+          render('0,5 [[440,1070],[0,0],[0,0]]')
+          == 'Monday, Saturday: 07:20-17:50',
+          repr(render('0,5 [[440,1070],[0,0],[0,0]]')))
+    check('zwei Fenster an einem Tag',
+          render('1 [[360,600],[900,1200],[0,0]]')
+          == 'Tuesday: 06:00-10:00, 15:00-20:00',
+          repr(render('1 [[360,600],[900,1200],[0,0]]')))
+    check('ein geleerter Tag sagt das auch',
+          render('2 [[0,0],[0,0],[0,0]]') == 'Wednesday: no heating times',
+          repr(render('2 [[0,0],[0,0],[0,0]]')))
+    # Die ersten Eintraege trugen die Tage als Python-Liste, mit Leerzeichen
+    # darin - an der ersten Luecke zu trennen zerriss sie.
+    check('auch die erste Schreibweise wird noch gelesen',
+          render('[0, 5] [[440,1070],[0,0],[0,0]]')
+          == 'Monday, Saturday: 07:20-17:50',
+          repr(render('[0, 5] [[440,1070],[0,0],[0,0]]')))
+    check('fertiger Text von frueher bleibt unangetastet',
+          render('Boost ein') is None)
+    check('Unsinn bringt nichts durcheinander',
+          render('') is None and render('7 kaputt') is None)
+
+    # Und die Verdrahtung: der Zweig muss auch aufgerufen werden.
+    check('die Anzeige benutzt ihn', "if action == 'set_schedule':" in src)
+    dialog = io.open(os.path.join(BASE, 'dialog_cozytouch.py'),
+                     encoding='utf-8').read()
+    check('gespeichert wird weiterhin neutral',
+          "','.join(str(d) for d in result['done'])" in dialog)
+
+
 def main():
     env = load_history_funcs()
     fmt = env['_format_action_text']
@@ -394,6 +613,8 @@ def main():
     check('kein _()-Detail mehr in log_action', not bad, str(bad[:3]))
 
     test_measurements()
+    test_external_changes()
+    test_schedule_detail()
 
     print()
     if FAILED:

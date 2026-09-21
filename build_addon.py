@@ -176,11 +176,18 @@ def cmd_relnotes(version=None, out_path=None):
         lines = f.read().splitlines()
 
     # Section = from "## <version>" up to the next "## " heading.
-    start = None
-    for i, line in enumerate(lines):
-        if re.match(r'^##\s+' + re.escape(version) + r'(\s|$)', line):
-            start = i
-            break
+    matches = [i for i, line in enumerate(lines)
+               if re.match(r'^##\s+' + re.escape(version) + r'(\s|$)', line)]
+    # Two headings for one version is not a formality: the release notes are
+    # cut from the FIRST one, so a leftover section quietly publishes half the
+    # changelog. That happened to 26.9.2, where a withdrawn commit left its
+    # heading behind and the release page showed the smaller of the two.
+    if len(matches) > 1:
+        raise SystemExit(
+            f"[relnotes] '## {version}' appears {len(matches)} times in "
+            f"CHANGELOG.md (lines {', '.join(str(i + 1) for i in matches)}) - "
+            f"the release notes would only carry the first one")
+    start = matches[0] if matches else None
     if start is None:
         raise SystemExit(
             f"[relnotes] No section '## {version}' in CHANGELOG.md - "
