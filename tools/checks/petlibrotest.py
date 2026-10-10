@@ -47,6 +47,15 @@ def load():
         'warning': staticmethod(lambda *a, **k: None),
         'error': staticmethod(lambda *a, **k: None)})()
     sys.modules['addonHandler'].initTranslation = lambda: None
+    # petlibro_api imports requests. NVDA brings its own, the build machine
+    # does not - the first build with this check failed on exactly that. The
+    # add-on's copy in lib/ is the one that runs on an NVDA without one, and
+    # it is appended to the path, as the add-on does.
+    try:
+        import requests  # noqa: F401
+    except ImportError:
+        sys.path.append(os.path.join(os.path.dirname(os.path.dirname(
+            os.path.dirname(os.path.abspath(__file__)))), 'lib'))
     pkg = types.ModuleType('shcprobe')
     pkg.__path__ = [BASE]
     sys.modules['shcprobe'] = pkg
