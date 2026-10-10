@@ -13,7 +13,7 @@ Generated with `python build_addon.py licenses --write` from the `*.dist-info/ME
 | `frozenlist` | 1.8.0 | Apache-2.0 |
 | `idna` | 3.20 | BSD-3-Clause |
 | `meross_iot` | 0.4.10.4 | MIT |
-| `multidict` | 6.9.0 | Apache License 2.0 |
+| `multidict` | 6.9.1 | Apache License 2.0 |
 | `paho-mqtt` | 2.1.0 | EPL-2.0 OR BSD-3-Clause |
 | `propcache` | 0.5.4 | Apache-2.0 |
 | `pycparser` | 3.0 | BSD-3-Clause |

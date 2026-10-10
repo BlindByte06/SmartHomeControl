@@ -33,6 +33,7 @@ The GitHub release notes are built from the section of the released version.
 - Settings of an early version, including the Netatmo password, are removed from nvda.ini.
 - Email addresses are now stored encrypted, like passwords and tokens.
 - Removing the add-on deletes its stored credentials. Updates keep them.
+- The bundled multidict is updated to 6.9.1 (GHSA-54p9-h82j-f925).
 
 ### Changes
 
