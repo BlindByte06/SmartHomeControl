@@ -38,6 +38,7 @@ import threading
 from datetime import datetime
 
 from .platform_utils import platform_of
+from .formatting import fmt_decimal
 
 # Use the NVDA logger (see favorites.py) so this module's messages show up
 # in the NVDA log. Fallback for use outside NVDA.
@@ -90,8 +91,9 @@ MAX_HISTORY_ENTRIES = MAX_EVENT_ENTRIES
 
 # Debounced saving: every entry used to rewrite the WHOLE file at once.
 # Entries are now collected and only saved once enough time has passed OR
-# enough of them have piled up. flush_pending() (called from the plugin's
-# terminate) writes the rest.
+# enough of them have piled up. save_due_pending() (called by the scheduler
+# on every pass) writes what has waited long enough, flush_pending() (called
+# from the plugin's terminate) the rest.
 SAVE_DEBOUNCE_SECONDS = 30
 SAVE_DEBOUNCE_MAX_ENTRIES = 20
 
@@ -182,9 +184,10 @@ def format_measurement(quantity, value):
         return ''
     digits = _MEASUREMENT_DIGITS.get(quantity, 1)
     try:
-        text = f"{float(value):.{digits}f}".replace('.', ',')
+        float(value)
     except (TypeError, ValueError):
         return str(value)
+    text = fmt_decimal(value, digits)
     unit = MEASUREMENT_UNITS.get(quantity, '')
     return f"{text} {unit}".strip()
 
@@ -317,7 +320,10 @@ def _atomic_write_json(path, data):
     """
     tmp_path = path + ".tmp"
     with open(tmp_path, 'w', encoding='utf-8') as f:
-        json.dump(data, f, ensure_ascii=False, indent=None)
+        # dumps + write, not dump: json.dump goes through the pure-Python
+        # encoder chunk by chunk - 30 ms against 10 ms for a readings file of
+        # 1 MB (measured), and it runs on the polling thread.
+        f.write(json.dumps(data, ensure_ascii=False))
     os.replace(tmp_path, path)
 
 
@@ -380,6 +386,20 @@ class _EntryStore:
         except Exception as e:
             log.error(f"{self.label} could not be saved: {e}")
 
+    def save_if_due(self, now=None):
+        """Saves when unsaved entries have waited the debounce time.
+
+        append() only looks at the clock when the NEXT entry comes. An entry
+        right after a save therefore stayed in memory until another one
+        arrived half a minute later, or until NVDA shut down cleanly:
+        measured on 2026-10-02, "feeding plan on" at 19:52:44 was not on disk
+        a quarter of an hour later, while "off" from 19:52:35 was. A crash
+        would have lost it.
+        """
+        now = time.time() if now is None else now
+        if self._dirty and (now - self._last_save_time) >= SAVE_DEBOUNCE_SECONDS:
+            self.save()
+
     def append(self, entry):
         self.entries.append(entry)
         self._dirty = True
@@ -407,7 +427,7 @@ class DeviceHistory:
             "timestamp": 1709287200.0,
             "device_uuid": "abc123",
             "device_name": "Steckdose Wohnzimmer",
-            "platform": "meross" | "netatmo" | "vesync" | "cozytouch",
+            "platform": "meross" | "netatmo" | "vesync" | "cozytouch" | "petlibro",
             "event_type": "action",
             "action": "toggle_on" | "set_temp" | ...,
             "details": "Ein" | "22.5°C" | ...,
@@ -607,6 +627,12 @@ class DeviceHistory:
         with self._lock:
             self._events.save()
             self._measurements.save()
+
+    def save_due(self):
+        """Writes what the debounce has held back long enough."""
+        with self._lock:
+            self._events.save_if_due()
+            self._measurements.save_if_due()
 
     @staticmethod
     def _detect_platform(device):
@@ -1184,6 +1210,10 @@ def _format_action_text(action, details=""):
         # Netatmo-specific actions (keys as logged in dialog_netatmo.py)
         'therm_mode': _("Mode changed"),
         'switch_schedule': _("Heating schedule switched"),
+        # Translators: History entry: a Netatmo thermostat moved to another
+        # zone of its heating schedule (comfort, night ...) - the schedule
+        # itself is unchanged.
+        'schedule_zone': _("Schedule zone changed"),
         # Meross light actions (keys as logged in
         # dialog_meross.py/device_dialog.py)
         'light_luminance': _("Brightness changed"),
@@ -1193,6 +1223,9 @@ def _format_action_text(action, details=""):
         'set_target_temp': _("Target temperature set"),
         'boost_on': _("Boost switched on"),
         'boost_off': _("Boost switched off"),
+        # Translators: History entry: the boost of the hot water heat pump
+        # ran out after its set duration.
+        'boost_ended': _("Boost ended"),
         # Translators: History entry: the duration of the boost was set.
         'set_boost_duration': _("Boost duration set"),
         # Translators: History entry: the heating time program was changed.
@@ -1224,6 +1257,62 @@ def _format_action_text(action, details=""):
         # Water sensors (MS400/MS405)
         'water_detected': _("Water alarm"),
         'water_cleared': _("No water detected any more"),
+        # Petlibro feeders and fountains (keys as logged in
+        # dialog_petlibro.py and change_detection.py)
+        # Translators: History entry: food was given by hand (from here, the
+        # app or the button on the feeder).
+        'feed_manual': _("Fed by hand"),
+        # Translators: History entry: the feeder gave a planned meal.
+        'feed_planned': _("Meal given"),
+        # Translators: History entry: the feeder reported a failed feeding.
+        'feed_failed': _("Feeding failed"),
+        # Translators: History entry: a Petlibro device reported a fault
+        # (e.g. the fountain's water tank empty or off its base).
+        'device_fault': _("Fault reported"),
+        # Translators: History entry: the feeding plan was switched on.
+        'feeding_plan_on': _("Feeding plan switched on"),
+        # Translators: History entry: the feeding plan was switched off.
+        'feeding_plan_off': _("Feeding plan switched off"),
+        # Translators: History entry: one meal was skipped for today.
+        'meal_skip_today': _("Meal skipped today"),
+        # Translators: History entry: a meal skipped for today was given back.
+        'meal_unskip_today': _("Meal given back for today"),
+        # Translators: History entry: every meal of today was skipped.
+        'meals_today_skipped': _("All meals of today skipped"),
+        # Translators: History entry: today's meals were given back.
+        'meals_today_given': _("All meals of today given back"),
+        # Translators: History entry: a meal of the plan was switched on.
+        'meal_enable': _("Meal switched on"),
+        # Translators: History entry: a meal of the plan was switched off.
+        'meal_disable': _("Meal switched off"),
+        # Translators: History entry: a meal was added to the plan.
+        'meal_add': _("Meal added"),
+        # Translators: History entry: a meal of the plan was changed.
+        'meal_change': _("Meal changed"),
+        # Translators: History entry: a meal was deleted from the plan.
+        'meal_delete': _("Meal deleted"),
+        # Translators: History entry: the desiccant reminder was reset.
+        'desiccant_reset': _("Desiccant reminder reset"),
+        # Translators: History entry: the cleaning reminder of a fountain was
+        # reset.
+        'cleaning_reset': _("Cleaning reminder reset"),
+        # Translators: History entry: the water mode of a fountain changed.
+        'set_water_mode': _("Water mode changed"),
+        # Translators: History entry: the low water warning was changed.
+        'set_low_water': _("Water warning changed"),
+        # Translators: History entry: the flow duration of a fountain's
+        # pet-sensing mode was changed.
+        'set_flow_duration': _("Flow duration changed"),
+        # Translators: History entry: the light was switched on.
+        'light_on': _("Light switched on"),
+        # Translators: History entry: the light was switched off.
+        'light_off': _("Light switched off"),
+        # Translators: History entry: the food container of a feeder is
+        # almost empty.
+        'food_low': _("Food low"),
+        # Translators: History entry: the water of a fountain is below the
+        # warning threshold.
+        'water_low': _("Water low"),
     }
     text = action_map.get(action, action)
     if details and not _detail_is_redundant(action):
@@ -1291,6 +1380,33 @@ def _schedule_detail_text(value):
     return _("{days}: {schedule}").format(days=days, schedule=schedule)
 
 
+def _temperature_detail_text(value):
+    """Renders a stored setpoint: "21,5 °C" or "21,5 °C until 22:20".
+
+    Stored is the bare number, with the end time after a bar ("21.5|22:20").
+    Entries of earlier versions hold "21.5°C bis 22:20" - German whatever
+    the interface - which is read as well. Anything else returns None and is
+    shown as it stands.
+    """
+    import re as _re
+    number, _bar, until = value.partition("|")
+    if not _bar:
+        legacy = _re.match(r"^\s*(-?\d+(?:\.\d+)?)\s*°C\s+bis\s+(\d\d:\d\d)\s*$",
+                           value)
+        if legacy:
+            number, until = legacy.group(1), legacy.group(2)
+    try:
+        temp = float(number)
+    except ValueError:
+        return None
+    text = f"{fmt_decimal(temp, 1)} °C"
+    if until:
+        # Translators: A setpoint with its end time in the history. {temp} =
+        # e.g. "21,5 °C", {time} = HH:MM.
+        text = _("{temp} until {time}").format(temp=text, time=until)
+    return text
+
+
 def _detail_text(action, details):
     """Renders a detail in the CURRENT language where that is possible.
 
@@ -1307,6 +1423,13 @@ def _detail_text(action, details):
     )
     from .cozytouch_devices import COZYTOUCH_HEATING_MODE_NAMES
     value = str(details)
+    if action in ('set_temp', 'set_target_temp'):
+        rendered = _temperature_detail_text(value)
+        if rendered:
+            return rendered
+    if action == 'schedule_zone':
+        from .constants import NETATMO_ZONE_NAMES
+        return NETATMO_ZONE_NAMES.get(value, value)
     if action == 'set_fan_speed':
         # Bare number since the changeover; older entries hold the rendered
         # label ("Level 1" / "Stufe 1") - the digit in it is enough to show
@@ -1324,6 +1447,40 @@ def _detail_text(action, details):
         if digits:
             # Translators: Boost duration in the history. {minutes} = minutes.
             return _("{minutes} minutes").format(minutes=digits)
+    if action in ('feed_manual', 'feed_planned') and value.isdigit():
+        count = int(value)
+        if count == 1:
+            # Translators: Amount of food in the history, exactly one portion.
+            return _("{count} portion").format(count=count)
+        # Translators: Amount of food in the history. {count} = portions.
+        return _("{count} portions").format(count=count)
+    if action == 'set_flow_duration' and value.isdigit():
+        from .petlibro_devices import duration_text
+        return duration_text(int(value))
+    if action == 'set_low_water' and value.isdigit():
+        # Translators: The low water warning in the history. {ml} = value.
+        return _("below {ml} ml").format(ml=value)
+    if action in ('device_fault', 'feed_failed') and value:
+        # Stored as the device sent it: a record type or the cloud's
+        # English text. Named here, in the current language.
+        from .petlibro_devices import fault_text
+        return fault_text(value)
+    if action == 'set_water_mode':
+        from .constants import PETLIBRO_WATER_MODE_NAMES
+        if value in PETLIBRO_WATER_MODE_NAMES:
+            return PETLIBRO_WATER_MODE_NAMES[value]
+    if action.startswith('meal_') and value.count("|") == 2:
+        # Stored as "time|portions|name" - see PetlibroMealsDialog.
+        when, amount, label = value.split("|")
+        text = when
+        if amount.isdigit():
+            count = int(amount)
+            # Translators: A meal in the history. {time} = HH:MM, {count} =
+            # portions.
+            text = (_("{time}, {count} portion") if count == 1
+                    else _("{time}, {count} portions")).format(
+                time=when, count=count)
+        return f"{text} ({label})" if label else text
     if action in ('set_mode', 'therm_mode', 'set_nightlight',
                   'set_auto_preference', 'light_temperature'):
         for table in (VESYNC_PURIFIER_MODE_NAMES, VESYNC_FAN_MODE_NAMES,
@@ -1348,6 +1505,13 @@ def get_history():
     if _instance is None:
         _instance = DeviceHistory()
     return _instance
+
+
+def save_due_pending():
+    """Saves entries that have waited the debounce time, if there is a
+    history at all - like flush_pending(), it never creates one."""
+    if _instance is not None:
+        _instance.save_due()
 
 
 def flush_pending():

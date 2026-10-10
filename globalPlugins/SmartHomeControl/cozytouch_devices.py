@@ -29,6 +29,8 @@ if "_" not in globals():  # fallback outside of NVDA
     def _(s):
         return s
 
+from .formatting import fmt_decimal
+
 # ============================================================
 # Capability IDs (derived from gduteil/cozytouch capability.py + spike dump)
 # Keep CENTRAL: if another Atlantic model deviates, adjust only here.
@@ -52,7 +54,12 @@ CAP_BOOST = 165             # boost mode (switch)
 CAP_AWAY = 152              # away mode switch: "0"=off, "1"=on, "2"=pending
 CAP_AWAY_TS = 222           # away window "[startTs,endTs]" ("[0,0]" = none)
 CAP_HOT_WATER_PCT = 271     # available hot water in %
-CAP_RESISTANCE = 99         # electric heating element active (binary)
+# Capability 99 = the appliance is heating right now (binary). The community
+# integration calls it "resistance" for every water heater - on an electric
+# one that is the same thing. On the Revolution, a heat pump with a 1.8 kW
+# element, it stood at 1 with no boost running while only the heat pump
+# heated (seen by the user, 2026-10-02): it says THAT it heats, not with what.
+CAP_HEATING = 99
 CAP_ENERGY_TOTAL = 59       # cumulative energy consumption, raw value in Wh (/1000 = kWh)
 CAP_WIFI_SIGNAL = 179       # Wi-Fi signal (dBm)
 CAP_WIFI_SSID = 219         # Wi-Fi network name (SSID)
@@ -104,7 +111,7 @@ def _fmt_temp(value):
         return "?"
     if abs(f - round(f)) < 0.05:
         return str(int(round(f)))
-    return f"{f:.1f}".replace(".", ",")
+    return fmt_decimal(f, 1)
 
 
 def _min_to_hhmm(minutes):
@@ -396,8 +403,8 @@ class CozytouchWaterHeater:
             return None
 
     @property
-    def resistance_on(self):
-        return str(self._cap(CAP_RESISTANCE, "0")) == "1"
+    def heating_now(self):
+        return str(self._cap(CAP_HEATING, "0")) == "1"
 
     @property
     def energy_total_kwh(self):
@@ -569,10 +576,11 @@ class CozytouchWaterHeater:
             else:
                 # Translators: Cozytouch status announcement: away mode active.
                 parts.append(_("Away mode active"))
-        if self.resistance_on:
-            # Translators: Cozytouch status announcement: electric backup
-            # heating element active.
-            parts.append(_("Electric heating element active"))
+        if self.heating_now:
+            # Translators: Cozytouch status announcement and line in the
+            # device tree: the water heater is heating right now - with the
+            # heat pump or the heating element, the cloud does not say which.
+            parts.append(_("Currently heating"))
         return ", ".join(parts)
 
     # ---------------- Setters (write + optimistically set locally)

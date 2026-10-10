@@ -20,6 +20,7 @@ if "_" not in globals():  # fallback if initTranslation() fails
     def _(s):
         return s
 
+from .formatting import fmt_decimal, fmt_number
 from .constants import (
     VESYNC_PURIFIER_MODE_NAMES, VESYNC_FAN_MODE_NAMES,
     VESYNC_AIR_QUALITY_NAMES,
@@ -123,14 +124,15 @@ class _ContextHelpMixin:
                 # device tree.
                 ui.message(_("Indicates that the heat pump is currently "
                              "heating with off-peak electricity."))
-            # Translators: Beginning of the "Electric heating element" line in
+            # Translators: The "Currently heating" line of a water heater in
             # the device tree. F1 picks its help by this text, so it has to be
             # translated exactly like the line itself.
-            elif current_text.startswith(_("Electric heating element")):
-                # Translators: F1 help for the "Electric heating element" line
-                # in the device tree.
-                ui.message(_("The electric backup heating element is "
-                             "currently assisting the heat pump."))
+            elif current_text.startswith(_("Currently heating")):
+                # Translators: F1 help for the "Currently heating" line in the
+                # device tree.
+                ui.message(_("The appliance is heating the water right now. "
+                             "Whether with the heat pump or the electric "
+                             "heating element, the cloud does not say."))
             # Translators: Beginning of the "Today's heating times:" line in
             # the device tree. F1 picks its help by this text, so it has to be
             # translated exactly like the line itself.
@@ -395,6 +397,91 @@ class _ContextHelpMixin:
                              "Leaving both times empty deletes the window. "
                              "The add-on reads the program back afterwards "
                              "and says what the appliance really took."))
+            elif action == 'petlibro_feed':
+                # Translators: F1 help for the action line "Feed now" of a
+                # Petlibro feeder.
+                ui.message(_("Give food now. Enter opens a list of amounts; "
+                             "the last amount chosen is preselected. The "
+                             "command is sent once, never repeated, and the "
+                             "add-on waits for the feeder's own record of "
+                             "the feeding. When that does not come, it says "
+                             "so - check the last feeding then before "
+                             "feeding again."))
+            elif action == 'petlibro_plan':
+                # Translators: F1 help for the action line "Feeding plan" of a
+                # Petlibro feeder.
+                ui.message(_("Switch the whole feeding plan on or off. While "
+                             "it is off, the feeder gives no planned meals. "
+                             "Press Enter or Space to toggle."))
+            elif action == 'petlibro_meals':
+                # Translators: F1 help for the action line "Meals today" of a
+                # Petlibro feeder.
+                ui.message(_("The meals of the feeding plan; feedings by "
+                             "hand do not count here. Enter opens the list: "
+                             "one line per meal with name, time, portions "
+                             "and today's state. From there a meal can be "
+                             "skipped for today, switched off, changed, "
+                             "added or deleted, and all of today's meals can "
+                             "be skipped at once."))
+            elif action == 'petlibro_desiccant':
+                # Translators: F1 help for the desiccant line of a Petlibro
+                # feeder.
+                ui.message(_("The desiccant is a small sachet of silica gel "
+                             "in the holder under the lid of the food "
+                             "container; it keeps the dry food dry. The "
+                             "reminder only counts days. After replacing the "
+                             "sachet, press Enter: a question follows, and "
+                             "the reminder starts again."))
+            elif action == 'petlibro_filter':
+                # Translators: F1 help for the filter line of a Petlibro
+                # fountain.
+                ui.message(_("The filter reminder of the fountain. After "
+                             "changing the filter, press Enter: a question "
+                             "follows, and the reminder starts again."))
+            elif action == 'petlibro_cleaning':
+                # Translators: F1 help for the cleaning line of a Petlibro
+                # fountain.
+                ui.message(_("The cleaning reminder of the fountain. After "
+                             "cleaning it, press Enter: a question follows, "
+                             "and the reminder starts again."))
+            elif action == 'petlibro_water_mode':
+                # Translators: F1 help for the water mode line of a Petlibro
+                # fountain.
+                ui.message(_("Choose how the water flows: off, all the time, "
+                             "or when the sensor notices an animal near or "
+                             "further away. Enter opens a selection list. "
+                             "On its battery the fountain is offered no "
+                             "constant flow, as in the Petlibro app, and it "
+                             "takes a change only when it wakes up - usually "
+                             "within a few minutes; the add-on announces it "
+                             "then."))
+            elif action == 'petlibro_flow_duration':
+                # Translators: F1 help for the flow duration line of a
+                # Petlibro fountain.
+                ui.message(_("How long the fountain gives water once its "
+                             "sensor noticed the pet: 45, 60, 75 or 90 "
+                             "seconds, as in the Petlibro app. Longer gives "
+                             "more time to drink, shorter saves the battery. "
+                             "Offered in the sensor modes; it needs firmware "
+                             "0.3.25 or later."))
+            elif action == 'petlibro_low_water':
+                # Translators: F1 help for the low water line of a Petlibro
+                # fountain.
+                ui.message(_("Below this amount the fountain counts its water "
+                             "as low and warns. Enter asks for the new value "
+                             "in millilitres, 650 to 3000 as in the app."))
+            elif action == 'petlibro_drinks':
+                # Translators: F1 help for the drinking line of a Petlibro
+                # fountain.
+                ui.message(_("What the fountain registered as drunk today. "
+                             "Enter opens the list of the single drinks - "
+                             "time, amount and how long each lasted - for "
+                             "today and the six days before."))
+            elif action == 'petlibro_light':
+                # Translators: F1 help for the light line of a Petlibro
+                # device.
+                ui.message(_("Switch the indicator light of the device on or "
+                             "off. Press Enter or Space to toggle."))
             else:
                 # Translators: F1 help for any other line in the device tree:
                 # the fallback when none of the more specific texts fits.
@@ -423,6 +510,27 @@ class _ContextHelpMixin:
             # Translators: One piece of the device help spoken with F1. The
             # pieces are joined with ". ", so no full stop at the end.
             parts.append(_("Action: turn on or off"))
+        elif getattr(device, 'is_petlibro', False):
+            # --- Petlibro (feeders and water fountains) ---
+            parts.append(f"{device.name} ({device.get_type_display()})")
+            if device.is_offline:
+                parts.append(_("Status: offline"))
+            else:
+                summary = device.get_status_summary()
+                if summary:
+                    parts.append(summary)
+                if getattr(device, 'is_feeder', False):
+                    # Translators: One piece of the device help spoken with F1.
+                    # The pieces are joined with ". ", so no full stop at the
+                    # end.
+                    parts.append(_("Actions: feed now, feeding plan, meals, "
+                                   "desiccant reminder, light"))
+                elif getattr(device, 'is_fountain', False):
+                    # Translators: One piece of the device help spoken with F1.
+                    # The pieces are joined with ". ", so no full stop at the
+                    # end.
+                    parts.append(_("Actions: water mode, water warning, filter "
+                                   "and cleaning reminders, light"))
         elif getattr(device, 'is_cozytouch', False):
             # --- Cozytouch (Atlantic / Austria Email) ---
             type_display = device.get_type_display() if hasattr(device, 'get_type_display') else device.type
@@ -496,7 +604,7 @@ class _ContextHelpMixin:
                     if device.temperature is not None:
                         try:
                             parts.append(_("Temperature: {temp}°C").format(
-                                temp=f"{float(device.temperature):.1f}"))
+                                temp=fmt_decimal(device.temperature, 1)))
                         except (TypeError, ValueError):
                             pass
                     # Translators: One piece of the device help spoken with F1.
@@ -514,13 +622,13 @@ class _ContextHelpMixin:
             else:
                 temp = device.get_temperature()
                 if temp is not None:
-                    parts.append(_("Temperature: {temp}°C").format(temp=f"{temp:.1f}"))
+                    parts.append(_("Temperature: {temp}°C").format(temp=fmt_decimal(temp, 1)))
                 humidity = device.get_humidity()
                 if humidity is not None:
                     # Translators: One piece of the device help spoken with F1.
                     # The pieces are joined with ". ", so no full stop at the
                     # end.
-                    parts.append(_("Humidity: {humidity}%").format(humidity=f"{humidity:g}"))
+                    parts.append(_("Humidity: {humidity}%").format(humidity=fmt_number(humidity)))
                 co2 = device.get_co2() if hasattr(device, 'get_co2') else None
                 if co2 is not None:
                     parts.append(f"CO₂: {co2} ppm")
@@ -529,7 +637,7 @@ class _ContextHelpMixin:
                     # Translators: One piece of the device help spoken with F1.
                     # The pieces are joined with ". ", so no full stop at the
                     # end.
-                    parts.append(_("Air pressure: {pressure} mbar").format(pressure=f"{pressure:.1f}"))
+                    parts.append(_("Air pressure: {pressure} mbar").format(pressure=fmt_decimal(pressure, 1)))
                 rain = device.get_rain() if hasattr(device, 'get_rain') else None
                 if rain is not None:
                     # Translators: One piece of the device help spoken with F1.
@@ -549,7 +657,7 @@ class _ContextHelpMixin:
                         # Translators: One piece of the device help spoken with
                         # F1. The pieces are joined with ". ", so no full stop
                         # at the end.
-                        parts.append(_("Target: {temp}°C").format(temp=f"{setpoint:.1f}"))
+                        parts.append(_("Target: {temp}°C").format(temp=fmt_decimal(setpoint, 1)))
                     mode_text = self._get_netatmo_mode_text(device)
                     parts.append(_("Mode: {mode}").format(mode=mode_text))
                     boiler = device.get_boiler_status() if hasattr(device, 'get_boiler_status') else None
@@ -581,7 +689,7 @@ class _ContextHelpMixin:
                                 # ", so no full stop at the end.
                                 parts.append(_("Next change: {zone} "
                                                "({temp}°C) at {time}").format(
-                                    zone=nc_zone, temp=f"{nc_temp:.1f}", time=change_time_str))
+                                    zone=nc_zone, temp=fmt_decimal(nc_temp, 1), time=change_time_str))
                             else:
                                 parts.append(_("Next change: {zone} at {time}").format(
                                     zone=nc_zone, time=change_time_str))
@@ -619,12 +727,12 @@ class _ContextHelpMixin:
                 temp = device.get_temperature()
                 humidity = device.get_humidity()
                 if temp is not None:
-                    parts.append(_("Temperature: {temp}°C").format(temp=f"{temp:.1f}"))
+                    parts.append(_("Temperature: {temp}°C").format(temp=fmt_decimal(temp, 1)))
                 if humidity is not None:
                     # Translators: One piece of the device help spoken with F1.
                     # The pieces are joined with ". ", so no full stop at the
                     # end.
-                    parts.append(_("Humidity: {humidity}%").format(humidity=f"{humidity:g}"))
+                    parts.append(_("Humidity: {humidity}%").format(humidity=fmt_number(humidity)))
                 # Translators: One piece of the device help spoken with F1. The
                 # pieces are joined with ". ", so no full stop at the end.
                 parts.append(_("Sensor - display only"))

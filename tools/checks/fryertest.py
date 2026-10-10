@@ -18,6 +18,7 @@ import ast
 import importlib
 import io
 import os
+import re
 import sys
 import types
 
@@ -1057,8 +1058,90 @@ def test_cook_announcements():
               f'{verdict_line} < {suppress_line}')
 
 
+def load_api():
+    """Imports vesync_api with a stand-in for requests.
+
+    Only the two exception classes are used from it here; a stand-in keeps
+    this check free of network packages, as the build workflow installs
+    none.
+    """
+    stub = types.ModuleType('requests')
+
+    class NetworkDown(Exception):
+        pass
+
+    class TimedOut(Exception):
+        pass
+
+    stub.ConnectionError = NetworkDown
+    stub.Timeout = TimedOut
+    saved = sys.modules.get('requests')
+    sys.modules['requests'] = stub
+    try:
+        return importlib.import_module('shc.vesync_api'), stub
+    finally:
+        if saved is None:
+            sys.modules.pop('requests', None)
+        else:
+            sys.modules['requests'] = saved
+
+
+def test_start_is_sent_once():
+    print('== a command that starts something is never sent twice ==')
+    # A timeout does not say whether the first request arrived. Repeating a
+    # value that is set is harmless; repeating startCook starts the
+    # programme over.
+    api_mod, req = load_api()
+    api_cls = api_mod.VeSyncAPI
+
+    class DeadSession:
+        calls = 0
+
+        def post(self, *args, **kwargs):
+            self.calls += 1
+            raise req.ConnectionError('network down')
+
+    api = api_cls.__new__(api_cls)
+    api.base_url = 'https://example.invalid'
+    real_sleep = api_mod.time.sleep
+    api_mod.time.sleep = lambda seconds: None
+    try:
+        for repeat, expected in ((True, 2), (False, 1)):
+            api._session = DeadSession()
+            try:
+                api._post('/x', {}, headers={}, repeat=repeat)
+            except req.ConnectionError:
+                pass
+            check(f'repeat={repeat}: {expected} request(s) after a network '
+                  f'error', api._session.calls == expected,
+                  f'{api._session.calls} sent')
+    finally:
+        api_mod.time.sleep = real_sleep
+
+    api.token, api.account_id = 'token', 'account'
+    api.time_zone, api.country_code = 'Europe/Vienna', 'AT'
+    sent = {}
+    api._post = lambda endpoint, body, **kwargs: sent.__setitem__(
+        body['payload']['method'], kwargs.get('repeat'))
+    device = types.SimpleNamespace(cid='cid', config_module='module')
+    # Every command the devices send, read from the source - a new one is
+    # covered without anybody remembering to add it here.
+    src = io.open(os.path.join(BASE, 'vesync_devices.py'), encoding='utf-8').read()
+    used = set(re.findall(r'call_bypass_v2\(self, "(\w+)"', src))
+    check('the commands are found in the source', len(used) >= 10, str(len(used)))
+    for method in sorted(used | {'getAirfryerStatus'}):
+        api.call_bypass_v2(device, method)
+    for method in ('startCook', 'endCook'):
+        check(f'{method} is sent once', sent.get(method) is False)
+    repeated = sorted(m for m in used if sent.get(m) is True)
+    check('every command that sets or reads a value may be repeated',
+          all(sent.get(m) is True for m in used
+              if m.startswith(('get', 'set', 'reset'))), ', '.join(repeated))
+
+
 def main():
     vd = load()
+    test_start_is_sent_once()
     test_seconds(vd)
     test_temperature_is_measured(vd)
     test_programme_source(vd)

@@ -50,6 +50,16 @@ def _dicts_from(path):
     return mod
 
 
+def _formatting():
+    """The real formatting module; without NVDA it writes a point."""
+    import importlib.util
+    spec = importlib.util.spec_from_file_location(
+        'shc_formatting', os.path.join(BASE, 'formatting.py'))
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
 def load_history_funcs():
     sys.modules['shc.constants'] = _dicts_from(os.path.join(BASE, 'constants.py'))
     sys.modules['shc.cozytouch_devices'] = _dicts_from(
@@ -62,9 +72,12 @@ def load_history_funcs():
         return real(name, g, l, fromlist, level)
     builtins.__import__ = fake
 
-    env = {'_': lambda s: s}
+    fm = _formatting()
+    env = {'_': lambda s: s, 'fmt_decimal': fm.fmt_decimal,
+           'fmt_number': fm.fmt_number}
     src = io.open(os.path.join(BASE, 'history.py'), encoding='utf-8').read()
-    wanted = {'_format_action_text', '_detail_is_redundant', '_detail_text'}
+    wanted = {'_format_action_text', '_detail_is_redundant', '_detail_text',
+              '_temperature_detail_text'}
     for node in ast.parse(src).body:
         if isinstance(node, ast.FunctionDef) and node.name in wanted:
             exec(compile(ast.Module([node], []), 'history.py', 'exec'), env)
@@ -76,7 +89,8 @@ def test_measurements():
     """Messwert-Ansicht: Groessen konsistent, Zeitraum vorhanden."""
     import re
     hist = io.open(os.path.join(BASE, 'history.py'), encoding='utf-8').read()
-    env = {'_': lambda s: s}
+    fm_mod = _formatting()
+    env = {'_': lambda s: s, 'fmt_decimal': fm_mod.fmt_decimal}
     tree = ast.parse(hist)
     keep = [n for n in tree.body
             if (isinstance(n, ast.Assign) and isinstance(n.value, (ast.Dict, ast.Tuple)))
@@ -595,6 +609,332 @@ def test_schedule_detail():
           "','.join(str(d) for d in result['done'])" in dialog)
 
 
+def _detection_mixin(names, clock):
+    """Die genannten Methoden von _ChangeDetectionMixin aus der echten
+    Quelle, samt Tabelle und Toleranz, mit einer Uhr, die der Test stellt."""
+    import ast
+    import textwrap
+
+    src = io.open(os.path.join(BASE, 'change_detection.py'),
+                  encoding='utf-8').read()
+    tree = ast.parse(src)
+    lines = src.splitlines()
+    module_parts, methods = [], []
+    for node in tree.body:
+        if (isinstance(node, ast.Assign) and isinstance(node.targets[0], ast.Name)
+                and node.targets[0].id in ('_EXTERNAL_ACTIONS',
+                                           'BOOST_END_TOLERANCE')):
+            module_parts.append(ast.get_source_segment(src, node))
+        if isinstance(node, ast.ClassDef) and node.name == '_ChangeDetectionMixin':
+            for item in node.body:
+                if isinstance(item, ast.FunctionDef) and item.name in names:
+                    first = min([d.lineno for d in item.decorator_list]
+                                + [item.lineno])
+                    methods.append(textwrap.dedent(
+                        "\n".join(lines[first - 1:item.end_lineno])))
+    missing = set(names) - {m.split('def ', 1)[1].split('(', 1)[0]
+                            for m in methods}
+    class_src = "class Mixin:\n" + "\n".join(
+        textwrap.indent(m, '    ') for m in methods)
+
+    class Log:
+        def _noop(self, *a, **k):
+            pass
+        debug = info = warning = error = _noop
+
+    env = {'log': Log(), 'time': clock, '_': lambda t: t,
+           '__name__': 'globalPlugins.SmartHomeControl.change_detection',
+           '__package__': 'globalPlugins.SmartHomeControl'}
+    for part in module_parts:
+        exec(compile(part, 'module', 'exec'), env)
+    exec(compile(class_src, 'mixin', 'exec'), env)
+    return env['Mixin'], missing
+
+
+def test_automatic_origin():
+    """Was ein Geraet von sich aus tut, steht als "automatisch" im Verlauf.
+
+    Am 02.10.2026 lief ein Boost, hier eingeschaltet und gleich danach auf
+    65 Minuten gestellt, nach 65 Minuten ab - und stand als "Boost
+    ausgeschaltet, extern" im Verlauf, wie alle acht Boosts seit dem 09.09.
+    Die Dauer wurde beim Ende vom Geraet gelesen, und dort stand sie nicht
+    mehr: gleich nach dem Einschalten las die Zeile "keine Zeitbegrenzung
+    gesetzt". Gespielt wird genau dieser Ablauf, mit der Uhr des Tests und
+    der echten Erkennung.
+    """
+    print('== "automatisch": Boost-Ende und Heizplan ==')
+    import types
+
+    class Clock:
+        now = 0.0
+
+        def time(self):
+            return self.now
+
+    clock = Clock()
+    names = ('_log_external_state_changes', '_cozytouch_boost_runs',
+             '_note_cozytouch_boost', '_note_local_cozytouch_boost',
+             '_cozytouch_boost_ran_out', '_record_local_cozytouch_action',
+             '_is_recent_local_cozytouch_action', '_snapshot_cozytouch_state',
+             '_detect_cozytouch_changes', '_normalize_end_time',
+             '_record_local_netatmo_action', '_is_recent_local_netatmo_action',
+             '_snapshot_netatmo_state', '_netatmo_change_by_schedule',
+             '_detect_netatmo_changes')
+    Mixin, missing = _detection_mixin(names, clock)
+    check('alle Teile der Erkennung gefunden', not missing, str(missing))
+    if missing:
+        return
+
+    written = []
+
+    class History:
+        def log_action(self, device, action, detail="", source=None):
+            written.append((source, action, detail))
+
+        def log_external_action(self, uuid, name, platform, action, detail=""):
+            written.append(('extern', action, detail))
+
+    package = sys.modules.setdefault(
+        'globalPlugins', types.ModuleType('globalPlugins'))
+    package.__path__ = []
+    addon = sys.modules.setdefault(
+        'globalPlugins.SmartHomeControl',
+        types.ModuleType('globalPlugins.SmartHomeControl'))
+    addon.__path__ = []
+    hist = types.ModuleType('globalPlugins.SmartHomeControl.history')
+    hist.get_history = lambda: History()
+    hist.SOURCE_SYSTEM = 'system'
+    sys.modules['globalPlugins.SmartHomeControl.history'] = hist
+    devices_stub = types.ModuleType(
+        'globalPlugins.SmartHomeControl.cozytouch_devices')
+    devices_stub.COZYTOUCH_HEATING_MODE_NAMES = {}
+    devices_stub._fmt_temp = str
+    sys.modules['globalPlugins.SmartHomeControl.cozytouch_devices'] = devices_stub
+    # load_history_funcs biegt "from .cozytouch_devices import" auf seine
+    # Tabellen um - die brauchen hier noch die Temperaturformatierung.
+    hooked = sys.modules.get('shc.cozytouch_devices')
+    if hooked is not None and not hasattr(hooked, '_fmt_temp'):
+        hooked._fmt_temp = str
+
+    class Heater:
+        uuid = unique_id = 'ct-1'
+        name = 'Revolution'
+        target_temperature = 55.0
+        mode_value = '0'
+        is_on = True
+        away_on = False
+
+        def __init__(self):
+            self.boost_on = False
+            self.boost_total_time = None
+
+    def plugin():
+        m = Mixin()
+        m._previous_cozytouch_states = {}
+        m._recent_cozytouch_actions = {}
+        m._previous_netatmo_therm_states = {}
+        m.announce_external_changes = False
+        return m
+
+    def poll(m, dev, at):
+        clock.now = at
+        m._detect_cozytouch_changes([dev])
+
+    # Der Ablauf vom 02.10.: 15:55:54 erste Abfrage, 15:56:28 Enter auf
+    # Boost, 15:56:34 bestaetigt, 15:56:52 Dauer 65 Minuten, 17:01:55 aus.
+    m, dev = plugin(), Heater()
+    poll(m, dev, 0)
+    clock.now = 34
+    m._record_local_cozytouch_action(dev.uuid)
+    clock.now = 40
+    dev.boost_on = True
+    m._note_local_cozytouch_boost(dev.uuid, on=True)
+    poll(m, dev, 50)
+    clock.now = 58
+    m._record_local_cozytouch_action(dev.uuid)
+    m._note_local_cozytouch_boost(dev.uuid, minutes=65)
+    # Die Cloud meldet die Dauer nie zurueck: Capability 232 ist nicht
+    # geschuetzt, jede Abfrage ueberschreibt den eben gesetzten Wert, bevor
+    # die Erkennung ihn liest.
+    poll(m, dev, 73)
+    t = 73
+    while t < 40 + 65 * 60:
+        t += 30
+        poll(m, dev, t)
+    written.clear()
+    dev.boost_on = False
+    poll(m, dev, 40 + 65 * 60 + 21)
+    check('der Boost vom 02.10. lief ab: "Boost beendet", automatisch',
+          written == [('system', 'boost_ended', '')], str(written))
+
+    # Aus der App gestartet, die Cloud nennt 30 Minuten, solange er laeuft.
+    m, dev = plugin(), Heater()
+    poll(m, dev, 0)
+    dev.boost_on, dev.boost_total_time = True, 30.0
+    poll(m, dev, 30)
+    dev.boost_total_time = None
+    poll(m, dev, 60)
+    written.clear()
+    dev.boost_on = False
+    poll(m, dev, 30 + 30 * 60 + 25)
+    check('aus der App, Dauer nur waehrend des Laufs gemeldet: automatisch',
+          written == [('system', 'boost_ended', '')], str(written))
+
+    # Nach zehn von 65 Minuten hat ihn jemand ausgeschaltet.
+    m, dev = plugin(), Heater()
+    poll(m, dev, 0)
+    clock.now = 10
+    dev.boost_on = True
+    m._note_local_cozytouch_boost(dev.uuid, on=True, minutes=65)
+    poll(m, dev, 45)
+    written.clear()
+    dev.boost_on = False
+    poll(m, dev, 10 + 10 * 60)
+    check('vorzeitig ausgeschaltet bleibt extern',
+          written == [('extern', 'boost_off', '')], str(written))
+
+    # Lief schon bei der Anmeldung: wann er begann, weiss niemand.
+    m, dev = plugin(), Heater()
+    dev.boost_on, dev.boost_total_time = True, 60.0
+    poll(m, dev, 0)
+    written.clear()
+    dev.boost_on = False
+    poll(m, dev, 70 * 60)
+    check('Beginn unbekannt: extern, nichts geraten',
+          written == [('extern', 'boost_off', '')], str(written))
+
+    # Eine Dauer, gesetzt ohne laufenden Boost, gilt nicht fuer den naechsten.
+    m, dev = plugin(), Heater()
+    poll(m, dev, 0)
+    m._note_local_cozytouch_boost(dev.uuid, minutes=30)
+    dev.boost_on = True
+    poll(m, dev, 30)
+    written.clear()
+    dev.boost_on = False
+    poll(m, dev, 30 + 45 * 60)
+    check('eine Dauer ohne laufenden Boost wird nicht vorgemerkt',
+          written == [('extern', 'boost_off', '')], str(written))
+
+    # Netatmo um 22:00: der Wochenplan wechselt in die Nachtzone - an
+    # einem Abend in einer Abfrage, am 01.10. auf zwei verteilt.
+    class Thermostat:
+        uuid = unique_id = 'na-1'
+        name = 'Thermostat'
+        is_thermostat = True
+        _therm_setpoint_end_time = None
+        _boiler_status = None
+        _anticipating = None
+        _open_window = None
+
+        def __init__(self, setpoint, mode, zone):
+            self._therm_setpoint = setpoint
+            self._therm_setpoint_mode = mode
+            self._schedule_zone_raw = self._schedule_zone_name = zone
+
+    def netatmo(m, therm, at):
+        clock.now = at
+        m._detect_netatmo_changes([therm])
+
+    m = plugin()
+    netatmo(m, Thermostat(20.0, 'schedule', 'Comfort'), 0)
+    written.clear()
+    netatmo(m, Thermostat(18.0, 'schedule', 'Night'), 30)
+    check('22:00 in einer Abfrage: Zone und Temperatur, beide automatisch',
+          sorted(written) == [('system', 'schedule_zone', 'Night'),
+                              ('system', 'set_temp', '18.0')], str(written))
+
+    m = plugin()
+    netatmo(m, Thermostat(20.0, 'schedule', 'Comfort'), 0)
+    written.clear()
+    netatmo(m, Thermostat(20.0, 'schedule', 'Night'), 30)
+    netatmo(m, Thermostat(18.0, 'schedule', 'Night'), 60)
+    check('22:00 auf zwei Abfragen verteilt: beide automatisch',
+          written == [('system', 'schedule_zone', 'Night'),
+                      ('system', 'set_temp', '18.0')], str(written))
+
+    m = plugin()
+    netatmo(m, Thermostat(20.0, 'schedule', 'Comfort'), 0)
+    written.clear()
+    netatmo(m, Thermostat(21.5, 'manual', 'Comfort'), 30)
+    check('in der App von Hand gestellt bleibt extern',
+          sorted(written) == [('extern', 'set_temp', '21.5'),
+                              ('extern', 'therm_mode', 'manual')], str(written))
+
+    # Die Verdrahtung: der Dialog meldet Start und Dauer, und F5 laesst die
+    # Buchfuehrung nicht aus.
+    dialog = io.open(os.path.join(BASE, 'dialog_cozytouch.py'),
+                     encoding='utf-8').read()
+    check('der Dialog meldet den Start',
+          '_note_local_cozytouch_boost(device.uuid, on=new_state)' in dialog)
+    check('der Dialog meldet die Dauer',
+          '_note_local_cozytouch_boost(device.uuid,\n' in dialog
+          and 'minutes=minutes)' in dialog)
+    init = io.open(os.path.join(BASE, '__init__.py'), encoding='utf-8').read()
+    check('F5 fuehrt die Boost-Buchfuehrung mit',
+          'self._note_cozytouch_boost(' in init)
+
+
+def test_saved_without_a_next_entry():
+    """Ein Eintrag landet auf der Platte, auch wenn kein weiterer folgt.
+
+    Am 02.10.2026 stand "Fuetterungsplan ein" von 19:52:44 eine Viertelstunde
+    spaeter noch nicht in der Datei - das "aus" von 19:52:35 schon. Die
+    Entprellung sah nur beim NAECHSTEN Eintrag auf die Uhr.
+    """
+    print('== Der Verlauf wartet nicht auf den naechsten Eintrag ==')
+    import ast
+
+    src = io.open(os.path.join(BASE, 'history.py'), encoding='utf-8').read()
+    tree = ast.parse(src)
+    parts = [n for n in tree.body
+             if (isinstance(n, ast.ClassDef) and n.name == '_EntryStore')
+             or (isinstance(n, ast.Assign) and isinstance(n.targets[0], ast.Name)
+                 and n.targets[0].id.startswith('SAVE_DEBOUNCE'))]
+    written = []
+
+    class Clock:
+        now = 1000.0
+
+        def time(self):
+            return self.now
+
+    class Log:
+        def _noop(self, *a, **k):
+            pass
+        debug = info = warning = error = _noop
+
+    clock = Clock()
+    env = {'time': clock, 'log': Log(), 'os': os, 'json': None,
+           '_atomic_write_json': lambda path, entries: written.append(
+               len(entries))}
+    exec(compile(ast.Module(parts, []), 'history.py', 'exec'), env)
+    store = env['_EntryStore']('x.json', 1000, 0, 'Events')
+    check('die Methode ist da', hasattr(store, 'save_if_due'))
+    if not hasattr(store, 'save_if_due'):
+        return
+
+    store.append({'timestamp': clock.now, 'action': 'feeding_plan_off'})
+    check('der erste Eintrag wird gleich geschrieben', written == [1], str(written))
+    clock.now += 7
+    store.append({'timestamp': clock.now, 'action': 'feeding_plan_on'})
+    check('der zweite, 7 s spaeter, wartet', written == [1], str(written))
+    clock.now += 10
+    store.save_if_due()
+    check('nach 17 s ist er noch nicht faellig', written == [1], str(written))
+    clock.now += 20
+    store.save_if_due()
+    check('nach 37 s steht er in der Datei, ohne dass etwas folgte',
+          written == [1, 2], str(written))
+    clock.now += 60
+    store.save_if_due()
+    check('ohne neue Eintraege wird nichts mehr geschrieben',
+          written == [1, 2], str(written))
+
+    sched = io.open(os.path.join(BASE, 'scheduler.py'), encoding='utf-8').read()
+    check('der Scheduler ruft es bei jedem Durchlauf auf',
+          'save_due_pending()' in sched)
+
+
 def main():
     env = load_history_funcs()
     fmt = env['_format_action_text']
@@ -655,6 +995,8 @@ def main():
 
     test_measurements()
     test_external_changes()
+    test_automatic_origin()
+    test_saved_without_a_next_entry()
     test_schedule_detail()
 
     print()

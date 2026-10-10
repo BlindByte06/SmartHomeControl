@@ -31,7 +31,7 @@ stored encrypted, locally on the computer.</p>
 <h2 id="contents">Contents</h2>
 <ul>
 <li><a href="#keyboard-shortcuts">Keyboard shortcuts</a></li>
-<li><a href="#supported-platforms-and-devices">Supported platforms and devices</a> (Cozytouch/Atlantic is <strong>experimental</strong>)</li>
+<li><a href="#supported-platforms-and-devices">Supported platforms and devices</a> (Cozytouch/Atlantic and Petlibro are <strong>experimental</strong>)</li>
 <li><a href="#setup">Setup</a></li>
 <li><a href="#netatmo-redirect-uri-and-port">Netatmo: redirect URI and port</a></li>
 <li><a href="#usage">Usage</a></li>
@@ -49,7 +49,11 @@ stored encrypted, locally on the computer.</p>
 <h2 id="keyboard-shortcuts">Keyboard shortcuts</h2>
 <ul>
 <li><strong>NVDA + Shift + H</strong>: open the smart home menu (device overview)</li>
-<li><strong>NVDA + Ctrl + Shift + P</strong>: announce the status of all devices</li>
+<li><strong>NVDA + Ctrl + Shift + P</strong>: announce a summary of all
+  devices - how many there are, how many are switched on, which are offline,
+  and a water alarm. <strong>Pressed twice</strong>, it opens the list of all
+  devices with their state in a reading window, line by line and readable on
+  the braille display.</li>
 </ul>
 <p>The settings dialog is available through the "Settings (Alt+E)" button in
 the device menu.</p>
@@ -59,7 +63,9 @@ the device menu.</p>
 <li><strong>Ctrl + P</strong>: platform status – what had a fault and which
   devices did not answer (see below)</li>
 <li><strong>Ctrl + T</strong>: repeat the status line</li>
-<li><strong>Ctrl + F</strong>: search for a device</li>
+<li><strong>Ctrl + F</strong>: search for a device - it searches
+  platforms, categories, devices and the outlets of a power strip. The same
+  search again moves on to the next match.</li>
 <li><strong>Ctrl + B</strong>: add the selected device or outlet to the
 favourites, or remove it</li>
 <li><strong>F1</strong>: help for the selected device, listing what it can
@@ -130,7 +136,8 @@ be switched – adjustable in the device menu".</p>
 <li><strong>Not switchable:</strong> Meross sensors (temperature/humidity,
   water leak) and Meross hubs; every Netatmo device; the Cosori air fryer,
   which cannot be switched on and off at all and is operated through a
-  cooking programme instead. Thermostats and radiator
+  cooking programme instead; Petlibro feeders and water fountains, so that a
+  digit pressed twice can never give a meal. Thermostats and radiator
   valves can be adjusted but not switched on and off; the weather station and
   the indoor air monitor are display only. Their status is announced on the
   first press as usual – they are adjusted in the device menu.</li>
@@ -323,9 +330,14 @@ actual heating target with Eco/boost; the cloud does not provide a measured
 water temperature for this model), heating mode, boost (including an
 experimentally adjustable boost duration), away mode with a
 plannable period, available hot water in percent, and display of today's
-programmed heating windows and the status of the electric heating element
-and off-peak tariff. The rated capacity (in litres) can be configured in
-the settings.</p>
+programmed heating windows, whether the appliance is heating right now, and
+whether the off-peak tariff applies. The rated capacity (in litres) can be
+configured in the settings.</p>
+<p>"Currently heating" says only that the appliance heats, not with what: the
+cloud reports the same whether the heat pump or the electric heating element
+is at work. To find out, read the energy consumption twice, an hour apart -
+the heat pump alone uses at most 0.7 kWh in an hour, with the heating element
+it is up to 2.5.</p>
 <p>The three heating modes:</p>
 <ul>
 <li><strong>Manual</strong> – heats continuously to the configured target
@@ -343,15 +355,119 @@ the settings.</p>
   change – possible, since this write has been tried on a single model so far
   – it says so instead of reporting success.</p></li>
 </ul>
+<h3 id="petlibro">Petlibro (experimental)</h3>
+<p><strong>Experimental.</strong> Tested with the Air Smart Feeder (PLAF108)
+and the Dockstream 2 Cordless water fountain (PLWF116). The integration uses
+the cloud of the Petlibro app as the community has worked it out; Petlibro
+can change it at any time. Other Petlibro feeders and fountains are shown with
+the same functions as far as they report the same values; other products
+(litter boxes, cameras) only show their status. The device entry carries the
+model number in brackets, e.g. "Air Smart Feeder (PLAF108)".</p>
+<p>Amounts are given in portions (feeder) and millilitres (fountain), whatever
+unit the Petlibro app is set to: the app converts for display only, and the
+add-on speaks in what the devices really report.</p>
+<h4 id="petlibro-feeder">Feeders</h4>
+<ul>
+<li><strong>Status:</strong> whether there is enough food, what was given
+  today in total (planned meals and feedings by hand), the last and the next
+  feeding, battery and power supply. The line "Planned meals today" counts
+  the meals of the feeding plan only.</li>
+<li><strong>Feed now:</strong> Enter opens a list of amounts (at most what
+  the feeder gives at once - 16 portions on the Air Smart Feeder); the last
+  amount chosen is preselected. The command is sent <strong>once</strong>,
+  never repeated. The add-on then waits for the feeder's own record of the
+  feeding and announces what the feeder reports as given. When no
+  confirmation comes - no connection, or the feeder did not answer the
+  cloud - it says that it is unknown whether food was given. The last
+  feeding in the device entry shows it a little later; it is worth checking
+  there before feeding again.</li>
+<li><strong>Feeding plan:</strong> switches all planned meals on or off.</li>
+<li><strong>Meals:</strong> Enter opens a list with one line per meal (name,
+  time, portions, weekdays when not every day, today's state). A meal can be
+  skipped for today only, switched off, changed (time, portions, weekdays,
+  name, and the meal call on feeders with a speaker - the Air Smart Feeder
+  has none), added or deleted - deleting asks first. All
+  of today's meals can be skipped at once as well. The weekdays are seven
+  check boxes; a new meal starts with none ticked. For a daily meal all
+  seven are ticked; with none ticked it is given once.</li>
+<li><strong>Desiccant:</strong> the reminder to replace the desiccant, see
+  below.</li>
+<li><strong>Light:</strong> the indicator light on or off.</li>
+</ul>
+<p><strong>The desiccant.</strong> A small sachet of silica gel keeps the dry
+food in the container dry and crisp and protects it from mould. On the Air
+Smart Feeder it sits in the holder on the underside of the lid of the food
+container - not loose among the food. The holder is small: Petlibro names
+sachets of 0.5 gram, at most 2.8 × 1.6 cm, the kind that comes with shoes or
+electronics (search term "0.5 gram silica gel packs"). Petlibro's own larger
+desiccant bags are made for the Granary feeders and do not fit here.
+Petlibro recommends replacing the sachet every two weeks.</p>
+<p>The reminder in the app and in the add-on only counts days on the Petlibro
+server - it keeps counting while the feeder is switched off and knows nothing
+about whether a sachet was replaced. From the last reset it counts down the
+change interval, 14 days on the Air Smart Feeder:</p>
+<ul>
+<li>"Change in 3 days": the sachet is due in three days.</li>
+<li>"Change due today": the 14 days run out today.</li>
+<li>"Overdue by 1 day": the 14 days ran out yesterday, the sachet should have
+  been changed yesterday. The last reset was 15 days ago.</li>
+<li>"Overdue by 27 days" accordingly: the last reset was 41 days ago.</li>
+</ul>
+<p>After replacing the sachet, Enter on the line resets the reminder; a
+question comes first, with Cancel preselected.</p>
+<h4 id="petlibro-fountain">Water fountains</h4>
+<ul>
+<li><strong>Status:</strong> water level in percent and millilitres, what was
+  drunk today (and yesterday), battery and charging.</li>
+<li><strong>Single drinks:</strong> Enter on the drinking line opens a list
+  of the day's drinks - time, amount and how long each lasted - for today
+  and the six days before.</li>
+<li><strong>Water mode:</strong> off, constant flow, or - on fountains with a
+  presence sensor such as the Dockstream 2 Cordless - flowing when the sensor
+  notices an animal near or further away. Petlibro fountains without a
+  presence sensor - the Dockstream Smart Fountain (PLWF105), the Dockstream
+  RFID (PLWF305) and the Dockstream 2 with power supply (PLWF106) - offer an
+  interval mode instead of the sensor modes: the water flows for a set time
+  and then pauses for a set time; both times are set in the Petlibro app, and
+  the add-on keeps them. These fountains have not been tested with the
+  add-on. Constant flow is offered on the power supply only, because on its
+  battery the fountain gives water, according to Petlibro, only when the
+  sensor notices an animal. Should constant flow be stored while it runs on
+  the battery, no water flows
+  at all; the device entry then says so. Near is Petlibro's default; far
+  makes the sensor more sensitive, so it reacts to an animal further away.</li>
+<li><strong>Flow duration:</strong> how long the water flows once the sensor
+  noticed an animal - 45, 60, 75 or 90 seconds, as in the Petlibro app.
+  Longer leaves more time to drink, shorter saves the battery. The line is
+  there in the sensor modes only, since the duration belongs to them. It can
+  be changed from firmware 0.3.25 on, according to Petlibro; with older
+  firmware the line only shows the value. On the battery the confirmation
+  can take a few minutes, as with every change there.</li>
+<li><strong>Water warning:</strong> the amount below which the fountain
+  counts its water as low, in millilitres (650 to 3000, as in the app).</li>
+<li><strong>Filter and cleaning:</strong> the two reminders. Each is reset
+  with Enter after the filter change or the cleaning - again with a question
+  first.</li>
+<li><strong>Light:</strong> the indicator light on or off.</li>
+</ul>
+<p><strong>On the battery, changes take a while.</strong> A Dockstream 2
+Cordless running on its battery only wakes now and then. The cloud accepts a
+change at once but does not hear back from the fountain in time; the change
+arrives when the fountain wakes, after about two minutes. The add-on says that
+the change is on its way, watches for it and announces it once the fountain
+reports it (or, after ten minutes, that it did not arrive).</p>
+<p>A favourites digit announces the status of a Petlibro device but never
+switches it - a digit pressed twice must not give a meal.</p>
 <hr />
 <h2 id="setup">Setup</h2>
 <p>Prerequisite: the devices must have been set up once with the respective
-manufacturer app (Meross, Netatmo, VeSync, Cozytouch) – the add-on then
+manufacturer app (Meross, Netatmo, VeSync, Cozytouch, Petlibro) – the add-on then
 picks them up from the account.</p>
 <p>Open the menu with <strong>NVDA + Shift + H</strong>. Without a sign-in
 yet, the settings dialog opens automatically. Enable the platforms in use
 and enter the credentials – details per platform in the following sections.
-Finally, in the "General" tab: optionally enable "Automatic login" (the
+A platform whose credentials are entered anew is switched on by saving, even
+without ticking it in the "General" tab first. Finally, in the "General" tab: optionally enable "Automatic login" (the
 connection is then
 established at every NVDA start) and save. The devices are loaded and
 immediately available in the menu – no NVDA restart required.</p>
@@ -391,6 +507,24 @@ Cozytouch account (the same as in the Cozytouch app). Optional: the rated capaci
 tank in litres, so the available hot water is additionally estimated in
 litres. The tab is labelled “experimental” in the settings dialog – see
 <a href="#maturity-and-notes">Maturity and notes</a>.</p>
+<h3 id="set-up-petlibro">Set up Petlibro (experimental)</h3>
+<p><strong>Important:</strong> Petlibro allows only one sign-in per account at
+a time. Signing in with the add-on signs the Petlibro app on the phone out of
+the same account, and signing in on the phone ends the add-on's session (the
+add-on then signs in again by itself, which in turn signs the phone out).
+The way around it is a second Petlibro account:</p>
+<ol>
+<li>Create a second account <strong>in the Petlibro app</strong> - an
+  account created on the website is not accepted for this access.</li>
+<li>In the main account, share the feeders and fountains with the second
+  account, and accept the share in the second account.</li>
+<li>In the "Petlibro" tab of the add-on, enter the email address and password
+  of the <strong>second</strong> account and test the connection.</li>
+</ol>
+<p>The second account is best given a password that is used nowhere else.
+Petlibro takes the password - from the app as from the add-on - as an MD5
+checksum without salt. The transfer is encrypted, but should the checksum
+ever fall into other hands, a weak password is easily recovered from it.</p>
 <hr />
 <h2 id="netatmo-redirect-uri-and-port">Netatmo: redirect URI and port</h2>
 <h3 id="what-is-the-redirect-uri">What is the redirect URI?</h3>
@@ -438,7 +572,9 @@ device, platform, event and source. The source column names where the action
 came from: "you" for an action through this add-on, "external" for the
 manufacturer app, a voice assistant or the button on the device, and
 "automatic" for entries the add-on records by itself, such as a water
-alarm.</p>
+alarm, and for what a device does on its own: a Netatmo heating schedule
+moving to its night zone at 22:00 ("Schedule zone changed"), or a boost of
+the heat pump running out after its duration ("Boost ended").</p>
 <p><strong>Measurements</strong> – one row per device and quantity instead of
 thousands of single values: device, quantity, latest value and time of the
 latest reading. Enter on a row opens the details – lowest and highest value,
@@ -481,7 +617,8 @@ switched through the manufacturer app, Alexa or the button on the device. In
 the "Notifications" tab, what is announced can be set per platform and
 event type (e.g. switching, mode, fan level, air quality, filter, thermostat
 setpoint, boiler status). Own actions in the dialog are not reported
-twice.</p>
+twice. A change made elsewhere goes into the history in any case, also with
+its announcement switched off.</p>
 <p>The water sensors are a special case: an MS400 or MS405 reports a state, not
 a measured value. A change is announced with an error tone and recorded in the
 history as an event ("water alarm" or "no water detected any more"). Since a
@@ -493,9 +630,21 @@ separate from the changes below, because a fault is not a change, and the
 master switch for external changes does not cover it. Four switches: announce
 at all, no longer reachable, answering only in part, reachable again. All on by
 default.</p>
+<p>A fault is announced only once it has lasted two minutes: the clouds drop
+out several times a day for less than a minute, and each of those used to
+interrupt twice - when it failed and when it came back. The return is
+announced only after a fault that was. The device tree, the status line and
+the platform status show a fault at once.</p>
 <p>Whatever is switched off here is still recorded: the device tree, the status
 line and the <a href="#platform-status">platform status</a> keep showing it.
 "Off" means "do not interrupt", not "do not keep track".</p>
+<p>Petlibro has a section of its own. On by default: failed feedings and
+faults of a device, feedings started elsewhere (the app, the button on the
+feeder), food running low, water running low, desiccant, filter or cleaning
+due, a low battery, a device going offline or coming back, and settings
+changed elsewhere (feeding plan, water mode, light). Off by default: every
+planned meal, since that would be several announcements a day. Feedings and
+failed feedings are recorded in the history either way.</p>
 <hr />
 <h2 id="cloud-limits">Notes on cloud limits</h2>
 <p>Meross limits its cloud to <strong>200 messages per hour and device</strong> –
@@ -531,6 +680,12 @@ temporarily fail when the manufacturers change their servers.</p>
   tested so far. Other Cozytouch devices (e.g. radiators, air conditioners)
   are currently incorrectly shown as hot water heat pumps as well and are
   not usable.</li>
+<li><strong>Petlibro (experimental):</strong> the protocol is unofficial;
+  what the add-on knows about it comes from the community integration for
+  Home Assistant and was checked against a real account. Tested with the Air
+  Smart Feeder (PLAF108) and the Dockstream 2 Cordless water fountain
+  (PLWF116). Petlibro allows one sign-in per account at a time - see
+  <a href="#set-up-petlibro">Set up Petlibro</a>.</li>
 </ul>
 <hr />
 <h2 id="privacy-and-security">Privacy and security</h2>
@@ -539,24 +694,42 @@ temporarily fail when the manufacturers change their servers.</p>
   computer</strong>. They are not in the NVDA configuration at all, but in a
   file of their own beside the add-on – which keeps them out of the log as
   well. Passwords and tokens are <strong>encrypted</strong> there and can be
-  read back only on the machine and user account they were saved on; the
-  email addresses stand in plain text, because they are what the sign-in is
-  addressed to. The file is taken off the inherited access rights when it is
+  read back only on the machine and user account they were saved on - since
+  26.10.1 the email addresses too; older entries in plain text are encrypted
+  at the next save. The file is taken off the inherited access rights when it is
   written, so other accounts on the same computer cannot read it.</li>
+<li>When the add-on is removed, it removes the credentials file with it;
+  an update keeps it. The history, the readings, the energy samples and the
+  favourites stay as records of their own - in the add-ons folder as
+  <code>SmartHomeControl_*.json</code> - and can be deleted there by hand.</li>
 <li>Communication goes directly to the respective manufacturer clouds – no
   data is sent to third parties.</li>
+<li>An early version created a section of its own in the NVDA configuration,
+  <code>[merossSmartControl]</code>, holding the Netatmo password and client
+  secret in plain text. NVDA writes its configuration into the log at every
+  start, so both stood in every log. The add-on removes this section when it
+  starts. If an NVDA log or <code>nvda.ini</code> from such a machine was ever
+  passed on, the Netatmo password should be changed.</li>
+<li>Netatmo, VeSync, Cozytouch and Petlibro connect through the network
+  libraries NVDA ships itself (requests, urllib3, certifi); their security
+  updates come with NVDA updates. Meross uses a bundled library (aiohttp).
+  Which versions run is written to the NVDA log after every sign-in.</li>
 </ul>
 <hr />
 <h2 id="troubleshooting">Troubleshooting</h2>
 <ul>
 <li><strong>No devices visible:</strong> check the credentials and the enabled
   platform in the settings dialog, then save (the sign-in runs in the
-  background).</li>
+  background). Should the sign-in fail because of the network - NVDA starting
+  before the Wi-Fi, say - the add-on tries again after 30 seconds, after one
+  and after two minutes and every five minutes after that, and announces when
+  the devices are ready. A refused password is not tried again.</li>
 <li><strong>Device offline:</strong> check whether the device is reachable in the
   manufacturer app.</li>
 <li><strong>A platform reports "unreachable":</strong> usually a temporary
   cloud/network issue – the add-on reconnects automatically and announces
-  when the platform is connected again. The announcement comes once; the state
+  when the platform is connected again. The announcement comes once, and
+  only when the fault has lasted two minutes; the state
   can be looked up at any time on the platform's line in the device tree
   ("Netatmo devices (7) - unreachable since 11:30"), in the status line
   (Ctrl + T) and in the connection diagnostics. Once the values below it have

@@ -296,8 +296,91 @@ def main():
     check('ein Fehlschlag bleibt folgenlos (FAT32 kennt keine ACLs)',
           'log.debug(f"Could not restrict' in src_cs)
 
+    print('== Der Abschnitt einer fruehen Version verschwindet ==')
+    # [merossSmartControl] hielt das Netatmo-Passwort im Klartext, und NVDA
+    # schreibt die Konfiguration bei jedem Start ins Log.
+    tmp = tempfile.mkdtemp()
+    try:
+        cs = fresh_module(tmp)
+        profile = {'merossSmartControl': {'netatmo_password': 'klartext'},
+                   'smartHomeControl': {'useMeross': 'True'},
+                   'general': {'language': 'de'}}
+        removed = cs.drop_legacy_sections(profile)
+        check('der alte Abschnitt ist weg', 'merossSmartControl' not in profile)
+        check('er wird gemeldet', removed == ['merossSmartControl'], str(removed))
+        check('der eigene Abschnitt bleibt', profile.get('smartHomeControl')
+              == {'useMeross': 'True'})
+        check('fremde Abschnitte bleiben', profile.get('general')
+              == {'language': 'de'})
+        check('ein zweiter Lauf findet nichts mehr',
+              cs.drop_legacy_sections(profile) == [])
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
+
+    print('== Beim Entfernen des Add-ons gehen die Zugangsdaten mit ==')
+    # Ohne installTasks ueberlebten sie die Deinstallation. NVDA ruft
+    # onUninstall aber auch bei einem UPDATE auf - dann muessen sie bleiben,
+    # sonst kostet jedes Update fuenf Anmeldungen und eine neue
+    # Netatmo-Freigabe im Browser.
+    import importlib.util
+    import types as _types
+    tmp = tempfile.mkdtemp()
+    saved_handler = sys.modules.get('addonHandler')
+    try:
+        addon = os.path.join(tmp, 'SmartHomeControl')
+        os.makedirs(addon)
+        shutil.copy(os.path.join(os.path.dirname(os.path.dirname(BASE)),
+                                 'installTasks.py'), addon)
+        cred = os.path.join(tmp, 'SmartHomeControl_credentials.json')
+        hist = os.path.join(tmp, 'SmartHomeControl_history.json')
+        for path in (cred, hist):
+            with open(path, 'w') as f:
+                f.write('{}')
+        pending = set()
+        sys.modules['addonHandler'] = _types.SimpleNamespace(
+            state={'pending': pending},
+            AddonStateCategory=_types.SimpleNamespace(PENDING_INSTALL='pending'))
+        spec = importlib.util.spec_from_file_location(
+            'installTasks_probe', os.path.join(addon, 'installTasks.py'))
+        tasks = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(tasks)
+        os.makedirs(os.path.join(tmp, 'SmartHomeControl.pendingInstall'))
+        tasks.onUninstall()
+        check('bei einem Update bleiben sie (neue Version wartet als Ordner)',
+              os.path.exists(cred))
+        os.rmdir(os.path.join(tmp, 'SmartHomeControl.pendingInstall'))
+        pending.add('SmartHomeControl')
+        tasks.onUninstall()
+        check('... oder im Zustand von NVDA', os.path.exists(cred))
+        pending.clear()
+        tasks.onUninstall()
+        check('beim Entfernen werden sie geloescht', not os.path.exists(cred))
+        check('der Verlauf bleibt - er gehoert dem Nutzer, kein Schluessel',
+              os.path.exists(hist))
+    finally:
+        if saved_handler is None:
+            sys.modules.pop('addonHandler', None)
+        else:
+            sys.modules['addonHandler'] = saved_handler
+        shutil.rmtree(tmp, ignore_errors=True)
+
+    print('== Die E-Mail-Adressen werden verschluesselt gespeichert ==')
+    src = io.open(os.path.join(BASE, '__init__.py'), encoding='utf-8').read()
+    for key, attr in (('email', 'email'), ('vesyncEmail', 'vesync_email'),
+                      ('cozytouchEmail', 'cozytouch_email'),
+                      ('petlibroEmail', 'petlibro_email')):
+        check(f'{key} wird verschluesselt geschrieben',
+              f'secrets["{key}"] = encrypt_dpapi(self.{attr})' in src)
+        check(f'{key} wird verschluesselt UND alt im Klartext gelesen',
+              f'self.{attr} = _maybe_secret("{key}")' in src)
+
     print('== Der Code benutzt den Speicher wirklich ==')
     src = io.open(os.path.join(BASE, '__init__.py'), encoding='utf-8').read()
+    check('load_settings entfernt den alten Abschnitt aus nvda.ini',
+          'credential_store.drop_legacy_sections(config.conf.profiles[0])' in src)
+    after = src.split('credential_store.drop_legacy_sections(', 1)[-1][:600]
+    check('und schreibt die Konfiguration gleich weg',
+          'self._flush_config_to_disk()' in after)
     check('load_settings holt die Geheimnisse dort',
           'secrets = credential_store.load(conf)' in src)
     check('save_settings schreibt sie dorthin',

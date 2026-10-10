@@ -44,11 +44,11 @@ def load_devices():
         'warning': staticmethod(lambda *a, **k: None),
         'error': staticmethod(lambda *a, **k: None)})()
     sys.modules['addonHandler'].initTranslation = lambda: None
-    spec = importlib.util.spec_from_file_location(
-        'cozytouch_devices_probe', os.path.join(BASE, 'cozytouch_devices.py'))
-    mod = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(mod)
-    return mod
+    # As a package, so its relative imports (formatting) resolve.
+    pkg = types.ModuleType('shcschedule')
+    pkg.__path__ = [BASE]
+    sys.modules['shcschedule'] = pkg
+    return importlib.import_module('shcschedule.cozytouch_devices')
 
 
 class Api:

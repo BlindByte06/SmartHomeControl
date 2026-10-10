@@ -18,8 +18,9 @@ if "_" not in globals():  # fallback if initTranslation() fails
     def _(s):
         return s
 
+from .errors import log_failure
 from .constants import (
-    BEEP_ON, BEEP_ERROR,
+    BEEP_ON,
 )
 from .history import get_history
 from .dialog_helpers import _beep
@@ -334,10 +335,21 @@ class _MerossDialogMixin:
             red, green, blue: RGB values (0-255)
             color_name: name of the color for the announcement
         """
+        # Off the wx thread: a lamp that does not answer kept NVDA itself
+        # frozen for up to two minutes. The answer is handled below.
+        self._run_cloud_call(
+            "Meross RGB colour",
+            lambda: self.plugin.api.set_light_rgb(
+                uuid=device.uuid, red=red, green=green, blue=blue),
+            lambda _r: self._rgb_color_set(device, tree_item, red, green,
+                                            blue, color_name),
+            on_error=lambda e: self._rgb_color_failed(device, e),
+            worker_done=lambda _r: get_history().log_action(
+                device, 'light_rgb', f"RGB {red},{green},{blue}"))
+
+    def _rgb_color_set(self, device, tree_item, red, green, blue, color_name):
+        """The colour was set (wx thread): cache, announce, refresh the tree."""
         try:
-            # Set the color
-            self.plugin.api.set_light_rgb(uuid=device.uuid, red=red, green=green, blue=blue)
-            
             # Set the mode to RGB and cache the RGB values (for a correct
             # display)
             rgb_tuple = (red, green, blue)
@@ -361,8 +373,6 @@ class _MerossDialogMixin:
             else:
                 # Translators: Confirmation after setting a predefined color.
                 ui.message(_("{name}: {color} set").format(name=device.name, color=color_name))
-            get_history().log_action(
-                device, 'light_rgb', f"RGB {red},{green},{blue}")
             
             # Update the tree (in a separate try block so errors here are not
             # reported as color errors)
@@ -376,26 +386,25 @@ class _MerossDialogMixin:
                 log.debug(f"Failed to refresh the tree after a colour change: {e}")
                 # No error sound - the color was set successfully!
             
-        except TimeoutError:
-            _beep(BEEP_ERROR)
+        except Exception as e:
+            log.debug(f"Updating the tree after a colour change failed: {e}")
+
+    def _rgb_color_failed(self, device, e):
+        """The colour could not be set (wx thread): say why."""
+        if isinstance(e, TimeoutError):
             # Translators: Error message on timeout while setting the color.
             ui.message(_("{name}: timeout – is the lamp reachable?").format(name=device.name))
-        except ConnectionError:
-            _beep(BEEP_ERROR)
+        elif isinstance(e, ConnectionError):
             # Translators: Error message when there is no connection.
             ui.message(_("{name}: no connection").format(name=device.name))
-        except RuntimeError as e:
-            _beep(BEEP_ERROR)
-            error_msg = str(e).lower()
-            if "offline" in error_msg:
+        elif isinstance(e, RuntimeError):
+            if "offline" in str(e).lower():
                 # Translators: Message when the device is offline.
                 ui.message(_("{name}: offline").format(name=device.name))
             else:
                 # Translators: Generic error message with detail text.
                 ui.message(_("{name}: error – {error}").format(name=device.name, error=str(e)))
-        except Exception as e:
-            _beep(BEEP_ERROR)
-            log.error(f"Failed to set the RGB colour of {device.name}: {type(e).__name__}: {e}")
+        else:
             # Translators: Error message when the RGB color cannot be set.
             ui.message(_("{name}: color cannot be set").format(name=device.name))
 
@@ -448,7 +457,7 @@ class _MerossDialogMixin:
                 # Update the dialog on the UI thread
                 wx.CallAfter(self._refresh_after_meross_init, len(devices))
             except Exception as e:
-                log.error(f"Late Meross initialisation failed: {type(e).__name__}: {e}")
+                log_failure("Late Meross initialisation failed", e)
                 wx.CallAfter(self._offer_login_reentry, 'meross', e)
             finally:
                 plugin.end_platform_login('meross')

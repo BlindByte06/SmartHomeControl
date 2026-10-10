@@ -375,6 +375,13 @@ class DeviceFavorites:
         if platform == "cozytouch":
             return 'water_heater'
 
+        if platform == "petlibro":
+            if getattr(device, 'is_feeder', False):
+                return 'feeder'
+            if getattr(device, 'is_fountain', False):
+                return 'fountain'
+            return 'other'
+
         # Meross
         if getattr(device, 'is_plug', False):
             return 'plug'

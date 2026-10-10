@@ -22,6 +22,7 @@ if "_" not in globals():  # fallback if initTranslation() fails
         return s
 
 from .dialog_helpers import _beep
+from .formatting import fmt_decimal
 from .constants import (
     CACHE_VALID_DURATION, BOILER_COOLDOWN, NETATMO_MODE_NAMES,
     VESYNC_FILTER_WARN_THRESHOLD, BEEP_EXTERNAL_CHANGE,
@@ -60,12 +61,28 @@ _EXTERNAL_ACTIONS = {
         ('nightlight_status', 'set_nightlight', True),
         ('auto_preference_type', 'set_auto_preference', True),
     ),
+    'petlibro': (
+        ('plan_enabled', ('feeding_plan_on', 'feeding_plan_off'), False),
+        ('light', ('light_on', 'light_off'), False),
+        ('water_mode', 'set_water_mode', True),
+        ('low_water', 'set_low_water', True),
+        ('sensing_duration', 'set_flow_duration', True),
+    ),
     'netatmo': (
         ('setpoint', 'set_temp', True),
         ('mode', 'therm_mode', True),
-        ('zone_name', 'switch_schedule', True),
+        # The zone WITHIN the heating schedule (comfort, night ...), stored
+        # under the name Netatmo gives it and translated when displayed. It
+        # used to be written as "Heating schedule switched" - every evening
+        # at 22:00, while the schedule itself had not changed at all.
+        ('zone_key', 'schedule_zone', True),
     ),
 }
+
+# Within this many seconds before the end of its set duration, a boost that
+# goes off is taken to have run out rather than to have been switched off by
+# someone. The poll only sees the appliance every 15 to 30 seconds.
+BOOST_END_TOLERANCE = 180
 
 
 class _ChangeDetectionMixin:
@@ -180,7 +197,8 @@ class _ChangeDetectionMixin:
                 log.info(f"Water sensor dry again: {device.name}")
             wx.CallAfter(ui.message, msg)
 
-    def _log_external_state_changes(self, platform, device, prev, new):
+    def _log_external_state_changes(self, platform, device, prev, new,
+                                    system=None):
         """Writes what changed outside the add-on into the history.
 
         Until now only Meross did this, because its changes arrive as a push
@@ -189,21 +207,37 @@ class _ChangeDetectionMixin:
         them and then dropped them. The history could answer "was that me or
         someone else?" for one platform out of four.
 
+        ``system`` names the fields the appliance changed on its own - a
+        heating schedule moving to its night zone, a boost running out. They
+        are written with the origin "automatic" instead of "external", and a
+        field may bring an action key of its own ({'boost': 'boost_ended'});
+        None keeps the key of the table. Both happened every day and were
+        written as if somebody had done them.
+
+        A value that was not known before (None) is no change: the first
+        complete reading after a sign-in would otherwise be written as one.
+
         Runs from the polling thread, so it is fully guarded: a history that
         cannot be written must not cost the announcement.
         """
+        system = system or {}
         try:
             from .history import get_history
             history = get_history()
             for field, keys, with_value in _EXTERNAL_ACTIONS.get(platform, ()):
                 before, after = prev.get(field), new.get(field)
-                if after is None or before == after:
+                if before is None or after is None or before == after:
                     continue
                 if with_value:
                     action, detail = keys, str(after)
                 else:
                     # A pair: the first key for switched on, the second for off.
                     action, detail = keys[0] if after else keys[1], ""
+                if field in system:
+                    from .history import SOURCE_SYSTEM
+                    history.log_action(device, system[field] or action,
+                                       detail, source=SOURCE_SYSTEM)
+                    continue
                 history.log_external_action(
                     getattr(device, 'unique_id', None) or device.uuid,
                     device.name, platform, action, detail)
@@ -251,32 +285,27 @@ class _ChangeDetectionMixin:
             log.debug(f"Suppressing duplicate announcement for {device_uuid}")
             return
 
-        # Check whether announcements are enabled
-        # - global switch "Announce external changes"
-        # - per-platform switch from the "Notifications" tab: Meross toggle
-        if not self.announce_external_changes:
-            log.debug(f"External change ignored (announcements off): {device_name}")
-            return
-        if not getattr(self, 'notify_meross_toggle', True):
-            log.debug(f"Meross toggle announcement disabled: {device_name}")
-            return
-
-        # Prevent duplicate announcements (within 2 seconds)
+        # The same push twice within 2 seconds is one change.
         current_time = time.time()
         change_key = f"{device_uuid}_{new_state}_{channel_name or ''}"
-        if (self._last_announced_change == change_key and 
-            (current_time - self._last_announced_time) < 2.0):
-            log.debug(f"Duplicate announcement suppressed: {device_name}")
+        if (self._last_announced_change == change_key and
+                (current_time - self._last_announced_time) < 2.0):
+            log.debug(f"Duplicate push suppressed: {device_name}")
             return
-        
         self._last_announced_change = change_key
         self._last_announced_time = current_time
 
-        # History: external switches used to be announced but never
-        # logged, so the history could not answer the very question it is
-        # opened for: "was that me or someone else?". The origin is simply
-        # "external" - the cloud notification does not say whether it was
-        # the vendor app, a voice assistant or the button on the device.
+        # Everything up to the announcement happens whatever the settings
+        # say. The switches used to sit at the top of this method, so with
+        # announcements off an external switch reached neither the history
+        # nor the device cache nor the open dialog - the tree showed the old
+        # state until the next poll, and the history never learnt of it.
+        # Switching an announcement off means "do not interrupt me", not
+        # "do not keep track".
+        #
+        # History: the origin is simply "external" - the cloud notification
+        # does not say whether it was the vendor app, a voice assistant or
+        # the button on the device.
         self._log_external_change(device_uuid, device_name, new_state)
 
         # Update the internal cache (under the lock, since called from the push
@@ -290,6 +319,21 @@ class _ChangeDetectionMixin:
                         device._update_channels_status()
                     break
 
+        # LIVE UPDATE: update the open dialog if present
+        if self._active_dialog and hasattr(self._active_dialog, 'update_device_status_live'):
+            # Also pass channel_name for multi-channel devices
+            wx.CallAfter(self._active_dialog.update_device_status_live, device_uuid, new_state, channel_name)
+
+        # Only the announcement follows the settings:
+        # - global switch "Announce external changes"
+        # - per-platform switch from the "Notifications" tab: Meross toggle
+        if not self.announce_external_changes:
+            log.debug(f"External change not announced (announcements off): {device_name}")
+            return
+        if not getattr(self, 'notify_meross_toggle', True):
+            log.debug(f"Meross toggle announcement disabled: {device_name}")
+            return
+
         # Phonetic improvements
         display_name = device_name.replace("WLAN", "W-LAN")
         # Translators: Status "switched on" for smart home devices (short).
@@ -298,12 +342,6 @@ class _ChangeDetectionMixin:
         # Accessible announcement via wx.CallAfter (thread-safe)
         wx.CallAfter(_beep, BEEP_ON if new_state else BEEP_OFF)
         wx.CallAfter(ui.message, f"{display_name}: {status}")
-        
-        # LIVE UPDATE: update the open dialog if present
-        if self._active_dialog and hasattr(self._active_dialog, 'update_device_status_live'):
-            # Also pass channel_name for multi-channel devices
-            wx.CallAfter(self._active_dialog.update_device_status_live, device_uuid, new_state, channel_name)
-        
         log.info(f"External change announced: {device_name} -> {status}")
     
     def is_cache_fresh(self):
@@ -318,187 +356,257 @@ class _ChangeDetectionMixin:
             return None
         return et
 
-    def _detect_netatmo_changes(self, new_devices):
+    # ----------------------------------------------------------
+    # Netatmo: mark local actions and detect external changes
+    # ----------------------------------------------------------
+    def _record_local_netatmo_action(self, device_uuids):
+        """Remembers a change made here, BEFORE it is sent.
+
+        Netatmo had no such window at all: the snapshot was only brought up
+        to date three seconds after the command, by a refresh of the dialog.
+        A poll that fell between command and refresh announced the change
+        made here as one made elsewhere and wrote it to the history as
+        "external". Marked before sending, because the poll can come while
+        the command is still on its way.
+
+        ``device_uuids``: one uuid or several - the heating mode is set for
+        the whole home, and every thermostat in it changes with it.
         """
-        Detects external changes on Netatmo thermostats and issues push notifications.
-        Compares the current state with the previous one and reports differences.
+        if isinstance(device_uuids, str):
+            device_uuids = (device_uuids,)
+        recent = getattr(self, '_recent_netatmo_actions', None)
+        if recent is None:
+            recent = self._recent_netatmo_actions = {}
+        now = time.time()
+        for uuid in device_uuids:
+            recent[uuid] = now
+
+    def _is_recent_local_netatmo_action(self, device_uuid, window=30.0):
+        """True if a change was made here within ``window`` seconds."""
+        recent = getattr(self, '_recent_netatmo_actions', None) or {}
+        ts = recent.get(device_uuid, 0)
+        if not ts:
+            return False
+        if (time.time() - ts) > window:
+            recent.pop(device_uuid, None)
+            return False
+        return True
+
+    def _snapshot_netatmo_state(self, dev, old_state=None):
+        """The normalised state of a thermostat, compared from poll to poll.
+
+        The one place it is built. The dialog used to assemble its own copy
+        after an action, without the normalisation below - a missing
+        open-window flag stayed None there and turned into "Window closed"
+        on the next poll.
 
         Normalization against false notifications:
         - end_time: None/0/expired are treated the same
-        - zone_name: on an API error (None) the previous value is kept
-        - boiler: pure boiler toggles are only reported every 5 minutes (normal heating cycles)
+        - zone: on an API error (None) the previous value is kept
         - setpoint: compared rounded to 0.1°C
+        - fields the API left out of this answer keep their previous value
         """
-        if not self.announce_external_changes:
-            return
-        
+        raw_setpoint = getattr(dev, '_therm_setpoint', None)
+        new_state = {
+            'setpoint': (round(raw_setpoint, 1)
+                         if raw_setpoint is not None else None),
+            'mode': getattr(dev, '_therm_setpoint_mode', None),
+            'end_time': self._normalize_end_time(
+                getattr(dev, '_therm_setpoint_end_time', None)),
+            # Translated, for the announcement ...
+            'zone_name': getattr(dev, '_schedule_zone_name', None),
+            # ... and as Netatmo names it, for the history, which stores
+            # nothing translated.
+            'zone_key': getattr(dev, '_schedule_zone_raw', None),
+            'boiler': getattr(dev, '_boiler_status', None),
+            'anticipating': getattr(dev, '_anticipating', None),
+            'open_window': getattr(dev, '_open_window', None),
+        }
+        # State stabilization against API inconsistency. The Netatmo API
+        # does not deliver fields like anticipating, open_window,
+        # boiler_status or the zone on every call; a fresh NetatmoDevice has
+        # None for them. Without this a flip-flop occurs:
+        # cycle A: API delivers the field -> value stored
+        # cycle B: API does NOT deliver the field -> None stored
+        # cycle C: API delivers the field again -> false-positive "change"!
+        if old_state is not None:
+            for key in new_state:
+                if new_state[key] is None and old_state.get(key) is not None:
+                    new_state[key] = old_state[key]
+        # Boolean normalization: None and False are semantically identical
+        # for these fields ("not active").
+        for bool_key in ('anticipating', 'open_window'):
+            if new_state[bool_key] is None:
+                new_state[bool_key] = False
+        return new_state
+
+    @staticmethod
+    def _netatmo_change_by_schedule(old_state, new_state):
+        """True when the thermostat changed because its schedule said so.
+
+        Two cases, both the appliance's own doing:
+        - it runs its schedule before and after, and the schedule moved to
+          another zone (comfort at 06:00, night at 22:00) or its setpoint;
+        - a time-limited manual setting ran out and it went back to the
+          schedule by itself.
+        Everything else - a mode chosen, a setpoint set while not on the
+        schedule - was somebody.
+        """
+        old_mode, new_mode = old_state.get('mode'), new_state.get('mode')
+        if new_mode != 'schedule':
+            return False
+        if old_mode == 'schedule':
+            return True
+        old_end = old_state.get('end_time')
+        return bool(old_end) and old_end <= time.time() + 60
+
+    def _detect_netatmo_changes(self, new_devices):
+        """Detects external changes on Netatmo thermostats and announces them.
+
+        The history is written whatever the announcement switches say -
+        switching an announcement off means "do not interrupt me", not "do
+        not keep track". This method used to return at once with
+        announcements off, and then the snapshot stood still too: switched
+        back on, the next poll compared against a state hours old and
+        announced every difference since.
+
+        Boiler toggles without other changes are only announced every 5
+        minutes (normal heating cycles).
+        """
         for dev in new_devices:
             if not getattr(dev, 'is_thermostat', False):
                 continue
-            
             uid = dev.uuid
-            
-            # Normalize the values
-            raw_end_time = dev._therm_setpoint_end_time
-            normalized_end_time = self._normalize_end_time(raw_end_time)
-            raw_setpoint = dev._therm_setpoint
-            normalized_setpoint = round(raw_setpoint, 1) if raw_setpoint is not None else None
-            new_zone = getattr(dev, '_schedule_zone_name', None)
-            
             old_state = self._previous_netatmo_therm_states.get(uid)
-            
-            # Zone name stabilization: if new_zone is None (API error), keep
-            # the previous value instead of triggering a false change
-            if new_zone is None and old_state is not None and old_state.get('zone_name'):
-                new_zone = old_state['zone_name']
-            
-            new_state = {
-                'setpoint': normalized_setpoint,
-                'mode': dev._therm_setpoint_mode,
-                'end_time': normalized_end_time,
-                'zone_name': new_zone,
-                'boiler': getattr(dev, '_boiler_status', None),
-                'anticipating': getattr(dev, '_anticipating', None),
-                'open_window': getattr(dev, '_open_window', None),
-            }
-            
-            # FIX: state stabilization against API inconsistency. The Netatmo
-            # API does not deliver fields like anticipating, open_window,
-            # boiler_status, therm_setpoint_temperature etc. on every call. New
-            # NetatmoDevice objects then have None as the default. Without this
-            # stabilization a flip-flop occurs:
-            # cycle A: API delivers the field -> value stored
-            # cycle B: API does NOT deliver the field -> None stored
-            # cycle C: API delivers the field again -> false-positive "change"!
-            # Solution: if the new value is None and an old value exists, keep
-            # the old value (the API just did not include it).
-            if old_state is not None:
-                for key in new_state:
-                    if new_state[key] is None and old_state.get(key) is not None:
-                        new_state[key] = old_state[key]
-            
-            # Boolean normalization: None and False are semantically identical
-            # for boolean fields ("not active"). Prevents residual cases.
-            for bool_key in ('anticipating', 'open_window'):
-                if new_state[bool_key] is None:
-                    new_state[bool_key] = False
-            
-            if old_state is not None:
-                # Per-event switches from the "Notifications" tab
-                wants_setpoint = getattr(self, 'notify_netatmo_setpoint', True)
-                wants_mode = getattr(self, 'notify_netatmo_mode', True)
-                wants_boiler = getattr(self, 'notify_netatmo_boiler', True)
-                wants_open_window = getattr(self, 'notify_netatmo_open_window', True)
-                wants_anticipation = getattr(self, 'notify_netatmo_anticipation', False)
-
-                changes = []
-
-                # Setpoint changed (normalized to 0.1°C)
-                old_sp = old_state.get('setpoint')
-                new_sp = new_state.get('setpoint')
-                if wants_setpoint:
-                    if new_sp is not None and old_sp is not None and abs(old_sp - new_sp) >= 0.05:
-                        # Translators: Netatmo thermostat announcement: new
-                        # target temperature in °C.
-                        changes.append(_("Target temperature: {temp:.1f}°C").format(temp=new_sp))
-                    elif new_sp is not None and old_sp is None:
-                        changes.append(_("Target temperature: {temp:.1f}°C").format(temp=new_sp))
-
-                # Mode changed
-                if wants_mode and old_state.get('mode') != new_state.get('mode') and new_state.get('mode') is not None:
-                    mode_text = NETATMO_MODE_NAMES.get(new_state['mode'], new_state['mode'])
-                    # For schedule mode also show the active zone name
-                    if new_state['mode'] == 'schedule' and new_state.get('zone_name'):
-                        mode_text += f" ({new_state['zone_name']})"
-                    # Translators: Netatmo thermostat announcement: new heating
-                    # mode (e.g. schedule, manual, away).
-                    changes.append(_("Heating mode: {mode}").format(mode=mode_text))
-
-                # Schedule zone changed (even if the mode stays the same)
-                if (wants_mode
-                        and old_state.get('mode') == new_state.get('mode') == 'schedule'
-                        and old_state.get('zone_name') != new_state.get('zone_name')
-                        and new_state.get('zone_name')):
-                    # Translators: Netatmo thermostat announcement: the
-                    # schedule switched to a different zone (e.g. day ->
-                    # night).
-                    changes.append(_("Schedule zone: {zone}").format(zone=new_state['zone_name']))
-
-                # End time changed (normalized) - tied to the setpoint category
-                old_et = old_state.get('end_time')
-                new_et = new_state.get('end_time')
-                if wants_setpoint and old_et != new_et:
-                    if new_et and new_et > time.time():
-                        end_str = time.strftime("%H:%M", time.localtime(new_et))
-                        # Translators: Netatmo thermostat announcement: until
-                        # when the manual target temperature applies (HH:MM).
-                        changes.append(_("until {time}").format(time=end_str))
-                    elif old_et and not new_et:
-                        # Translators: Netatmo thermostat announcement: the
-                        # time limit of a manual setting was removed.
-                        changes.append(_("End time removed"))
-
-                # Boiler status changed (heating on/off). Pure boiler toggles
-                # (without other changes) are only reported every 5 min
-                boiler_changed = (old_state.get('boiler') != new_state.get('boiler')
-                                  and new_state.get('boiler') is not None)
-                if boiler_changed and wants_boiler:
-                    # Translators: Netatmo thermostat announcement: the boiler
-                    # is currently heating.
-                    boiler_text = _("Heating active") if new_state['boiler'] else _("Heating "
-                                                                                   "off")
-                    # If there are also other changes, always report the boiler
-                    if changes:
-                        changes.append(boiler_text)
-                    else:
-                        # Pure boiler change: check the cooldown
-                        last_boiler_time = self._last_boiler_announce_time.get(uid, 0)
-                        if (time.time() - last_boiler_time) >= BOILER_COOLDOWN:
-                            changes.append(boiler_text)
-                            self._last_boiler_announce_time[uid] = time.time()
-                        else:
-                            log.debug(f"Netatmo boiler toggle suppressed (cooldown): {dev.name}")
-
-                # Pre-heating (anticipation) changed
-                old_antic = old_state.get('anticipating')
-                new_antic = new_state.get('anticipating')
-                if wants_anticipation and old_antic != new_antic and new_antic is not None:
-                    if new_antic:
-                        # Translators: Netatmo announcement: the thermostat is
-                        # pre-heating for an upcoming target temperature
-                        # increase.
-                        changes.append(_("Pre-heating started"))
-                    else:
-                        # Translators: Netatmo announcement: pre-heating has
-                        # finished.
-                        changes.append(_("Pre-heating finished"))
-
-                # Open window changed
-                old_ow = old_state.get('open_window')
-                new_ow = new_state.get('open_window')
-                if wants_open_window and old_ow != new_ow and new_ow is not None:
-                    if new_ow:
-                        # Translators: Netatmo announcement: the thermostat
-                        # detected an open window (sudden temperature drop).
-                        changes.append(_("Open window detected"))
-                    else:
-                        # Translators: Netatmo announcement: the open window
-                        # was closed.
-                        changes.append(_("Window closed"))
-
-                if changes:
-                    change_text = ", ".join(changes)
-                    wx.CallAfter(_beep, BEEP_EXTERNAL_CHANGE)
-                    wx.CallAfter(ui.message, f"{dev.name}: {change_text}")
-                    log.info(f"Netatmo external change: {dev.name} - {change_text}")
-                    self._log_external_state_changes(
-                        'netatmo', dev, old_state, new_state)
-                    # Also refresh the boiler cooldown on combined changes
-                    if boiler_changed:
-                        self._last_boiler_announce_time[uid] = time.time()
-            
-            # Store the current (normalized) state
+            new_state = self._snapshot_netatmo_state(dev, old_state)
             self._previous_netatmo_therm_states[uid] = new_state
+            if old_state is None:
+                continue  # first observation: remember, do not announce
+
+            if self._is_recent_local_netatmo_action(uid):
+                log.debug(f"Netatmo change suppressed (local action): {dev.name}")
+                continue
+
+            # The history first, independent of the announcement switches.
+            by_schedule = self._netatmo_change_by_schedule(old_state, new_state)
+            system = ({'setpoint': None, 'zone_key': None, 'mode': None}
+                      if by_schedule else None)
+            self._log_external_state_changes(
+                'netatmo', dev, old_state, new_state, system=system)
+
+            if not self.announce_external_changes:
+                continue
+
+            # Per-event switches from the "Notifications" tab
+            wants_setpoint = getattr(self, 'notify_netatmo_setpoint', True)
+            wants_mode = getattr(self, 'notify_netatmo_mode', True)
+            wants_boiler = getattr(self, 'notify_netatmo_boiler', True)
+            wants_open_window = getattr(self, 'notify_netatmo_open_window', True)
+            wants_anticipation = getattr(self, 'notify_netatmo_anticipation', False)
+
+            changes = []
+
+            # Setpoint changed (normalized to 0.1°C)
+            old_sp = old_state.get('setpoint')
+            new_sp = new_state.get('setpoint')
+            if (wants_setpoint and new_sp is not None
+                    and (old_sp is None or abs(old_sp - new_sp) >= 0.05)):
+                # Translators: Netatmo thermostat announcement: new target
+                # temperature in °C.
+                changes.append(_("Target temperature: {temp}°C").format(
+                    temp=fmt_decimal(new_sp, 1)))
+
+            # Mode changed
+            if wants_mode and old_state.get('mode') != new_state.get('mode') and new_state.get('mode') is not None:
+                mode_text = NETATMO_MODE_NAMES.get(new_state['mode'], new_state['mode'])
+                # For schedule mode also show the active zone name
+                if new_state['mode'] == 'schedule' and new_state.get('zone_name'):
+                    mode_text += f" ({new_state['zone_name']})"
+                # Translators: Netatmo thermostat announcement: new heating
+                # mode (e.g. schedule, manual, away).
+                changes.append(_("Heating mode: {mode}").format(mode=mode_text))
+
+            # Schedule zone changed (even if the mode stays the same)
+            if (wants_mode
+                    and old_state.get('mode') == new_state.get('mode') == 'schedule'
+                    and old_state.get('zone_name') != new_state.get('zone_name')
+                    and new_state.get('zone_name')):
+                # Translators: Netatmo thermostat announcement: the
+                # schedule switched to a different zone (e.g. day ->
+                # night).
+                changes.append(_("Schedule zone: {zone}").format(zone=new_state['zone_name']))
+
+            # End time changed (normalized) - tied to the setpoint category
+            old_et = old_state.get('end_time')
+            new_et = new_state.get('end_time')
+            if wants_setpoint and old_et != new_et:
+                if new_et and new_et > time.time():
+                    end_str = time.strftime("%H:%M", time.localtime(new_et))
+                    # Translators: Netatmo thermostat announcement: until
+                    # when the manual target temperature applies (HH:MM).
+                    changes.append(_("until {time}").format(time=end_str))
+                elif old_et and not new_et:
+                    # Translators: Netatmo thermostat announcement: the
+                    # time limit of a manual setting was removed.
+                    changes.append(_("End time removed"))
+
+            # Boiler status changed (heating on/off). Pure boiler toggles
+            # (without other changes) are only reported every 5 min
+            boiler_changed = (old_state.get('boiler') != new_state.get('boiler')
+                              and new_state.get('boiler') is not None)
+            if boiler_changed and wants_boiler:
+                # Translators: Netatmo thermostat announcement: the boiler
+                # is currently heating.
+                boiler_text = _("Heating active") if new_state['boiler'] else _("Heating "
+                                                                               "off")
+                # If there are also other changes, always report the boiler
+                if changes:
+                    changes.append(boiler_text)
+                else:
+                    # Pure boiler change: check the cooldown
+                    last_boiler_time = self._last_boiler_announce_time.get(uid, 0)
+                    if (time.time() - last_boiler_time) >= BOILER_COOLDOWN:
+                        changes.append(boiler_text)
+                        self._last_boiler_announce_time[uid] = time.time()
+                    else:
+                        log.debug(f"Netatmo boiler toggle suppressed (cooldown): {dev.name}")
+
+            # Pre-heating (anticipation) changed
+            old_antic = old_state.get('anticipating')
+            new_antic = new_state.get('anticipating')
+            if wants_anticipation and old_antic != new_antic and new_antic is not None:
+                if new_antic:
+                    # Translators: Netatmo announcement: the thermostat is
+                    # pre-heating for an upcoming target temperature
+                    # increase.
+                    changes.append(_("Pre-heating started"))
+                else:
+                    # Translators: Netatmo announcement: pre-heating has
+                    # finished.
+                    changes.append(_("Pre-heating finished"))
+
+            # Open window changed
+            old_ow = old_state.get('open_window')
+            new_ow = new_state.get('open_window')
+            if wants_open_window and old_ow != new_ow and new_ow is not None:
+                if new_ow:
+                    # Translators: Netatmo announcement: the thermostat
+                    # detected an open window (sudden temperature drop).
+                    changes.append(_("Open window detected"))
+                else:
+                    # Translators: Netatmo announcement: the open window
+                    # was closed.
+                    changes.append(_("Window closed"))
+
+            if changes:
+                change_text = ", ".join(changes)
+                wx.CallAfter(_beep, BEEP_EXTERNAL_CHANGE)
+                wx.CallAfter(ui.message, f"{dev.name}: {change_text}")
+                log.info(f"Netatmo change: {dev.name} - {change_text}"
+                         f"{' (schedule)' if by_schedule else ''}")
+                # Also refresh the boiler cooldown on combined changes
+                if boiler_changed:
+                    self._last_boiler_announce_time[uid] = time.time()
 
     # ----------------------------------------------------------
     # VeSync: mark local actions and detect external changes
@@ -666,8 +774,6 @@ class _ChangeDetectionMixin:
 
             if old_state is None:
                 continue  # first snapshot - no announcement
-            if not self.announce_external_changes:
-                continue
             # Deliberately do NOT override the window: the 30 s default of
             # _is_recent_local_vesync_action covers both the foreground poll
             # interval (15 s) and the 30-60 s cached bypassV2 cloud response.
@@ -683,6 +789,28 @@ class _ChangeDetectionMixin:
             cls_name = type(dev).__name__
             mode_map = (VESYNC_PURIFIER_MODE_NAMES if cls_name == 'VeSyncPurifier'
                         else VESYNC_FAN_MODE_NAMES)
+            # Tower fans have "normal" as the counterpart to the purifier's
+            # manual mode.
+            manual_mode_active = (
+                (cls_name == 'VeSyncPurifier' and new_state['mode'] == 'manual')
+                or (cls_name == 'VeSyncTowerFan' and new_state['mode'] == 'normal')
+            )
+
+            # The history, whatever the announcement switches say - it used
+            # to be written only together with an announcement, so with the
+            # switches off a change made elsewhere was simply lost. The fan
+            # level only in a user-controlled mode: in auto and sleep the
+            # purifier changes it by itself, and it was written as a fan
+            # speed somebody had set whenever something else changed with
+            # it.
+            history_state = dict(new_state)
+            if not (manual_mode_active and new_state['is_on']):
+                history_state['fan_level'] = old_state.get('fan_level')
+            self._log_external_state_changes('vesync', dev, old_state,
+                                             history_state)
+
+            if not self.announce_external_changes:
+                continue
 
             # Per-event switches: maintained in the "Notifications" tab (see
             # settings_panel._create_notifications_tab).
@@ -731,13 +859,6 @@ class _ChangeDetectionMixin:
             # Consequently they are not announced either; otherwise the user
             # would regularly hear "level 3 (high)" during auto operation
             # although they did not switch anything.
-            #
-            # Tower fans have "normal" as the counterpart to the purifier's
-            # manual mode.
-            manual_mode_active = (
-                (cls_name == 'VeSyncPurifier' and new_state['mode'] == 'manual')
-                or (cls_name == 'VeSyncTowerFan' and new_state['mode'] == 'normal')
-            )
             if (old_state['fan_level'] is not None
                     and old_state['fan_level'] != new_state['fan_level']
                     and new_state['fan_level'] is not None
@@ -896,8 +1017,6 @@ class _ChangeDetectionMixin:
             wx.CallAfter(_beep, beep_const)
             wx.CallAfter(ui.message, f"{display_name}: {change_text}")
             log.info(f"VeSync external change: {dev.name} - {change_text}")
-            self._log_external_state_changes('vesync', dev, old_state,
-                                             new_state)
 
             # LIVE UPDATE: nudge the open dialog so the tree nodes show the new
             # status immediately (analogous to Meross/Netatmo).
@@ -943,13 +1062,91 @@ class _ChangeDetectionMixin:
             'away': getattr(device, 'away_on', None),
         }
 
+    def _cozytouch_boost_runs(self):
+        """The running boosts: uuid -> {'start': time, 'minutes': duration}.
+
+        Either may be None - a start the add-on did not see, a duration
+        nobody set.
+        """
+        runs = getattr(self, '_cozytouch_boosts', None)
+        if runs is None:
+            runs = self._cozytouch_boosts = {}
+        return runs
+
+    def _note_cozytouch_boost(self, uuid, prev, new_state, minutes=None):
+        """Keeps track of a running boost: since when and for how long.
+
+        The start is known when the poll sees the boost come on, or from the
+        dialog that switched it on (_note_local_cozytouch_boost); a boost
+        already running at the sign-in has an unknown start, and its end is
+        then taken as somebody's doing - nothing else can be said.
+
+        The duration is remembered here because the appliance does not keep
+        it. Right after a boost was switched on on 2026-10-02, capability 232
+        read "no time limit set", and the history shows a duration set
+        seconds after every start since 2026-09-09. Each of those eight
+        boosts then ran out to the minute - 30, 60, 62, 65, 70 and 90 - and
+        every end was written as "Boost switched off", origin "external": the
+        duration was read from the appliance at the poll that saw the boost
+        go off, and it was gone by then.
+        """
+        runs = self._cozytouch_boost_runs()
+        if not new_state.get('boost'):
+            runs.pop(uuid, None)
+            return
+        run = runs.get(uuid)
+        if run is None:
+            began = prev is not None and prev.get('boost') is False
+            run = runs[uuid] = {'start': time.time() if began else None,
+                                'minutes': None}
+        if minutes:
+            run['minutes'] = minutes
+
+    def _note_local_cozytouch_boost(self, uuid, on=None, minutes=None):
+        """The dialog switched a boost on or off, or set its duration.
+
+        Known better here than by the poll: the start is the moment the
+        cloud confirmed it, and the duration the one that was sent - the
+        appliance does not report it back. A duration set while no boost
+        runs is not taken: whether the appliance keeps it for the next one
+        is not known, and a boost that runs without limit and is switched
+        off by somebody would otherwise count as having run out.
+        """
+        runs = self._cozytouch_boost_runs()
+        if on is False:
+            runs.pop(uuid, None)
+            return
+        if on:
+            run = runs.setdefault(uuid, {'start': None, 'minutes': None})
+            run['start'] = time.time()
+        run = runs.get(uuid)
+        if run is not None and minutes:
+            run['minutes'] = minutes
+
+    def _cozytouch_boost_ran_out(self, dev, uuid):
+        """True when a boost that just went off had reached its duration."""
+        run = self._cozytouch_boost_runs().get(uuid) or {}
+        started, minutes = run.get('start'), run.get('minutes')
+        if not minutes:
+            try:
+                minutes = float(getattr(dev, 'boost_total_time', None) or 0)
+            except (TypeError, ValueError):
+                minutes = 0
+        if not started or not minutes or minutes <= 0:
+            return False
+        return time.time() - started >= minutes * 60 - BOOST_END_TOLERANCE
+
     def _detect_cozytouch_changes(self, devices):
         """Detects external changes (app/physical) and announces them.
 
         Compares the current state against the last snapshot - analogous to
-        ``_detect_vesync_changes``/``_detect_netatmo_changes``. Respects the
-        notification settings, ``announce_external_changes``, suppresses the
-        user's own recent actions and duplicate announcements.
+        ``_detect_vesync_changes``/``_detect_netatmo_changes``. The history
+        is written whatever the announcement switches say; the announcement
+        follows them and ``announce_external_changes``. The user's own recent
+        actions and duplicate announcements are suppressed.
+
+        A boost that goes off at the end of its duration is the appliance's
+        own doing: written as "Boost ended", origin "automatic", and said so.
         """
         from .cozytouch_devices import COZYTOUCH_HEATING_MODE_NAMES, _fmt_temp
         for dev in devices:
@@ -959,13 +1156,24 @@ class _ChangeDetectionMixin:
             # ALWAYS update the snapshot (even when we do not announce) so no
             # stale comparisons occur on the next poll.
             self._previous_cozytouch_states[uuid] = new_state
+            # Before the boost bookkeeping below forgets the start time.
+            boost_ended = (prev is not None and bool(prev.get('boost'))
+                           and new_state.get('boost') is False
+                           and self._cozytouch_boost_ran_out(dev, uuid))
+            self._note_cozytouch_boost(uuid, prev, new_state,
+                                       getattr(dev, 'boost_total_time', None))
             if prev is None:
                 continue  # first observation: only remember, do not announce
-            if not self.announce_external_changes:
-                continue
             # Do not report the user's own recent action as an external change.
             if self._is_recent_local_cozytouch_action(uuid):
                 log.debug(f"Cozytouch change suppressed (local action): {dev.name}")
+                continue
+
+            self._log_external_state_changes(
+                'cozytouch', dev, prev, new_state,
+                system={'boost': 'boost_ended'} if boost_ended else None)
+
+            if not self.announce_external_changes:
                 continue
 
             parts = []
@@ -983,15 +1191,21 @@ class _ChangeDetectionMixin:
                 # in degrees.
                 parts.append(_("Target temperature {temp} degrees").format(
                     temp=_fmt_temp(new_state['target_temp'])))
-            if self.notify_cozytouch_mode and prev['mode'] != new_state['mode']:
+            if (self.notify_cozytouch_mode and prev['mode'] != new_state['mode']
+                    and new_state['mode'] is not None):
                 mode_de = COZYTOUCH_HEATING_MODE_NAMES.get(new_state['mode'], new_state['mode'])
                 # Translators: Cozytouch announcement: new heating mode.
                 parts.append(_("Mode {mode}").format(mode=mode_de))
             if self.notify_cozytouch_boost and prev['boost'] != new_state['boost']:
-                # Translators: Cozytouch announcement: boost mode switched on
-                # or off.
-                parts.append(_("Boost on") if new_state['boost'] else _("Boost "
-                                                                         "off"))
+                if boost_ended:
+                    # Translators: Cozytouch announcement: the boost ran out
+                    # after its set duration.
+                    parts.append(_("Boost ended"))
+                else:
+                    # Translators: Cozytouch announcement: boost mode switched
+                    # on or off.
+                    parts.append(_("Boost on") if new_state['boost'] else _("Boost "
+                                                                             "off"))
             if (self.notify_cozytouch_away
                     and prev['away'] != new_state['away']
                     and new_state['away'] is not None):
@@ -1017,6 +1231,469 @@ class _ChangeDetectionMixin:
 
             wx.CallAfter(_beep, BEEP_EXTERNAL_CHANGE)
             wx.CallAfter(ui.message, f"{dev.name}: {change_text}")
-            log.info(f"Cozytouch external change: {dev.name} - {change_text}")
-            self._log_external_state_changes('cozytouch', dev, prev, new_state)
+            log.info(f"Cozytouch change: {dev.name} - {change_text}")
 
+    # ------------------------------------------------------------------
+    # Petlibro (feeders and water fountains)
+    # ------------------------------------------------------------------
+    def _record_local_petlibro_action(self, device_uuid):
+        """Remembers a local Petlibro action (same purpose as Cozytouch)."""
+        self._recent_petlibro_actions[device_uuid] = time.time()
+
+    def _is_recent_local_petlibro_action(self, device_uuid, window=30.0):
+        ts = self._recent_petlibro_actions.get(device_uuid, 0)
+        if not ts:
+            return False
+        if (time.time() - ts) > window:
+            self._recent_petlibro_actions.pop(device_uuid, None)
+            return False
+        return True
+
+    def _snapshot_petlibro_state(self, device):
+        """Snapshot of the monitored Petlibro fields."""
+        snap = {
+            'online': not device.is_offline,
+            'light': device.light_on,
+            'battery_low': device.battery_low,
+            'fault': device.fault,
+        }
+        if getattr(device, 'is_feeder', False):
+            snap.update(
+                plan_enabled=device.feeding_plan_enabled,
+                food_low=device.food_low,
+                desiccant_due=device.desiccant_due,
+            )
+        if getattr(device, 'is_fountain', False):
+            snap.update(
+                water_mode=device.water_mode,
+                low_water=device.low_water_ml,
+                sensing_duration=device.sensing_duration,
+                water_low=device.water_low,
+                filter_due=device.filter_due,
+                cleaning_due=device.cleaning_due,
+            )
+        return snap
+
+    def _seed_petlibro_state(self, device):
+        """Takes the current state as the baseline, without announcing it.
+
+        The work records only the first time: a refresh the user asked for
+        must not swallow a feeding that happened since the last poll.
+        """
+        self._previous_petlibro_states[device.uuid] = \
+            self._snapshot_petlibro_state(device)
+        if (device.records_loaded_at
+                and device.uuid not in self._petlibro_seen_records):
+            self._mark_petlibro_records_seen(device)
+
+    def _mark_petlibro_records_seen(self, device, only=None):
+        """Counts records as known: all the feeder has now, or ``only`` one.
+
+        After "Feed now" only the record of that feeding. Marking all of
+        them swallowed a planned meal that had come in since the last poll
+        (2026-09-23: the 12:30 meal never reached the history).
+        """
+        seen = self._petlibro_seen_records.setdefault(device.uuid, set())
+        if only is not None:
+            seen.add(only)
+            return
+        seen.update(r.get('id') for r in device.records)
+        if len(seen) > 500:
+            # The cloud returns the newest records only; older ids can go.
+            self._petlibro_seen_records[device.uuid] = {
+                r.get('id') for r in device.records}
+
+    def _detect_petlibro_changes(self, devices):
+        """Announces what a Petlibro poll brought.
+
+        Two kinds, kept apart as for the other platforms:
+
+        - Conditions of the device itself (a feeding, a failed feeding, food
+          or water running low, maintenance due, offline). They are no
+          change anyone made, so the master switch for external changes
+          does not silence them - each has a switch of its own.
+        - Settings someone changed elsewhere (feeding plan, water mode,
+          light, low water threshold). Those follow the master switch, are
+          suppressed right after a change made here, and go to the history
+          as external actions.
+        """
+        from .petlibro_devices import ml_text, fault_alert
+        from .constants import PETLIBRO_WATER_MODE_NAMES
+        for dev in devices:
+            uuid = dev.uuid
+            new = self._snapshot_petlibro_state(dev)
+            prev = self._previous_petlibro_states.get(uuid)
+            self._previous_petlibro_states[uuid] = new
+            self._detect_petlibro_feedings(dev)
+            if prev is None:
+                continue
+            # A change sent from here that the device has not confirmed yet
+            # is answered here - with a confirmation, not as a change made
+            # elsewhere. The fields it covers are taken out of the comparison.
+            for key in self._check_petlibro_expectations(dev, new):
+                prev[key] = new.get(key)
+
+            alerts = []
+            # A fault gets the error tone; a warning (food low, maintenance
+            # due) the notice tone - "food low" came with the error tone and
+            # sounded like something had broken.
+            fault = False
+            if (prev['online'] != new['online']
+                    and getattr(self, 'notify_petlibro_connection', True)):
+                # Translators: Petlibro announcement: the device got its
+                # connection back.
+                alerts.append(_("online again") if new['online'] else _("offline"))
+                fault = fault or not new['online']
+            if new['online']:
+                if new['fault'] and not prev['fault']:
+                    message = dev.fault_message
+                    # The same event may already have come as a record, or
+                    # come as one in the next minutes - said once.
+                    if not self._petlibro_fault_said_recently(dev, message):
+                        self._log_petlibro_event(dev, 'device_fault', message)
+                        if getattr(self, 'notify_petlibro_feed_failed', True):
+                            fault = True
+                            alerts.append(fault_alert(message))
+                # Written to the history whether or not it is announced.
+                if new.get('food_low') and not prev.get('food_low'):
+                    self._log_petlibro_event(dev, 'food_low')
+                    if getattr(self, 'notify_petlibro_food_low', True):
+                        # Translators: Petlibro announcement: the food
+                        # container of a feeder is almost empty.
+                        alerts.append(_("food low"))
+                if new.get('water_low') and not prev.get('water_low'):
+                    self._log_petlibro_event(dev, 'water_low')
+                    if getattr(self, 'notify_petlibro_water_low', True):
+                        # Translators: Petlibro announcement: the water of a
+                        # fountain is below the warning threshold.
+                        alerts.append(_("water low"))
+                if getattr(self, 'notify_petlibro_maintenance', True):
+                    if new.get('desiccant_due') and not prev.get('desiccant_due'):
+                        # Translators: Petlibro announcement: the desiccant of
+                        # a feeder should be replaced.
+                        alerts.append(_("desiccant due"))
+                    if new.get('filter_due') and not prev.get('filter_due'):
+                        # Translators: Petlibro announcement: the filter of a
+                        # fountain should be replaced.
+                        alerts.append(_("filter due"))
+                    if new.get('cleaning_due') and not prev.get('cleaning_due'):
+                        # Translators: Petlibro announcement: a fountain should
+                        # be cleaned.
+                        alerts.append(_("cleaning due"))
+                if (new['battery_low'] and not prev['battery_low']
+                        and getattr(self, 'notify_petlibro_battery', True)):
+                    # Translators: Petlibro announcement: the battery is low.
+                    alerts.append(_("battery low"))
+            if alerts:
+                wx.CallAfter(_beep, BEEP_ERROR if fault else BEEP_EXTERNAL_CHANGE)
+                wx.CallAfter(ui.message, f"{dev.name}: {', '.join(alerts)}")
+                log.info(f"Petlibro condition: {dev.name} - {', '.join(alerts)}")
+
+            if not new['online'] or not prev['online']:
+                continue
+            if self._is_recent_local_petlibro_action(uuid):
+                log.debug(f"Petlibro change suppressed (local action): {dev.name}")
+                continue
+            parts = []
+            if (prev.get('plan_enabled') is not None
+                    and new.get('plan_enabled') is not None
+                    and prev['plan_enabled'] != new['plan_enabled']):
+                # Translators: Petlibro announcement: the feeding plan was
+                # switched on or off elsewhere.
+                parts.append(_("feeding plan on") if new['plan_enabled']
+                             else _("feeding plan off"))
+            if (prev.get('water_mode') and new.get('water_mode')
+                    and prev['water_mode'] != new['water_mode']):
+                # Translators: Petlibro announcement: the water mode of a
+                # fountain was changed elsewhere. {mode} = new mode.
+                parts.append(_("water mode {mode}").format(
+                    mode=PETLIBRO_WATER_MODE_NAMES.get(
+                        new['water_mode'], new['water_mode'])))
+            if (prev['light'] is not None and new['light'] is not None
+                    and prev['light'] != new['light']):
+                # Translators: Petlibro announcement: the light was switched
+                # on or off elsewhere.
+                parts.append(_("light on") if new['light'] else _("light off"))
+            if (prev.get('low_water') and new.get('low_water')
+                    and prev['low_water'] != new['low_water']):
+                # Translators: Petlibro announcement: the low water warning
+                # threshold was changed elsewhere. {ml} = e.g. "1100 ml".
+                parts.append(_("water warning below {ml}").format(
+                    ml=ml_text(new['low_water'])))
+            if (prev.get('sensing_duration') and new.get('sensing_duration')
+                    and prev['sensing_duration'] != new['sensing_duration']):
+                from .petlibro_devices import duration_text
+                # Translators: Petlibro announcement: the flow duration of a
+                # fountain was changed elsewhere. {duration} = e.g. "60
+                # seconds".
+                parts.append(_("flow duration {duration}").format(
+                    duration=duration_text(new['sensing_duration'])))
+            if not parts:
+                continue
+            # Settings changes are history in any case; whether they are
+            # spoken is up to the settings.
+            self._log_external_state_changes('petlibro', dev, prev, new)
+            if not (self.announce_external_changes
+                    and getattr(self, 'notify_petlibro_settings', True)):
+                continue
+            change_text = ", ".join(parts)
+            wx.CallAfter(_beep, BEEP_EXTERNAL_CHANGE)
+            wx.CallAfter(ui.message, f"{dev.name}: {change_text}")
+            log.info(f"Petlibro external change: {dev.name} - {change_text}")
+
+    def _begin_petlibro_feed(self, device):
+        """"Feed now" is running: its record is the dialog's to report."""
+        self._petlibro_feed_wait[device.uuid] = {
+            'state': 'running', 'until': time.time() + 600}
+
+    def _end_petlibro_feed(self, device, confirmed):
+        """"Feed now" is done. Unconfirmed, a record that still comes is the
+        late confirmation of that command - announced as such, not as a
+        feeding made elsewhere, and not swallowed either."""
+        if confirmed:
+            self._petlibro_feed_wait.pop(device.uuid, None)
+        else:
+            self._petlibro_feed_wait[device.uuid] = {
+                'state': 'late', 'until': time.time() + 600}
+
+    def _petlibro_feed_state(self, device):
+        wait = self._petlibro_feed_wait.get(device.uuid)
+        if not wait:
+            return None
+        if time.time() > wait['until']:
+            self._petlibro_feed_wait.pop(device.uuid, None)
+            return None
+        return wait['state']
+
+    def _detect_petlibro_feedings(self, dev):
+        """Announces and records what a device wrote to its work records."""
+        if not dev.records_loaded_at:
+            return
+        if getattr(dev, 'is_fountain', False):
+            self._detect_petlibro_fountain_records(dev)
+            return
+        if not getattr(dev, 'is_feeder', False):
+            return
+        from .petlibro_devices import (
+            feed_from_record, portions_text, record_kind,
+        )
+        seen = self._petlibro_seen_records.get(dev.uuid)
+        if seen is None:
+            self._mark_petlibro_records_seen(dev)
+            return
+        fresh = [r for r in reversed(dev.records) if r.get('id') not in seen]
+        self._mark_petlibro_records_seen(dev)
+        for record in fresh:
+            kind = record_kind(record)
+            # Every new record is written to the log: what the feeder calls
+            # its records is known from two devices only, and a report of a
+            # wrong announcement starts from here.
+            log.info(f"Petlibro: new record on {dev.name}: "
+                     f"{record.get('type')}/{record.get('eventType')} "
+                     f"({kind})")
+            if kind == 'fed':
+                feed = feed_from_record(record)
+                amount = feed.get('portions')
+                amount_text = portions_text(amount) if amount is not None else ""
+                if feed['manual']:
+                    waiting = self._petlibro_feed_state(dev)
+                    if waiting == 'running':
+                        continue  # "Feed now" is still waiting - it reports
+                    if waiting == 'late':
+                        # The feeder confirmed our command after the dialog
+                        # had given up waiting for it.
+                        self._petlibro_feed_wait.pop(dev.uuid, None)
+                        try:
+                            from .history import get_history
+                            get_history().log_action(
+                                dev, 'feed_manual',
+                                "" if amount is None else str(amount))
+                        except Exception as e:
+                            log.debug(f"History entry (Petlibro feeding) failed: {e}")
+                        wx.CallAfter(_beep, BEEP_ACTION)
+                        # Translators: Petlibro announcement: the feeder
+                        # confirmed a "Feed now" late, after the add-on had
+                        # said it was not confirmed. {amount} = e.g.
+                        # "1 portion".
+                        wx.CallAfter(ui.message, _("{name}: feeding confirmed after all, {amount} given").format(
+                            name=dev.name, amount=amount_text))
+                        continue
+                    self._log_petlibro_external_feed(dev, amount)
+                    if (self.announce_external_changes
+                            and getattr(self, 'notify_petlibro_feed_external', True)):
+                        wx.CallAfter(_beep, BEEP_EXTERNAL_CHANGE)
+                        # Translators: Petlibro announcement: a feeding was
+                        # started elsewhere (app, button on the feeder).
+                        # {amount} = e.g. "2 portions".
+                        wx.CallAfter(ui.message, _("{name}: fed from elsewhere, {amount}").format(
+                            name=dev.name, amount=amount_text))
+                    continue
+                self._log_petlibro_event(dev, 'feed_planned',
+                                         "" if amount is None else str(amount))
+                expected = feed.get('expected')
+                short = (amount is not None and expected is not None
+                         and amount < expected)
+                if short and getattr(self, 'notify_petlibro_feed_failed', True):
+                    wx.CallAfter(_beep, BEEP_ERROR)
+                    # Translators: Petlibro announcement: a planned meal gave
+                    # less than planned. {amount} = given, {expected} = planned.
+                    wx.CallAfter(ui.message, _("{name}: meal gave only {amount} of {expected}").format(
+                        name=dev.name, amount=amount_text,
+                        expected=portions_text(expected)))
+                elif getattr(self, 'notify_petlibro_feed_planned', False):
+                    label = dev.plan_label(feed.get('plan_id'))
+                    # Translators: Petlibro announcement: a planned meal was
+                    # given. {amount} = e.g. "3 portions".
+                    text = _("{name}: meal given, {amount}").format(
+                        name=dev.name, amount=amount_text)
+                    if label:
+                        # The meal's own name from the app, as typed there.
+                        text = f"{text} ({label})"
+                    wx.CallAfter(ui.message, text)
+            elif kind == 'failed':
+                kind = str(record.get('eventType') or record.get('type') or "")
+                self._log_petlibro_event(dev, 'feed_failed', kind)
+                log.warning(f"Petlibro: {dev.name} reports {kind}")
+                if self._petlibro_feed_state(dev) == 'running':
+                    continue  # "Feed now" reports its own failure
+                if getattr(self, 'notify_petlibro_feed_failed', True):
+                    wx.CallAfter(_beep, BEEP_ERROR)
+                    # Translators: Petlibro announcement: the feeder reported a
+                    # failed feeding or a blocked outlet.
+                    wx.CallAfter(ui.message, _("{name}: feeding failed").format(
+                        name=dev.name))
+
+    # Faults a fountain writes to its records, with what to say about them.
+    # Known from the PLWF116 (2026-09-23); another one is announced as a
+    # fault without the detail.
+    _FOUNTAIN_FAULTS = ('WATER_BOX_LEAVE_ERROR',)
+
+    def _detect_petlibro_fountain_records(self, dev):
+        """Announces the faults a fountain wrote since the last poll.
+
+        Its drinks are records too; they are not announced - the drinking
+        line and its list are where they are read.
+        """
+        from .petlibro_devices import record_kind, fault_alert
+        seen = self._petlibro_seen_records.get(dev.uuid)
+        if seen is None:
+            self._mark_petlibro_records_seen(dev)
+            return
+        fresh = [r for r in reversed(dev.records) if r.get('id') not in seen]
+        self._mark_petlibro_records_seen(dev)
+        for record in fresh:
+            kind = record_kind(record)
+            code = str(record.get('eventType') or record.get('type') or "")
+            log.info(f"Petlibro: new record on {dev.name}: "
+                     f"{record.get('type')}/{record.get('eventType')} ({kind})")
+            if kind != 'failed' and not (record.get('alarmTag')
+                                         and code.upper() in self._FOUNTAIN_FAULTS):
+                continue
+            if self._petlibro_fault_said_recently(dev, code):
+                log.debug(f"Petlibro: {code} on {dev.name} already announced")
+                continue
+            self._log_petlibro_event(dev, 'device_fault', code)
+            if not getattr(self, 'notify_petlibro_feed_failed', True):
+                continue
+            wx.CallAfter(_beep, BEEP_ERROR)
+            wx.CallAfter(ui.message, f"{dev.name}: {fault_alert(code)}")
+
+    def _petlibro_fault_said_recently(self, device, value, window=600.0):
+        """True when this fault of this device was reported in the window.
+
+        A fountain reports one event twice: the cloud's fault text arrives
+        with the next poll, the record minutes later (four, measured on
+        2026-09-26) - and was announced and written to the history a second
+        time. Recording here that it was said is part of asking; a fault
+        without a name is never counted as known.
+        """
+        from .petlibro_devices import fault_key
+        key = fault_key(value)
+        if not key:
+            return False
+        said = getattr(self, '_petlibro_recent_faults', None)
+        if said is None:
+            said = self._petlibro_recent_faults = {}
+        per_device = said.setdefault(device.uuid, {})
+        now = time.time()
+        if now - per_device.get(key, 0.0) < window:
+            return True
+        per_device[key] = now
+        return False
+
+    # The settings a change made here can touch. After such a change they
+    # become the baseline of the comparison at once: the scheduler polls
+    # Petlibro every two minutes in the background, the local-action window
+    # is thirty seconds, and the next poll announced the change made here as
+    # one made elsewhere (2026-09-26, water mode "off"). The conditions keep
+    # their old value, so a fault or low water that came with the same
+    # read-back is still announced.
+    _PETLIBRO_SETTING_KEYS = ('plan_enabled', 'water_mode', 'light', 'low_water',
+                              'sensing_duration')
+
+    def _accept_local_petlibro_change(self, device):
+        """Takes the device's current settings as the baseline."""
+        prev = self._previous_petlibro_states.get(device.uuid)
+        if prev is None:
+            return
+        now = self._snapshot_petlibro_state(device)
+        for key in self._PETLIBRO_SETTING_KEYS:
+            if key in now:
+                prev[key] = now[key]
+
+    def _log_petlibro_event(self, device, action, detail=""):
+        try:
+            from .history import get_history, SOURCE_SYSTEM
+            get_history().log_action(device, action, detail, source=SOURCE_SYSTEM)
+        except Exception as e:
+            log.debug(f"History entry (Petlibro {action}) failed: {e}")
+
+    def _log_petlibro_external_feed(self, device, amount):
+        try:
+            from .history import get_history
+            get_history().log_external_action(
+                device.unique_id, device.name, 'petlibro', 'feed_manual',
+                "" if amount is None else str(amount))
+        except Exception as e:
+            log.debug(f"History entry (Petlibro feeding) failed: {e}")
+
+    def _expect_petlibro(self, device, key, expected, confirm, fail,
+                         history_action=None, detail="", window=600.0):
+        """Waits for a change the device has not confirmed yet (see
+        petlibro_devices.PetlibroPending). Answered by the next polls:
+        ``confirm`` is spoken when the device reports ``expected``, ``fail``
+        when ``window`` seconds pass without it. Ten minutes: the cordless
+        fountain took two in the one case measured."""
+        self._petlibro_expected.setdefault(device.uuid, {})[key] = {
+            'expected': expected, 'until': time.time() + window,
+            'confirm': confirm, 'fail': fail,
+            'history': history_action, 'detail': detail}
+
+    def _check_petlibro_expectations(self, dev, new):
+        """Confirms or gives up waiting changes; returns the keys they cover."""
+        waiting = self._petlibro_expected.get(dev.uuid)
+        if not waiting:
+            return set()
+        covered = set()
+        now = time.time()
+        for key, expect in list(waiting.items()):
+            covered.add(key)
+            if new.get(key) == expect['expected']:
+                del waiting[key]
+                wx.CallAfter(_beep, BEEP_ACTION)
+                wx.CallAfter(ui.message, expect['confirm'])
+                log.info(f"Petlibro: {dev.name} took {key}={expect['expected']!r}")
+                if expect['history']:
+                    try:
+                        from .history import get_history
+                        get_history().log_action(dev, expect['history'],
+                                                 expect['detail'])
+                    except Exception as e:
+                        log.debug(f"History entry (Petlibro {key}) failed: {e}")
+            elif now > expect['until']:
+                del waiting[key]
+                wx.CallAfter(_beep, BEEP_ERROR)
+                wx.CallAfter(ui.message, expect['fail'])
+                log.warning(f"Petlibro: {dev.name} did not take "
+                            f"{key}={expect['expected']!r}")
+        return covered

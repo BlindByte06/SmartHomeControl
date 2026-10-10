@@ -108,7 +108,7 @@ class _SchedulerMixin:
         ask what is reachable right now.
 
         Args:
-            platform_name: 'meross', 'netatmo', 'vesync' or 'cozytouch'
+            platform_name: one of platform_utils.PLATFORMS
             ok: True if the current refresh succeeded
             attempted: True if the refresh was attempted at all
         """
@@ -119,18 +119,27 @@ class _SchedulerMixin:
         # Kept in step: the connection diagnostics read this.
         setattr(self, f"_{platform_name}_connected",
                 None if ok is None else bool(ok))
-        if state is None:
-            return  # nothing changed, or the very first observation
 
         # Platform names are brand names -> do not translate.
         label = PLATFORM_LABELS.get(platform_name, platform_name)
+        if state is not None:
+            # Every change goes into the log at once ...
+            if state == platform_health.OK:
+                log.info(f"Platform status: {label} reconnected")
+            else:
+                log.warning(f"Platform status: {label} {state}")
+
+        # ... but is spoken only once it has lasted (see
+        # platform_health.FAULT_ANNOUNCE_GRACE): faults of under a minute
+        # came and went several times a day, two announcements each.
+        due = self.platform_health.announcement_due(platform_name)
+        if due is None:
+            return
         entry = self.platform_health.get(platform_name)
-        msg = platform_health.announcement(label, state, entry)
-        if state == platform_health.OK:
-            log.info(f"Platform status: {label} reconnected")
-        else:
-            log.warning(f"Platform status: {label} {state} - {msg}")
-        if self._fault_announcement_wanted(state):
+        msg = platform_health.announcement(label, due, entry)
+        if due != platform_health.OK:
+            log.info(f"Platform status announced: {msg}")
+        if self._fault_announcement_wanted(due):
             wx.CallAfter(ui.message, msg)
 
     def _fault_announcement_wanted(self, state):
@@ -201,6 +210,7 @@ class _SchedulerMixin:
                 ('netatmo', lambda: self.use_netatmo, lambda fg: self._refresh_netatmo()),
                 ('vesync', lambda: self.use_vesync, lambda fg: self._refresh_vesync(fg)),
                 ('cozytouch', lambda: self.use_cozytouch, lambda fg: self._refresh_cozytouch()),
+                ('petlibro', lambda: self.use_petlibro, lambda fg: self._refresh_petlibro()),
             )
 
             while self._background_refresh_running and self.is_logged_in:
@@ -287,6 +297,15 @@ class _SchedulerMixin:
                             water_devices = list(self.devices)
                         self._detect_water_alarms(water_devices)
 
+                    # History entries the debounce held back are written once
+                    # they have waited long enough - not only when the next
+                    # entry comes or NVDA shuts down.
+                    try:
+                        from .history import save_due_pending
+                        save_due_pending()
+                    except Exception as e:
+                        log.debug(f"Saving the history failed: {e}")
+
                     # LIVE UPDATE: if a poll ran and the dialog is open,
                     # refresh the tree.
                     if polled_any and self._active_dialog and hasattr(
@@ -355,6 +374,7 @@ class _SchedulerMixin:
         self._netatmo_connected = None
         self._vesync_connected = None
         self._cozytouch_connected = None
+        self._petlibro_connected = None
         self.platform_health.reset()
         # Discard ALL state snapshots. This way, after a renewed login no old
         # comparison data can fake an external change that is in truth only the
@@ -365,6 +385,12 @@ class _SchedulerMixin:
         self._last_boiler_announce_time = {}
         self._previous_cozytouch_states = {}
         self._recent_cozytouch_actions = {}
+        self._previous_petlibro_states = {}
+        self._recent_petlibro_actions = {}
+        self._petlibro_seen_records = {}
+        self._petlibro_expected = {}
+        self._petlibro_feed_wait = {}
+        self._petlibro_recent_faults = {}
         self._recent_local_toggles = {}
         self._last_announced_change = None
         self._last_announced_time = 0
@@ -552,39 +578,21 @@ class _SchedulerMixin:
         if not (self.netatmo_api and self.use_netatmo):
             return None
         try:
-            # Fetch fresh data, detect external changes BEFORE the in-place
-            # update.
-            fresh_netatmo_devs = self.netatmo_api.get_devices()
-            self._detect_netatmo_changes(fresh_netatmo_devs)
-            # Update in place so tree references stay valid.
             with self._devices_lock:
-                netatmo_devs = [d for d in self.devices if getattr(d, 'is_netatmo', False)]
-                fresh_map = {d.uuid: d for d in fresh_netatmo_devs}
-                for dev in netatmo_devs:
-                    fresh = fresh_map.get(dev.uuid)
-                    if fresh:
-                        dev._dashboard_data = fresh._dashboard_data
-                        dev._therm_measured = fresh._therm_measured
-                        dev._therm_setpoint = fresh._therm_setpoint
-                        dev._therm_setpoint_mode = fresh._therm_setpoint_mode
-                        dev._therm_setpoint_end_time = fresh._therm_setpoint_end_time
-                        dev._boiler_status = fresh._boiler_status
-                        dev._schedule_zone_name = fresh._schedule_zone_name
-                        dev._therm_setpoint_default_duration = fresh._therm_setpoint_default_duration
-                        dev._anticipating = fresh._anticipating
-                        dev._open_window = fresh._open_window
-                        dev._next_schedule_change = fresh._next_schedule_change
-                        dev._active_schedule_name = fresh._active_schedule_name
-                        dev.is_offline = fresh.is_offline
-                        dev.raw_data = fresh.raw_data
-                # Add new devices (if newly discovered)
-                existing_uuids = {d.uuid for d in netatmo_devs}
-                for fresh_dev in fresh_netatmo_devs:
-                    if fresh_dev.uuid not in existing_uuids:
-                        self.devices.append(fresh_dev)
+                netatmo_devs = [d for d in self.devices
+                                if getattr(d, 'is_netatmo', False)]
+            # In place, so tree references stay valid. Mostly the light path
+            # - one /homestatus per home; a full pass every five minutes
+            # brings the weather values and finds new devices.
+            fresh_devs = self.netatmo_api.update_device_status(netatmo_devs) or []
+            if fresh_devs:
+                with self._devices_lock:
+                    self.devices.extend(fresh_devs)
+                log.info(f"Netatmo: {len(fresh_devs)} device(s) added")
+            self._detect_netatmo_changes(netatmo_devs + list(fresh_devs))
             self.platform_health.note_parts(
                 'netatmo', getattr(self.netatmo_api, 'last_failed_parts', ()))
-            log.debug(f"Scheduler Netatmo: {len(fresh_netatmo_devs)} devices updated")
+            log.debug(f"Scheduler Netatmo: {len(netatmo_devs)} devices updated")
             # get_devices() does not raise when a half fails, so True here
             # used to mean "the call returned", not "something answered".
             return bool(getattr(self.netatmo_api, 'last_poll_ok', True))
@@ -638,3 +646,22 @@ class _SchedulerMixin:
             log.debug(f"Scheduler Cozytouch failed: {e}")
             return False
     
+
+    def _refresh_petlibro(self):
+        if not (self.petlibro_api and self.use_petlibro):
+            return None
+        with self._devices_lock:
+            petlibro_devs = [d for d in self.devices if getattr(d, 'is_petlibro', False)]
+        if not petlibro_devs:
+            return None
+        try:
+            report = self.petlibro_api.update_device_status(petlibro_devs) or {}
+            ok = bool(report.get('devices_ok'))
+            self.platform_health.note_devices(
+                'petlibro', report.get('answered'), report.get('missing'))
+            self._detect_petlibro_changes(petlibro_devs)
+            log.debug(f"Scheduler Petlibro: {len(petlibro_devs)} devices, ok={ok}")
+            return ok
+        except Exception as e:
+            log.debug(f"Scheduler Petlibro failed: {e}")
+            return False

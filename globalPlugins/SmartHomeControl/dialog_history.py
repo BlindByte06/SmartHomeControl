@@ -166,7 +166,7 @@ class HistoryDialog(wx.Dialog):
         # accelerator.
         filter_sizer.Add(wx.StaticText(self, label=_("&Platform:")), 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 4)
         # Translators: Filter option "All" (platform names are brand names).
-        self.platform_filter = wx.Choice(self, choices=[_("All"), "Meross", "Netatmo", "VeSync", "Cozytouch"])
+        self.platform_filter = wx.Choice(self, choices=[_("All"), "Meross", "Netatmo", "VeSync", "Cozytouch", "Petlibro"])
         self.platform_filter.SetSelection(0)
         filter_sizer.Add(self.platform_filter, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 8)
 
@@ -320,7 +320,8 @@ class HistoryDialog(wx.Dialog):
 
         # Platform
         plat_sel = self.platform_filter.GetSelection()
-        platform_map = {0: None, 1: 'meross', 2: 'netatmo', 3: 'vesync', 4: 'cozytouch'}
+        platform_map = {0: None, 1: 'meross', 2: 'netatmo', 3: 'vesync', 4: 'cozytouch',
+                        5: 'petlibro'}
         platform = platform_map.get(plat_sel)
 
         # Time range (in hours)

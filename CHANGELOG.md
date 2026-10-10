@@ -4,54 +4,78 @@ The GitHub release notes are built from the section of the released version.
 
 ## 26.10.1 (October 2026)
 
-### All platforms
+### Petlibro (new, experimental)
 
-- **New: platform status** - Ctrl+P in the device menu, or the button next to
-  the history. Two views: the faults since signing in with the time they
-  started and ended, and the devices that did not answer, still failing ones
-  first, with the time of their last answer. Enter opens the detail of a row.
-- An unreachable platform is shown at the platform in the device tree
-  ("Netatmo devices (7) - unreachable since 11:30"), in the status line and in
-  the connection diagnostics; values that have grown old are marked with the
-  time they arrived.
-- A platform that answers only in part counts as a fault: the Netatmo cloud
-  serves the weather station and the heating separately, and the missing
-  service is named.
-- A poll where nothing at all answers is reported as a fault - for Meross and
-  Netatmo it used to pass as a success.
-- A single device that misses a poll is recorded in the platform status
-  instead of being announced.
-- Which faults are announced can be set: a "Faults" section in the
-  notifications tab switches the announcement as a whole, and separately for
-  no longer reachable, answering only in part, and reachable again. What is
-  switched off is still recorded and stays readable in the platform status.
+- Feeders and water fountains from Petlibro, tested with the Air Smart Feeder (PLAF108) and the Dockstream 2 Cordless (PLWF116).
+- Feed now. The command is sent only once, also after a network error.
+- Feeding plan and meals: skip for today, switch off, change, add and delete.
+- Reminders for desiccant, filter and cleaning.
+- Fountain: water level, today's and yesterday's intake, single drinks, water mode, low water warning and light.
+- Fountain: flow duration of the sensor modes, 45, 60, 75 or 90 seconds (firmware 0.3.25 or later).
+- Announcements for failed feedings, feedings from elsewhere, low food or water, maintenance, low battery and settings changed elsewhere.
+- A change the fountain confirms later, on its battery, is announced as on its way and confirmed once it arrives.
+- A favourites digit announces a Petlibro device but never switches it.
+- Petlibro allows one sign-in per account at a time. A second Petlibro account with the devices shared to it keeps the Petlibro app signed in.
 
-### Meross
+### New Features
 
-- Sensors of a hub no longer disappear when the hub does not answer. They stay
-  in the device list marked as unreachable, and their favourites keep working
-  instead of turning into "not available".
-- A hub sensor that is missing comes back during normal polling, without an
-  NVDA restart.
+- Platform status (Ctrl+P in the device menu): faults since signing in and devices that did not answer.
+- The heating times of the Cozytouch heat pump can be changed, for several weekdays at once, and are read back from the appliance.
+- NVDA+Ctrl+Shift+P announces a summary of all devices. Pressed twice, it shows every device in a reading window.
+- Which platform faults are announced can be set in the notifications tab.
 
-### Cozytouch
+### Important notes
 
-- **The heating times can be changed.** The device entry shows today's windows
-  and Enter opens the input for one of them: day, start and end as HH:MM, and
-  leaving both empty deletes the window. Up to three windows a day; overlapping
-  or reversed ones are refused. A check box per weekday puts the same windows
-  on several days at once.
-- The program is read back from the appliance afterwards and what really
-  stands there is announced - the cloud confirms an execution about three to
-  five seconds before its own copy catches up.
+- An early version stored the Netatmo password in plain text in nvda.ini, and NVDA writes nvda.ini into its log. Anyone who has passed on such a log should change the Netatmo password.
 
-### Fixed
+### Security Fixes
 
-- Changes made outside the add-on reach the history for Netatmo, VeSync and
-  Cozytouch too; only Meross recorded them.
-- The boost duration and a changed time program are readable in the history
-  instead of showing their internal values.
-- The view selector of the history keeps the focus while a view is chosen.
+- Settings of an early version, including the Netatmo password, are removed from nvda.ini.
+- Email addresses are now stored encrypted, like passwords and tokens.
+- Removing the add-on deletes its stored credentials. Updates keep them.
+
+### Changes
+
+- The platforms sign in at the same time.
+- A sign-in that failed because of the network is retried automatically.
+- A platform fault is announced only once it has lasted two minutes.
+- An unreachable platform is shown in the device tree, the status line and the connection diagnostics.
+- A platform that answers only in part, or not at all, counts as a fault.
+- A single device that misses a poll is no longer announced; the platform status lists it.
+- Changes made outside the add-on are recorded in the history for all platforms, also with their announcement switched off.
+- What a device does on its own, such as a heating schedule or a boost running out, is recorded as "automatic".
+- Decimal numbers use the separator of the interface language.
+- New credentials switch their platform on when the settings are saved.
+- Saving the settings signs in only the platforms that changed.
+- The Cozytouch line "Electric heating element active" is now "Currently heating".
+- A new Petlibro meal starts with no weekday ticked.
+- NVDA starts faster: the Meross libraries load at the Meross sign-in.
+- Netatmo is polled with far fewer requests.
+- Network and server faults are logged as warnings, without NVDA's error sound.
+
+### Bug Fixes
+
+- Ctrl+F in the device menu now finds devices, not only platforms and categories.
+- NVDA no longer freezes while a VeSync, Netatmo or Meross lamp command is sent.
+- An own action is no longer recorded a second time as an external change.
+- A VeSync cooking programme is never started twice after a network error.
+- The VeSync fan level in automatic mode is no longer recorded as an external change.
+- Sensors of a Meross hub no longer disappear when the hub does not answer.
+- F5 updates the Netatmo values in the device tree again.
+- A Netatmo HTTP 429 or 408 no longer discards the sign-in tokens.
+- A Petlibro setting confirmed by the device no longer flips back while the cloud lags behind.
+- Petlibro "Feed now" is confirmed only by a manual feeding, not by a planned meal.
+- The history shows the boost duration and a changed time program as readable values.
+- Netatmo setpoints are no longer stored in the history with German text.
+- History entries are saved within 30 seconds, even when no other entry follows.
+- The view selector of the history keeps the focus.
+- Validation messages in the settings are no longer cut off.
+- The connection diagnostics say "Last refresh" instead of "Last Meross refresh".
+
+### Changes for Developers
+
+- NVDA's own requests and urllib3 take precedence over the bundled copies. The log names the copy in use after each sign-in.
+- Every build checks the bundled libraries against the OSV vulnerability database (`python build_addon.py audit`).
 - A duplicated version heading in the changelog stops the build.
 
 ## 26.9.2 (September 2026)

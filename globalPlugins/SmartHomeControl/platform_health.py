@@ -55,6 +55,15 @@ DOWN = 'down'
 # holds days of a quiet installation and still survives a bad afternoon.
 EVENT_LIMIT = 300
 
+# How long a fault has to last before it is SPOKEN. Recorded it is at once -
+# the platform node, the status line and the platform status dialog show it
+# from the first failed poll. Measured on 2026-10-01: seven faults in one
+# day, lasting 36 to 67 seconds each, every one over by the next poll - and
+# fourteen announcements interrupting whatever was being read. A fault that
+# has passed before anyone could act on it is not worth an interruption; a
+# recovery is spoken only after a fault that was.
+FAULT_ANNOUNCE_GRACE = 120.0
+
 # Names of the parts a platform can be missing, for the display. Keys are
 # neutral and stay in the record; only these texts are translated.
 PART_NAMES = {
@@ -87,6 +96,7 @@ class PlatformHealth:
             'devices_ok': None,
             'devices_total': None,
             'last_ok': 0.0,      # when the platform last answered fully
+            'announced': None,   # the state last spoken (see announcement_due)
         })
 
     # ------------------------------------------------------------------
@@ -184,7 +194,33 @@ class PlatformHealth:
                 'first': previous is None,
             })
             if previous is None:
-                return None      # first observation: remember, do not announce
+                # First observation: remember, do not announce - and count it
+                # as known, so a platform down at the sign-in is not
+                # announced two minutes later as if it had just failed.
+                entry['announced'] = state
+                return None
+            return state
+
+    def announcement_due(self, platform, grace=FAULT_ANNOUNCE_GRACE, now=None):
+        """The state to SPEAK now, or None.
+
+        A fault once it has lasted ``grace`` seconds; a recovery only after a
+        fault that was spoken. Each one once. Asked after every poll, so a
+        fault is spoken at the first poll after the grace has passed.
+        """
+        now = time.time() if now is None else now
+        with self._lock:
+            entry = self._entry(platform)
+            state = entry['state']
+            announced = entry.get('announced')
+            if state is None or state == announced:
+                return None
+            if state == OK:
+                entry['announced'] = OK
+                return OK if announced in (PARTIAL, DOWN) else None
+            if now - (entry.get('since') or now) < grace:
+                return None
+            entry['announced'] = state
             return state
 
     def reset(self):

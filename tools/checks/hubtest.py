@@ -164,8 +164,8 @@ def main():
     favs = source('dialog_favorites')
     check('es gibt eine gemeinsame Beschriftung',
           'def _unavailable_favorite_label' in favs)
-    check('sie wird fuer alle vier Plattformen benutzt',
-          favs.count('self._unavailable_favorite_label(') == 4,
+    check('sie wird fuer alle fuenf Plattformen benutzt',
+          favs.count('self._unavailable_favorite_label(') == 5,
           f"{favs.count('self._unavailable_favorite_label(')} Stellen")
     check('und es steht kein roher Text mehr im Baum',
           favs.count('_("{name} (not available)")') == 1,

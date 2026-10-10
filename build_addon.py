@@ -12,6 +12,8 @@ Usage (run inside this folder):
     python build_addon.py all      libs + pack
     python build_addon.py pot      rebuild the translation template from the source
     python build_addon.py mo       compile every .po under locale/ into its .mo
+    python build_addon.py audit    look the pinned libraries up in the OSV
+                                   vulnerability database (needs internet)
 
 Only these go into the package: manifest.ini, globalPlugins/, lib/, doc/,
 locale/ and LICENSE. Excluded are __pycache__, *.pyc/*.pyo, *.log, _old_*
@@ -43,7 +45,10 @@ ARCH_TARGETS = [
 
 # Only these top-level entries belong in the package.
 # doc/, locale/ and LICENSE are optional (skipped when absent).
-INCLUDE_TOP = ("manifest.ini", "globalPlugins", "lib", "doc", "locale", "LICENSE")
+# installTasks.py: NVDA runs its onUninstall when the add-on is removed (the
+# stored credentials go with it - see the module).
+INCLUDE_TOP = ("manifest.ini", "installTasks.py", "globalPlugins", "lib", "doc",
+               "locale", "LICENSE")
 OPTIONAL_TOP = {"doc", "locale", "LICENSE"}
 
 # "SelfTest" is the test suite of pycryptodomex: 196 files, 2.8 MB
@@ -74,6 +79,124 @@ def read_requirements():
                 raise SystemExit(f"Line outside any section: {line}")
             current.append(line)
     return pure, arch
+
+
+# ------------------------------------------------------------------ audit --
+# The OSV database is the one pip-audit reads. Asked directly, the audit needs
+# no package of its own - the build workflow installs nothing for it.
+OSV_BATCH_URL = "https://api.osv.dev/v1/querybatch"
+OSV_VULN_URL = "https://api.osv.dev/v1/vulns/"
+NVDA_LIBRARY_ZIPS = (
+    r"C:\Program Files\NVDA\library.zip",
+    r"C:\Program Files (x86)\NVDA\library.zip",
+)
+
+
+def _normalised(name):
+    return re.sub(r"[-_.]+", "-", name).lower()
+
+
+def _pinned_packages():
+    pure, arch = read_requirements()
+    return [tuple(part.strip() for part in line.split("==", 1))
+            for line in pure + arch]
+
+
+def _nvda_packages(library_zip):
+    """{normalised name: version} of what an NVDA installation ships."""
+    found = {}
+    with zipfile.ZipFile(library_zip) as z:
+        for entry in z.namelist():
+            top = entry.split("/", 1)[0]
+            if top.endswith(".dist-info"):
+                name, _sep, version = top[:-len(".dist-info")].rpartition("-")
+                found[_normalised(name)] = version
+    return found
+
+
+def _osv(url, body=None):
+    import json
+    import urllib.request
+    data = None if body is None else json.dumps(body).encode("utf-8")
+    request = urllib.request.Request(
+        url, data=data, headers={"Content-Type": "application/json"})
+    with urllib.request.urlopen(request, timeout=60) as response:
+        return json.load(response)
+
+
+def _fixed_in(vuln, name):
+    fixed = []
+    for affected in vuln.get("affected", []):
+        if _normalised(affected.get("package", {}).get("name", "")) != _normalised(name):
+            continue
+        for rng in affected.get("ranges", []):
+            fixed += [e["fixed"] for e in rng.get("events", []) if "fixed" in e]
+    return fixed
+
+
+def cmd_audit(nvda_zip=None):
+    """Looks every pinned library up in OSV, and NVDA's own copies too.
+
+    NVDA ships requests, urllib3, certifi, idna and charset_normalizer
+    itself, and its library.zip comes before lib/ on sys.path - for those,
+    NVDA's copy is the one that runs. When an NVDA installation is found
+    (or given with --nvda), its versions are looked up as well and the
+    overlap is listed. A finding there is fixed by an NVDA update, not by
+    lib/, so only a finding in a bundled version fails the command.
+
+    OSV knows what has been published as an advisory. urllib3 2.8.0 fixed
+    three issues whose advisories GitHub had not yet reviewed at release -
+    they were in the release notes and nowhere in OSV, so reading the
+    release notes of a security update stays part of the job.
+    """
+    pins = _pinned_packages()
+    targets = [(name, version, "bundled") for name, version in pins]
+    if nvda_zip is None:
+        nvda_zip = next((p for p in NVDA_LIBRARY_ZIPS if os.path.isfile(p)), None)
+    shadowed = []
+    if nvda_zip:
+        theirs_all = _nvda_packages(nvda_zip)
+        for name, version in pins:
+            theirs = theirs_all.get(_normalised(name))
+            if theirs:
+                shadowed.append((name, version, theirs))
+                targets.append((name, theirs, "NVDA"))
+    queries = [{"package": {"name": name, "ecosystem": "PyPI"}, "version": version}
+               for name, version, _origin in targets]
+    try:
+        results = _osv(OSV_BATCH_URL, {"queries": queries})["results"]
+    except Exception as e:
+        raise SystemExit(f"[audit] OSV could not be asked: {e}")
+    failed = []
+    for (name, version, origin), result in zip(targets, results):
+        vulns = result.get("vulns") or []
+        if not vulns:
+            print(f"[audit] OK    {name} {version} ({origin})")
+            continue
+        print(f"[audit] VULN  {name} {version} ({origin}):")
+        for vuln in vulns:
+            try:
+                detail = _osv(OSV_VULN_URL + vuln["id"])
+            except Exception:
+                detail = {}
+            fixed = ", ".join(_fixed_in(detail, name)) or "no fixed version"
+            print(f"              {vuln['id']} - {detail.get('summary', '')} "
+                  f"(fixed in {fixed})")
+        if origin == "bundled":
+            failed.append(f"{name} {version}")
+    if shadowed:
+        print(f"[audit] NVDA ships these itself ({nvda_zip}), and NVDA's copy "
+              f"is the one that runs:")
+        for name, ours, theirs in shadowed:
+            print(f"              {name}: bundled {ours}, NVDA {theirs}")
+    elif nvda_zip is None:
+        print("[audit] No NVDA installation found - NVDA's own copies of "
+              "requests, urllib3 and certifi were not looked at.")
+    if failed:
+        raise SystemExit("[audit] Raise the version in requirements-bundle.txt, "
+                         "then 'libs' and 'pack': " + ", ".join(failed))
+    print(f"[audit] OK - no known vulnerability in the {len(pins)} bundled "
+          f"libraries")
 
 
 def pip_download(dest, packages, platform=None, python_version=None):
@@ -280,7 +403,10 @@ def cmd_check_min_python(strict=True):
     import ast
     problems = []
     pattern = os.path.join(ROOT, "globalPlugins", "SmartHomeControl", "*.py")
-    for path in sorted(glob.glob(pattern)):
+    # installTasks.py runs inside NVDA too - at the removal of the add-on.
+    paths = sorted(glob.glob(pattern)) + [
+        p for p in (os.path.join(ROOT, "installTasks.py"),) if os.path.isfile(p)]
+    for path in paths:
         with open(path, encoding="utf-8") as f:
             src = f.read()
         for node in ast.walk(ast.parse(src, path)):
@@ -827,7 +953,7 @@ def main():
     parser.add_argument("command",
                         choices=["libs", "pack", "all", "i18n", "licenses",
                                  "relnotes", "py311", "pot", "mo",
-                                 "manifests"])
+                                 "manifests", "audit"])
     parser.add_argument("--out", help="additional target folder for the "
                         "finished package; with 'relnotes': target file for "
                         "the text")
@@ -836,7 +962,14 @@ def main():
     parser.add_argument("--version",
                         help="with 'relnotes': version instead of the one in "
                         "manifest.ini")
+    parser.add_argument("--nvda",
+                        help="with 'audit': NVDA's library.zip (default: the "
+                        "installed NVDA, if any)")
     args = parser.parse_args()
+
+    if args.command == "audit":
+        cmd_audit(args.nvda)
+        return
 
     if args.command == "py311":
         cmd_check_min_python()

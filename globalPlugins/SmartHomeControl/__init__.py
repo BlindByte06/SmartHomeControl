@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 """
 Smart Home Control - NVDA add-on
-Controls Meross, Netatmo, VeSync/Levoit and Cozytouch/Atlantic devices
-via their cloud APIs.
+Controls Meross, Netatmo, VeSync/Levoit, Cozytouch/Atlantic and Petlibro
+devices via their cloud APIs.
 
 """
 
@@ -66,7 +66,8 @@ def _select_arch_dir(arch_root):
         f"Smart Home Control: no matching _arch folder ({expected}) found. "
         f"Meross support is NOT available on this NVDA/Python version (there "
         f"is no pure Python replacement for aiohttp and Cryptodome). The "
-        f"other platforms - Netatmo, VeSync and Cozytouch - work unchanged."
+        f"other platforms - Netatmo, VeSync, Cozytouch and Petlibro - work "
+        f"unchanged."
     )
     return None
 
@@ -74,13 +75,37 @@ addon_path = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
 lib_path = os.path.join(addon_path, "lib")
 _arch_dir = _select_arch_dir(os.path.join(lib_path, "_arch"))
 # Append the arch folder BEFORE lib so the compiled packages are found there;
-# pure Python packages (requests, idna, meross_iot, ...) come from lib/.
+# pure Python packages (meross_iot, paho, ...) come from lib/. APPENDED, so
+# NVDA's own library.zip comes first: requests, urllib3, certifi, idna and
+# charset_normalizer are NVDA's copies at runtime, whatever lib/ holds -
+# replacing them in NVDA's process could break NVDA itself. Which copy ran is
+# logged after the login (_log_library_origins).
 if _arch_dir and _arch_dir not in sys.path:
     sys.path.append(_arch_dir)
     log.debug(f"Smart Home Control: arch path appended: {_arch_dir}")
 if lib_path not in sys.path:
     sys.path.append(lib_path)
     log.debug(f"Smart Home Control: lib path appended: {lib_path}")
+
+def _log_library_origins():
+    """Logs which copy of the network libraries runs - NVDA's or the add-on's.
+
+    Once per login, after it, so aiohttp is loaded when Meross is on. A
+    report then says which versions ran, and a fix bundled in lib/ that
+    never takes effect because NVDA ships the package too shows up here.
+    """
+    own = os.path.normcase(lib_path)
+    parts = []
+    for name in ("requests", "urllib3", "certifi", "aiohttp"):
+        module = sys.modules.get(name)
+        if module is None:
+            continue
+        where = os.path.normcase(getattr(module, "__file__", "") or "")
+        origin = "add-on" if where.startswith(own) else "NVDA"
+        parts.append(f"{name} {getattr(module, '__version__', '?')} ({origin})")
+    if parts:
+        log.info("Libraries in use: " + ", ".join(parts))
+
 
 # Initialize the add-on.
 # Guarded like every other module in this package: an unguarded failure here
@@ -98,6 +123,7 @@ from .meross_api import MerossAPI
 from .netatmo_api import NetatmoAPI
 from .vesync_api import VeSyncAPI
 from .cozytouch_api import CozytouchAPI
+from .petlibro_api import PetlibroAPI, PetlibroError
 from .device_dialog import SmartHomeControlDialog
 from .settings_panel import (
     SmartHomeSettingsDialog, is_credentials_error, login_error_message,
@@ -110,7 +136,8 @@ from .platform_health import PlatformHealth
 from . import platform_health
 from .change_detection import _ChangeDetectionMixin
 from .platform_utils import (
-    split_by_platform, platform_of, PLATFORM_LABELS, PASSWORD_PLATFORMS,
+    split_by_platform, platform_of, PLATFORMS, PLATFORM_LABELS,
+    PASSWORD_PLATFORMS,
 )
 from . import credential_store
 from .meross_devices import carry_over_hub_subdevices
@@ -136,6 +163,8 @@ def _addon_version():
         log.debug(f"Add-on version could not be read: {e}")
     return "unknown"
 from .dialog_helpers import _beep
+from .errors import log_failure
+from .formatting import fmt_decimal, fmt_number
 from .constants import (
     CONFSPEC, BEEP_ERROR, BEEP_SUCCESS, BEEP_LOADING, BEEP_ACTION,
     BEEP_ON, BEEP_OFF, NETATMO_REDIRECT_PORT,
@@ -143,10 +172,15 @@ from .constants import (
 
 
 def _safe_log_error(message, exception):
-    """Logs an error WITHOUT exc_info so no sensitive request data
+    """Logs a failure WITHOUT exc_info so no sensitive request data
     (tokens, bodies, headers) ends up in the NVDA log.
+
+    At the level it deserves (see errors.log_failure): a login that failed
+    because the network was not up yet is a WARNING. It used to be an ERROR,
+    and a laptop starting before its Wi-Fi played NVDA's error sound once
+    per platform.
     """
-    log.error(f"{message}: {type(exception).__name__}: {exception}")
+    log_failure(message, exception)
 
 # Config section for this add-on
 config.conf.spec["smartHomeControl"] = CONFSPEC
@@ -176,6 +210,7 @@ class GlobalPlugin(_CredentialsMixin, _SchedulerMixin, _ChangeDetectionMixin,
         self.netatmo_api = None
         self.vesync_api = None
         self.cozytouch_api = None
+        self.petlibro_api = None
         # Thread safety: self.devices is read and written from several threads
         # (background refresh, VeSync fast poll, login thread, UI thread).
         # Read/write accesses should hold the lock or work with a snapshot
@@ -198,6 +233,13 @@ class GlobalPlugin(_CredentialsMixin, _SchedulerMixin, _ChangeDetectionMixin,
         # login, and two sessions then polled the cloud in parallel.
         self._logging_in = set()
         self._login_lock = threading.Lock()
+        # Platforms waiting for a new login attempt, and the event that ends
+        # those waits when NVDA shuts down (see _schedule_login_retry).
+        self._login_retry_pending = set()
+        self._login_retry_stop = threading.Event()
+        # save_settings() runs from several login threads at once since the
+        # platforms log in in parallel.
+        self._save_lock = threading.RLock()
         self.devices = []  # all devices (Meross + Netatmo + VeSync mixed)
         self.is_logged_in = False
         self.is_loading = False
@@ -209,6 +251,7 @@ class GlobalPlugin(_CredentialsMixin, _SchedulerMixin, _ChangeDetectionMixin,
         self.use_netatmo = False
         self.use_vesync = False
         self.use_cozytouch = False
+        self.use_petlibro = False
 
         # Encrypted password storage (backing field for the password property)
         self._encrypted_password = ""
@@ -236,6 +279,12 @@ class GlobalPlugin(_CredentialsMixin, _SchedulerMixin, _ChangeDetectionMixin,
         self._encrypted_cozytouch_password = ''
         self.cozytouch_token = ''
         self.cozytouch_capacity_liters = 0  # rated capacity (liters), 0 = off
+
+        # Petlibro credentials (feeders and water fountains)
+        self.petlibro_email = ''
+        self._encrypted_petlibro_password = ''
+        self.petlibro_token = ''
+        self.petlibro_last_portions = 1
         
         # Background refresh system
         self._last_refresh_time = 0  # timestamp of the last successful refresh
@@ -254,6 +303,7 @@ class GlobalPlugin(_CredentialsMixin, _SchedulerMixin, _ChangeDetectionMixin,
         self._netatmo_connected = None
         self._vesync_connected = None
         self._cozytouch_connected = None
+        self._petlibro_connected = None
 
         # The same knowledge in a form that can be looked up: which platform
         # is answering, since when it is not, and which part of it is missing.
@@ -286,6 +336,18 @@ class GlobalPlugin(_CredentialsMixin, _SchedulerMixin, _ChangeDetectionMixin,
         # external change on the next poll (analogous to VeSync).
         self._recent_cozytouch_actions = {}
 
+        # Petlibro: the same pair, plus the work records already seen per
+        # feeder - a feeding is noticed by a record id that is new.
+        self._previous_petlibro_states = {}
+        self._recent_petlibro_actions = {}
+        self._petlibro_seen_records = {}
+        # Changes sent from here that the device has not confirmed yet.
+        self._petlibro_expected = {}
+        # "Feed now" running or waiting for a late confirmation, per device.
+        self._petlibro_feed_wait = {}
+        # Faults announced lately, per device - one event comes twice.
+        self._petlibro_recent_faults = {}
+
         # VeSync state tracking for external change detection
         self._previous_vesync_states = {}
         # Per VeSync device: timestamp of the last local action (dialog).
@@ -312,18 +374,8 @@ class GlobalPlugin(_CredentialsMixin, _SchedulerMixin, _ChangeDetectionMixin,
         self.load_settings()
         
         # Auto login if enabled
-        if self.auto_login:
-            has_meross = self.use_meross and self.email and self._encrypted_password
-            has_netatmo = self.use_netatmo and self.netatmo_refresh_token
-            has_vesync = self.use_vesync and (
-                (self.vesync_email and self._encrypted_vesync_password)
-                or (self.vesync_token and self.vesync_account_id)
-            )
-            has_cozytouch = self.use_cozytouch and (
-                self.cozytouch_email and self._encrypted_cozytouch_password
-            )
-            if has_meross or has_netatmo or has_vesync or has_cozytouch:
-                self._start_auto_login()
+        if self.auto_login and self._platforms_to_login():
+            self._start_auto_login()
         
         log.info("Smart Home Control: initialisation finished")
     
@@ -349,7 +401,8 @@ class GlobalPlugin(_CredentialsMixin, _SchedulerMixin, _ChangeDetectionMixin,
             flush_energy()
         except Exception as e:
             log.debug(f"Energy flush during shutdown failed: {e}")
-        # Stop the unified scheduler thread.
+        # Stop the unified scheduler thread and any login retry waiting.
+        self._login_retry_stop.set()
         self._stop_background_refresh()
 
         # Wait for the thread to end cleanly (best effort).
@@ -382,6 +435,11 @@ class GlobalPlugin(_CredentialsMixin, _SchedulerMixin, _ChangeDetectionMixin,
                 self.cozytouch_api.logout()
             except Exception as e:
                 log.debug(f"Ignored error in terminate: {e}")
+        if self.petlibro_api:
+            try:
+                self.petlibro_api.logout()
+            except Exception as e:
+                log.debug(f"Ignored error in terminate: {e}")
         super().terminate()
     
     def load_settings(self):
@@ -394,8 +452,39 @@ class GlobalPlugin(_CredentialsMixin, _SchedulerMixin, _ChangeDetectionMixin,
             # file of its own and moves them out of the configuration the
             # first time it runs.
             secrets = credential_store.load(conf)
-            self.email = secrets.get("email", "")
-            
+            # An early version wrote to a section of its own, the Netatmo
+            # password in plain text among it. It goes once, and is written
+            # out at once: NVDA logs the configuration at the next start.
+            removed = credential_store.drop_legacy_sections(config.conf.profiles[0])
+            if removed:
+                log.info("Removed the configuration of an early version: "
+                         + ", ".join(f"[{name}]" for name in removed))
+                self._flush_config_to_disk()
+            # A value that cannot be decrypted here keeps its ciphertext,
+            # and save_settings writes THAT back instead of the empty string
+            # the decryption returned. DPAPI fails whenever the Windows
+            # account or the machine is another one - a portable NVDA on a
+            # stick reaches a second machine that way, and the credential
+            # file travels beside the add-on folder. Without this the first
+            # save on that machine would overwrite values that were still
+            # good on the first one, the Netatmo client id and secret among
+            # them, which are typed in by hand and cannot be fetched again.
+            self._unreadable_secrets = set()
+
+            def _secret(key):
+                """Decrypted value; notes the key when it cannot be read."""
+                plaintext, ok = decrypt_dpapi_checked(secrets.get(key, ""))
+                if not ok:
+                    self._unreadable_secrets.add(key)
+                return plaintext
+
+            def _maybe_secret(key):
+                """An email address: encrypted since 26.10.1, plain before."""
+                value = secrets.get(key, "")
+                return _secret(key) if is_encrypted(value) else value
+
+            self.email = _maybe_secret("email")
+
             # Keep the password encrypted in memory (never as plain text). It
             # is only decrypted on demand at login time via the password
             # property. set_encrypted_password() checks the format cleanly (no
@@ -430,24 +519,6 @@ class GlobalPlugin(_CredentialsMixin, _SchedulerMixin, _ChangeDetectionMixin,
             self.notify_vesync_filter = conf.get("notifyVesyncFilter", True)
             self.notify_vesync_cook = conf.get("notifyVesyncCook", True)
             
-            # A value that cannot be decrypted here keeps its ciphertext,
-            # and save_settings writes THAT back instead of the empty string
-            # the decryption returned. DPAPI fails whenever the Windows
-            # account or the machine is another one - a portable NVDA on a
-            # stick reaches a second machine that way, and the credential
-            # file travels beside the add-on folder. Without this the first
-            # save on that machine would overwrite values that were still
-            # good on the first one, the Netatmo client id and secret among
-            # them, which are typed in by hand and cannot be fetched again.
-            self._unreadable_secrets = set()
-
-            def _secret(key):
-                """Decrypted value; notes the key when it cannot be read."""
-                plaintext, ok = decrypt_dpapi_checked(secrets.get(key, ""))
-                if not ok:
-                    self._unreadable_secrets.add(key)
-                return plaintext
-
             # Netatmo credentials (all secrets encrypted)
             raw_client_id = secrets.get("netatmoClientId", "")
             if raw_client_id and is_encrypted(raw_client_id):
@@ -463,7 +534,7 @@ class GlobalPlugin(_CredentialsMixin, _SchedulerMixin, _ChangeDetectionMixin,
             self.netatmo_redirect_port = conf.get("netatmoRedirectPort", NETATMO_REDIRECT_PORT)
 
             # VeSync credentials (password and token encrypted)
-            self.vesync_email = secrets.get("vesyncEmail", "")
+            self.vesync_email = _maybe_secret("vesyncEmail")
             self.set_encrypted_vesync_password(secrets.get("vesyncPassword", ""))
             self.vesync_country_code = conf.get("vesyncCountryCode", "DE") or "DE"
             self.vesync_token = _secret("vesyncToken")
@@ -476,7 +547,7 @@ class GlobalPlugin(_CredentialsMixin, _SchedulerMixin, _ChangeDetectionMixin,
 
             # Cozytouch credentials (password and token encrypted)
             self.use_cozytouch = conf.get("useCozytouch", False)
-            self.cozytouch_email = secrets.get("cozytouchEmail", "")
+            self.cozytouch_email = _maybe_secret("cozytouchEmail")
             self.set_encrypted_cozytouch_password(secrets.get("cozytouchPassword", ""))
             self.cozytouch_token = _secret("cozytouchToken")
             self.cozytouch_capacity_liters = conf.get("cozytouchCapacityLiters", 0)
@@ -485,6 +556,22 @@ class GlobalPlugin(_CredentialsMixin, _SchedulerMixin, _ChangeDetectionMixin,
             self.notify_cozytouch_boost = conf.get("notifyCozytouchBoost", True)
             self.notify_cozytouch_power = conf.get("notifyCozytouchPower", True)
             self.notify_cozytouch_away = conf.get("notifyCozytouchAway", True)
+
+            # Petlibro credentials (password and token encrypted)
+            self.use_petlibro = conf.get("usePetlibro", False)
+            self.petlibro_email = _maybe_secret("petlibroEmail")
+            self.set_encrypted_petlibro_password(secrets.get("petlibroPassword", ""))
+            self.petlibro_token = _secret("petlibroToken")
+            self.petlibro_last_portions = conf.get("petlibroLastPortions", 1)
+            self.notify_petlibro_feed_failed = conf.get("notifyPetlibroFeedFailed", True)
+            self.notify_petlibro_feed_external = conf.get("notifyPetlibroFeedExternal", True)
+            self.notify_petlibro_feed_planned = conf.get("notifyPetlibroFeedPlanned", False)
+            self.notify_petlibro_food_low = conf.get("notifyPetlibroFoodLow", True)
+            self.notify_petlibro_water_low = conf.get("notifyPetlibroWaterLow", True)
+            self.notify_petlibro_maintenance = conf.get("notifyPetlibroMaintenance", True)
+            self.notify_petlibro_battery = conf.get("notifyPetlibroBattery", True)
+            self.notify_petlibro_connection = conf.get("notifyPetlibroConnection", True)
+            self.notify_petlibro_settings = conf.get("notifyPetlibroSettings", True)
 
             if self._unreadable_secrets:
                 # Names only, never values. The list is what tells a reader
@@ -553,16 +640,42 @@ class GlobalPlugin(_CredentialsMixin, _SchedulerMixin, _ChangeDetectionMixin,
             self.notify_cozytouch_boost = True
             self.notify_cozytouch_power = True
             self.notify_cozytouch_away = True
+            self.use_petlibro = False
+            self.petlibro_email = ""
+            self._encrypted_petlibro_password = ""
+            self.petlibro_token = ""
+            self.petlibro_last_portions = 1
+            self.notify_petlibro_feed_failed = True
+            self.notify_petlibro_feed_external = True
+            self.notify_petlibro_feed_planned = False
+            self.notify_petlibro_food_low = True
+            self.notify_petlibro_water_low = True
+            self.notify_petlibro_maintenance = True
+            self.notify_petlibro_battery = True
+            self.notify_petlibro_connection = True
+            self.notify_petlibro_settings = True
 
     def save_settings(self):
-        """Save the settings to the NVDA config (passwords encrypted with DPAPI)"""
+        """Save the settings to the NVDA config (passwords encrypted with DPAPI)
+
+        Serialised: the platforms log in in parallel, and three of them save
+        a fresh token as soon as they have it.
+        """
+        with self._save_lock:
+            self._save_settings_locked()
+
+    def _save_settings_locked(self):
         try:
             conf = config.conf["smartHomeControl"]
             # The secrets go into the credential store, not into the
             # configuration - see load_settings. The dictionary is filled
             # here and written in one go further down.
             secrets = {}
-            secrets["email"] = self.email
+            # The email addresses are encrypted too since 26.10.1. The file
+            # is the user's alone (security._restrict_file_acl), but it
+            # stays behind wherever NVDA's configuration is copied, and an
+            # address says who owns the devices.
+            secrets["email"] = encrypt_dpapi(self.email) if self.email else ""
             
             # Password (already encrypted in memory - store directly)
             secrets["password"] = self._encrypted_password if self._encrypted_password else ""
@@ -604,7 +717,7 @@ class GlobalPlugin(_CredentialsMixin, _SchedulerMixin, _ChangeDetectionMixin,
             conf["netatmoRedirectPort"] = self.netatmo_redirect_port
 
             # VeSync credentials (password and token encrypted)
-            secrets["vesyncEmail"] = self.vesync_email
+            secrets["vesyncEmail"] = encrypt_dpapi(self.vesync_email) if self.vesync_email else ""
             secrets["vesyncPassword"] = self._encrypted_vesync_password if self._encrypted_vesync_password else ""
             conf["vesyncCountryCode"] = self.vesync_country_code or "DE"
             secrets["vesyncToken"] = encrypt_dpapi(self.vesync_token) if self.vesync_token else ""
@@ -615,10 +728,26 @@ class GlobalPlugin(_CredentialsMixin, _SchedulerMixin, _ChangeDetectionMixin,
 
             # Cozytouch credentials (password and token encrypted)
             conf["useCozytouch"] = self.use_cozytouch
-            secrets["cozytouchEmail"] = self.cozytouch_email
+            secrets["cozytouchEmail"] = encrypt_dpapi(self.cozytouch_email) if self.cozytouch_email else ""
             secrets["cozytouchPassword"] = self._encrypted_cozytouch_password if self._encrypted_cozytouch_password else ""
             secrets["cozytouchToken"] = encrypt_dpapi(self.cozytouch_token) if self.cozytouch_token else ""
             conf["cozytouchCapacityLiters"] = self.cozytouch_capacity_liters
+
+            # Petlibro credentials (password and token encrypted)
+            conf["usePetlibro"] = self.use_petlibro
+            secrets["petlibroEmail"] = encrypt_dpapi(self.petlibro_email) if self.petlibro_email else ""
+            secrets["petlibroPassword"] = self._encrypted_petlibro_password if self._encrypted_petlibro_password else ""
+            secrets["petlibroToken"] = encrypt_dpapi(self.petlibro_token) if self.petlibro_token else ""
+            conf["petlibroLastPortions"] = int(self.petlibro_last_portions or 1)
+            conf["notifyPetlibroFeedFailed"] = self.notify_petlibro_feed_failed
+            conf["notifyPetlibroFeedExternal"] = self.notify_petlibro_feed_external
+            conf["notifyPetlibroFeedPlanned"] = self.notify_petlibro_feed_planned
+            conf["notifyPetlibroFoodLow"] = self.notify_petlibro_food_low
+            conf["notifyPetlibroWaterLow"] = self.notify_petlibro_water_low
+            conf["notifyPetlibroMaintenance"] = self.notify_petlibro_maintenance
+            conf["notifyPetlibroBattery"] = self.notify_petlibro_battery
+            conf["notifyPetlibroConnection"] = self.notify_petlibro_connection
+            conf["notifyPetlibroSettings"] = self.notify_petlibro_settings
             # A secret this machine could not decrypt is dropped from the
             # dictionary rather than written: credential_store.save leaves a
             # key it is not given exactly as it stands. Writing the empty
@@ -748,6 +877,33 @@ class GlobalPlugin(_CredentialsMixin, _SchedulerMixin, _ChangeDetectionMixin,
             _safe_log_error("Cozytouch re-auth failed", e)
             return False
 
+    def _petlibro_reauth(self, api):
+        """Reauth callback for Petlibro when the cloud answers code 1009.
+
+        Called by ``PetlibroAPI._post``. A token ends when anything else logs
+        in to the same account - the phone app, for instance - so this is
+        the normal way back, not an error.
+        """
+        if not (self.petlibro_email and self._encrypted_petlibro_password):
+            log.warning("Petlibro re-auth not possible - no credentials stored")
+            return False
+        try:
+            pw = self.petlibro_password
+            try:
+                api.login(self.petlibro_email, pw)
+            finally:
+                pw = None
+                del pw
+            creds = api.get_credentials()
+            if creds.get("token"):
+                self.petlibro_token = creds["token"]
+                self.save_settings()
+            log.info("Petlibro re-auth successful")
+            return True
+        except Exception as e:
+            _safe_log_error("Petlibro re-auth failed", e)
+            return False
+
     def begin_platform_login(self, platform):
         """Claims the login slot of a platform.
 
@@ -782,358 +938,454 @@ class GlobalPlugin(_CredentialsMixin, _SchedulerMixin, _ChangeDetectionMixin,
         Returns:
             int: how many devices the platform now contributes.
         """
-        from .platform_utils import platform_of
         with self._devices_lock:
             others = [d for d in self.devices if platform_of(d) != platform]
             self.devices = others + list(devices)
         return len(devices)
 
-    def _start_auto_login(self, interactive=False):
-        """Starts the automatic login in the background.
+    # ------------------------------------------------------------------
+    # Login
+    # ------------------------------------------------------------------
+    # Seconds before a platform whose login failed for a reason other than
+    # its credentials is tried again; the last value repeats. Without this a
+    # laptop that started NVDA before its Wi-Fi stayed without that platform
+    # until somebody opened the settings and saved them.
+    _LOGIN_RETRY_DELAYS = (30, 60, 120, 300)
+
+    def _platform_has_credentials(self, platform):
+        """Whether ``platform`` has what its login needs."""
+        if platform == 'meross':
+            return bool(self.email and self._encrypted_password)
+        if platform == 'netatmo':
+            return bool(self.netatmo_client_id and self.netatmo_refresh_token)
+        if platform == 'vesync':
+            return bool((self.vesync_email and self._encrypted_vesync_password)
+                        or (self.vesync_token and self.vesync_account_id))
+        if platform == 'cozytouch':
+            return bool(self.cozytouch_email and self._encrypted_cozytouch_password)
+        if platform == 'petlibro':
+            return bool(self.petlibro_email and self._encrypted_petlibro_password)
+        return False
+
+    def _platforms_to_login(self, platforms=None):
+        """The platforms out of ``platforms`` (None = all) that can log in.
+
+        Switched on and with credentials, in the order of PLATFORMS.
+        """
+        return [p for p in PLATFORMS
+                if (platforms is None or p in platforms)
+                and self._platform_enabled(p)
+                and self._platform_has_credentials(p)]
+
+    def _platform_api(self, platform):
+        """The API object of a platform, or None while it is not logged in."""
+        return {
+            'meross': self.api,
+            'netatmo': self.netatmo_api,
+            'vesync': self.vesync_api,
+            'cozytouch': self.cozytouch_api,
+            'petlibro': self.petlibro_api,
+        }.get(platform)
+
+    def _start_auto_login(self, interactive=False, platforms=None):
+        """Starts the login in the background.
 
         Args:
             interactive: True when the login follows an action by the user
                 (settings saved). Only then may a refused login ask for the
                 credentials again - at NVDA start a dialog would pop up
                 unasked, typically because the network is not up yet.
+            platforms: the platforms to log in to; None means every
+                platform that is switched on. Saving the settings passes
+                only the ones whose credentials changed or that have no
+                session yet - it used to log in to all of them again, a
+                Meross session of twenty seconds included.
         """
-        log.info("Starting auto login...")
-        platforms = []
-        if self.use_meross:
-            platforms.append("Meross")
-        if self.use_netatmo:
-            platforms.append("Netatmo")
-        if self.use_vesync:
-            platforms.append("VeSync")
-        if self.use_cozytouch:
-            platforms.append("Cozytouch")
+        wanted = self._platforms_to_login(platforms)
+        if not wanted:
+            return
+        log.info(f"Starting the login: {', '.join(wanted)}")
         # Translators: Spoken while the add-on signs in to the platforms at
         # startup.
-        ui.message(_("Logging in to {platforms}...").format(platforms=", ".join(platforms)))
+        ui.message(_("Logging in to {platforms}...").format(
+            platforms=", ".join(PLATFORM_LABELS[p] for p in wanted)))
         threading.Thread(
-            target=self._do_login, args=(interactive,), daemon=True).start()
+            target=self._do_login, args=(interactive, wanted),
+            daemon=True).start()
 
-    def _do_login(self, interactive=False):
-        """Performs the login (in a separate thread) - Meross and/or Netatmo and/or VeSync"""
+    def _do_login(self, interactive=False, platforms=None, retry_attempt=None):
+        """Logs in to ``platforms`` - all at once, each on a thread of its own.
+
+        One after the other they took thirty seconds (measured 2026-10-01:
+        Meross 20, Cozytouch 3.4, Petlibro 3.4, Netatmo 2, VeSync 1), and the
+        device menu stayed closed for all of it. In parallel the slowest one
+        decides.
+
+        Only the platforms that logged in replace their devices. The list
+        used to be replaced as a whole, so a platform that failed a re-login
+        - one 503 at the wrong moment - lost its devices while its old
+        session went on running.
+
+        A failure that is not a refused credential is tried again later
+        (_LOGIN_RETRY_DELAYS). ``retry_attempt`` counts those retries; a
+        retry does not announce its failure again.
+        """
+        platforms = self._platforms_to_login(platforms)
+        if not platforms:
+            return
+        quiet = retry_attempt is not None
+        results = {}
+        failures = {}
+        # The menu waits only while there is nothing to show at all.
+        self.is_loading = not self.is_logged_in
         try:
-            log.info("_do_login: login process starting...")
-            self.is_loading = True
-            meross_devices = []
-            netatmo_devices = []
-            vesync_devices = []
-            cozytouch_devices = []
-            # Platforms that refused the credentials. Collected instead of
-            # asked about immediately: the remaining platforms should still
-            # get their chance before a dialog interrupts.
-            refused = []
+            log.info(f"_do_login: logging in to {', '.join(platforms)}")
+            claimed = [p for p in platforms if self.begin_platform_login(p)]
+            for p in set(platforms) - set(claimed):
+                log.info(f"{PLATFORM_LABELS[p]} login already running - not "
+                         f"starting a second one")
+            threads = [threading.Thread(
+                target=self._login_one, args=(p, results, failures),
+                daemon=True, name=f"SmartHomeControl login {p}")
+                for p in claimed]
+            for t in threads:
+                t.start()
+            for t in threads:
+                t.join()
 
-            # ---- Meross login ----
-            if self.use_meross and self.email and self._encrypted_password:
-                try:
-                    # Translators: Spoken while the Meross account is being
-                    # signed in to.
-                    wx.CallAfter(ui.message, _("Meross: connecting..."))
-                    log.info("Connecting to the Meross server...")
-                    
-                    # Take over the new instance only AFTER a successful login:
-                    # if a re-login fails, the previous (still working)
-                    # instance incl. MQTT push stays untouched.
-                    new_api = MerossAPI()
-                    new_api.set_device_state_changed_callback(self._on_external_device_change)
-                    new_api.set_throttle_callback(self._on_meross_throttled)
-                    # Decrypt the password only at login time. login() passes
-                    # it through as a coroutine argument and deletes it itself,
-                    # so no permanent plain-text copy remains here or in
-                    # MerossAPI.
-                    _tmp_password = self.password
-                    try:
-                        new_api.login(self.email, _tmp_password)
-                    finally:
-                        _tmp_password = None
-                        del _tmp_password
-                    log.info("Meross login successful")
-                    
-                    # Translators: Spoken while the Meross device list is being
-                    # fetched.
-                    wx.CallAfter(ui.message, _("Meross: loading devices..."))
-                    meross_devices = new_api.get_devices()
-                    new_api.set_wrapped_devices(meross_devices)
-                    old_api, self.api = self.api, new_api
-                    if old_api is not None:
-                        try:
-                            old_api.logout()
-                        except Exception as e:
-                            log.debug(f"Logout of the old Meross instance failed: {e}")
-                    log.info(f"Meross: {len(meross_devices)} device(s) found")
-                    
-                except Exception as e:
-                    # No exc_info -> avoids token/header leaks in the log.
-                    _safe_log_error("Meross login failed", e)
-                    self._note_login_failure('meross', e, refused)
-            
-            # ---- Netatmo login ----
-            if self.use_netatmo and self.netatmo_client_id and self.netatmo_refresh_token:
-                try:
-                    # Translators: Spoken while the Netatmo account is being
-                    # signed in to.
-                    wx.CallAfter(ui.message, _("Netatmo: connecting..."))
-                    log.info("Connecting to Netatmo...")
-                    
-                    new_netatmo = NetatmoAPI(
-                        self.netatmo_client_id,
-                        self.netatmo_client_secret,
-                        redirect_port=self.netatmo_redirect_port,
-                    )
-                    new_netatmo.set_tokens(
-                        self.netatmo_access_token,
-                        self.netatmo_refresh_token,
-                        self.netatmo_token_expiry
-                    )
-                    # EVERY later renewal must arrive here as well - Netatmo
-                    # rotates refresh tokens, so without this the config kept
-                    # the ones from the login and a restart hours later
-                    # restored an already invalidated refresh token.
-                    new_netatmo.set_token_update_callback(
-                        self._on_netatmo_tokens_renewed)
-
-                    # Renew the token if necessary
-                    new_netatmo._ensure_valid_token()
-
-                    # Tokens possibly renewed - save them
-                    tokens = new_netatmo.get_tokens()
-                    if tokens['access_token'] != self.netatmo_access_token:
-                        self._on_netatmo_tokens_renewed(tokens)
-
-                    netatmo_devices = new_netatmo.get_devices()
-                    self.netatmo_api = new_netatmo
-                    log.info(f"Netatmo: {len(netatmo_devices)} device(s) found")
-                    
-                except Exception as e:
-                    _safe_log_error("Netatmo login failed", e)
-                    self._note_login_failure('netatmo', e, refused)
-            
-            # ---- VeSync login ----
-            if self.use_vesync:
-                try:
-                    # Translators: Spoken while the VeSync account is being
-                    # signed in to.
-                    wx.CallAfter(ui.message, _("VeSync: connecting..."))
-                    log.info("Connecting to VeSync...")
-
-                    vs_api = VeSyncAPI(country_code=self.vesync_country_code or "DE")
-
-                    # Register the reauth callback: on an expired token (e.g.
-                    # after days of inactivity) an automatic re-login with the
-                    # stored password happens - instead of the user having to
-                    # go into the settings manually.
-                    if hasattr(vs_api, 'set_reauth_callback'):
-                        vs_api.set_reauth_callback(self._vesync_reauth)
-
-                    # Preferred: reuse existing tokens, otherwise
-                    # email/password
-                    have_tokens = bool(self.vesync_token and self.vesync_account_id)
-                    if have_tokens:
-                        vs_api.set_credentials(
-                            token=self.vesync_token,
-                            account_id=self.vesync_account_id,
-                            country_code=self.vesync_country_code or "DE",
-                            region=self.vesync_region or None,
-                        )
-                        # On a token error fall back to the password login
-                        # later
-                    elif self.vesync_email and self._encrypted_vesync_password:
-                        _vs_password = self.vesync_password
-                        try:
-                            vs_api.login(self.vesync_email, _vs_password)
-                        finally:
-                            _vs_password = None
-                            del _vs_password
-                    else:
-                        # Translators: Error message when VeSync was enabled
-                        # but neither a token nor email/password are
-                        # configured.
-                        raise RuntimeError(_("No VeSync credentials configured"))
-
-                    # Translators: Spoken while the VeSync device list is being
-                    # fetched.
-                    wx.CallAfter(ui.message, _("VeSync: loading devices..."))
-                    try:
-                        vesync_devices = vs_api.get_devices()
-                    except RuntimeError as e:
-                        # Token possibly expired -> retry with the password
-                        # login
-                        if (have_tokens and self.vesync_email
-                                and self._encrypted_vesync_password):
-                            log.info(f"VeSync: token login failed ({e}) - trying the password login")
-                            _vs_password = self.vesync_password
-                            try:
-                                vs_api.login(self.vesync_email, _vs_password)
-                            finally:
-                                _vs_password = None
-                                del _vs_password
-                            vesync_devices = vs_api.get_devices()
-                        else:
-                            raise
-
-                    self.vesync_api = vs_api
-
-                    # Save the current tokens (they can change due to cross-
-                    # region)
-                    creds = vs_api.get_credentials()
-                    if creds["token"] and creds["account_id"]:
-                        self.vesync_token = creds["token"]
-                        self.vesync_account_id = creds["account_id"]
-                        self.vesync_country_code = creds["country_code"]
-                        self.vesync_region = creds["region"]
-                        self.save_settings()
-                    log.info(f"VeSync: {len(vesync_devices)} device(s) found")
-
-                except Exception as e:
-                    _safe_log_error("VeSync login failed", e)
-                    self._note_login_failure('vesync', e, refused)
-
-            # ---- Cozytouch login (Atlantic / Austria Email) ----
-            if self.use_cozytouch and self.cozytouch_email and self._encrypted_cozytouch_password:
-                try:
-                    # Translators: Spoken while the Cozytouch account is being
-                    # signed in to.
-                    wx.CallAfter(ui.message, _("Cozytouch: connecting..."))
-                    log.info("Connecting to Cozytouch...")
-
-                    ct_api = CozytouchAPI()
-                    if hasattr(ct_api, 'set_reauth_callback'):
-                        ct_api.set_reauth_callback(self._cozytouch_reauth)
-
-                    _ct_password = self.cozytouch_password
-                    try:
-                        ct_api.login(self.cozytouch_email, _ct_password)
-                    finally:
-                        _ct_password = None
-                        del _ct_password
-
-                    # Translators: Spoken while the Cozytouch device list is
-                    # being fetched.
-                    wx.CallAfter(ui.message, _("Cozytouch: loading devices..."))
-                    cozytouch_devices = ct_api.get_devices()
-                    self.cozytouch_api = ct_api
-
-                    # Save the fresh token
-                    creds = ct_api.get_credentials()
-                    if creds.get("token"):
-                        self.cozytouch_token = creds["token"]
-                        self.save_settings()
-                    log.info(f"Cozytouch: {len(cozytouch_devices)} device(s) found")
-
-                except Exception as e:
-                    _safe_log_error("Cozytouch login failed", e)
-                    self._note_login_failure('cozytouch', e, refused)
-
-            # ---- Merge the device lists (atomically under the lock) ----
-            new_devices = meross_devices + netatmo_devices + vesync_devices + cozytouch_devices
-
-            # Session protection: if a RE-login returns no devices at all (e.g.
-            # a short network outage during login) while the existing session
-            # already has some, the working session is NOT discarded -
-            # otherwise the user would be left without devices until the NVDA
-            # restart.
-            if not new_devices and self.is_logged_in:
-                with self._devices_lock:
-                    has_existing = bool(self.devices)
-                if has_existing:
-                    log.warning("Re-login returned no devices - the existing session stays active")
-                    # Translators: Announcement when a renewed login fails but
-                    # the previous device list remains in use.
-                    wx.CallAfter(ui.message, _("Login failed – existing "
-                                               "devices remain available"))
-                    return
-
-            # A hub that did not answer lists no sensors, and the list is
-            # replaced as a whole - the sensors were gone for the rest of the
-            # session, and their favourites with them.
-            with self._devices_lock:
-                previous = list(self.devices)
-            carried = carry_over_hub_subdevices(previous, new_devices)
-            if carried:
-                log.warning(f"{len(carried)} hub sensor(s) kept: their hub "
-                            "did not list them this time")
-                new_devices = new_devices + carried
+            for p in PLATFORMS:
+                if p in results:
+                    self._take_platform_devices(p, results[p])
 
             with self._devices_lock:
-                self.devices = new_devices
-
-            # Create the initial VeSync snapshot so the first refresh does not
-            # report the existing state as an "external change".
-            for vd in vesync_devices:
-                self._previous_vesync_states[vd.uuid] = self._snapshot_vesync_state(vd)
-            for cd in cozytouch_devices:
-                self._previous_cozytouch_states[cd.uuid] = self._snapshot_cozytouch_state(cd)
-
-            # Via the local list instead of self.devices: the reference was
-            # just assigned under the lock, which avoids an unguarded read.
-            if new_devices:
+                have_devices = bool(self.devices)
+            if have_devices:
                 self.is_logged_in = True
                 self._last_refresh_time = time.time()
                 self._start_background_refresh()
 
-                total = len(new_devices)
-                parts = []
-                # Platform names are brand names -> do not translate.
-                if meross_devices:
-                    parts.append(f"{len(meross_devices)} Meross")
-                if netatmo_devices:
-                    parts.append(f"{len(netatmo_devices)} Netatmo")
-                if vesync_devices:
-                    parts.append(f"{len(vesync_devices)} VeSync")
-                if cozytouch_devices:
-                    parts.append(f"{len(cozytouch_devices)} Cozytouch")
-                detail = ", ".join(parts)
-
+            # Platform names are brand names -> do not translate.
+            parts = [f"{len(results[p])} {PLATFORM_LABELS[p]}"
+                     for p in PLATFORMS if results.get(p)]
+            if parts:
+                total = sum(len(results[p]) for p in PLATFORMS if results.get(p))
                 # Translators: Success message after login. {total} = number of
                 # devices, {detail} = breakdown per platform (e.g. "3 Meross, 1
                 # Netatmo").
                 wx.CallAfter(ui.message, _(
                     "{total} devices ready ({detail})").format(
-                    total=total, detail=detail))
-            else:
-                self.is_logged_in = False
+                    total=total, detail=", ".join(parts)))
+            elif results and not failures and not have_devices:
                 # Translators: Announced when the login succeeded but there are
                 # no devices in the account.
                 wx.CallAfter(ui.message, _("No devices found"))
 
-        except Exception as e:
-            _safe_log_error("Login failed", e)
-            with self._devices_lock:
-                has_existing = bool(self.devices)
-            if self.is_logged_in and has_existing:
-                # Do not discard the existing session because of a failed re-
-                # login (session protection, see above).
-                log.warning("Re-login failed - the existing session stays active")
-            else:
-                self.is_logged_in = False
-        finally:
-            self.is_loading = False
-            # In the finally block on purpose: the session protection above
-            # returns early, and a refused password has to be reported from
-            # that path too.
+            refused = []
+            retry = []
+            for p in PLATFORMS:
+                error = failures.get(p)
+                if error is None:
+                    continue
+                credentials = (p in PASSWORD_PLATFORMS
+                               and is_credentials_error(error))
+                if credentials:
+                    refused.append((p, error))
+                else:
+                    retry.append(p)
+                if not quiet or credentials:
+                    wx.CallAfter(ui.message, login_error_message(p, error))
+            if retry:
+                attempt = 0 if retry_attempt is None else retry_attempt
+                delay = self._schedule_login_retry(retry, attempt)
+                if delay and not quiet:
+                    # Translators: Spoken after a login failed because of the
+                    # network or the server. {seconds} = when it is tried again.
+                    wx.CallAfter(ui.message, _(
+                        "New attempt in {seconds} seconds").format(seconds=delay))
             if interactive and refused:
                 platform, error = refused[0]
                 wx.CallAfter(self._ask_credential_reentry, platform, error)
+        except Exception as e:
+            _safe_log_error("Login failed", e)
+        finally:
+            self.is_loading = False
+            try:
+                _log_library_origins()
+            except Exception as e:
+                log.debug(f"Library origins not logged: {e}")
 
-    def _note_login_failure(self, platform, error, refused):
-        """Announces a failed login and notes a refused credential.
+    def _login_one(self, platform, results, failures):
+        """Thread body: logs in to one platform and notes the outcome."""
+        try:
+            results[platform] = self._LOGIN_STEPS[platform](self) or []
+            log.info(f"{PLATFORM_LABELS[platform]}: "
+                     f"{len(results[platform])} device(s) found")
+        except Exception as e:
+            failures[platform] = e
+            _safe_log_error(f"{PLATFORM_LABELS[platform]} login failed", e)
+        finally:
+            self.end_platform_login(platform)
 
-        Only a refusal of the credentials themselves is noted; a timeout or a
-        missing network must not lead to a question about the password.
+    def _take_platform_devices(self, platform, devices):
+        """Puts the devices of a fresh login into the list - that platform's only.
+
+        An empty answer from a platform that has devices in the list keeps
+        them: a short network outage during the login is likelier than an
+        account that was emptied in the meantime.
         """
-        wx.CallAfter(ui.message, login_error_message(platform, error))
-        if platform in PASSWORD_PLATFORMS and is_credentials_error(error):
-            refused.append((platform, error))
+        devices = list(devices)
+        with self._devices_lock:
+            previous = [d for d in self.devices if platform_of(d) == platform]
+        if not devices and previous:
+            log.warning(f"{PLATFORM_LABELS[platform]} login returned no devices "
+                        f"- the {len(previous)} known ones stay")
+            return
+        if platform == 'meross':
+            # A hub that did not answer lists no sensors - without this its
+            # sensors were gone for the rest of the session, and their
+            # favourites with them.
+            carried = carry_over_hub_subdevices(previous, devices)
+            if carried:
+                log.warning(f"{len(carried)} hub sensor(s) kept: their hub "
+                            "did not list them this time")
+                devices = devices + carried
+                if self.api is not None:
+                    self.api.set_wrapped_devices(devices)
+        self.replace_platform_devices(platform, devices)
+        # The state the login found is the baseline - not an "external
+        # change" on the first poll.
+        if platform == 'vesync':
+            for vd in devices:
+                self._previous_vesync_states[vd.uuid] = self._snapshot_vesync_state(vd)
+        elif platform == 'cozytouch':
+            for cd in devices:
+                self._previous_cozytouch_states[cd.uuid] = self._snapshot_cozytouch_state(cd)
+        elif platform == 'petlibro':
+            for pd in devices:
+                self._seed_petlibro_state(pd)
+
+    def _schedule_login_retry(self, platforms, attempt):
+        """Tries the login of ``platforms`` again after a while.
+
+        Returns the delay in seconds, or 0 when a retry for them is already
+        waiting.
+        """
+        pending = self._login_retry_pending
+        platforms = [p for p in platforms if p not in pending]
+        if not platforms:
+            return 0
+        pending.update(platforms)
+        delays = self._LOGIN_RETRY_DELAYS
+        delay = delays[min(attempt, len(delays) - 1)]
+        log.info(f"Login of {', '.join(platforms)} is tried again in {delay}s "
+                 f"(attempt {attempt + 1})")
+
+        def wait_and_retry():
+            if self._login_retry_stop.wait(delay):
+                return  # NVDA is shutting down
+            pending.difference_update(platforms)
+            # Still wanted, and still without a session? The settings or the
+            # device menu may have logged in meanwhile, or switched it off.
+            still = [p for p in self._platforms_to_login(platforms)
+                     if self._platform_api(p) is None]
+            if still:
+                self._do_login(False, still, retry_attempt=attempt + 1)
+
+        threading.Thread(target=wait_and_retry, daemon=True,
+                         name="SmartHomeControl login retry").start()
+        return delay
+
+    # ---- One login per platform. Each returns the platform's devices and
+    # sets its API object; an exception means the login failed. ----------
+    def _login_meross(self):
+        # Take over the new instance only AFTER a successful login: if a
+        # re-login fails, the previous (still working) instance incl. MQTT
+        # push stays untouched.
+        new_api = MerossAPI()
+        new_api.set_device_state_changed_callback(self._on_external_device_change)
+        new_api.set_throttle_callback(self._on_meross_throttled)
+        # Decrypt the password only at login time. login() passes it through
+        # as a coroutine argument and deletes it itself, so no permanent
+        # plain-text copy remains here or in MerossAPI.
+        _tmp_password = self.password
+        try:
+            new_api.login(self.email, _tmp_password)
+        finally:
+            _tmp_password = None
+            del _tmp_password
+        log.info("Meross login successful")
+        devices = new_api.get_devices()
+        new_api.set_wrapped_devices(devices)
+        old_api, self.api = self.api, new_api
+        if old_api is not None:
+            try:
+                old_api.logout()
+            except Exception as e:
+                log.debug(f"Logout of the old Meross instance failed: {e}")
+        return devices
+
+    def _login_netatmo(self):
+        new_netatmo = NetatmoAPI(
+            self.netatmo_client_id,
+            self.netatmo_client_secret,
+            redirect_port=self.netatmo_redirect_port,
+        )
+        new_netatmo.set_tokens(
+            self.netatmo_access_token,
+            self.netatmo_refresh_token,
+            self.netatmo_token_expiry
+        )
+        # EVERY later renewal must arrive here as well - Netatmo rotates
+        # refresh tokens, so without this the config kept the ones from the
+        # login and a restart hours later restored an already invalidated
+        # refresh token.
+        new_netatmo.set_token_update_callback(self._on_netatmo_tokens_renewed)
+        # Renew the token if necessary
+        new_netatmo._ensure_valid_token()
+        # Tokens possibly renewed - save them
+        tokens = new_netatmo.get_tokens()
+        if tokens['access_token'] != self.netatmo_access_token:
+            self._on_netatmo_tokens_renewed(tokens)
+        devices = new_netatmo.get_devices()
+        # get_devices() does not raise: without the network it comes back
+        # empty. And with a token still valid nothing else in this login
+        # needs the network - so a start without Wi-Fi (2026-10-03, 18:09)
+        # counted as a login to an account without devices. The other four
+        # platforms failed and were tried again 30 seconds later; Netatmo
+        # was left out of that retry and did not come back.
+        if not getattr(new_netatmo, 'last_poll_ok', True):
+            # Translators: Why a login failed: the cloud did not answer
+            # (no network, or the manufacturer's server is down). Spoken
+            # after "Netatmo login failed:".
+            raise ConnectionError(_("no connection to the cloud"))
+        self.netatmo_api = new_netatmo
+        return devices
+
+    def _login_vesync(self):
+        vs_api = VeSyncAPI(country_code=self.vesync_country_code or "DE")
+        # Register the reauth callback: on an expired token (e.g. after days
+        # of inactivity) an automatic re-login with the stored password
+        # happens - instead of the user having to go into the settings.
+        if hasattr(vs_api, 'set_reauth_callback'):
+            vs_api.set_reauth_callback(self._vesync_reauth)
+
+        # Preferred: reuse existing tokens, otherwise email/password
+        have_tokens = bool(self.vesync_token and self.vesync_account_id)
+        if have_tokens:
+            vs_api.set_credentials(
+                token=self.vesync_token,
+                account_id=self.vesync_account_id,
+                country_code=self.vesync_country_code or "DE",
+                region=self.vesync_region or None,
+            )
+        elif self.vesync_email and self._encrypted_vesync_password:
+            _vs_password = self.vesync_password
+            try:
+                vs_api.login(self.vesync_email, _vs_password)
+            finally:
+                _vs_password = None
+                del _vs_password
+        else:
+            # Translators: Error message when VeSync was enabled but neither
+            # a token nor email/password are configured.
+            raise RuntimeError(_("No VeSync credentials configured"))
+
+        try:
+            devices = vs_api.get_devices()
+        except RuntimeError as e:
+            # Token possibly expired -> retry with the password login
+            if not (have_tokens and self.vesync_email
+                    and self._encrypted_vesync_password):
+                raise
+            log.info(f"VeSync: token login failed ({e}) - trying the password login")
+            _vs_password = self.vesync_password
+            try:
+                vs_api.login(self.vesync_email, _vs_password)
+            finally:
+                _vs_password = None
+                del _vs_password
+            devices = vs_api.get_devices()
+
+        self.vesync_api = vs_api
+        # Save the current tokens (they can change due to cross-region)
+        creds = vs_api.get_credentials()
+        if creds["token"] and creds["account_id"]:
+            self.vesync_token = creds["token"]
+            self.vesync_account_id = creds["account_id"]
+            self.vesync_country_code = creds["country_code"]
+            self.vesync_region = creds["region"]
+            self.save_settings()
+        return devices
+
+    def _login_cozytouch(self):
+        ct_api = CozytouchAPI()
+        if hasattr(ct_api, 'set_reauth_callback'):
+            ct_api.set_reauth_callback(self._cozytouch_reauth)
+        _ct_password = self.cozytouch_password
+        try:
+            ct_api.login(self.cozytouch_email, _ct_password)
+        finally:
+            _ct_password = None
+            del _ct_password
+        devices = ct_api.get_devices()
+        self.cozytouch_api = ct_api
+        # Save the fresh token
+        creds = ct_api.get_credentials()
+        if creds.get("token"):
+            self.cozytouch_token = creds["token"]
+            self.save_settings()
+        return devices
+
+    def _login_petlibro(self):
+        pl_api = PetlibroAPI()
+        pl_api.set_reauth_callback(self._petlibro_reauth)
+        if self.petlibro_token:
+            # The stored token first: every password login signs the account
+            # out everywhere else once more. When it has expired, the first
+            # request logs in again through the reauth callback.
+            pl_api.set_credentials(self.petlibro_token)
+        else:
+            _pl_password = self.petlibro_password
+            try:
+                pl_api.login(self.petlibro_email, _pl_password)
+            finally:
+                _pl_password = None
+                del _pl_password
+        try:
+            devices = pl_api.get_devices()
+        except PetlibroError as e:
+            # The re-login behind an expired token swallows the reason;
+            # logging in here again brings it back, so a refused password is
+            # asked for instead of reported as a vague cloud error.
+            if e.code != 1009 or not self.petlibro_token:
+                raise
+            _pl_password = self.petlibro_password
+            try:
+                pl_api.login(self.petlibro_email, _pl_password)
+            finally:
+                _pl_password = None
+                del _pl_password
+            devices = pl_api.get_devices()
+        self.petlibro_api = pl_api
+        creds = pl_api.get_credentials()
+        if creds.get("token") and creds["token"] != self.petlibro_token:
+            self.petlibro_token = creds["token"]
+            self.save_settings()
+        return devices
+
+    _LOGIN_STEPS = {
+        'meross': _login_meross,
+        'netatmo': _login_netatmo,
+        'vesync': _login_vesync,
+        'cozytouch': _login_cozytouch,
+        'petlibro': _login_petlibro,
+    }
 
     def _ask_credential_reentry(self, platform, error):
         """Offers to enter the refused credentials again (main thread)."""
         def _after_save(changed):
             if changed:
-                self._start_auto_login(interactive=True)
+                self._start_auto_login(interactive=True, platforms=changed)
 
         # prePopup/postPopup as for every dialog of this add-on: NVDA needs
         # them to hand the focus over and give it back afterwards.
@@ -1221,27 +1473,32 @@ class GlobalPlugin(_CredentialsMixin, _SchedulerMixin, _ChangeDetectionMixin,
         dlg = SmartHomeSettingsDialog(gui.mainFrame, self)
         try:
             saved = dlg.ShowModal() == wx.ID_OK
+            changed = set(getattr(dlg, 'changed_platforms', ()))
         finally:
             dlg.Destroy()
         if saved:
-            # Settings were saved, try to log in
-            should_login = False
-            if self.use_meross and self.email and self._encrypted_password:
-                should_login = True
-            if self.use_netatmo and self.netatmo_client_id and self.netatmo_refresh_token:
-                should_login = True
-            if self.use_vesync and (
-                (self.vesync_email and self._encrypted_vesync_password)
-                or (self.vesync_token and self.vesync_account_id)
-            ):
-                should_login = True
-            if self.use_cozytouch and self.cozytouch_email and self._encrypted_cozytouch_password:
-                should_login = True
-            if should_login:
-                # interactive: the login follows the save, so a refused
-                # password may ask to be entered again.
-                self._start_auto_login(interactive=True)
+            self._apply_saved_settings(changed)
         gui.mainFrame.postPopup()
+
+    def _apply_saved_settings(self, changed):
+        """Logs in what the saved settings call for - and nothing else.
+
+        Every Save used to log in to every platform again: a new Meross
+        session with its whole device discovery for a changed notification
+        switch, and a platform whose re-login hit a network error lost its
+        devices. Now only platforms with new credentials, and switched-on
+        platforms without a session, log in; a switched-off one loses its
+        devices, as in the device menu.
+        """
+        self.drop_disabled_platform_devices()
+        if self.is_logged_in:
+            platforms = [p for p in PLATFORMS if self._platform_enabled(p)
+                         and (p in changed or self._platform_api(p) is None)]
+        else:
+            platforms = None
+        # interactive: the login follows the save, so a refused password may
+        # ask to be entered again.
+        self._start_auto_login(interactive=True, platforms=platforms)
     
     @scriptHandler.script(
         # Translators: Description of the script in the NVDA input gestures
@@ -1303,9 +1560,9 @@ class GlobalPlugin(_CredentialsMixin, _SchedulerMixin, _ChangeDetectionMixin,
                             "days {week} kilowatt hours, currently {watt} "
                             "watts").format(
                             name=dev.name,
-                            today=f"{kwh_today:.2f}".replace(".", ","),
-                            week=f"{kwh_week:.2f}".replace(".", ","),
-                            watt=f"{watt:g}".replace(".", ",")))
+                            today=fmt_decimal(kwh_today, 2),
+                            week=fmt_decimal(kwh_week, 2),
+                            watt=fmt_number(watt)))
                     else:
                         # Translators: Energy summary from the device's own
                         # meter without a current power value.
@@ -1313,8 +1570,8 @@ class GlobalPlugin(_CredentialsMixin, _SchedulerMixin, _ChangeDetectionMixin,
                             "{name}: today {today} kilowatt hours, last 7 "
                             "days {week} kilowatt hours").format(
                             name=dev.name,
-                            today=f"{kwh_today:.2f}".replace(".", ","),
-                            week=f"{kwh_week:.2f}".replace(".", ",")))
+                            today=fmt_decimal(kwh_today, 2),
+                            week=fmt_decimal(kwh_week, 2)))
             # 2. Fallback: collected samples for devices without a counter
             try:
                 from .energy import get_energy_log
@@ -1328,9 +1585,9 @@ class GlobalPlugin(_CredentialsMixin, _SchedulerMixin, _ChangeDetectionMixin,
                         "{week} kilowatt hours, currently {watt} watts "
                         "(estimated, only recorded while NVDA was running)").format(
                         name=name,
-                        today=f"{kwh_today:.2f}".replace(".", ","),
-                        week=f"{kwh_week:.2f}".replace(".", ","),
-                        watt=f"{last_watt:g}".replace(".", ",")))
+                        today=fmt_decimal(kwh_today, 2),
+                        week=fmt_decimal(kwh_week, 2),
+                        watt=fmt_number(last_watt)))
             except Exception as e:
                 log.debug(f"Energy fallback failed: {e}")
             if not parts:
@@ -1379,6 +1636,7 @@ class GlobalPlugin(_CredentialsMixin, _SchedulerMixin, _ChangeDetectionMixin,
             ('netatmo', 'Netatmo', self.use_netatmo, self._netatmo_connected),
             ('vesync', 'VeSync', self.use_vesync, self._vesync_connected),
             ('cozytouch', 'Cozytouch', self.use_cozytouch, self._cozytouch_connected),
+            ('petlibro', 'Petlibro', self.use_petlibro, self._petlibro_connected),
         )
         for name, label, active, connected in platform_states:
             if not active:
@@ -1432,8 +1690,9 @@ class GlobalPlugin(_CredentialsMixin, _SchedulerMixin, _ChangeDetectionMixin,
         if self._last_refresh_time:
             age = int(time.time() - self._last_refresh_time)
             # Translators: Diagnostics: seconds since the last successful
-            # Meross refresh.
-            parts.append(_("Last Meross refresh {seconds} seconds ago").format(
+            # refresh of any platform. (It used to say "Meross" although
+            # every platform sets this time.)
+            parts.append(_("Last refresh {seconds} seconds ago").format(
                 seconds=age))
         if not parts:
             # Translators: Diagnostics: no platform is enabled.
@@ -1723,10 +1982,14 @@ class GlobalPlugin(_CredentialsMixin, _SchedulerMixin, _ChangeDetectionMixin,
             ui.message(_("{name}: device not available").format(
                 name=fav.get('name', '?')))
             return
-        if getattr(device, 'is_netatmo', False) or getattr(device, 'is_sensor', False):
+        if (getattr(device, 'is_netatmo', False)
+                or getattr(device, 'is_sensor', False)
+                or getattr(device, 'is_petlibro', False)):
             # Devices that cannot be switched: sensors (Meross MS100/MS400
             # ...) and all Netatmo devices - thermostats can be adjusted but
-            # not switched on/off, weather stations only display. This branch
+            # not switched on/off, weather stations only display. A Petlibro
+            # feeder has no on/off either, and a digit pressed twice must
+            # never give a meal. This branch
             # used to simply announce the status again, which after the
             # second press looked as if nothing had happened. The
             # announcement now names the reason; the status already came with
@@ -1811,11 +2074,11 @@ class GlobalPlugin(_CredentialsMixin, _SchedulerMixin, _ChangeDetectionMixin,
             if temp is not None:
                 # Translators: A temperature with its unit, put together with
                 # other pieces into one announcement.
-                parts.append(_("{temp}°C").format(temp=f"{temp:.1f}"))
+                parts.append(_("{temp}°C").format(temp=fmt_decimal(temp, 1)))
             hum = device.get_humidity() if hasattr(device, 'get_humidity') else None
             if hum is not None:
                 # Translators: Relative humidity in the status announcement.
-                parts.append(_("{value}% humidity").format(value=f"{hum:g}"))
+                parts.append(_("{value}% humidity").format(value=fmt_number(hum)))
         elif getattr(device, 'is_water_sensor', False):
             wet = device.is_water_detected() if hasattr(device, 'is_water_detected') else None
             if wet is not None:
@@ -1834,8 +2097,7 @@ class GlobalPlugin(_CredentialsMixin, _SchedulerMixin, _ChangeDetectionMixin,
             power = device.get_power() if hasattr(device, 'get_power') else None
             if power is not None:
                 # Translators: Current power draw in the status announcement.
-                parts.append(_("{watt} watts").format(
-                    watt=f"{power:g}".replace(".", ",")))
+                parts.append(_("{watt} watts").format(watt=fmt_number(power)))
         battery = (device.get_battery_percent()
                    if hasattr(device, 'get_battery_percent') else None)
         if battery is not None:
@@ -1846,41 +2108,39 @@ class GlobalPlugin(_CredentialsMixin, _SchedulerMixin, _ChangeDetectionMixin,
     @scriptHandler.script(
         # Translators: Description of the script in the NVDA input gestures
         # dialog.
-        description=_("Announces the status of all smart home devices"),
+        description=_("Announces a summary of all smart home devices; pressed "
+                      "twice, shows every device in a list"),
         gesture="kb:NVDA+control+shift+p",
     )
     def script_announceStatus(self, gesture):
-        """Announces the status of all devices - FAST, from the cache"""
-        
-        log.debug("script_announceStatus called")
-        
+        """A short summary; pressed twice, every device in a readable list.
+
+        It used to speak every device, one after the other, as a single
+        utterance - for an account of fifty devices two minutes of speech
+        that could neither be navigated nor stopped at the one device that
+        mattered. The summary says what needs attention; the list is a
+        browse mode document, read line by line and on the braille display.
+        """
+        as_list = scriptHandler.getLastScriptRepeatCount() >= 1
+        log.debug(f"script_announceStatus called (list={as_list})")
+
         if not self.is_logged_in:
             ui.message(_("Not logged in"))
-            log.debug("Nicht angemeldet - Abbruch")
             return
-        
-        # OPTIMIZED: with a fresh cache, announce immediately WITHOUT waiting
-        # (snapshot under the lock - convention from __init__, line 149 ff.)
+
+        # With a fresh cache: at once, without waiting.
         with self._devices_lock:
             cached_devices = list(self.devices)
         if self.is_cache_fresh() and cached_devices:
-            log.debug(f"Cache fresh - announcing {len(cached_devices)} devices immediately")
-            # No beep needed - immediate output
-            self._announce_devices_status(cached_devices)
+            self._announce_devices_status(cached_devices, as_list)
             return
-        
+
         # Cache not fresh - short update in the background
         log.debug("Cache not fresh - refreshing in the background")
-        
-        # Start the periodic beep
         self._start_status_beep()
-        
+
         def task():
             try:
-                log.debug("Starting status update...")
-
-                # Use the cached devices, only update the status (faster!)
-                # (read snapshot under the lock)
                 with self._devices_lock:
                     have_devices = bool(self.devices)
                 if not have_devices:
@@ -1891,18 +2151,16 @@ class GlobalPlugin(_CredentialsMixin, _SchedulerMixin, _ChangeDetectionMixin,
                         meross_devs = self.api.get_devices()
                         self.api.set_wrapped_devices(meross_devs)
                         all_devs.extend(meross_devs)
-                    if self.netatmo_api and self.use_netatmo:
-                        all_devs.extend(self.netatmo_api.get_devices())
-                    if self.vesync_api and self.use_vesync:
-                        try:
-                            all_devs.extend(self.vesync_api.get_devices())
-                        except Exception as e:
-                            log.debug(f"VeSync devices could not be loaded: {e}")
-                    if self.cozytouch_api and self.use_cozytouch:
-                        try:
-                            all_devs.extend(self.cozytouch_api.get_devices())
-                        except Exception as e:
-                            log.debug(f"Cozytouch devices could not be loaded: {e}")
+                    for api, enabled in (
+                            (self.netatmo_api, self.use_netatmo),
+                            (self.vesync_api, self.use_vesync),
+                            (self.cozytouch_api, self.use_cozytouch),
+                            (self.petlibro_api, self.use_petlibro)):
+                        if api and enabled:
+                            try:
+                                all_devs.extend(api.get_devices())
+                            except Exception as e:
+                                log.debug(f"Devices could not be loaded: {e}")
                     # Assign under the lock - the scheduler thread reads the
                     # same list in parallel (consistent with all other write
                     # sites).
@@ -1912,45 +2170,34 @@ class GlobalPlugin(_CredentialsMixin, _SchedulerMixin, _ChangeDetectionMixin,
                         self.devices = all_devs
                     self._last_refresh_time = time.time()
                 else:
-                    log.debug(f"Using {len(self.devices)} cached devices - only updating the status")
-                    # Update Meross, VeSync and Cozytouch status (Netatmo has
-                    # rate limits)
-                    try:
-                        with self._devices_lock:
-                            by_platform = split_by_platform(self.devices)
-                        meross_devs = by_platform['meross']
-                        if meross_devs and self.api:
-                            self.api.update_device_status(meross_devs)
-                        vesync_devs = by_platform['vesync']
-                        if vesync_devs and self.vesync_api:
-                            try:
-                                self.vesync_api.update_device_status(vesync_devs)
-                            except Exception as e:
-                                log.debug(f"VeSync status update failed: {e}")
-                        cozytouch_devs = by_platform['cozytouch']
-                        if cozytouch_devs and self.cozytouch_api:
-                            try:
-                                self.cozytouch_api.update_device_status(cozytouch_devs)
-                            except Exception as e:
-                                log.debug(f"Cozytouch status update failed: {e}")
-                        self._last_refresh_time = time.time()
-                    except TimeoutError:
-                        log.warning("Status-Update Timeout - verwende gecachte Daten")
-                        # No abort - cached data is better than nothing
-                
+                    with self._devices_lock:
+                        by_platform = split_by_platform(self.devices)
+                    for platform, api in (
+                            ('meross', self.api),
+                            ('netatmo', self.netatmo_api),
+                            ('vesync', self.vesync_api),
+                            ('cozytouch', self.cozytouch_api),
+                            ('petlibro', self.petlibro_api)):
+                        devs = by_platform[platform]
+                        if not (devs and api):
+                            continue
+                        try:
+                            api.update_device_status(devs)
+                        except Exception as e:
+                            # Cached data is better than nothing.
+                            log.debug(f"{PLATFORM_LABELS[platform]} status "
+                                      f"update failed: {e}")
+                    self._last_refresh_time = time.time()
+
                 with self._devices_lock:
                     devs_for_status = list(self.devices)
+                self._stop_status_beep()
                 if not devs_for_status:
-                    log.warning("No devices found")
-                    self._stop_status_beep()
                     wx.CallAfter(ui.message, _("No devices found"))
                     return
-
-                # Stop the beep and play the success sound
-                self._stop_status_beep()
                 wx.CallAfter(_beep, BEEP_SUCCESS)
-                wx.CallAfter(self._announce_devices_status, devs_for_status)
-
+                wx.CallAfter(self._announce_devices_status, devs_for_status,
+                             as_list)
             except Exception as e:
                 _safe_log_error("Failed to fetch the status", e)
                 self._stop_status_beep()
@@ -1960,143 +2207,99 @@ class GlobalPlugin(_CredentialsMixin, _SchedulerMixin, _ChangeDetectionMixin,
                     error_msg = error_msg[:50] + "..."
                 # Translators: Generic error message with detail text.
                 wx.CallAfter(ui.message, _("Error: {error}").format(error=error_msg))
-        
-        log.debug("Starting the status query thread")
+
         threading.Thread(target=task, daemon=True).start()
-    
-    def _announce_devices_status(self, devices):
-        """Announces the status of all devices via speech"""
-        # Sort the devices alphabetically by name
-        sorted_devices = sorted(devices, key=lambda d: d.name.lower())
 
-        # Count the devices per platform (central mapping, incl. Cozytouch)
-        by_platform = split_by_platform(sorted_devices)
+    def _announce_devices_status(self, devices, as_list=False):
+        """Speaks the summary, or shows every device as a readable list."""
+        if as_list:
+            # Translators: Title of the window that lists every device with
+            # its status (the status command pressed twice).
+            ui.browseableMessage("\n".join(self._device_status_lines(devices)),
+                                 _("Smart home status"))
+            return
+        ui.message(self._status_summary(devices))
 
-        # Assemble the status message (platform brand names untranslated)
-        parts = [
-            f"{len(devs)} {PLATFORM_LABELS[name]}"
-            for name, devs in by_platform.items() if devs
-        ]
-        # Translators: Placeholder when no devices are listed per platform.
-        detail = ", ".join(parts) if parts else _("none")
-        # Translators: Introduction of the status announcement. {count} =
-        # total, {detail} = breakdown per platform.
-        msg = _("{count} devices ({detail}). ").format(
-            count=len(sorted_devices),
-            detail=detail,
-        )
-        log.debug(f"Building the status message for {len(sorted_devices)} devices")
-        
+    def _status_summary(self, devices):
+        """One short sentence or two: how many, how many on, what needs care."""
+        by_platform = split_by_platform(devices)
+        detail = ", ".join(f"{len(devs)} {PLATFORM_LABELS[name]}"
+                           for name, devs in by_platform.items() if devs)
+        offline = sorted((d for d in devices
+                          if getattr(d, 'is_offline', False)),
+                         key=lambda d: d.name.lower())
+        switched_on = sum(1 for d in devices
+                          if not getattr(d, 'is_offline', False)
+                          and self._counts_as_switched_on(d))
+        # Translators: Summary of the status command. {count} = devices,
+        # {detail} = per platform (e.g. "3 Meross, 1 Netatmo"), {on} =
+        # devices switched on, {offline} = devices without connection.
+        parts = [_("{count} devices ({detail}), {on} switched on, {offline} "
+                   "offline.").format(count=len(devices), detail=detail,
+                                      on=switched_on, offline=len(offline))]
+        if 0 < len(offline) <= 5:
+            # Translators: Names of the offline devices in the status
+            # summary.
+            parts.append(_("Offline: {names}.").format(
+                names=", ".join(d.name for d in offline)))
+        for device in devices:
+            if (getattr(device, 'is_water_sensor', False)
+                    and not getattr(device, 'is_offline', False)):
+                try:
+                    wet = device.is_water_detected()
+                except Exception:
+                    wet = False
+                if wet:
+                    # Translators: Alarm of a Meross water sensor. {name} = device.
+                    parts.append(_("Water alarm: {name}").format(name=device.name) + ".")
+        return " ".join(parts)
+
+    @staticmethod
+    def _counts_as_switched_on(device):
+        """Whether a device is "on" in the sense of the summary.
+
+        Only devices that can be switched: sensors, hubs, Netatmo modules and
+        Petlibro devices have no on/off, and their is_on says nothing.
+        """
+        if (getattr(device, 'is_netatmo', False)
+                or getattr(device, 'is_petlibro', False)
+                or getattr(device, 'is_sensor', False)
+                or getattr(device, 'is_hub', False)):
+            return False
+        try:
+            return bool(device.is_on)
+        except Exception:
+            return False
+
+    def _device_status_lines(self, devices):
+        """One line per device, alphabetical: "Name: status"."""
         # Translators: Announced when a device currently provides no
         # sensor/status data.
         no_data = _("No data")
         # Translators: Announced when a device is currently unreachable.
         offline_text = _("offline")
-
-        for device in sorted_devices:
+        lines = []
+        for device in sorted(devices, key=lambda d: d.name.lower()):
             try:
-                # Netatmo devices
-                if getattr(device, 'is_netatmo', False):
+                if hasattr(device, 'get_status_summary'):
+                    # Netatmo, VeSync, Cozytouch and Petlibro bring their own
+                    # summary - the one the favourites announce too.
                     summary = device.get_status_summary()
-                    msg += f"{device.name}: {summary if summary else no_data}. "
+                    lines.append(f"{device.name}: {summary or no_data}")
                     continue
-
-                # VeSync devices
-                if getattr(device, 'is_vesync', False):
-                    summary = device.get_status_summary()
-                    msg += f"{device.name}: {summary if summary else no_data}. "
+                if getattr(device, 'is_offline', False):
+                    lines.append(f"{device.name}: {offline_text}")
                     continue
-
-                # Cozytouch devices (hot water heat pump): announce via their
-                # own status summary like Netatmo/VeSync.
-                if getattr(device, 'is_cozytouch', False):
-                    summary = device.get_status_summary()
-                    msg += f"{device.name}: {summary if summary else no_data}. "
-                    continue
-
-                # Offline devices
-                if hasattr(device, 'is_offline') and device.is_offline:
-                    msg += f"{device.name}: {offline_text}. "
-                    continue
-
-                # Temperature sensor
-                if device.is_temperature_sensor:
-                    log.debug(f"Temperatursensor: {device.name} ({device.type})")
-                    temp = device.get_temperature()
-                    humidity = device.get_humidity()
-                    log.debug(f"  -> Temp: {temp}, Humidity: {humidity}")
-
-                    if temp is not None:
-                        msg += f"{device.name}: {temp:.1f}°C"
-                        if humidity is not None:
-                            # Translators: Relative humidity in percent.
-                            msg += _(", {humidity:.1f}% humidity").format(humidity=humidity)
-                        msg += ". "
-                    else:
-                        msg += f"{device.name}: {no_data}. "
-
-                # Water sensor
-                elif device.is_water_sensor:
-                    alarm = device.is_water_detected()
-                    # Translators: Meross water sensor: water was detected
-                    # (alarm).
-                    status = _("Water alarm!") if alarm else _("no water "
-                                                               "detected")
-                    msg += f"{device.name}: {status}. "
-
-                # Hub (MSH300, MSH450)
-                elif "msh" in device.type.lower():
-                    # Hubs have no on/off state, show the online status
-                    if hasattr(device._device, 'online_status'):
-                        online = device._device.online_status
-                    elif hasattr(device._device, '_online'):
-                        online = device._device._online
-                    elif hasattr(device._device, 'online'):
-                        online = device._device.online
-                    else:
-                        online = False
-
-                    # Translators: Meross hub connection status.
-                    status = _("online") if online else offline_text
-                    msg += f"{device.name}: {status}. "
-
-                # Normal devices (plugs, lamps)
-                else:
-                    status = _("on") if device.is_on else _("off")
-                    msg += f"{device.name}: {status}"
-
-                    # Power consumption for MSS310/MSS315 (with voltage and
-                    # amperage)
-                    if device.has_power_meter:
-                        try:
-                            power = device.get_power()
-                            voltage = device.get_voltage()
-                            current = device.get_current()
-
-                            if power is not None:
-                                # Translators: Current power consumption in
-                                # watts.
-                                msg += _(", {power} watts").format(power=power)
-                            if voltage is not None:
-                                # Translators: Current voltage in volts.
-                                msg += _(", {voltage} volts").format(voltage=voltage)
-                            if current is not None:
-                                # Translators: Current amperage in amps.
-                                msg += _(", {current} amps").format(current=current)
-                        except Exception as e:
-                            log.debug(f"Power metering not available for {device.name}: {e}")
-
-                    msg += ". "
-
+                status = ", ".join(str(p) for p in
+                                   self._meross_status_parts(device) if p)
+                lines.append(f"{device.name}: {status or no_data}")
             except Exception as e:
                 log.warning(f"Failed to fetch the data of {device.name}: {e}")
                 # Translators: Generic fallback when the status query for a
                 # single device fails.
-                msg += f"{device.name}: {_('Error')}. "
-        
-        log.debug(f"Status message ready: {msg[:100]}...")
-        ui.message(msg)
-    
+                lines.append(f"{device.name}: {_('Error')}")
+        return lines
+
     def _start_status_beep(self):
         """Starts the periodic beep during the status query"""
         self._status_beep_active = True
@@ -2144,6 +2347,7 @@ class GlobalPlugin(_CredentialsMixin, _SchedulerMixin, _ChangeDetectionMixin,
             'netatmo': self.use_netatmo,
             'vesync': self.use_vesync,
             'cozytouch': self.use_cozytouch,
+            'petlibro': self.use_petlibro,
         }.get(name, True)
 
     def drop_disabled_platform_devices(self):
@@ -2173,6 +2377,7 @@ class GlobalPlugin(_CredentialsMixin, _SchedulerMixin, _ChangeDetectionMixin,
                 netatmo_devs = by_platform['netatmo']
                 vesync_devs = by_platform['vesync']
                 cozytouch_devs = by_platform['cozytouch']
+                petlibro_devs = by_platform['petlibro']
 
             # Update the Meross status
             if self.api and self.is_logged_in and self.use_meross:
@@ -2185,11 +2390,16 @@ class GlobalPlugin(_CredentialsMixin, _SchedulerMixin, _ChangeDetectionMixin,
                     self.api.set_wrapped_devices(meross_devs)
                 self._mark_platform_refreshed('meross')
 
-            # Update Netatmo (fetch new data)
+            # Update Netatmo - a full pass, since the user asked for it, but
+            # IN PLACE. It used to replace the device objects with fresh
+            # ones; the open tree kept the old objects, which nothing updated
+            # any more, so after F5 its Netatmo values stood still.
             if self.netatmo_api and self.use_netatmo:
                 log.debug("Updating the Netatmo devices...")
                 try:
-                    netatmo_devs = self.netatmo_api.get_devices()
+                    added = self.netatmo_api.update_device_status(
+                        netatmo_devs, full=True) or []
+                    netatmo_devs = netatmo_devs + list(added)
                     self._mark_platform_refreshed('netatmo')
                 except Exception as e:
                     # Do not escalate Netatmo errors - use the last known
@@ -2228,9 +2438,17 @@ class GlobalPlugin(_CredentialsMixin, _SchedulerMixin, _ChangeDetectionMixin,
                     try:
                         self.cozytouch_api.update_device_status(cozytouch_devs)
                         # Update the snapshots (no "external" trigger, since
-                        # done at the user's explicit request)
+                        # done at the user's explicit request) - with the
+                        # boost bookkeeping kept in step: skipping it, a boost
+                        # that came on before F5 had no start, and its end
+                        # counted as somebody's doing.
                         for cd in cozytouch_devs:
-                            self._previous_cozytouch_states[cd.uuid] = self._snapshot_cozytouch_state(cd)
+                            snapshot = self._snapshot_cozytouch_state(cd)
+                            self._note_cozytouch_boost(
+                                cd.uuid,
+                                self._previous_cozytouch_states.get(cd.uuid),
+                                snapshot, cd.boost_total_time)
+                            self._previous_cozytouch_states[cd.uuid] = snapshot
                         self._mark_platform_refreshed('cozytouch')
                     except Exception as e:
                         log.debug(f"Cozytouch status refresh failed: {e}")
@@ -2244,8 +2462,25 @@ class GlobalPlugin(_CredentialsMixin, _SchedulerMixin, _ChangeDetectionMixin,
                     except Exception as e:
                         log.debug(f"Cozytouch discovery failed: {e}")
 
+            # Update Petlibro (status of the existing devices; discovery if
+            # needed)
+            if self.petlibro_api and self.use_petlibro:
+                try:
+                    if petlibro_devs:
+                        self.petlibro_api.update_device_status(petlibro_devs)
+                    else:
+                        petlibro_devs = self.petlibro_api.get_devices()
+                    # The user asked for this refresh: take the new state as
+                    # the baseline instead of announcing it.
+                    for pd in petlibro_devs:
+                        self._seed_petlibro_state(pd)
+                    self._mark_platform_refreshed('petlibro')
+                except Exception as e:
+                    log.debug(f"Petlibro status refresh failed: {e}")
+
             with self._devices_lock:
-                new_list = meross_devs + netatmo_devs + vesync_devs + cozytouch_devs
+                new_list = (meross_devs + netatmo_devs + vesync_devs
+                            + cozytouch_devs + petlibro_devs)
                 # Keep devices that a scheduler poll running in parallel
                 # discovered/appended between the snapshot and the reassignment
                 # (otherwise a lost update: they would silently drop out).
@@ -2268,7 +2503,7 @@ class GlobalPlugin(_CredentialsMixin, _SchedulerMixin, _ChangeDetectionMixin,
             log.debug(f"Device refresh finished: {len(self.devices)} devices")
             return self.devices
         except Exception as e:
-            log.error(f"Failed to update the devices: {e}")
+            log_failure("Failed to update the devices", e)
             raise
     
     def _log_toggle(self, target, new_state):
@@ -2336,6 +2571,14 @@ class GlobalPlugin(_CredentialsMixin, _SchedulerMixin, _ChangeDetectionMixin,
                 self._log_toggle(device, new_state)
                 return _("{name}: {status}").format(name=device.name, status=status)
 
+            # Petlibro: nothing to switch. Refused here as well, so no path can
+            # turn a "toggle" into a feeding.
+            if getattr(device, 'is_petlibro', False):
+                # Translators: Message when the user tries to switch a device
+                # that cannot be switched on/off (sensors, Netatmo devices).
+                raise ValueError(_("{name}: cannot be switched – adjustable in "
+                                   "the device menu").format(name=device.name))
+
             # Cozytouch devices: hot water production on/off (analogous to the
             # dialog mixin)
             if getattr(device, 'is_cozytouch', False):
@@ -2397,7 +2640,7 @@ class GlobalPlugin(_CredentialsMixin, _SchedulerMixin, _ChangeDetectionMixin,
             log.warning(f"Toggling failed: {e}")
             raise
         except Exception as e:
-            log.error(f"Toggling failed: {e}")
+            log_failure("Toggling failed", e)
             raise
     
     def set_diffuser_mode(self, device_uuid, mode_action):
@@ -2455,7 +2698,7 @@ class GlobalPlugin(_CredentialsMixin, _SchedulerMixin, _ChangeDetectionMixin,
             return _("{name}: mode set").format(name=device.name)
             
         except Exception as e:
-            log.error(f"Failed to set the diffuser mode: {e}")
+            log_failure("Failed to set the diffuser mode", e)
             raise
 
 

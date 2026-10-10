@@ -344,7 +344,10 @@ def decrypt_dpapi(encrypted):
 
     except Exception as e:
         # No exc_info: could leak sensitive data
-        log.error(f"Decryption failed: {type(e).__name__}")
+        # WARNING: another Windows account or machine is an expected
+        # case (a portable NVDA), not a fault - and an ERROR plays NVDA's
+        # error sound at every start there.
+        log.warning(f"Decryption failed: {type(e).__name__}")
         # Return an empty string instead of the ciphertext: the caller would
         # otherwise send the ciphertext as the "password" to the cloud logins
         # and get cryptic API errors instead of a clear "no credentials"

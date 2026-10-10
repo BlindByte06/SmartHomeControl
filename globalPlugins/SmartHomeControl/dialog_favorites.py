@@ -316,8 +316,10 @@ class _FavoritesTreeMixin:
             fav_netatmo = favorites_obj.get_by_platform("netatmo")
             fav_vesync = favorites_obj.get_by_platform("vesync")
             fav_cozytouch = favorites_obj.get_by_platform("cozytouch")
+            fav_petlibro = favorites_obj.get_by_platform("petlibro")
             total_favs = (len(fav_meross) + len(fav_netatmo)
-                          + len(fav_vesync) + len(fav_cozytouch))
+                          + len(fav_vesync) + len(fav_cozytouch)
+                          + len(fav_petlibro))
 
             if total_favs == 0:
                 # Translators: Hint in the empty favorites tab.
@@ -336,6 +338,7 @@ class _FavoritesTreeMixin:
             all_netatmo = all_by_platform['netatmo']
             all_vesync = all_by_platform['vesync']
             all_cozytouch = all_by_platform['cozytouch']
+            all_petlibro = all_by_platform['petlibro']
             
             # Temporarily redirect self.tree to fav_tree (single-threaded wx,
             # safe)
@@ -445,6 +448,30 @@ class _FavoritesTreeMixin:
                                 'type': 'info', 'fav_uuid': fav_uuid
                             })
                         self._prefix_fav_slot(cozytouch_node, fav_entry)
+
+                # Petlibro favorites
+                if fav_petlibro:
+                    # Translators: Favorites group. Brand name, do not
+                    # translate.
+                    petlibro_node = self.fav_tree.AppendItem(
+                        fav_root, _("Petlibro favorites ({count})").format(count=len(fav_petlibro)))
+                    self.fav_tree.SetItemData(petlibro_node, None)
+
+                    for fav_entry in fav_petlibro:
+                        fav_uuid = fav_entry.get('uuid', '')
+                        real_device = next((d for d in all_petlibro if d.unique_id == fav_uuid), None)
+
+                        if real_device:
+                            self._add_single_petlibro_device(petlibro_node, real_device, is_favorite_view=True)
+                        else:
+                            offline_item = self.fav_tree.AppendItem(
+                                petlibro_node,
+                                self._unavailable_favorite_label(
+                                    fav_entry, 'petlibro'))
+                            self.fav_tree.SetItemData(offline_item, {
+                                'type': 'info', 'fav_uuid': fav_uuid
+                            })
+                        self._prefix_fav_slot(petlibro_node, fav_entry)
             finally:
                 # Reset self.tree - ALWAYS, even on error
                 self.tree = original_tree

@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 """
-Smart Home Control - Settings dialog with tabs (General / Meross / Netatmo / VeSync / Notifications)
+Smart Home Control - Settings dialog with tabs (General / Meross / Netatmo /
+VeSync / Cozytouch / Petlibro / Notifications)
 
 """
 
@@ -10,6 +11,7 @@ import re
 import threading
 from logHandler import log
 
+from .errors import log_failure
 from .constants import NETATMO_REDIRECT_PORT
 from .platform_utils import PLATFORM_LABELS, PASSWORD_PLATFORMS
 
@@ -23,6 +25,11 @@ if "_" not in globals():  # fallback if initTranslation() fails
     # raises a NameError mid-dialog instead of at import time.
     def _(s):
         return s
+
+
+# A plausible email address - the platforms check the rest. One pattern for
+# all four platforms; it stood in on_ok four times.
+_EMAIL_PATTERN = re.compile(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$')
 
 
 def is_credentials_error(error):
@@ -114,7 +121,8 @@ class SmartHomeSettingsDialog(wx.Dialog):
     # added in _create_ui(). on_ok jumps there on a validation error, and
     # ``focus_platform`` uses it to open the dialog straight at the platform
     # whose login just failed.
-    _PLATFORM_TABS = {'meross': 1, 'netatmo': 2, 'vesync': 3, 'cozytouch': 4}
+    _PLATFORM_TABS = {'meross': 1, 'netatmo': 2, 'vesync': 3, 'cozytouch': 4,
+                      'petlibro': 5}
 
     def __init__(self, parent, plugin, focus_platform=None):
         super().__init__(
@@ -135,6 +143,9 @@ class SmartHomeSettingsDialog(wx.Dialog):
         # Set by Cancel/Escape. A credential check running in the background
         # asks for it before it saves anything.
         self._cancelled = False
+        # Platform checkboxes the user ticked or unticked by hand in this
+        # dialog - see _enable_platforms_with_new_credentials.
+        self._user_toggled = set()
         # The Netatmo OAuth flow runs on a background thread with a 120 s
         # timeout, as do the connection tests of the other platforms. If the
         # settings are closed meanwhile, the callback fired on a destroyed wx
@@ -155,6 +166,7 @@ class SmartHomeSettingsDialog(wx.Dialog):
             'netatmo': getattr(self, 'netatmoSecretCtrl', None),
             'vesync': getattr(self, 'vesyncPasswordCtrl', None),
             'cozytouch': getattr(self, 'cozytouchPasswordCtrl', None),
+            'petlibro': getattr(self, 'petlibroPasswordCtrl', None),
         }.get(platform)
 
     def _focus_platform(self, platform):
@@ -269,7 +281,14 @@ class SmartHomeSettingsDialog(wx.Dialog):
         # the parenthesis marks the platform as experimental.
         self.notebook.AddPage(self.tab_cozytouch, _("&Cozytouch (experimental)"))
 
-        # ---- Tab 5: Notifications ----
+        # ---- Tab 6: Petlibro (feeders and water fountains) ----
+        self.tab_petlibro = wx.Panel(self.notebook)
+        self._create_petlibro_tab(self.tab_petlibro)
+        # Translators: Tab name "Petlibro". Brand name, do not translate; the
+        # parenthesis marks the platform as experimental.
+        self.notebook.AddPage(self.tab_petlibro, _("&Petlibro (experimental)"))
+
+        # ---- Tab 7: Notifications ----
         self.tab_notifications = wx.Panel(self.notebook)
         self._create_notifications_tab(self.tab_notifications)
         # Translators: Tab name "Notifications".
@@ -384,6 +403,14 @@ class SmartHomeSettingsDialog(wx.Dialog):
         self.chkCozytouch.Bind(wx.EVT_CHECKBOX, self._on_platform_toggle)
         platformSizer.Add(self.chkCozytouch, flag=wx.ALL, border=5)
 
+        # Translators: Checkbox label for enabling the Petlibro platform (pet
+        # feeders and water fountains). Marked as experimental.
+        self.chkPetlibro = wx.CheckBox(panel, label=_(
+            "Use &Petlibro (feeders, water fountains) - experimental"))
+        self.chkPetlibro.SetValue(getattr(self.plugin, 'use_petlibro', False))
+        self.chkPetlibro.Bind(wx.EVT_CHECKBOX, self._on_platform_toggle)
+        platformSizer.Add(self.chkPetlibro, flag=wx.ALL, border=5)
+
         sizer.Add(platformSizer, flag=wx.EXPAND | wx.ALL, border=10)
 
         # Auto login checkbox
@@ -445,12 +472,12 @@ class SmartHomeSettingsDialog(wx.Dialog):
         # Note
         # Translators: Hint text in the General tab.
         self._add_help_text(panel, sizer, _(
-            "Note: Meross, Netatmo, VeSync and Cozytouch can be used "
-            "individually or in combination.\nDisabled platforms are skipped "
-            "during login.\nA successful connection test in the respective "
-            "tab enables the platform automatically.\nCozytouch is "
-            "experimental - only one hot water heat pump has been tested so "
-            "far."
+            "Note: Meross, Netatmo, VeSync, Cozytouch and Petlibro can be "
+            "used individually or in combination.\nDisabled platforms are "
+            "skipped during login.\nNew credentials in a tab switch that "
+            "platform on when saving, and so does a successful connection "
+            "test.\nCozytouch and Petlibro are experimental - only few "
+            "devices of each have been tested so far."
         ))
 
         panel.SetSizer(sizer)
@@ -463,7 +490,24 @@ class SmartHomeSettingsDialog(wx.Dialog):
         """
         if event is not None:
             event.Skip()
+            self._user_toggled.add(event.GetEventObject())
         try:
+            # The rebuild reads the stored values. Changes made in this
+            # dialog and not saved yet would be lost with it - which also
+            # happens when saving switches a platform on by itself (see
+            # _enable_platforms_with_new_credentials). Carried over instead.
+            unsaved = {}
+            for attr_name, checkbox in self._notify_checkboxes.items():
+                try:
+                    unsaved[attr_name] = checkbox.GetValue()
+                except RuntimeError:
+                    pass
+            announce_all = None
+            if getattr(self, 'announceExternalCheckbox', None):
+                try:
+                    announce_all = self.announceExternalCheckbox.GetValue()
+                except RuntimeError:
+                    announce_all = None
             # Remove the existing children of the notifications tab
             sizer = self.tab_notifications.GetSizer()
             if sizer:
@@ -472,9 +516,51 @@ class SmartHomeSettingsDialog(wx.Dialog):
             self._notify_checkboxes = {}
             # Rebuild
             self._create_notifications_tab(self.tab_notifications)
+            for attr_name, value in unsaved.items():
+                checkbox = self._notify_checkboxes.get(attr_name)
+                if checkbox is not None:
+                    checkbox.SetValue(value)
+            if announce_all is not None:
+                self.announceExternalCheckbox.SetValue(announce_all)
             self.tab_notifications.Layout()
         except Exception as e:
             log.debug(f"Could not rebuild the notifications tab: {e}")
+
+    def _enable_platforms_with_new_credentials(self):
+        """Switches a platform on when new credentials were entered for it.
+
+        Typing the credentials into a platform's tab and saving left the
+        platform switched off unless the connection had been tested first:
+        the credentials were stored, no login happened, and nothing appeared
+        in the device tree. Measured on the Petlibro tab - the configuration
+        held the email and the password, and no "usePetlibro".
+
+        A box unticked by hand in this dialog stays unticked - that is a
+        decision, not an oversight. So does a platform whose stored
+        credentials were not touched.
+        """
+        rows = (
+            ('meross', self.chkMeross, self.merossEmailCtrl,
+             self.merossPasswordCtrl, 'email', 'password'),
+            ('vesync', self.chkVesync, self.vesyncEmailCtrl,
+             self.vesyncPasswordCtrl, 'vesync_email', 'vesync_password'),
+            ('cozytouch', self.chkCozytouch, self.cozytouchEmailCtrl,
+             self.cozytouchPasswordCtrl, 'cozytouch_email',
+             'cozytouch_password'),
+            ('petlibro', self.chkPetlibro, self.petlibroEmailCtrl,
+             self.petlibroPasswordCtrl, 'petlibro_email', 'petlibro_password'),
+        )
+        for platform, checkbox, email_ctrl, password_ctrl, email_attr, \
+                password_attr in rows:
+            if checkbox.GetValue() or checkbox in self._user_toggled:
+                continue
+            email = email_ctrl.GetValue().strip()
+            typed = password_ctrl.GetValue().strip()
+            if not email or not (typed or getattr(self.plugin, password_attr, '')):
+                continue
+            if email == getattr(self.plugin, email_attr, '') and not typed:
+                continue
+            self._auto_enable_platform(checkbox, PLATFORM_LABELS[platform])
 
     def _auto_enable_platform(self, checkbox, label):
         """After a successful test/connect, enables the corresponding
@@ -826,6 +912,65 @@ class SmartHomeSettingsDialog(wx.Dialog):
 
     # -------------------------------------------------------------------------
     # -
+    # Tab: Petlibro (feeders and water fountains)
+    # -------------------------------------------------------------------------
+    # -
+    def _create_petlibro_tab(self, panel):
+        sizer = wx.BoxSizer(wx.VERTICAL)
+
+        # Translators: Explanatory text in the Petlibro tab. The account note
+        # matters: Petlibro allows one sign-in per account at a time.
+        self._add_help_text(panel, sizer, _(
+            "EXPERIMENTAL: the Petlibro integration uses the cloud of the "
+            "Petlibro app as the community has worked it out. Tested with the "
+            "Air Smart Feeder (PLAF108) and the Dockstream 2 Cordless water "
+            "fountain (PLWF116).\n\nImportant: Petlibro allows only one "
+            "sign-in per account at a time. Signing in here signs the "
+            "Petlibro app on the phone out of the same account. Recommended: "
+            "a second Petlibro account, created in the app, to which the "
+            "devices are shared from the main account - that second account "
+            "belongs here.\nData is stored encrypted locally on this "
+            "computer."
+        ))
+
+        formSizer = wx.FlexGridSizer(cols=2, hgap=10, vgap=10)
+        formSizer.AddGrowableCol(1)
+
+        # Translators: Label of the email field for Petlibro.
+        emailLabel = wx.StaticText(panel, label=_("Petlibro &email:"))
+        self.petlibroEmailCtrl = wx.TextCtrl(
+            panel, value=getattr(self.plugin, 'petlibro_email', ''))
+        # Translators: Accessible name of the Petlibro email field.
+        self.petlibroEmailCtrl.SetName(_("Petlibro email address"))
+        formSizer.Add(emailLabel, flag=wx.ALIGN_CENTER_VERTICAL)
+        formSizer.Add(self.petlibroEmailCtrl, flag=wx.EXPAND)
+
+        # Translators: Label of the password field for Petlibro.
+        passwordLabel = wx.StaticText(panel, label=_("Petlibro pass&word:"))
+        self.petlibroPasswordCtrl = wx.TextCtrl(
+            panel, value="", style=wx.TE_PASSWORD)
+        self.petlibroPasswordCtrl.SetName(self._password_field_name(
+            # Translators: Name of the password field in the Petlibro tab. The
+            # add-on appends to it whether a password is already stored.
+            _("Petlibro password"),
+            bool(getattr(self.plugin, 'petlibro_password', ''))))
+        formSizer.Add(passwordLabel, flag=wx.ALIGN_CENTER_VERTICAL)
+        formSizer.Add(self.petlibroPasswordCtrl, flag=wx.EXPAND)
+
+        sizer.Add(formSizer, flag=wx.EXPAND | wx.ALL, border=10)
+
+        # Translators: "Test Petlibro connection" button.
+        self.petlibroTestBtn = wx.Button(panel, label=_("Test Petlibro "
+                                                        "&connection"))
+        # Translators: Accessible name of the Petlibro test button.
+        self.petlibroTestBtn.SetName(_("Test Petlibro connection"))
+        self.petlibroTestBtn.Bind(wx.EVT_BUTTON, self.on_test_petlibro)
+        sizer.Add(self.petlibroTestBtn, flag=wx.ALL, border=10)
+
+        panel.SetSizer(sizer)
+
+    # -------------------------------------------------------------------------
+    # -
     # Tab: Notifications (dynamic, depends on the enabled platforms)
     # -------------------------------------------------------------------------
     # -
@@ -1052,6 +1197,57 @@ class SmartHomeSettingsDialog(wx.Dialog):
             self.chkCozytouch.GetValue(),
         )
 
+        # Petlibro (feeders and water fountains)
+        add_section(
+            # Translators: Group box for the Petlibro notifications. Brand
+            # name plus the experimental marker.
+            _("Petlibro (experimental)"),
+            "Petlibro",
+            [
+                ('notify_petlibro_feed_failed',
+                 # Translators: Petlibro notification option.
+                 _("Announce failed feedings and faults of the device"),
+                 True),
+                ('notify_petlibro_feed_external',
+                 # Translators: Petlibro notification option: food given from
+                 # the app or with the button on the feeder.
+                 _("Announce feedings started elsewhere (app, button on the "
+                   "feeder)"),
+                 True),
+                ('notify_petlibro_feed_planned',
+                 # Translators: Petlibro notification option (default: off).
+                 _("Announce every planned meal (several times a day)"),
+                 False),
+                ('notify_petlibro_food_low',
+                 # Translators: Petlibro notification option.
+                 _("Announce when the food runs low"),
+                 True),
+                ('notify_petlibro_water_low',
+                 # Translators: Petlibro notification option.
+                 _("Announce when the water of a fountain runs low"),
+                 True),
+                ('notify_petlibro_maintenance',
+                 # Translators: Petlibro notification option.
+                 _("Announce when desiccant, filter or cleaning are due"),
+                 True),
+                ('notify_petlibro_battery',
+                 # Translators: Petlibro notification option.
+                 _("Announce a low battery"),
+                 True),
+                ('notify_petlibro_connection',
+                 # Translators: Petlibro notification option.
+                 _("Announce when a device goes offline or comes back"),
+                 True),
+                ('notify_petlibro_settings',
+                 # Translators: Petlibro notification option: settings
+                 # changed in the app.
+                 _("Announce settings changed elsewhere (feeding plan, water "
+                   "mode, light)"),
+                 True),
+            ],
+            self.chkPetlibro.GetValue(),
+        )
+
         panel.SetSizer(sizer)
 
     # =========================================================================
@@ -1103,7 +1299,7 @@ class SmartHomeSettingsDialog(wx.Dialog):
                 self._safe_call_after(self._auto_enable_platform, self.chkMeross, "Meross")
 
             except Exception as e:
-                log.error(f"Meross connection test failed: {type(e).__name__}: {e}")
+                log_failure("Meross connection test failed", e)
                 error_msg = str(e)[:100]
                 self._safe_call_after(
                     self._set_status,
@@ -1206,7 +1402,7 @@ class SmartHomeSettingsDialog(wx.Dialog):
                 self._safe_call_after(ui.message, _("Netatmo connected"))
 
             except Exception as e:
-                log.error(f"Netatmo OAuth failed: {type(e).__name__}: {e}")
+                log_failure("Netatmo OAuth failed", e)
                 error_msg = str(e)[:100]
                 self._safe_call_after(
                     self._set_status,
@@ -1279,7 +1475,7 @@ class SmartHomeSettingsDialog(wx.Dialog):
                     _("Netatmo: {count} device(s)").format(count=len(devices)))
 
             except Exception as e:
-                log.error(f"Netatmo test failed: {type(e).__name__}: {e}")
+                log_failure("Netatmo test failed", e)
                 error_msg = str(e)[:100]
                 self._safe_call_after(
                     self._set_status,
@@ -1390,7 +1586,7 @@ class SmartHomeSettingsDialog(wx.Dialog):
                 self._safe_call_after(self._auto_enable_platform, self.chkVesync, "VeSync")
 
             except Exception as e:
-                log.error(f"VeSync connection test failed: {type(e).__name__}: {e}")
+                log_failure("VeSync connection test failed", e)
                 error_msg = str(e)[:100]
                 self._safe_call_after(
                     self._set_status,
@@ -1459,7 +1655,7 @@ class SmartHomeSettingsDialog(wx.Dialog):
                 self._safe_call_after(self._auto_enable_platform, self.chkCozytouch, "Cozytouch")
 
             except Exception as e:
-                log.error(f"Cozytouch connection test failed: {type(e).__name__}: {e}")
+                log_failure("Cozytouch connection test failed", e)
                 error_msg = str(e)[:100]
                 self._safe_call_after(
                     self._set_status,
@@ -1475,6 +1671,63 @@ class SmartHomeSettingsDialog(wx.Dialog):
         password = None
         del password
 
+    def on_test_petlibro(self, event):
+        """Tests the Petlibro connection."""
+        email = self.petlibroEmailCtrl.GetValue().strip()
+        password = self._effective_secret(
+            self.petlibroPasswordCtrl, getattr(self.plugin, 'petlibro_password', ''))
+
+        if not email or not password:
+            # Translators: Validation error in the Petlibro tab.
+            self._set_status(_("Please enter Petlibro email and password"), error=True)
+            ui.message(_("Please enter email and password"))
+            return
+
+        def test_task(_email, _password):
+            try:
+                # Translators: Status while the Petlibro connection test runs.
+                self._safe_call_after(self._set_status, _("Testing Petlibro "
+                                                          "connection..."))
+                self._safe_call_after(self._safe_button_disable, self.petlibroTestBtn)
+                from .petlibro_api import PetlibroAPI
+                api = PetlibroAPI()
+                try:
+                    api.login(_email, _password)
+                finally:
+                    _password = None
+                devices = api.fetch_device_list()
+                # The new token replaces the running session's one: a login
+                # ends every other session of the account, that one too.
+                creds = api.get_credentials()
+                if creds.get("token"):
+                    self.plugin.petlibro_token = creds["token"]
+                    if self.plugin.petlibro_api is not None:
+                        self.plugin.petlibro_api.set_credentials(creds["token"])
+                api.logout()
+                self._safe_call_after(
+                    self._set_status,
+                    # Translators: Success message of the Petlibro connection
+                    # test. {count} = number of devices.
+                    _("Petlibro: connected – {count} device(s)").format(count=len(devices)),
+                    error=False,
+                )
+                self._safe_call_after(self._auto_enable_platform, self.chkPetlibro, "Petlibro")
+            except Exception as e:
+                log_failure("Petlibro connection test failed", e)
+                error_msg = str(e)[:120]
+                self._safe_call_after(
+                    self._set_status,
+                    # Translators: Error message of the Petlibro connection
+                    # test. {error} = detail.
+                    _("Petlibro error: {error}").format(error=error_msg), error=True)
+            finally:
+                _password = None
+                self._safe_call_after(self._safe_button_enable, self.petlibroTestBtn)
+
+        threading.Thread(target=test_task, args=(email, password), daemon=True).start()
+        password = None
+        del password
+
     # =========================================================================
     # =
     # Save
@@ -1482,6 +1735,7 @@ class SmartHomeSettingsDialog(wx.Dialog):
     # =
     def on_ok(self, event):
         """Saves all settings."""
+        self._enable_platforms_with_new_credentials()
         # Meross validation
         email = self.merossEmailCtrl.GetValue().strip()
         # Empty password field = keep the stored password (the fields are
@@ -1490,41 +1744,34 @@ class SmartHomeSettingsDialog(wx.Dialog):
         use_meross = self.chkMeross.GetValue()
 
         if use_meross:
-            email_pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
             if not email:
                 # Translators: Status line of the settings dialog. It is spoken
                 # and stays readable, so it is a sentence of its own.
-                self._set_status(_("Meross: please enter an email address"), error=True)
-                ui.message(_("Meross: please enter an email address"))
-                self.notebook.SetSelection(self._PLATFORM_TABS['meross'])
-                self.merossEmailCtrl.SetFocus()
+                self._validation_error(
+                    _("Meross: please enter an email address"),
+                    'meross', self.merossEmailCtrl)
                 return
 
-            if not re.match(email_pattern, email):
+            if not _EMAIL_PATTERN.match(email):
                 # Translators: Validation error for invalid email syntax.
-                self._set_status(_("Invalid email address"), error=True)
-                ui.message(_("Invalid email address"))
-                self.notebook.SetSelection(self._PLATFORM_TABS['meross'])
-                self.merossEmailCtrl.SetFocus()
+                self._validation_error(
+                    _("Invalid email address"),
+                    'meross', self.merossEmailCtrl)
                 return
 
             if not password:
                 # Translators: Status line of the settings dialog. It is spoken
                 # and stays readable, so it is a sentence of its own.
-                self._set_status(_("Meross: please enter a password"), error=True)
-                ui.message(_("Meross: please enter a password"))
-                self.notebook.SetSelection(self._PLATFORM_TABS['meross'])
-                self.merossPasswordCtrl.SetFocus()
+                self._validation_error(
+                    _("Meross: please enter a password"),
+                    'meross', self.merossPasswordCtrl)
                 return
 
             if len(password) < 6:
                 # Translators: Validation error for a too short password.
-                self._set_status(_("Password too short (min. 6 characters)"), error=True)
-                # Translators: Spoken message when the settings are saved and a
-                # field is missing or wrong.
-                ui.message(_("Password too short"))
-                self.notebook.SetSelection(self._PLATFORM_TABS['meross'])
-                self.merossPasswordCtrl.SetFocus()
+                self._validation_error(
+                    _("Password too short (min. 6 characters)"),
+                    'meross', self.merossPasswordCtrl)
                 return
 
         # Netatmo validation
@@ -1536,10 +1783,9 @@ class SmartHomeSettingsDialog(wx.Dialog):
         if use_netatmo and (not netatmo_client_id or not netatmo_client_secret):
             # Translators: Status line of the settings dialog. It is spoken and
             # stays readable, so it is a sentence of its own.
-            self._set_status(_("Netatmo: please enter client ID and secret"), error=True)
-            ui.message(_("Netatmo: please enter client ID and secret"))
-            self.notebook.SetSelection(self._PLATFORM_TABS['netatmo'])
-            self.netatmoIdCtrl.SetFocus()
+            self._validation_error(
+                _("Netatmo: please enter client ID and secret"),
+                'netatmo', self.netatmoIdCtrl)
             return
 
         # VeSync validation
@@ -1553,40 +1799,33 @@ class SmartHomeSettingsDialog(wx.Dialog):
             if not vesync_email:
                 # Translators: Status line of the settings dialog. It is spoken
                 # and stays readable, so it is a sentence of its own.
-                self._set_status(_("VeSync: please enter an email address"), error=True)
-                ui.message(_("VeSync: please enter an email address"))
-                self.notebook.SetSelection(self._PLATFORM_TABS['vesync'])
-                self.vesyncEmailCtrl.SetFocus()
+                self._validation_error(
+                    _("VeSync: please enter an email address"),
+                    'vesync', self.vesyncEmailCtrl)
                 return
 
-            email_pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
-            if not re.match(email_pattern, vesync_email):
+            if not _EMAIL_PATTERN.match(vesync_email):
                 # Translators: Status line of the settings dialog. It is spoken
                 # and stays readable, so it is a sentence of its own.
-                self._set_status(_("VeSync: invalid email address"), error=True)
-                ui.message(_("VeSync: invalid email address"))
-                self.notebook.SetSelection(self._PLATFORM_TABS['vesync'])
-                self.vesyncEmailCtrl.SetFocus()
+                self._validation_error(
+                    _("VeSync: invalid email address"),
+                    'vesync', self.vesyncEmailCtrl)
                 return
 
             if not vesync_password:
                 # Translators: Status line of the settings dialog. It is spoken
                 # and stays readable, so it is a sentence of its own.
-                self._set_status(_("VeSync: please enter a password"), error=True)
-                ui.message(_("VeSync: please enter a password"))
-                self.notebook.SetSelection(self._PLATFORM_TABS['vesync'])
-                self.vesyncPasswordCtrl.SetFocus()
+                self._validation_error(
+                    _("VeSync: please enter a password"),
+                    'vesync', self.vesyncPasswordCtrl)
                 return
 
             if len(vesync_country) != 2 or not vesync_country.isalpha():
                 # Translators: Status line of the settings dialog. It is spoken
                 # and stays readable, so it is a sentence of its own.
-                self._set_status(_("VeSync: country code must be two letters"), error=True)
-                # Translators: Spoken message when the settings are saved and a
-                # field is missing or wrong.
-                ui.message(_("VeSync: invalid country code"))
-                self.notebook.SetSelection(self._PLATFORM_TABS['vesync'])
-                self.vesyncCountryCtrl.SetFocus()
+                self._validation_error(
+                    _("VeSync: country code must be two letters"),
+                    'vesync', self.vesyncCountryCtrl)
                 return
 
         # Cozytouch validation
@@ -1596,32 +1835,55 @@ class SmartHomeSettingsDialog(wx.Dialog):
             self.cozytouchPasswordCtrl, getattr(self.plugin, 'cozytouch_password', ''))
 
         if use_cozytouch:
-            email_pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
-            if not cozytouch_email or not re.match(email_pattern, cozytouch_email):
+            if not cozytouch_email or not _EMAIL_PATTERN.match(cozytouch_email):
                 # Translators: Status line of the settings dialog. It is spoken
                 # and stays readable, so it is a sentence of its own.
-                self._set_status(_("Cozytouch: invalid email address"), error=True)
-                ui.message(_("Cozytouch: invalid email address"))
-                self.notebook.SetSelection(self._PLATFORM_TABS['cozytouch'])
-                self.cozytouchEmailCtrl.SetFocus()
+                self._validation_error(
+                    _("Cozytouch: invalid email address"),
+                    'cozytouch', self.cozytouchEmailCtrl)
                 return
             if not cozytouch_password:
                 # Translators: Status line of the settings dialog. It is spoken
                 # and stays readable, so it is a sentence of its own.
-                self._set_status(_("Cozytouch: please enter a password"), error=True)
-                ui.message(_("Cozytouch: please enter a password"))
-                self.notebook.SetSelection(self._PLATFORM_TABS['cozytouch'])
-                self.cozytouchPasswordCtrl.SetFocus()
+                self._validation_error(
+                    _("Cozytouch: please enter a password"),
+                    'cozytouch', self.cozytouchPasswordCtrl)
                 return
 
+        # Petlibro validation
+        use_petlibro = self.chkPetlibro.GetValue()
+        petlibro_email = self.petlibroEmailCtrl.GetValue().strip()
+        petlibro_password = self._effective_secret(
+            self.petlibroPasswordCtrl, getattr(self.plugin, 'petlibro_password', ''))
+
+        if use_petlibro:
+            if not petlibro_email or not _EMAIL_PATTERN.match(petlibro_email):
+                # Translators: Status line of the settings dialog. It is spoken
+                # and stays readable, so it is a sentence of its own.
+                self._validation_error(
+                    _("Petlibro: invalid email address"),
+                    'petlibro', self.petlibroEmailCtrl)
+                return
+            if not petlibro_password:
+                # Translators: Status line of the settings dialog. It is spoken
+                # and stays readable, so it is a sentence of its own.
+                self._validation_error(
+                    _("Petlibro: please enter a password"),
+                    'petlibro', self.petlibroPasswordCtrl)
+                return
+            # No length limit here. The community names 18 characters, but a
+            # password of 19 signs in fine (measured 2026-09-22); the app
+            # itself allows 20 when a password is set. Whatever the limit is,
+            # the login below says so - a check here could only refuse a
+            # password that works.
+
         # At least one platform must be enabled
-        if not use_meross and not use_netatmo and not use_vesync and not use_cozytouch:
+        if (not use_meross and not use_netatmo and not use_vesync
+                and not use_cozytouch and not use_petlibro):
             # Translators: Validation error: no platform selected.
-            self._set_status(_("At least one platform must be enabled"), error=True)
-            # Translators: Spoken message when the settings are saved and a
-            # field is missing or wrong.
-            ui.message(_("Enable at least one platform"))
-            self.notebook.SetSelection(0)
+            self._validation_error(
+                _("At least one platform must be enabled"),
+                0, None)
             return
 
         # ---- Which platforms got new credentials? ----
@@ -1647,6 +1909,10 @@ class SmartHomeSettingsDialog(wx.Dialog):
                 or cozytouch_password != getattr(
                     self.plugin, 'cozytouch_password', '')):
             changed.add('cozytouch')
+        if (petlibro_email != getattr(self.plugin, 'petlibro_email', '')
+                or petlibro_password != getattr(
+                    self.plugin, 'petlibro_password', '')):
+            changed.add('petlibro')
 
         # Everything read from the controls in one place: the check runs in the
         # background, and the fields must not be read again afterwards (they
@@ -1703,22 +1969,60 @@ class SmartHomeSettingsDialog(wx.Dialog):
             'cozytouch_email': cozytouch_email,
             'cozytouch_password': cozytouch_password,
             'cozytouch_capacity_liters': capacity,
+            'use_petlibro': use_petlibro,
+            'petlibro_email': petlibro_email,
+            'petlibro_password': petlibro_password,
             'auto_login': self.autoLoginCheckbox.GetValue(),
             'announce_external_changes': self.announceExternalCheckbox.GetValue(),
             'start_tab': start_tab,
             # Tokens the check earned on the way - see _verify_credentials.
             'vesync_creds': None,
             'cozytouch_token': None,
+            'petlibro_token': None,
         }
 
         # A password login can be proven here; Netatmo's OAuth cannot - that
         # authorisation runs in the browser via "Connect to Netatmo".
-        to_verify = [name for name in ('meross', 'vesync', 'cozytouch')
+        to_verify = [name for name in ('meross', 'vesync', 'cozytouch',
+                                       'petlibro')
                      if name in changed and pending['use_' + name]]
         if to_verify:
             self._verify_then_commit(pending, to_verify)
         else:
             self._commit(pending)
+
+    def _validation_error(self, message, tab, control):
+        """Says why the settings cannot be saved and puts the focus there.
+
+        The reason used to be spoken twice - once by the status line, once
+        more by a message of its own - and the focus change right after cut
+        both off: NVDA cancels speech when the focus moves (the same finding
+        as in _verification_failed). Now the status line is set silently,
+        the tab and the field are chosen, and the reason follows once the
+        field has been announced.
+
+        Args:
+            message: the reason, as the status line shows it.
+            tab: a platform key of _PLATFORM_TABS, or a page index.
+            control: the field to focus, or None.
+        """
+        self._set_status(message, error=True, speak=False)
+        try:
+            self.notebook.SetSelection(self._PLATFORM_TABS.get(tab, tab)
+                                       if isinstance(tab, str) else tab)
+            if control is not None:
+                control.SetFocus()
+        except Exception as e:
+            log.debug(f"Ignored error in _validation_error: {e}")
+        try:
+            wx.CallLater(500, self._speak_unless_closed, message)
+        except Exception as e:
+            log.debug(f"Ignored error in _validation_error: {e}")
+
+    def _speak_unless_closed(self, message):
+        """Speaks ``message`` if the dialog is still there."""
+        if not self._is_destroyed:
+            ui.message(message)
 
     def on_cancel(self, event):
         """Cancel: save nothing, and drop a check that is still running."""
@@ -1792,9 +2096,17 @@ class SmartHomeSettingsDialog(wx.Dialog):
                     if creds.get("token"):
                         pending['cozytouch_token'] = creds["token"]
                     api.logout()
+                elif platform == 'petlibro':
+                    from .petlibro_api import PetlibroAPI
+                    api = PetlibroAPI()
+                    api.login(pending['petlibro_email'],
+                              pending['petlibro_password'])
+                    creds = api.get_credentials()
+                    if creds.get("token"):
+                        pending['petlibro_token'] = creds["token"]
+                    api.logout()
             except Exception as e:
-                log.error(f"{PLATFORM_LABELS[platform]} credential check "
-                          f"failed: {type(e).__name__}: {e}")
+                log_failure(f"{PLATFORM_LABELS[platform]} credential check failed", e)
                 self._safe_call_after(self._verification_failed, platform, e)
                 return
             log.info(f"{PLATFORM_LABELS[platform]}: new credentials verified")
@@ -1888,6 +2200,17 @@ class SmartHomeSettingsDialog(wx.Dialog):
         elif 'cozytouch' in pending['changed']:
             self.plugin.cozytouch_token = ""
 
+        self.plugin.use_petlibro = pending['use_petlibro']
+        self.plugin.petlibro_email = pending['petlibro_email']
+        self.plugin.petlibro_password = pending['petlibro_password']
+        if pending['petlibro_token']:
+            self.plugin.petlibro_token = pending['petlibro_token']
+            # The check's login ended the running session - hand it on.
+            if self.plugin.petlibro_api is not None:
+                self.plugin.petlibro_api.set_credentials(pending['petlibro_token'])
+        elif 'petlibro' in pending['changed']:
+            self.plugin.petlibro_token = ""
+
         # Write the notification checkboxes from the "Notifications" tab back
         # into the plugin. Platforms whose section was not visible in the
         # current session (platform disabled) stay unchanged - their values are
@@ -1905,7 +2228,7 @@ class SmartHomeSettingsDialog(wx.Dialog):
         # The plugin keeps the passwords encrypted from here on; the plain
         # text of the check does not have to wait for the garbage collector.
         for key in ('password', 'vesync_password', 'cozytouch_password',
-                    'netatmo_client_secret'):
+                    'petlibro_password', 'netatmo_client_secret'):
             pending[key] = None
 
         log.info("Smart Home settings saved")

@@ -232,26 +232,6 @@ msgstr "'{text}' nicht gefunden"
 msgid "(active)"
 msgstr "(aktiv)"
 
-#. Translators: Current amperage in amps.
-#: __init__.py:1991
-msgid ", {current} amps"
-msgstr ", {current} Ampere"
-
-#. Translators: Relative humidity in percent.
-#: __init__.py:1939
-msgid ", {humidity:.1f}% humidity"
-msgstr ", {humidity:.1f}% Luftfeuchtigkeit"
-
-#. Translators: Current power consumption in watts.
-#: __init__.py:1985
-msgid ", {power} watts"
-msgstr ", {power} Watt"
-
-#. Translators: Current voltage in volts.
-#: __init__.py:1988
-msgid ", {voltage} volts"
-msgstr ", {voltage} Volt"
-
 #. Translators: As above, in case the device name is unavailable.
 #: change_detection.py:122
 msgid ""
@@ -552,11 +532,6 @@ msgid ""
 "days)"
 msgstr ""
 "Sagt den Energieverbrauch der Messsteckdosen an (heute und letzte 7 Tage)"
-
-#. Translators: Description of the script in the NVDA input gestures dialog.
-#: __init__.py:1757
-msgid "Announces the status of all smart home devices"
-msgstr "Sagt den Status aller Smart Home Geräte an"
 
 #. Translators: F1 help text of the favorites view (keyboard shortcuts).
 #: dialog_favorites.py:547
@@ -1332,11 +1307,6 @@ msgstr "Cozytouch Passwort"
 msgid "Cozytouch: connected – {count} device(s)"
 msgstr "Cozytouch: Verbunden – {count} Gerät(e)"
 
-#. Translators: Spoken while the Cozytouch account is being signed in to.
-#: __init__.py:925
-msgid "Cozytouch: connecting..."
-msgstr "Cozytouch: Verbinde..."
-
 #. Translators: Error message of the Cozytouch sign-in: the credentials were
 #. refused.
 #: cozytouch_api.py:191
@@ -1353,11 +1323,6 @@ msgstr "Cozytouch: Ungültige E-Mail-Adresse"
 #: cozytouch_api.py:183
 msgid "Cozytouch: invalid response during login"
 msgstr "Cozytouch: Ungültige Antwort beim Login"
-
-#. Translators: Spoken while the Cozytouch device list is being fetched.
-#: __init__.py:941
-msgid "Cozytouch: loading devices..."
-msgstr "Cozytouch: Lade Geräte..."
 
 #. Translators: Error message of the Cozytouch sign-in with the HTTP status
 #. code.
@@ -1751,34 +1716,10 @@ msgstr "Eco+"
 msgid "Efficient"
 msgstr "Effizient"
 
-#. Translators: Beginning of the "Electric heating element" line in the device
-#. tree. F1 picks its help by this text, so it has to be translated exactly
-#. like the line itself.
-#: dialog_help.py:129
-msgid "Electric heating element"
-msgstr "Elektro-Heizstab"
-
-#. Translators: Cozytouch status announcement: electric backup heating element
-#. active.
-#: cozytouch_devices.py:575
-msgid "Electric heating element active"
-msgstr "Elektro-Heizstab aktiv"
-
-#. Translators: Note that the electric heating element is currently heating.
-#: dialog_cozytouch.py:776
-msgid "Electric heating element active (currently heating)"
-msgstr "Elektro-Heizstab aktiv (heizt gerade)"
-
 #. Translators: Validation error when email or password is missing.
 #: cozytouch_api.py:155 meross_api.py:488 vesync_api.py:381
 msgid "Email and password required"
 msgstr "E-Mail und Passwort erforderlich"
-
-#. Translators: Spoken message when the settings are saved and a field is
-#. missing or wrong.
-#: settings_panel.py:1587
-msgid "Enable at least one platform"
-msgstr "Mindestens eine Plattform aktivieren"
 
 #. Translators: Netatmo thermostat announcement: the time limit of a manual
 #. setting was removed.
@@ -2297,13 +2238,6 @@ msgstr "Luftfeuchtigkeit:"
 msgid "Humidity: {humidity}%"
 msgstr "Luftfeuchtigkeit: {humidity}%"
 
-#. Translators: Line in the device tree. F1 finds its help by the beginning of
-#. this text, so it and the "Humidity:" in the help have to be translated the
-#. same way.
-#: device_dialog.py:898
-msgid "Humidity: {value:g}%"
-msgstr "Luftfeuchtigkeit: {value:g}%"
-
 #. Translators: Tooltip for the filter warning threshold field.
 #: settings_panel.py:727
 msgid ""
@@ -2433,11 +2367,6 @@ msgstr "Letzte 30 Tage"
 msgid "Last 7 days"
 msgstr "Letzte 7 Tage"
 
-#. Translators: Diagnostics: seconds since the last successful Meross refresh.
-#: __init__.py:1344
-msgid "Last Meross refresh {seconds} seconds ago"
-msgstr "Letzte Meross-Aktualisierung vor {seconds} Sekunden"
-
 #. Translators: Time range filter options in the history dialog.
 #: dialog_history.py:177
 msgid "Last hour"
@@ -2545,12 +2474,6 @@ msgstr "Lade..."
 msgid "Logging in to {platforms}..."
 msgstr "Anmeldung bei {platforms}..."
 
-#. Translators: Announcement when a renewed login fails but the previous
-#. device list remains in use.
-#: __init__.py:971
-msgid "Login failed – existing devices remain available"
-msgstr "Anmeldung fehlgeschlagen – bisherige Geräte bleiben verfügbar"
-
 #. Translators: Spoken when the device menu is opened while the sign-in is
 #. still running.
 #: __init__.py:1076
@@ -2635,16 +2558,6 @@ msgstr ""
 #: settings_panel.py:1064
 msgid "Meross: connected – {count} device(s)"
 msgstr "Meross: Verbunden – {count} Gerät(e)"
-
-#. Translators: Spoken while the Meross account is being signed in to.
-#: __init__.py:760
-msgid "Meross: connecting..."
-msgstr "Meross: Verbinde..."
-
-#. Translators: Spoken while the Meross device list is being fetched.
-#: __init__.py:783
-msgid "Meross: loading devices..."
-msgstr "Meross: Lade Geräte..."
 
 #. Translators: Status line of the settings dialog. It is spoken and stays
 #. readable, so it is a sentence of its own.
@@ -2858,7 +2771,7 @@ msgstr "Netatmo-Server vorübergehend nicht erreichbar (HTTP {code})"
 #: netatmo_api.py:605
 msgid ""
 "Netatmo servers temporarily unavailable – not a problem with the add-on or "
-"your settings; the next update will try again"
+"the settings; the next update will try again"
 msgstr ""
 "Netatmo-Server vorübergehend nicht erreichbar – kein Problem der Erweiterung"
 " oder der eigenen Einstellungen; die nächste Abfrage versucht es erneut"
@@ -2879,11 +2792,6 @@ msgstr "Netatmo-Token: noch {minutes} Minuten gültig"
 #: settings_panel.py:1164
 msgid "Netatmo: connected"
 msgstr "Netatmo: Verbunden"
-
-#. Translators: Spoken while the Netatmo account is being signed in to.
-#: __init__.py:804
-msgid "Netatmo: connecting..."
-msgstr "Netatmo: Verbinde..."
 
 #. Translators: Speech output on OAuth2 error.
 #: settings_panel.py:1183
@@ -2916,12 +2824,6 @@ msgstr "Netzwerk: offline (Fehlversuche: {count})"
 msgid "Neutral white"
 msgstr "Neutrales Weiß"
 
-#. Translators: Status announcement: next schedule change (zone, temperature,
-#. time).
-#: netatmo_api.py:371
-msgid "Next change: {zone} ({temp:.1f}°C) at {time}"
-msgstr "Nächste Änderung: {zone} ({temp:.1f}°C) um {time}"
-
 #. Translators: One piece of the device help spoken with F1. The pieces are
 #. joined with ". ", so no full stop at the end.
 #: dialog_help.py:582
@@ -2940,13 +2842,6 @@ msgstr "Nächste Änderung: {zone} um {time}"
 #: device_dialog.py:972 dialog_help.py:103
 msgid "Next schedule change:"
 msgstr "Nächste Planänderung:"
-
-#. Translators: Line in the device tree. F1 finds its help by the beginning of
-#. this text, so it and the "Next schedule change:" in the help have to be
-#. translated the same way.
-#: device_dialog.py:984 device_dialog.py:2855
-msgid "Next schedule change: {zone} ({temp:.1f}°C) at {time}"
-msgstr "Nächste Planänderung: {zone} ({temp:.1f}°C) um {time}"
 
 #. Translators: Next schedule change with temperature.
 #: dialog_netatmo.py:709 dialog_netatmo.py:939
@@ -3163,19 +3058,6 @@ msgstr "Nicht angemeldet - bitte Einstellungen prüfen"
 #: __init__.py:1083
 msgid "Not logged in – opening settings"
 msgstr "Nicht angemeldet – öffne Einstellungen"
-
-#. Translators: Hint text in the General tab.
-#: settings_panel.py:447
-msgid ""
-"Note: Meross, Netatmo, VeSync and Cozytouch can be used individually or in combination.\n"
-"Disabled platforms are skipped during login.\n"
-"A successful connection test in the respective tab enables the platform automatically.\n"
-"Cozytouch is experimental - only one hot water heat pump has been tested so far."
-msgstr ""
-"Hinweis: Meross, Netatmo, VeSync und Cozytouch lassen sich einzeln oder kombiniert verwenden.\n"
-"Deaktivierte Plattformen werden beim Login übersprungen.\n"
-"Ein erfolgreicher Verbindungstest im jeweiligen Tab aktiviert die Plattform automatisch.\n"
-"Cozytouch ist experimentell - bisher ist nur eine Warmwasser-Wärmepumpe getestet."
 
 #. Translators: Spray mode of a Meross diffuser (off).
 #: constants.py:50 constants.py:257 device_dialog.py:2551
@@ -3442,12 +3324,6 @@ msgstr ""
 "Feinstaub PM2.5: Konzentration sehr feiner Partikel in Mikrogramm pro "
 "Kubikmeter."
 
-#. Translators: Spoken message when the settings are saved and a field is
-#. missing or wrong.
-#: settings_panel.py:1489
-msgid "Password too short"
-msgstr "Passwort zu kurz"
-
 #. Translators: Validation error for a too short password.
 #: settings_panel.py:1486
 msgid "Password too short (min. 6 characters)"
@@ -3483,11 +3359,6 @@ msgstr "Plattform"
 #: dialog_netatmo.py:178
 msgid "Please choose a temperature"
 msgstr "Bitte Temperatur wählen"
-
-#. Translators: Message on invalid temperature selection.
-#: dialog_netatmo.py:267
-msgid "Please choose a valid temperature"
-msgstr "Bitte gültige Temperatur wählen"
 
 #. Translators: Validation hint: not yet connected via OAuth2.
 #: settings_panel.py:1193
@@ -4269,11 +4140,6 @@ msgstr "Zieltemperatur gesetzt"
 msgid "Target temperature {temp} degrees"
 msgstr "Zieltemperatur {temp} Grad"
 
-#. Translators: Netatmo thermostat announcement: new target temperature in °C.
-#: change_detection.py:396 change_detection.py:398
-msgid "Target temperature: {temp:.1f}°C"
-msgstr "Soll-Temperatur: {temp:.1f}°C"
-
 #. Translators: Cozytouch status announcement: configured target temperature.
 #: cozytouch_devices.py:541
 msgid "Target temperature: {temp} degrees"
@@ -4294,11 +4160,6 @@ msgstr "Zieltemperatur: {temp}°C"
 #: dialog_help.py:552
 msgid "Target: {temp}°C"
 msgstr "Soll: {temp}°C"
-
-#. Translators: Status announcement: target temperature of a thermostat.
-#: netatmo_api.py:313
-msgid "Target: {value:.1f}°C"
-msgstr "Soll: {value:.1f}°C"
 
 #. Translators: Name/tooltip of the temperature selection list.
 #: dialog_netatmo.py:70 dialog_vesync.py:492 dialog_vesync.py:624
@@ -4328,11 +4189,6 @@ msgstr "Temperatur:"
 #: dialog_help.py:498 dialog_help.py:622 dialog_vesync.py:1179
 msgid "Temperature: {temp}°C"
 msgstr "Temperatur: {temp}°C"
-
-#. Translators: Status announcement: measured temperature.
-#: device_dialog.py:885 vesync_devices.py:1159
-msgid "Temperature: {value:.1f}°C"
-msgstr "Temperatur: {value:.1f}°C"
 
 #. Translators: "Test Cozytouch connection" button.
 #: settings_panel.py:817
@@ -4409,13 +4265,6 @@ msgstr ""
 "Nach der Autorisierung erfolgt die Rückleitung automatisch.\n"
 "\n"
 "Fortfahren?"
-
-#. Translators: F1 help for the "Electric heating element" line in the device
-#. tree.
-#: dialog_help.py:132
-msgid ""
-"The electric backup heating element is currently assisting the heat pump."
-msgstr "Der elektrische Zusatz-Heizstab unterstützt gerade die Wärmepumpe."
 
 #. Translators: Validation error in the away scheduling dialog.
 #: dialog_cozytouch.py:689
@@ -4784,11 +4633,6 @@ msgstr "VeSync: Kindersicherung konnte nicht geschaltet werden"
 msgid "VeSync: connected – {count} device(s)"
 msgstr "VeSync: Verbunden – {count} Gerät(e)"
 
-#. Translators: Spoken while the VeSync account is being signed in to.
-#: __init__.py:845
-msgid "VeSync: connecting..."
-msgstr "VeSync: Verbinde..."
-
 #. Translators: Status line of the settings dialog. It is spoken and stays
 #. readable, so it is a sentence of its own.
 #: settings_panel.py:1548
@@ -4812,22 +4656,11 @@ msgstr "VeSync: Lüfterstufe {level} konnte nicht gesetzt werden"
 msgid "VeSync: filter reset failed"
 msgstr "VeSync: Filter-Reset fehlgeschlagen"
 
-#. Translators: Spoken message when the settings are saved and a field is
-#. missing or wrong.
-#: settings_panel.py:1551
-msgid "VeSync: invalid country code"
-msgstr "VeSync: Ungültiger Ländercode"
-
 #. Translators: Status line of the settings dialog. It is spoken and stays
 #. readable, so it is a sentence of its own.
 #: settings_panel.py:1530 settings_panel.py:1531
 msgid "VeSync: invalid email address"
 msgstr "VeSync: Ungültige E-Mail-Adresse"
-
-#. Translators: Spoken while the VeSync device list is being fetched.
-#: __init__.py:884
-msgid "VeSync: loading devices..."
-msgstr "VeSync: Lade Geräte..."
 
 #. Translators: Error message after a refused mode change, shown to the user.
 #: vesync_devices.py:934 vesync_devices.py:1307
@@ -4937,11 +4770,6 @@ msgstr "Achtung: Filter wechseln, Restlebensdauer {percent}%"
 #: history.py:1200
 msgid "Water alarm"
 msgstr "Wasseralarm"
-
-#. Translators: Meross water sensor: water was detected (alarm).
-#: __init__.py:1949
-msgid "Water alarm!"
-msgstr "Wasseralarm!"
 
 #. Translators: Alarm of a Meross water sensor. {name} = device.
 #: change_detection.py:166
@@ -5103,11 +4931,6 @@ msgstr "stumm"
 msgid "no data"
 msgstr "keine Daten"
 
-#. Translators: Meross water sensor: water was detected (alarm).
-#: __init__.py:1949
-msgid "no water detected"
-msgstr "kein Wasser erkannt"
-
 #. Translators: Placeholder when no devices are listed per platform.
 #: __init__.py:1887 cozytouch_devices.py:195
 msgid "none"
@@ -5151,11 +4974,6 @@ msgstr "offline"
 #: vesync_devices.py:695 vesync_devices.py:1132
 msgid "on"
 msgstr "ein"
-
-#. Translators: Meross hub connection status.
-#: __init__.py:1966
-msgid "online"
-msgstr "online"
 
 #. Translators: Air quality level 4 (worst) of a VeSync air purifier.
 #: constants.py:249 vesync_devices.py:715
@@ -5204,12 +5022,6 @@ msgstr "vor {count} Tag"
 #: history.py:1110
 msgid "{count} days ago"
 msgstr "vor {count} Tagen"
-
-#. Translators: Introduction of the status announcement. {count} = total,
-#. {detail} = breakdown per platform.
-#: __init__.py:1890
-msgid "{count} devices ({detail}). "
-msgstr "{count} Geräte ({detail}). "
 
 #. Translators: Message when opening the dialog with cached data.
 #: device_dialog.py:576
@@ -6400,15 +6212,6 @@ msgstr ""
 msgid "Notes:"
 msgstr "Hinweise:"
 
-#. Translators: Description of the add-on in the add-on store.
-#: manifest.ini:description
-msgid ""
-"Control smart home devices (Meross, Netatmo, VeSync, Cozytouch/Atlantic - "
-"Cozytouch experimental) directly from NVDA"
-msgstr ""
-"Smart-Home-Geräte (Meross, Netatmo, VeSync, Cozytouch/Atlantic - Cozytouch "
-"experimentell) direkt aus NVDA steuern"
-
 #. Translators: Spoken when the shortcut for the device menu is pressed while
 #. the menu is already open.
 #: __init__.py:1106
@@ -6582,26 +6385,6 @@ msgstr "Das Gerät hat {schedule} gespeichert, nicht {wanted}"
 #: dialog_cozytouch.py:496
 msgid "Apply to these days"
 msgstr "Übernehmen für diese Tage"
-
-#. Translators: What's new for this version, shown in the add-on store.
-#. Markdown: NVDA renders it and reads it line by line.
-#: manifest.ini:changelog
-msgid ""
-"- New: platform status (Ctrl+P in the device menu) - which platforms had a fault, when they came back, and which devices did not answer. Which of these faults are announced can be set in the notifications tab.\n"
-"- An unreachable platform is shown at the platform in the device tree, in the status line and in the connection diagnostics; a platform that answers only in part counts as a fault too.\n"
-"- Sensors of a Meross hub no longer disappear when the hub does not answer, and they come back without an NVDA restart. Their favourites keep working.\n"
-"- The heating times of the hot water heat pump can be changed from the device entry, for several weekdays at once; the program is read back from the appliance.\n"
-"- Changes made outside the add-on reach the history for Netatmo, VeSync and Cozytouch too.\n"
-"- The boost duration and a changed time program are readable in the history instead of showing their internal values.\n"
-"- The view selector of the history keeps the focus while a view is chosen."
-msgstr ""
-"- Neu: Plattform-Status (Strg+P im Geräte-Menü) – welche Plattformen gestört waren, wann sie zurückkamen, und welche Geräte nicht geantwortet haben. Welche dieser Störungen angesagt werden, lässt sich im Reiter „Benachrichtigungen\" einstellen.\n"
-"- Eine nicht erreichbare Plattform steht im Gerätebaum an der Plattform, in der Statuszeile und in der Verbindungsdiagnose; auch eine Plattform, die nur teilweise antwortet, gilt als Störung.\n"
-"- Sensoren an einem Meross-Hub verschwinden nicht mehr, wenn der Hub nicht antwortet, und kommen ohne NVDA-Neustart zurück. Ihre Favoriten bleiben benutzbar.\n"
-"- Die Heizzeiten der Warmwasser-Wärmepumpe lassen sich aus dem Geräteeintrag ändern, auch für mehrere Wochentage auf einmal; das Programm wird anschließend vom Gerät zurückgelesen.\n"
-"- Änderungen von außerhalb der Erweiterung landen auch bei Netatmo, VeSync und Cozytouch in der Chronik.\n"
-"- Die Boost-Dauer und ein geändertes Zeitprogramm stehen lesbar in der Chronik statt mit ihren internen Werten.\n"
-"- Das Auswahlfeld für die Ansicht im Verlauf behält den Fokus, während eine Ansicht gewählt wird."
 
 #. Translators: Heating windows in the history when a day has none left.
 #: history.py:1263
@@ -6870,3 +6653,1740 @@ msgid ""
 msgstr ""
 "Legt fest, welche externen Änderungen NVDA ansagt und welche Störungen. Die Auswahl gilt für alle Geräte der jeweiligen Plattform.\n"
 "Hinweis: Nur Abschnitte für Plattformen, die im Reiter „Allgemein\" aktiviert sind, werden aktiv angezeigt."
+
+#. Translators: Button in the meals dialog: change the selected meal.
+#: dialog_petlibro.py:1010
+msgid "&Change..."
+msgstr "Ä&ndern..."
+
+#. Translators: Buttons of the delete question.
+#: dialog_petlibro.py:1267
+msgid "&Delete"
+msgstr "&Löschen"
+
+#. Translators: Button in the meals dialog: delete the selected meal.
+#: dialog_petlibro.py:1014
+msgid "&Delete..."
+msgstr "&Löschen..."
+
+#. Translators: Label of the list of meals in the meals dialog.
+#: dialog_petlibro.py:985
+msgid "&Meals:"
+msgstr "&Mahlzeiten:"
+
+#. Translators: Label of the name field of a meal (optional).
+#: dialog_petlibro.py:1341
+msgid "&Name (optional):"
+msgstr "&Name (optional):"
+
+#. Translators: Button in the meals dialog: add a meal.
+#: dialog_petlibro.py:1012
+msgid "&New meal..."
+msgstr "Neue Mahl&zeit..."
+
+#. Translators: Tab name "Petlibro". Brand name, do not translate; the
+#. parenthesis marks the platform as experimental.
+#: settings_panel.py:280
+msgid "&Petlibro (experimental)"
+msgstr "&Petlibro (experimentell)"
+
+#. Translators: Label of the portions field of a meal. {max} = the most the
+#. feeder gives at once.
+#: dialog_petlibro.py:1330
+msgid "&Portions (1 to {max}):"
+msgstr "&Portionen (1 bis {max}):"
+
+#. Translators: Button that confirms a reminder reset.
+#: dialog_petlibro.py:378
+msgid "&Reset"
+msgstr "&Zurücksetzen"
+
+#. Translators: Label of the time field of a meal.
+#: dialog_petlibro.py:1323
+msgid "&Time (HH:MM):"
+msgstr "&Uhrzeit (HH:MM):"
+
+#. Translators: Appended to the water drunk today. {ml} = e.g. "43 ml".
+#: dialog_petlibro.py:728
+msgid ", yesterday {ml}"
+msgstr ", gestern {ml}"
+
+#. Translators: One piece of the device help spoken with F1. The pieces are
+#. joined with ". ", so no full stop at the end.
+#: dialog_help.py:502
+msgid "Actions: feed now, feeding plan, meals, desiccant reminder, light"
+msgstr ""
+"Aktionen: jetzt füttern, Fütterungsplan, Mahlzeiten, Trockenmittel-"
+"Erinnerung, Licht"
+
+#. Translators: One piece of the device help spoken with F1. The pieces are
+#. joined with ". ", so no full stop at the end.
+#: dialog_help.py:508
+msgid ""
+"Actions: water mode, water warning, filter and cleaning reminders, light"
+msgstr ""
+"Aktionen: Wassermodus, Wasser-Warnung, Erinnerungen für Filter und "
+"Reinigung, Licht"
+
+#. Translators: Confirmation: today's meals are given after all.
+#: dialog_petlibro.py:1292
+msgid "All meals of today are given"
+msgstr "Alle Mahlzeiten von heute werden gegeben"
+
+#. Translators: History entry: today's meals were given back.
+#: history.py:1247
+msgid "All meals of today given back"
+msgstr "Alle Mahlzeiten von heute wieder aufgenommen"
+
+#. Translators: Confirmation: every meal of today is skipped.
+#: dialog_petlibro.py:1295 history.py:1245
+msgid "All meals of today skipped"
+msgstr "Alle Mahlzeiten von heute übersprungen"
+
+#. Translators: Petlibro notification option.
+#: settings_panel.py:1168
+msgid "Announce a low battery"
+msgstr "Schwachen Akku ansagen"
+
+#. Translators: Petlibro notification option (default: off).
+#: settings_panel.py:1152
+msgid "Announce every planned meal (several times a day)"
+msgstr "Jede geplante Mahlzeit ansagen (mehrmals am Tag)"
+
+#. Translators: Petlibro notification option.
+#: settings_panel.py:1142
+msgid "Announce failed feedings and faults of the device"
+msgstr "Fehlgeschlagene Fütterungen und Störungen des Geräts ansagen"
+
+#. Translators: Petlibro notification option: food given from the app or with
+#. the button on the feeder.
+#: settings_panel.py:1147
+msgid "Announce feedings started elsewhere (app, button on the feeder)"
+msgstr "Fütterungen von anderswo ansagen (App, Taste am Futterautomaten)"
+
+#. Translators: Petlibro notification option: settings changed in the app.
+#: settings_panel.py:1177
+msgid "Announce settings changed elsewhere (feeding plan, water mode, light)"
+msgstr ""
+"Anderswo geänderte Einstellungen ansagen (Fütterungsplan, Wassermodus, "
+"Licht)"
+
+#. Translators: Petlibro notification option.
+#: settings_panel.py:1172
+msgid "Announce when a device goes offline or comes back"
+msgstr "Ansagen, wenn ein Gerät offline geht oder zurückkommt"
+
+#. Translators: Petlibro notification option.
+#: settings_panel.py:1164
+msgid "Announce when desiccant, filter or cleaning are due"
+msgstr "Ansagen, wenn Trockenmittel, Filter oder Reinigung fällig sind"
+
+#. Translators: Petlibro notification option.
+#: settings_panel.py:1156
+msgid "Announce when the food runs low"
+msgstr "Ansagen, wenn das Futter knapp wird"
+
+#. Translators: Petlibro notification option.
+#: settings_panel.py:1160
+msgid "Announce when the water of a fountain runs low"
+msgstr "Ansagen, wenn das Wasser eines Brunnens knapp wird"
+
+#. Translators: Battery of a Petlibro device in the device tree. {battery} =
+#. e.g. "50 percent, on battery".
+#: dialog_petlibro.py:602
+msgid "Battery: {battery}"
+msgstr "Akku: {battery}"
+
+#. Translators: Title of the dialog that adds or changes a meal.
+#: dialog_petlibro.py:1316
+msgid "Change meal"
+msgstr "Mahlzeit ändern"
+
+#. Translators: Prompt of the water mode selection.
+#: dialog_petlibro.py:403
+msgid "Choose the water mode:"
+msgstr "Wassermodus wählen:"
+
+#. Translators: History entry: the cleaning reminder of a fountain was reset.
+#: history.py:1262
+msgid "Cleaning reminder reset"
+msgstr "Reinigungs-Erinnerung zurückgesetzt"
+
+#. Translators: Note that the Petlibro connection is being established in the
+#. background.
+#: dialog_petlibro.py:952
+msgid "Connecting to Petlibro..."
+msgstr "Verbinde mit Petlibro..."
+
+#. Translators: Water mode of a Petlibro fountain: water flows all the time.
+#: constants.py:555
+msgid "Constant flow"
+msgstr "Dauerbetrieb"
+
+#. Translators: Description of the add-on in the add-on store.
+#: manifest.ini:description
+msgid ""
+"Control smart home devices (Meross, Netatmo, VeSync, Cozytouch/Atlantic, "
+"Petlibro - Cozytouch and Petlibro experimental) directly from NVDA"
+msgstr ""
+"Smart-Home-Geräte (Meross, Netatmo, VeSync, Cozytouch/Atlantic, Petlibro - "
+"Cozytouch und Petlibro experimentell) direkt aus NVDA steuern"
+
+#. Translators: Title of the delete question.
+#: dialog_petlibro.py:1264
+msgid "Delete meal"
+msgstr "Mahlzeit löschen"
+
+#. Translators: Safety question before a meal is deleted. {meal} = the meal's
+#. line, e.g. "Breakfast, 07:00, 3 portions".
+#: dialog_petlibro.py:1262
+msgid "Delete the meal {meal} for good?"
+msgstr "Die Mahlzeit {meal} endgültig löschen?"
+
+#. Translators: History entry: the desiccant reminder was reset.
+#: history.py:1259
+msgid "Desiccant reminder reset"
+msgstr "Trockenmittel-Erinnerung zurückgesetzt"
+
+#. Translators: Water drunk today. {ml} = e.g. "35 ml".
+#: dialog_petlibro.py:723
+msgid "Drunk today: {ml}"
+msgstr "Heute getrunken: {ml}"
+
+#. Translators: Water drunk today. {ml} = e.g. "35 ml", {count} = number of
+#. drinks.
+#: dialog_petlibro.py:719
+msgid "Drunk today: {ml} in {count} drinks"
+msgstr "Heute getrunken: {ml} bei {count} Trinkvorgängen"
+
+#. Translators: A Petlibro device reports a fault without text.
+#: dialog_petlibro.py:585
+msgid "Fault reported by the device"
+msgstr "Das Gerät meldet eine Störung"
+
+#. Translators: A Petlibro device reports a fault. {detail} = what it is,
+#. e.g. "water tank empty or not seated on its base".
+#: dialog_petlibro.py:696
+msgid "Fault: {detail}"
+msgstr "Störung: {detail}"
+
+#. Translators: History entry: food was given by hand (from here, the app or
+#. the button on the feeder).
+#: history.py:1231
+msgid "Fed by hand"
+msgstr "Von Hand gefüttert"
+
+#. Translators: Action entry: give food now.
+#: dialog_petlibro.py:658
+msgid "Feed now - press Enter"
+msgstr "Jetzt füttern - Enter"
+
+#. Translators: Category names in the device tree.
+#: device_dialog.py:2505 device_dialog.py:2511
+msgid "Feeders"
+msgstr "Futterautomaten"
+
+#. Translators: History entry: the feeder reported a failed feeding.
+#: history.py:1235
+msgid "Feeding failed"
+msgstr "Fütterung fehlgeschlagen"
+
+#. Translators: History entry: the feeding plan was switched off.
+#: history.py:1239
+msgid "Feeding plan switched off"
+msgstr "Fütterungsplan ausgeschaltet"
+
+#. Translators: History entry: the feeding plan was switched on.
+#: history.py:1237
+msgid "Feeding plan switched on"
+msgstr "Fütterungsplan eingeschaltet"
+
+#. Translators: Combined info+action label: the feeding plan of a feeder,
+#. switchable with Enter.
+#: dialog_petlibro.py:664
+msgid "Feeding plan: {state} - press Enter to toggle"
+msgstr "Fütterungsplan: {state} - Enter zum Umschalten"
+
+#. Translators: Spoken while the feeder is being asked to feed and the add-on
+#. waits for its confirmation. {amount} = e.g. "2 portions".
+#: dialog_petlibro.py:232
+msgid "Feeding {amount}, waiting for the feeder..."
+msgstr "Füttere {amount}, warte auf den Futterautomaten..."
+
+#. Translators: History entry: the food container of a feeder is almost empty.
+#: history.py:1273
+msgid "Food low"
+msgstr "Futter fast leer"
+
+#. Translators: Food supply of a feeder in the device tree.
+#: dialog_petlibro.py:625
+msgid "Food supply: low - refill"
+msgstr "Futtervorrat: fast leer - nachfüllen"
+
+#. Translators: Food supply of a feeder in the device tree.
+#: dialog_petlibro.py:626
+msgid "Food supply: sufficient"
+msgstr "Futtervorrat: ausreichend"
+
+#. Translators: Button in the meals dialog when all of today's meals are
+#. skipped: give them after all.
+#: dialog_petlibro.py:1120
+msgid "Give &all meals today"
+msgstr "&Alle heute doch geben"
+
+#. Translators: Button in the meals dialog for a meal skipped today: give it
+#. after all.
+#: dialog_petlibro.py:1112
+msgid "Give &today"
+msgstr "Heute doch &geben"
+
+#. Translators: F1 help for the action line "Feed now" of a Petlibro feeder.
+#: dialog_help.py:401
+msgid ""
+"Give food now. Enter opens a list of amounts; the last amount chosen is "
+"preselected. The command is sent once, never repeated, and the add-on waits "
+"for the feeder's own record of the feeding. When that does not come, it says"
+" so - check the last feeding then before feeding again."
+msgstr ""
+"Jetzt Futter ausgeben. Enter öffnet eine Liste der Mengen; vorausgewählt ist"
+" die zuletzt gewählte Menge. Der Befehl geht einmal hinaus und wird nie "
+"wiederholt, und die Erweiterung wartet auf den eigenen Eintrag des "
+"Futterautomaten zu dieser Fütterung. Bleibt der aus, wird das gesagt - dann "
+"vor einem erneuten Füttern die letzte Fütterung prüfen."
+
+#. Translators: Water mode of a Petlibro fountain: water flows in intervals.
+#: constants.py:557
+msgid "Intermittent flow"
+msgstr "Intervallbetrieb"
+
+#. Translators: Invalid time in the meal dialog.
+#: dialog_petlibro.py:1377
+msgid "Invalid time - enter hours and minutes, e.g. 07:30"
+msgstr "Ungültige Uhrzeit - Stunden und Minuten eingeben, z. B. 07:30"
+
+#. Translators: The last feeding came from the feeding plan. {time}, {amount}.
+#: dialog_petlibro.py:646
+msgid "Last feeding: {time}, {amount}"
+msgstr "Letzte Fütterung: {time}, {amount}"
+
+#. Translators: The last feeding was started by hand (here, in the app or at
+#. the feeder). {time}, {amount}.
+#: dialog_petlibro.py:640
+msgid "Last feeding: {time}, {amount}, by hand"
+msgstr "Letzte Fütterung: {time}, {amount}, von Hand"
+
+#. Translators: History entry: the light was switched off.
+#: history.py:1270
+msgid "Light switched off"
+msgstr "Licht ausgeschaltet"
+
+#. Translators: History entry: the light was switched on.
+#: history.py:1268
+msgid "Light switched on"
+msgstr "Licht eingeschaltet"
+
+#. Translators: Combined info+action label: the light of a Petlibro device,
+#. switchable with Enter.
+#: dialog_petlibro.py:607
+msgid "Light: {state} - press Enter to toggle"
+msgstr "Licht: {state} - Enter zum Umschalten"
+
+#. Translators: History entry: a meal was added to the plan.
+#: history.py:1253
+msgid "Meal added"
+msgstr "Mahlzeit hinzugefügt"
+
+#. Translators: Confirmation after adding a meal. {time} = HH:MM.
+#: dialog_petlibro.py:1250
+msgid "Meal at {time} added"
+msgstr "Mahlzeit um {time} hinzugefügt"
+
+#. Translators: Confirmation after changing a meal. {time} = HH:MM.
+#: dialog_petlibro.py:1233
+msgid "Meal at {time} changed"
+msgstr "Mahlzeit um {time} geändert"
+
+#. Translators: Confirmation after deleting a meal. {time} = HH:MM.
+#: dialog_petlibro.py:1282
+msgid "Meal at {time} deleted"
+msgstr "Mahlzeit um {time} gelöscht"
+
+#. Translators: Confirmation: a meal skipped for today is given after all.
+#. {time} = HH:MM.
+#: dialog_petlibro.py:1193
+msgid "Meal at {time} is given today"
+msgstr "Mahlzeit um {time} wird heute doch gegeben"
+
+#. Translators: Confirmation: a meal is skipped for today only. {time} =
+#. HH:MM.
+#: dialog_petlibro.py:1198
+msgid "Meal at {time} skipped today"
+msgstr "Mahlzeit um {time} heute übersprungen"
+
+#. Translators: Confirmation after switching a meal on or off. {time} = HH:MM,
+#. {state} = on/off.
+#: dialog_petlibro.py:1214
+msgid "Meal at {time} switched {state}"
+msgstr "Mahlzeit um {time} {state}geschaltet"
+
+#. Translators: History entry: a meal of the plan was changed.
+#: history.py:1255
+msgid "Meal changed"
+msgstr "Mahlzeit geändert"
+
+#. Translators: History entry: a meal was deleted from the plan.
+#: history.py:1257
+msgid "Meal deleted"
+msgstr "Mahlzeit gelöscht"
+
+#. Translators: History entry: the feeder gave a planned meal.
+#: history.py:1233
+msgid "Meal given"
+msgstr "Mahlzeit ausgegeben"
+
+#. Translators: History entry: a meal skipped for today was given back.
+#: history.py:1243
+msgid "Meal given back for today"
+msgstr "Mahlzeit für heute wieder aufgenommen"
+
+#. Translators: History entry: one meal was skipped for today.
+#: history.py:1241
+msgid "Meal skipped today"
+msgstr "Mahlzeit heute übersprungen"
+
+#. Translators: History entry: a meal of the plan was switched off.
+#: history.py:1251
+msgid "Meal switched off"
+msgstr "Mahlzeit ausgeschaltet"
+
+#. Translators: History entry: a meal of the plan was switched on.
+#: history.py:1249
+msgid "Meal switched on"
+msgstr "Mahlzeit eingeschaltet"
+
+#. Translators: Accessible name of the list of meals.
+#: dialog_petlibro.py:989
+msgid "Meals"
+msgstr "Mahlzeiten"
+
+#. Translators: A Petlibro product the add-on does not know yet. {model} = its
+#. model number.
+#: dialog_petlibro.py:594
+msgid "Model {model} is not supported yet - only the status is shown"
+msgstr ""
+"Modell {model} wird noch nicht unterstützt - nur der Status wird angezeigt"
+
+#. Translators: Title of the dialog that adds or changes a meal.
+#: dialog_petlibro.py:1316
+msgid "New meal"
+msgstr "Neue Mahlzeit"
+
+#. Translators: The next planned meal. {time} = HH:MM, {amount}.
+#: dialog_petlibro.py:655
+msgid "Next feeding: {time}, {amount}"
+msgstr "Nächste Fütterung: {time}, {amount}"
+
+#. Translators: Placeholder in the meals list when the plan is empty.
+#: dialog_petlibro.py:1085
+msgid "No meals planned"
+msgstr "Keine Mahlzeiten geplant"
+
+#. Translators: A change of the meals failed. {reason} = why.
+#: dialog_petlibro.py:1159
+msgid "Not done - {reason}"
+msgstr "Nicht ausgeführt - {reason}"
+
+#. Translators: Label of the email field for Petlibro.
+#: settings_panel.py:873
+msgid "Petlibro &email:"
+msgstr "Petlibro &E-Mail:"
+
+#. Translators: Group box for the Petlibro notifications. Brand name plus the
+#. experimental marker.
+#: settings_panel.py:1137
+msgid "Petlibro (experimental)"
+msgstr "Petlibro (experimentell)"
+
+#. Translators: Error message on a Petlibro connection problem. {error} =
+#. technical error type.
+#: petlibro_api.py:234
+msgid "Petlibro connection error: {error}"
+msgstr "Petlibro-Verbindungsfehler: {error}"
+
+#. Translators: Platform main node. Brand name, do not translate; the
+#. parenthesis marks the platform as experimental.
+#: device_dialog.py:2500
+msgid "Petlibro devices, experimental ({count})"
+msgstr "Petlibro-Geräte, experimentell ({count})"
+
+#. Translators: Accessible name of the Petlibro email field.
+#: settings_panel.py:877
+msgid "Petlibro email address"
+msgstr "Petlibro E-Mail-Adresse"
+
+#. Translators: Error message of the Petlibro connection test. {error} =
+#. detail.
+#: settings_panel.py:1655
+msgid "Petlibro error: {error}"
+msgstr "Petlibro-Fehler: {error}"
+
+#. Translators: Favorites group. Brand name, do not translate.
+#: dialog_favorites.py:457
+msgid "Petlibro favorites ({count})"
+msgstr "Petlibro-Favoriten ({count})"
+
+#. Translators: Label of the password field for Petlibro.
+#: settings_panel.py:882
+msgid "Petlibro pass&word:"
+msgstr "Petlibro Pass&wort:"
+
+#. Translators: Name of the password field in the Petlibro tab. The add-on
+#. appends to it whether a password is already stored.
+#: settings_panel.py:888
+msgid "Petlibro password"
+msgstr "Petlibro Passwort"
+
+#. Translators: Error of the Petlibro sign-in: the account is unknown.
+#. Accounts made on the website instead of in the app are reported this way
+#. too.
+#: petlibro_api.py:258
+msgid ""
+"Petlibro: account not found - an account created in the Petlibro app is "
+"needed"
+msgstr ""
+"Petlibro: Konto nicht gefunden - nötig ist ein in der Petlibro-App "
+"angelegtes Konto"
+
+#. Translators: Success message of the Petlibro connection test. {count} =
+#. number of devices.
+#: settings_panel.py:1644
+msgid "Petlibro: connected – {count} device(s)"
+msgstr "Petlibro: Verbunden – {count} Gerät(e)"
+
+#. Translators: Error of the Petlibro sign-in: wrong password.
+#: petlibro_api.py:252
+msgid "Petlibro: incorrect email or password"
+msgstr "Petlibro: E-Mail oder Passwort falsch"
+
+#. Translators: Status line of the settings dialog. It is spoken and stays
+#. readable, so it is a sentence of its own.
+#: settings_panel.py:1814
+msgid "Petlibro: invalid email address"
+msgstr "Petlibro: Ungültige E-Mail-Adresse"
+
+#. Translators: Error message of the Petlibro sign-in.
+#: petlibro_api.py:240
+msgid "Petlibro: invalid response during login"
+msgstr "Petlibro: ungültige Antwort bei der Anmeldung"
+
+#. Translators: Error of the Petlibro sign-in with the code of the cloud.
+#: petlibro_api.py:265
+msgid "Petlibro: login failed (code {code})"
+msgstr "Petlibro: Anmeldung fehlgeschlagen (Code {code})"
+
+#. Translators: Status line of the settings dialog. It is spoken and stays
+#. readable, so it is a sentence of its own.
+#: settings_panel.py:1821
+msgid "Petlibro: please enter a password"
+msgstr "Petlibro: Bitte Passwort eingeben"
+
+#. Translators: Confirmation after loading the Petlibro devices afterwards.
+#: dialog_petlibro.py:962
+msgid "Petlibro: {count} device(s) loaded"
+msgstr "Petlibro: {count} Gerät(e) geladen"
+
+#. Translators: Validation error in the Petlibro tab.
+#: settings_panel.py:1615
+msgid "Please enter Petlibro email and password"
+msgstr "Bitte Petlibro E-Mail und Passwort eingeben"
+
+#. Translators: Prompt of the "feed now" selection. {max} = the most the
+#. feeder gives at once.
+#: dialog_petlibro.py:216
+msgid "Portions to give now (at most {max}):"
+msgstr "Portionen, die jetzt ausgegeben werden (höchstens {max}):"
+
+#. Translators: Title of the cleaning reset question.
+#: dialog_petlibro.py:367
+msgid "Reset cleaning reminder"
+msgstr "Reinigungs-Erinnerung zurücksetzen"
+
+#. Translators: Title of the desiccant reset question.
+#: dialog_petlibro.py:327
+msgid "Reset desiccant reminder"
+msgstr "Trockenmittel-Erinnerung zurücksetzen"
+
+#. Translators: Title of the filter reset question.
+#: dialog_petlibro.py:348
+msgid "Reset filter reminder"
+msgstr "Filter-Erinnerung zurücksetzen"
+
+#. Translators: Button in the meals dialog: skip the selected meal for today
+#. only (its label changes to "Give today" for a skipped one).
+#: dialog_petlibro.py:1005 dialog_petlibro.py:1113
+msgid "S&kip today"
+msgstr "Heute &überspringen"
+
+#. Translators: Water mode of a Petlibro fountain: water flows when the sensor
+#. detects an animal further away.
+#: constants.py:563
+msgid "Sensor, far"
+msgstr "Sensor, fern"
+
+#. Translators: Water mode of a Petlibro fountain: water flows when the sensor
+#. detects an animal close to the fountain.
+#: constants.py:560
+msgid "Sensor, near"
+msgstr "Sensor, nah"
+
+#. Translators: Button in the meals dialog: skip every meal of today (its
+#. label changes to "Give all meals today" when they are skipped).
+#: dialog_petlibro.py:1017 dialog_petlibro.py:1122
+msgid "Skip &all meals today"
+msgstr "&Alle heute überspringen"
+
+#. Translators: Button in the meals dialog: switch the selected meal off or on
+#. for good.
+#: dialog_petlibro.py:1008 dialog_petlibro.py:1116
+msgid "Switch &off"
+msgstr "A&usschalten"
+
+#. Translators: Button in the meals dialog for a switched-off meal.
+#: dialog_petlibro.py:1117
+msgid "Switch &on"
+msgstr "E&inschalten"
+
+#. Translators: F1 help for the light line of a Petlibro device.
+#: dialog_help.py:459
+msgid ""
+"Switch the indicator light of the device on or off. Press Enter or Space to "
+"toggle."
+msgstr ""
+"Die Kontrollleuchte des Geräts ein- oder ausschalten. Enter oder Leertaste "
+"schaltet um."
+
+#. Translators: F1 help for the action line "Feeding plan" of a Petlibro
+#. feeder.
+#: dialog_help.py:411
+msgid ""
+"Switch the whole feeding plan on or off. While it is off, the feeder gives "
+"no planned meals. Press Enter or Space to toggle."
+msgstr ""
+"Den ganzen Fütterungsplan ein- oder ausschalten. Solange er aus ist, gibt "
+"der Futterautomat keine geplanten Mahlzeiten. Enter oder Leertaste schaltet "
+"um."
+
+#. Translators: "Test Petlibro connection" button.
+#: settings_panel.py:896
+msgid "Test Petlibro &connection"
+msgstr "Petlibro Verbindung &prüfen"
+
+#. Translators: Accessible name of the Petlibro test button.
+#: settings_panel.py:899
+msgid "Test Petlibro connection"
+msgstr "Petlibro-Verbindung prüfen"
+
+#. Translators: Status while the Petlibro connection test runs.
+#: settings_panel.py:1622
+msgid "Testing Petlibro connection..."
+msgstr "Teste Petlibro-Verbindung..."
+
+#. Translators: F1 help for the cleaning line of a Petlibro fountain.
+#: dialog_help.py:441
+msgid ""
+"The cleaning reminder of the fountain. After cleaning it, press Enter: a "
+"question follows, and the reminder starts again."
+msgstr ""
+"Die Reinigungs-Erinnerung des Brunnens. Nach der Reinigung Enter drücken: Es"
+" folgt eine Rückfrage, und die Erinnerung beginnt neu."
+
+#. Translators: F1 help for the desiccant line of a Petlibro feeder.
+#: dialog_help.py:426
+msgid ""
+"The desiccant is a small sachet of silica gel in the holder under the lid of"
+" the food container; it keeps the dry food dry. The reminder only counts "
+"days. After replacing the sachet, press Enter: a question follows, and the "
+"reminder starts again."
+msgstr ""
+"Das Trockenmittel ist ein kleines Beutelchen Silikagel in der Halterung "
+"unter dem Deckel des Futterbehälters; es hält das Trockenfutter trocken. Die"
+" Erinnerung zählt nur Tage. Nach dem Wechsel des Beutelchens Enter drücken: "
+"Es folgt eine Rückfrage, und die Erinnerung beginnt neu."
+
+#. Translators: F1 help for the filter line of a Petlibro fountain.
+#: dialog_help.py:435
+msgid ""
+"The filter reminder of the fountain. After changing the filter, press Enter:"
+" a question follows, and the reminder starts again."
+msgstr ""
+"Die Filter-Erinnerung des Brunnens. Nach dem Filterwechsel Enter drücken: Es"
+" folgt eine Rückfrage, und die Erinnerung beginnt neu."
+
+#. Translators: Checkbox label for enabling the Petlibro platform (pet feeders
+#. and water fountains). Marked as experimental.
+#: settings_panel.py:399
+msgid "Use &Petlibro (feeders, water fountains) - experimental"
+msgstr "&Petlibro verwenden (Futterautomaten, Trinkbrunnen) - experimentell"
+
+#. Translators: Category names in the device tree.
+#: device_dialog.py:2506 device_dialog.py:2513
+msgid "Water fountains"
+msgstr "Trinkbrunnen"
+
+#. Translators: Water level of a fountain. {level} = e.g. "73 percent, about
+#. 2100 ml".
+#: dialog_petlibro.py:711
+msgid "Water level: {level}"
+msgstr "Wasserstand: {level}"
+
+#. Translators: Water level of a fountain below the warning threshold. {level}
+#. = e.g. "20 percent, about 600 ml".
+#: dialog_petlibro.py:706
+msgid "Water level: {level} - below the warning, refill"
+msgstr "Wasserstand: {level} - unter der Warnschwelle, nachfüllen"
+
+#. Translators: History entry: the water of a fountain is below the warning
+#. threshold.
+#: history.py:1276
+msgid "Water low"
+msgstr "Wasser knapp"
+
+#. Translators: History entry: the water mode of a fountain changed.
+#: history.py:1264
+msgid "Water mode changed"
+msgstr "Wassermodus geändert"
+
+#. Translators: Combined info+action label: the water mode of a fountain.
+#. {mode} = e.g. "Sensor, near".
+#: dialog_petlibro.py:735
+msgid "Water mode: {mode} - press Enter to change"
+msgstr "Wassermodus: {mode} - Enter zum Ändern"
+
+#. Translators: Combined info+action label: the low water warning threshold.
+#. {ml} = e.g. "1100 ml".
+#: dialog_petlibro.py:743
+msgid "Water warning below: {ml} - press Enter to change"
+msgstr "Wasser-Warnung unter: {ml} - Enter zum Ändern"
+
+#. Translators: History entry: the low water warning was changed.
+#: history.py:1266
+msgid "Water warning changed"
+msgstr "Wasser-Warnung geändert"
+
+#. Translators: Petlibro announcement: the battery is low.
+#: change_detection.py:1163
+msgid "battery low"
+msgstr "Akku schwach"
+
+#. Translators: Part of a status announcement. {battery} = e.g. "50 percent,
+#. on battery".
+#: petlibro_devices.py:315
+msgid "battery {battery}"
+msgstr "Akku {battery}"
+
+#. Translators: The low water warning in the history. {ml} = value.
+#: history.py:1386
+msgid "below {ml} ml"
+msgstr "unter {ml} ml"
+
+#. Translators: Petlibro announcement: a fountain should be cleaned.
+#: change_detection.py:1159 petlibro_devices.py:791
+msgid "cleaning due"
+msgstr "Reinigung fällig"
+
+#. Translators: Petlibro announcement: the desiccant of a feeder should be
+#. replaced.
+#: change_detection.py:1151 petlibro_devices.py:499
+msgid "desiccant due"
+msgstr "Trockenmittel fällig"
+
+#. Translators: Part of a fountain's status. {ml} = e.g. "35 ml".
+#: petlibro_devices.py:783
+msgid "drunk today {ml}"
+msgstr "heute getrunken {ml}"
+
+#. Translators: A meal given on every day of the week.
+#: dialog_petlibro.py:106
+msgid "every day"
+msgstr "täglich"
+
+#. Translators: Part of a device's status: it reports a fault.
+#: dialog_petlibro.py:544 petlibro_devices.py:502 petlibro_devices.py:793
+msgid "fault"
+msgstr "Störung"
+
+#. Translators: Petlibro announcement: the feeding plan was switched on or off
+#. elsewhere.
+#: change_detection.py:1181 dialog_petlibro.py:529 petlibro_devices.py:491
+msgid "feeding plan off"
+msgstr "Fütterungsplan aus"
+
+#. Translators: Petlibro announcement: the feeding plan was switched on or off
+#. elsewhere.
+#: change_detection.py:1180
+msgid "feeding plan on"
+msgstr "Fütterungsplan ein"
+
+#. Translators: Petlibro announcement: the filter of a fountain should be
+#. replaced.
+#: change_detection.py:1155 petlibro_devices.py:787
+msgid "filter due"
+msgstr "Filter fällig"
+
+#. Translators: Petlibro announcement: the food container of a feeder is
+#. almost empty.
+#: change_detection.py:1139 dialog_petlibro.py:531 petlibro_devices.py:495
+msgid "food low"
+msgstr "Futter fast leer"
+
+#. Translators: State of a meal today: it has been given.
+#: dialog_petlibro.py:113
+msgid "given today"
+msgstr "heute gegeben"
+
+#. Translators: Petlibro announcement: the light was switched on or off
+#. elsewhere.
+#: change_detection.py:1193
+msgid "light off"
+msgstr "Licht aus"
+
+#. Translators: Petlibro announcement: the light was switched on or off
+#. elsewhere.
+#: change_detection.py:1193
+msgid "light on"
+msgstr "Licht ein"
+
+#. Translators: Part of a feeder's tree label. {time} = HH:MM, {amount} = e.g.
+#. "2 portions".
+#: dialog_petlibro.py:526 petlibro_devices.py:487
+msgid "next feeding {time}, {amount}"
+msgstr "nächste Fütterung {time}, {amount}"
+
+#. Translators: Error of a Petlibro action: no connection.
+#: dialog_petlibro.py:77
+msgid "no connection to the cloud"
+msgstr "keine Verbindung zur Cloud"
+
+#. Translators: A meal that is not repeated - it is given once.
+#: dialog_petlibro.py:103
+msgid "once"
+msgstr "einmalig"
+
+#. Translators: Petlibro announcement: the device got its connection back.
+#: change_detection.py:1120
+msgid "online again"
+msgstr "wieder online"
+
+#. Translators: Part of a fountain's status: the pump is off.
+#: dialog_petlibro.py:542 petlibro_devices.py:779
+msgid "pump off"
+msgstr "Pumpe aus"
+
+#. Translators: Error of a Petlibro action with the cloud's code.
+#: dialog_petlibro.py:72
+msgid "refused by the cloud (code {code})"
+msgstr "von der Cloud abgelehnt (Code {code})"
+
+#. Translators: Petlibro announcement: the device reports a fault without
+#. saying which.
+#: change_detection.py:1134
+msgid "reports a fault"
+msgstr "meldet eine Störung"
+
+#. Translators: Petlibro announcement of a fault the add-on does not know
+#. yet. {detail} = its code or Petlibro's own text.
+#: petlibro_devices.py:1143
+msgid "fault, {detail}"
+msgstr "Störung, {detail}"
+
+#. Translators: State of a meal today: skipped for today only.
+#: dialog_petlibro.py:119
+msgid "skipped today"
+msgstr "heute übersprungen"
+
+#. Translators: State of a meal today: still to come.
+#: dialog_petlibro.py:116
+msgid "still to come today"
+msgstr "heute noch offen"
+
+#. Translators: A meal of the plan that is switched off.
+#: dialog_petlibro.py:1068
+msgid "switched off"
+msgstr "ausgeschaltet"
+
+#. Translators: Error of a Petlibro action: the cloud could not reach the
+#. device.
+#: dialog_petlibro.py:65
+msgid "the device did not answer the cloud"
+msgstr "das Gerät hat der Cloud nicht geantwortet"
+
+#. Translators: Error of a Petlibro action: the feeder is feeding right now.
+#: dialog_petlibro.py:69
+msgid "the feeder is feeding right now"
+msgstr "der Futterautomat füttert gerade"
+
+#. Translators: Part of a fountain's tree label. {percent} = fill level.
+#: dialog_petlibro.py:537
+msgid "water level {percent} percent"
+msgstr "Wasserstand {percent} Prozent"
+
+#. Translators: Petlibro announcement: the water of a fountain is below the
+#. warning threshold.
+#: change_detection.py:1145 dialog_petlibro.py:540 petlibro_devices.py:775
+msgid "water low"
+msgstr "Wasser knapp"
+
+#. Translators: Petlibro announcement: the water mode of a fountain was
+#. changed elsewhere. {mode} = new mode.
+#: change_detection.py:1186
+msgid "water mode {mode}"
+msgstr "Wassermodus {mode}"
+
+#. Translators: Petlibro announcement: the low water warning threshold was
+#. changed elsewhere. {ml} = e.g. "1100 ml".
+#: change_detection.py:1198
+msgid "water warning below {ml}"
+msgstr "Wasser-Warnung unter {ml}"
+
+#. Translators: Part of a fountain's status. {level} = e.g. "73 percent, about
+#. 2100 ml".
+#: petlibro_devices.py:771
+msgid "water {level}"
+msgstr "Wasser {level}"
+
+#. Translators: Time of an event on the previous day. {time} = HH:MM.
+#: petlibro_devices.py:115
+msgid "yesterday {time}"
+msgstr "gestern {time}"
+
+#. Translators: A span of exactly one day.
+#: petlibro_devices.py:94
+msgid "{count} day"
+msgstr "{count} Tag"
+
+#. Translators: A span of days. {count} = number (not 1).
+#: petlibro_devices.py:96
+msgid "{count} days"
+msgstr "{count} Tagen"
+
+#. Translators: Amount of food in the history, exactly one portion.
+#: history.py:1381 petlibro_devices.py:81
+msgid "{count} portion"
+msgstr "{count} Portion"
+
+#. Translators: Amount of food in the history. {count} = portions.
+#: history.py:1383 petlibro_devices.py:83
+msgid "{count} portions"
+msgstr "{count} Portionen"
+
+#. Translators: A volume of water in millilitres. {ml} = number.
+#: petlibro_devices.py:88
+msgid "{ml} ml"
+msgstr "{ml} ml"
+
+#. Translators: Confirmation after resetting the cleaning reminder.
+#: dialog_petlibro.py:371
+msgid "{name}: cleaning reminder reset, next cleaning in {days}"
+msgstr ""
+"{name}: Reinigungs-Erinnerung zurückgesetzt, nächste Reinigung in {days}"
+
+#. Translators: The command was accepted, but the feeder has not confirmed the
+#. feeding within half a minute.
+#: dialog_petlibro.py:274
+msgid ""
+"{name}: command accepted, but the feeder has not confirmed the feeding yet. "
+"Check the last feeding before feeding again"
+msgstr ""
+"{name}: Befehl angenommen, aber der Futterautomat hat die Fütterung noch "
+"nicht bestätigt. Vor einem erneuten Füttern die letzte Fütterung prüfen"
+
+#. Translators: Confirmation after resetting the desiccant reminder. {days} =
+#. e.g. "14 days".
+#: dialog_petlibro.py:332
+msgid "{name}: desiccant reminder reset, next change in {days}"
+msgstr ""
+"{name}: Trockenmittel-Erinnerung zurückgesetzt, nächster Wechsel in {days}"
+
+#. Translators: Petlibro announcement: a feeding was started elsewhere (app,
+#. button on the feeder). {amount} = e.g. "2 portions".
+#: change_detection.py:1241
+msgid "{name}: fed from elsewhere, {amount}"
+msgstr "{name}: von anderswo gefüttert, {amount}"
+
+#. Translators: Title of the "feed now" selection. {name} = feeder.
+#: dialog_petlibro.py:213
+msgid "{name}: feed now"
+msgstr "{name}: jetzt füttern"
+
+#. Translators: Petlibro announcement: the feeder reported a failed feeding or
+#. a blocked outlet.
+#: change_detection.py:1275
+msgid "{name}: feeding failed"
+msgstr "{name}: Fütterung fehlgeschlagen"
+
+#. Translators: Confirmation after switching the feeding plan.
+#: dialog_petlibro.py:291
+msgid "{name}: feeding plan {state}"
+msgstr "{name}: Fütterungsplan {state}"
+
+#. Translators: Confirmation after resetting the filter reminder.
+#: dialog_petlibro.py:352
+msgid "{name}: filter reminder reset, next change in {days}"
+msgstr "{name}: Filter-Erinnerung zurückgesetzt, nächster Wechsel in {days}"
+
+#. Translators: Safety question before the desiccant reminder of a feeder is
+#. reset. {name} = feeder, {days} = e.g. "14 days".
+#: dialog_petlibro.py:322
+msgid ""
+"{name}: has the desiccant been replaced? The reminder then starts again with"
+" {days}."
+msgstr ""
+"{name}: Wurde das Trockenmittel gewechselt? Die Erinnerung beginnt dann neu "
+"mit {days}."
+
+#. Translators: Safety question before the filter reminder of a fountain is
+#. reset. {name} = fountain, {days} = e.g. "14 days".
+#: dialog_petlibro.py:343
+msgid ""
+"{name}: has the filter been replaced? The reminder then starts again with "
+"{days}."
+msgstr ""
+"{name}: Wurde der Filter gewechselt? Die Erinnerung beginnt dann neu mit "
+"{days}."
+
+#. Translators: Safety question before the cleaning reminder of a fountain is
+#. reset. {name} = fountain, {days} = e.g. "14 days".
+#: dialog_petlibro.py:362
+msgid ""
+"{name}: has the fountain been cleaned? The reminder then starts again with "
+"{days}."
+msgstr ""
+"{name}: Wurde der Brunnen gereinigt? Die Erinnerung beginnt dann neu mit "
+"{days}."
+
+#. Translators: Confirmation after switching the light of a Petlibro device.
+#: dialog_petlibro.py:499
+msgid "{name}: light {state}"
+msgstr "{name}: Licht {state}"
+
+#. Translators: Petlibro announcement: a planned meal gave less than planned.
+#. {amount} = given, {expected} = planned.
+#: change_detection.py:1253
+msgid "{name}: meal gave only {amount} of {expected}"
+msgstr "{name}: Mahlzeit gab nur {amount} von {expected}"
+
+#. Translators: Petlibro announcement: a planned meal was given. {amount} =
+#. e.g. "3 portions".
+#: change_detection.py:1260
+msgid "{name}: meal given, {amount}"
+msgstr "{name}: Mahlzeit ausgegeben, {amount}"
+
+#. Translators: Title of the meals dialog. {name} = feeder.
+#: dialog_petlibro.py:974
+msgid "{name}: meals"
+msgstr "{name}: Mahlzeiten"
+
+#. Translators: The feeding command got no answer. It is not known whether
+#. food was given.
+#: dialog_petlibro.py:268
+msgid ""
+"{name}: no answer - it is unknown whether food was given. Check the last "
+"feeding before feeding again"
+msgstr ""
+"{name}: keine Antwort - unbekannt, ob Futter ausgegeben wurde. Vor einem "
+"erneuten Füttern die letzte Fütterung prüfen"
+
+#. Translators: A Petlibro action failed. {name} = device, {reason} = why.
+#: dialog_petlibro.py:188
+msgid "{name}: not done - {reason}"
+msgstr "{name}: nicht ausgeführt - {reason}"
+
+#. Translators: The cloud refused the feeding command, nothing was given.
+#. {reason} = why.
+#: dialog_petlibro.py:256
+msgid "{name}: not fed - {reason}"
+msgstr "{name}: nicht gefüttert - {reason}"
+
+#. Translators: The cleaning reminder was not reset.
+#: dialog_petlibro.py:373
+msgid "{name}: the cleaning reminder was not reset"
+msgstr "{name}: Die Reinigungs-Erinnerung wurde nicht zurückgesetzt"
+
+#. Translators: The desiccant reminder was not reset.
+#: dialog_petlibro.py:334
+msgid "{name}: the desiccant reminder was not reset"
+msgstr "{name}: Die Trockenmittel-Erinnerung wurde nicht zurückgesetzt"
+
+#. Translators: The feeder reports that the feeding failed (blocked outlet,
+#. empty container ...).
+#: dialog_petlibro.py:262
+msgid ""
+"{name}: the feeder reports a failed feeding - check the food container and "
+"the outlet"
+msgstr ""
+"{name}: Der Futterautomat meldet eine fehlgeschlagene Fütterung - "
+"Futterbehälter und Auslass prüfen"
+
+#. Translators: The feeder did not take the change of the feeding plan.
+#: dialog_petlibro.py:300
+msgid "{name}: the feeding plan was not changed"
+msgstr "{name}: Der Fütterungsplan wurde nicht geändert"
+
+#. Translators: The filter reminder was not reset.
+#: dialog_petlibro.py:354
+msgid "{name}: the filter reminder was not reset"
+msgstr "{name}: Die Filter-Erinnerung wurde nicht zurückgesetzt"
+
+#. Translators: The fountain kept another threshold. {ml} = what it reports
+#. now.
+#: dialog_petlibro.py:480
+msgid "{name}: the fountain reports a warning below {ml}"
+msgstr "{name}: Der Brunnen meldet eine Warnung unter {ml}"
+
+#. Translators: The fountain kept another water mode than the one chosen.
+#. {mode} = what it reports now.
+#: dialog_petlibro.py:425
+msgid "{name}: the fountain reports the water mode {mode}"
+msgstr "{name}: Der Brunnen meldet den Wassermodus {mode}"
+
+#. Translators: The device did not switch its light.
+#: dialog_petlibro.py:506
+msgid "{name}: the light was not switched"
+msgstr "{name}: Das Licht wurde nicht geschaltet"
+
+#. Translators: Title of the water mode selection. {name} = fountain.
+#: dialog_petlibro.py:401
+msgid "{name}: water mode"
+msgstr "{name}: Wassermodus"
+
+#. Translators: Confirmation after changing the water mode. {mode} = new mode.
+#: dialog_petlibro.py:417
+msgid "{name}: water mode {mode}"
+msgstr "{name}: Wassermodus {mode}"
+
+#. Translators: Title of the low water threshold input. {name} = fountain.
+#: dialog_petlibro.py:443
+msgid "{name}: water warning"
+msgstr "{name}: Wasser-Warnung"
+
+#. Translators: Confirmation after changing the low water threshold. {ml} =
+#. e.g. "1100 ml".
+#: dialog_petlibro.py:473
+msgid "{name}: water warning below {ml}"
+msgstr "{name}: Wasser-Warnung unter {ml}"
+
+#. Translators: The feeder confirmed a feeding. {amount} = what it reports as
+#. given.
+#: dialog_petlibro.py:242
+msgid "{name}: {amount} given"
+msgstr "{name}: {amount} ausgegeben"
+
+#. Translators: Battery charge of a Petlibro device. {percent} = level.
+#: petlibro_devices.py:304 petlibro_devices.py:760
+msgid "{percent} percent"
+msgstr "{percent} Prozent"
+
+#. Translators: Water level of a fountain. {percent} = fill level, {ml} =
+#. water in millilitres, rounded to tens.
+#: petlibro_devices.py:757
+msgid "{percent} percent, about {ml} ml"
+msgstr "{percent} Prozent, etwa {ml} ml"
+
+#. Translators: Battery of a Petlibro device while it charges. {percent} =
+#. charge level.
+#: petlibro_devices.py:294
+msgid "{percent} percent, charging"
+msgstr "{percent} Prozent, lädt"
+
+#. Translators: Battery of a Petlibro device running on its battery, without
+#. the power supply.
+#: petlibro_devices.py:302
+msgid "{percent} percent, on battery"
+msgstr "{percent} Prozent, im Akkubetrieb"
+
+#. Translators: Battery of a Petlibro device on the power supply.
+#: petlibro_devices.py:297
+msgid "{percent} percent, on the power supply"
+msgstr "{percent} Prozent, am Netzteil"
+
+#. Translators: A meal in the history. {time} = HH:MM, {count} = portions.
+#: history.py:1399
+msgid "{time}, {count} portion"
+msgstr "{time}, {count} Portion"
+
+#. Translators: A meal in the history. {time} = HH:MM, {count} = portions.
+#: history.py:1400
+msgid "{time}, {count} portions"
+msgstr "{time}, {count} Portionen"
+
+#. Translators: Hint text in the General tab.
+#: settings_panel.py:468
+msgid ""
+"Note: Meross, Netatmo, VeSync, Cozytouch and Petlibro can be used individually or in combination.\n"
+"Disabled platforms are skipped during login.\n"
+"New credentials in a tab switch that platform on when saving, and so does a successful connection test.\n"
+"Cozytouch and Petlibro are experimental - only few devices of each have been tested so far."
+msgstr ""
+"Hinweis: Meross, Netatmo, VeSync, Cozytouch und Petlibro lassen sich einzeln oder kombiniert nutzen.\n"
+"Deaktivierte Plattformen werden beim Login übersprungen.\n"
+"Neue Zugangsdaten in einem Tab schalten diese Plattform beim Speichern ein, ebenso ein erfolgreicher Verbindungstest.\n"
+"Cozytouch und Petlibro sind experimentell - von beiden wurden bisher nur wenige Geräte getestet."
+
+#. Translators: Explanatory text in the Petlibro tab. The account note
+#. matters: Petlibro allows one sign-in per account at a time.
+#: settings_panel.py:917
+msgid ""
+"EXPERIMENTAL: the Petlibro integration uses the cloud of the Petlibro app as the community has worked it out. Tested with the Air Smart Feeder (PLAF108) and the Dockstream 2 Cordless water fountain (PLWF116).\n"
+"\n"
+"Important: Petlibro allows only one sign-in per account at a time. Signing in here signs the Petlibro app on the phone out of the same account. Recommended: a second Petlibro account, created in the app, to which the devices are shared from the main account - that second account belongs here.\n"
+"Data is stored encrypted locally on this computer."
+msgstr ""
+"EXPERIMENTELL: Die Petlibro-Anbindung nutzt die Cloud der Petlibro-App so, wie die Community sie erschlossen hat. Getestet mit dem Air Smart Feeder (PLAF108) und dem Trinkbrunnen Dockstream 2 Cordless (PLWF116).\n"
+"\n"
+"Wichtig: Petlibro erlaubt je Konto nur eine Anmeldung zur selben Zeit. Die Anmeldung hier meldet die Petlibro-App auf dem Handy vom selben Konto ab. Empfohlen: ein zweites Petlibro-Konto, in der App angelegt, für das die Geräte im Hauptkonto freigegeben sind - dieses zweite Konto gehört hierher.\n"
+"Die Daten werden verschlüsselt lokal auf diesem Computer gespeichert."
+
+#. Translators: F1 help for the low water line of a Petlibro fountain.
+#: dialog_help.py:458
+msgid ""
+"Below this amount the fountain counts its water as low and warns. Enter asks"
+" for the new value in millilitres, 650 to 3000 as in the app."
+msgstr ""
+"Unter dieser Menge meldet der Brunnen sein Wasser als knapp und warnt. Enter"
+" fragt nach dem neuen Wert in Millilitern, 650 bis 3000 wie in der App."
+
+#. Translators: F1 help for the water mode line of a Petlibro fountain.
+#: dialog_help.py:447
+msgid ""
+"Choose how the water flows: off, all the time, or when the sensor notices an"
+" animal near or further away. Enter opens a selection list. On its battery "
+"the fountain is offered no constant flow, as in the Petlibro app, and it "
+"takes a change only when it wakes up - usually within a few minutes; the "
+"add-on announces it then."
+msgstr ""
+"Wählen, wie das Wasser fließt: aus, ständig, oder sobald der Sensor ein Tier"
+" in der Nähe oder weiter entfernt bemerkt. Enter öffnet eine Auswahlliste. "
+"Im Akkubetrieb gibt es wie in der Petlibro-App keinen Dauerbetrieb, und der "
+"Brunnen übernimmt eine Änderung erst beim Aufwachen - meist innerhalb "
+"weniger Minuten; die Erweiterung meldet sie dann."
+
+#. Translators: Prompt of the water mode selection while the fountain runs on
+#. its battery: the Petlibro app does not offer constant flow then, and
+#. neither does the add-on.
+#: dialog_petlibro.py:459
+msgid ""
+"Choose the water mode. Constant flow is offered on the power supply only, as"
+" in the Petlibro app:"
+msgstr ""
+"Wassermodus wählen. Dauerbetrieb gibt es wie in der Petlibro-App nur am "
+"Netzteil:"
+
+#. Translators: Combined info+action label: when the fountain should be
+#. cleaned. {days} = e.g. "12 days".
+#: dialog_petlibro.py:869
+msgid ""
+"Cleaning: due in {days} - press Enter once the fountain has been cleaned"
+msgstr ""
+"Reinigung: fällig in {days} - Enter drücken, nachdem der Brunnen gereinigt "
+"wurde"
+
+#. Translators: Combined info+action label: the fountain should be cleaned
+#. today.
+#: dialog_petlibro.py:874
+msgid "Cleaning: due today - press Enter once the fountain has been cleaned"
+msgstr ""
+"Reinigung: heute fällig - Enter drücken, nachdem der Brunnen gereinigt wurde"
+
+#. Translators: Combined info+action label: the cleaning is overdue. {days} =
+#. e.g. "3 days".
+#: dialog_petlibro.py:879
+msgid ""
+"Cleaning: overdue by {days} - press Enter once the fountain has been cleaned"
+msgstr ""
+"Reinigung: seit {days} überfällig - Enter drücken, nachdem der Brunnen "
+"gereinigt wurde"
+
+#. Translators: The hours could not be loaded. {reason} = why.
+#: dialog_petlibro.py:1582
+msgid "Could not be loaded - {reason}"
+msgstr "Konnte nicht geladen werden - {reason}"
+
+#. Translators: Combined info+action label: the desiccant is due today.
+#: dialog_petlibro.py:783
+msgid ""
+"Desiccant: change due today - press Enter once the desiccant has been "
+"replaced"
+msgstr ""
+"Trockenmittel: Wechsel heute fällig - Enter drücken, nachdem das "
+"Trockenmittel gewechselt wurde"
+
+#. Translators: Combined info+action label: when the desiccant of a feeder is
+#. due. {days} = e.g. "5 days".
+#: dialog_petlibro.py:777
+msgid ""
+"Desiccant: change in {days} - press Enter once the desiccant has been "
+"replaced"
+msgstr ""
+"Trockenmittel: Wechsel in {days} - Enter drücken, nachdem das Trockenmittel "
+"gewechselt wurde"
+
+#. Translators: Combined info+action label: the desiccant is overdue. {days} =
+#. e.g. "27 days".
+#: dialog_petlibro.py:788
+msgid ""
+"Desiccant: overdue by {days} - press Enter once the desiccant has been "
+"replaced"
+msgstr ""
+"Trockenmittel: seit {days} überfällig - Enter drücken, nachdem das "
+"Trockenmittel gewechselt wurde"
+
+#. Translators: Combined info+action label: the filter of a fountain is due
+#. today.
+#: dialog_petlibro.py:855
+msgid ""
+"Filter: change due today - press Enter once the filter has been changed"
+msgstr ""
+"Filter: Wechsel heute fällig - Enter drücken, nachdem der Filter gewechselt "
+"wurde"
+
+#. Translators: Combined info+action label: when the filter of a fountain is
+#. due. {days} = e.g. "12 days".
+#: dialog_petlibro.py:850
+msgid ""
+"Filter: change in {days} - press Enter once the filter has been changed"
+msgstr ""
+"Filter: Wechsel in {days} - Enter drücken, nachdem der Filter gewechselt "
+"wurde"
+
+#. Translators: Combined info+action label: the filter change is overdue.
+#. {days} = e.g. "3 days".
+#: dialog_petlibro.py:860
+msgid ""
+"Filter: change overdue by {days} - press Enter once the filter has been "
+"changed"
+msgstr ""
+"Filter: Wechsel seit {days} überfällig - Enter drücken, nachdem der Filter "
+"gewechselt wurde"
+
+#. Translators: Invalid input for the low water threshold.
+#: dialog_petlibro.py:534
+msgid "Invalid input - enter millilitres between 650 and 3000"
+msgstr "Ungültige Eingabe - Milliliter zwischen 650 und 3000 eingeben"
+
+#. Translators: A day on which the fountain registered no drink.
+#: dialog_petlibro.py:1602
+msgid "No drinks recorded on this day"
+msgstr "An diesem Tag wurde nichts getrunken"
+
+#. Translators: First line of the drinks per hour: the day's total, one drink.
+#. {ml} = e.g. "35 ml".
+#: dialog_petlibro.py:1608
+msgid "Total: {ml} in 1 drink"
+msgstr "Gesamt: {ml} bei 1 Trinkvorgang"
+
+#. Translators: First line of the drinks per hour: the day's total. {ml} =
+#. e.g. "35 ml", {count} = number of drinks.
+#: dialog_petlibro.py:1612
+msgid "Total: {ml} in {count} drinks"
+msgstr "Gesamt: {ml} bei {count} Trinkvorgängen"
+
+#. Translators: Prompt for the low water warning threshold of a fountain.
+#: dialog_petlibro.py:509
+msgid "Warn when the water is below (millilitres, 650 to 3000):"
+msgstr ""
+"Warnen, wenn das Wasser unter diese Menge fällt (Milliliter, 650 bis 3000):"
+
+#. Translators: Heading of the weekday group of a meal. No day ticked means
+#. the meal is given once.
+#: dialog_petlibro.py:1457
+msgid "Weekdays (none ticked = once)"
+msgstr "Wochentage (keiner angehakt = einmalig)"
+
+#. Translators: A duration of exactly one minute.
+#: petlibro_devices.py:970
+msgid "{count} minute"
+msgstr "{count} Minute"
+
+#. Translators: A duration in minutes. {count} = number (not 1).
+#: petlibro_devices.py:973
+msgid "{count} minutes"
+msgstr "{count} Minuten"
+
+#. Translators: A duration of exactly one second.
+#: petlibro_devices.py:965
+msgid "{count} second"
+msgstr "{count} Sekunde"
+
+#. Translators: A duration in seconds. {count} = number (not 1).
+#: petlibro_devices.py:967
+msgid "{count} seconds"
+msgstr "{count} Sekunden"
+
+#. Translators: A change was sent to a Petlibro device that has not answered
+#. the cloud yet.
+#: dialog_petlibro.py:232
+msgid ""
+"{name}: sent, but the device has not answered yet - the change is announced "
+"as soon as the device reports it."
+msgstr ""
+"{name}: gesendet, aber das Gerät hat noch nicht geantwortet - die Änderung "
+"wird angesagt, sobald das Gerät sie meldet."
+
+#. Translators: As above, for a change the add-on cannot watch for (a reminder
+#. reset).
+#: dialog_petlibro.py:238
+msgid ""
+"{name}: sent, but the device has not answered yet - the device menu shows "
+"the change once it arrives."
+msgstr ""
+"{name}: gesendet, aber das Gerät hat noch nicht geantwortet - das Geräte-"
+"Menü zeigt die Änderung, sobald sie ankommt."
+
+#. Translators: A change was sent to a Petlibro device on battery that has not
+#. answered yet. It sleeps to save the battery.
+#: dialog_petlibro.py:218
+msgid ""
+"{name}: sent. The device runs on its battery and only wakes now and then - "
+"the change usually arrives within a few minutes and is announced then."
+msgstr ""
+"{name}: gesendet. Das Gerät läuft auf Akku und wacht nur ab und zu auf - die"
+" Änderung kommt meist innerhalb weniger Minuten an und wird dann angesagt."
+
+#. Translators: As above, for a change the add-on cannot watch for (a reminder
+#. reset).
+#: dialog_petlibro.py:225
+msgid ""
+"{name}: sent. The device runs on its battery and only wakes now and then - "
+"the change usually arrives within a few minutes, the device menu shows it "
+"then."
+msgstr ""
+"{name}: gesendet. Das Gerät läuft auf Akku und wacht nur ab und zu auf - die"
+" Änderung kommt meist innerhalb weniger Minuten an, das Geräte-Menü zeigt "
+"sie dann."
+
+#. Translators: A water mode sent to a fountain that did not answer in time
+#. never arrived. {mode} = the mode sent.
+#: dialog_petlibro.py:499
+msgid "{name}: the water mode {mode} was not taken over"
+msgstr "{name}: Der Wassermodus {mode} wurde nicht übernommen"
+
+#. Translators: A low water threshold sent to a fountain that did not answer
+#. in time never arrived.
+#: dialog_petlibro.py:564
+msgid "{name}: the water warning was not taken over"
+msgstr "{name}: Die Wasser-Warnung wurde nicht übernommen"
+
+#. Translators: One hour in the drinks list with one drink. {start}/{end} =
+#. HH:MM, {ml} = e.g. "14 ml", {duration} = e.g. "45 seconds".
+#: dialog_petlibro.py:1619
+msgid "{start} to {end}: {ml}, 1 drink, {duration}"
+msgstr "{start} bis {end}: {ml}, 1 Trinkvorgang, {duration}"
+
+#. Translators: One hour in the drinks list. {count} = drinks, {duration} =
+#. their average length, e.g. "45 seconds".
+#: dialog_petlibro.py:1625
+msgid "{start} to {end}: {ml}, {count} drinks, about {duration} each"
+msgstr "{start} bis {end}: {ml}, {count} Trinkvorgänge, je etwa {duration}"
+
+#. Translators: Checkbox of a meal: the feeder plays its recorded meal call
+#. before the food comes out.
+#: dialog_petlibro.py:1490
+msgid "Play the &meal call before the meal"
+msgstr "&Essensruf vor der Mahlzeit abspielen"
+
+#. Translators: Combined info+action label: constant flow is stored, but the
+#. fountain runs on its battery, where it only gives water when its sensor
+#. notices an animal - so no water flows at all.
+#: dialog_petlibro.py:840
+msgid ""
+"Water mode: constant flow - does not run on the battery, no water flows. "
+"Press Enter to choose a sensor mode"
+msgstr ""
+"Wassermodus: Dauerbetrieb - läuft im Akkubetrieb nicht, es fließt kein "
+"Wasser. Enter, um einen Sensor-Modus zu wählen"
+
+#. Translators: Part of a fountain's status: constant flow is set, but the
+#. fountain runs on its battery and does not run it.
+#: petlibro_devices.py:846
+msgid "constant flow set, but not running on the battery"
+msgstr "Dauerbetrieb eingestellt, läuft im Akkubetrieb aber nicht"
+
+#. Translators: Part of a fountain's tree label: constant flow is set while it
+#. runs on its battery, so no water flows.
+#: dialog_petlibro.py:630
+msgid "no water flow"
+msgstr "kein Wasserfluss"
+
+#. Translators: Appended to the drinking line: Enter opens the list of the
+#. day's drinks.
+#: dialog_petlibro.py:849
+msgid " - press Enter for the single drinks"
+msgstr " - Enter für die einzelnen Trinkvorgänge"
+
+#. Translators: Label of the list of drinks in the drinks dialog.
+#: dialog_petlibro.py:1655
+msgid "&Drinks:"
+msgstr "&Trinkvorgänge:"
+
+#. Translators: Accessible name of the list of drinks.
+#: dialog_petlibro.py:1659
+msgid "Drinks"
+msgstr "Trinkvorgänge"
+
+#. Translators: History entry: a Petlibro device reported a fault (e.g. the
+#. fountain's water tank empty or off its base).
+#: history.py:1238
+msgid "Fault reported"
+msgstr "Störung gemeldet"
+
+#. Translators: What a feeder gave today, planned meals and feedings by hand
+#. together. {times} = number of feedings, {amount} = e.g. "8 portions".
+#: dialog_petlibro.py:744
+msgid "Fed today in total (plan and by hand): {times} times, {amount}"
+msgstr "Heute insgesamt gefüttert (Plan und von Hand): {times}-mal, {amount}"
+
+#. Translators: A change of the meals was accepted by the cloud, but the list
+#. of the feeder does not show it yet.
+#: dialog_petlibro.py:1284
+msgid ""
+"Sent, but the feeder does not show the change yet - the list is read again "
+"when the dialog is opened"
+msgstr ""
+"Gesendet, aber der Futterautomat zeigt die Änderung noch nicht - die Liste "
+"wird beim nächsten Öffnen des Dialogs neu gelesen"
+
+#. Translators: A change of the meals was sent, but the feeder did not answer
+#. in time.
+#: dialog_petlibro.py:1326
+msgid ""
+"Sent, but the feeder has not answered yet - the list shows the change once "
+"it arrives"
+msgstr ""
+"Gesendet, aber der Futterautomat hat noch nicht geantwortet - die Liste "
+"zeigt die Änderung, sobald sie ankommt"
+
+#. Translators: F1 help for the action line "Meals today" of a Petlibro
+#. feeder.
+#: dialog_help.py:417
+msgid ""
+"The meals of the feeding plan; feedings by hand do not count here. Enter "
+"opens the list: one line per meal with name, time, portions and today's "
+"state. From there a meal can be skipped for today, switched off, changed, "
+"added or deleted, and all of today's meals can be skipped at once."
+msgstr ""
+"Die Mahlzeiten des Fütterungsplans; Fütterungen von Hand zählen hier nicht "
+"mit. Enter öffnet die Liste: eine Zeile je Mahlzeit mit Name, Uhrzeit, "
+"Portionen und dem Stand von heute. Dort lässt sich eine Mahlzeit für heute "
+"überspringen, ausschalten, ändern, hinzufügen oder löschen, und alle "
+"Mahlzeiten von heute lassen sich auf einmal überspringen."
+
+#. Translators: F1 help for the drinking line of a Petlibro fountain.
+#: dialog_help.py:465
+msgid ""
+"What the fountain registered as drunk today. Enter opens the list of the "
+"single drinks - time, amount and how long each lasted - for today and the "
+"six days before."
+msgstr ""
+"Was der Brunnen heute als getrunken erfasst hat. Enter öffnet die Liste der "
+"einzelnen Trinkvorgänge - Uhrzeit, Menge und wie lange jeder dauerte - für "
+"heute und die sechs Tage davor."
+
+#. Translators: How many of today's meals of the feeding plan have been given.
+#. {done} = given so far, {total} = meals planned for today.
+#: petlibro_devices.py:547
+msgid "{done} of {total} given"
+msgstr "{done} von {total} gegeben"
+
+#. Translators: Title of the dialog with the drinks of a day. {name} =
+#. fountain.
+#: dialog_petlibro.py:1624
+msgid "{name}: drinks"
+msgstr "{name}: Trinkvorgänge"
+
+#. Translators: Petlibro announcement: the feeder confirmed a "Feed now" late,
+#. after the add-on had said it was not confirmed. {amount} = e.g. "1
+#. portion".
+#: change_detection.py:1306
+msgid "{name}: feeding confirmed after all, {amount} given"
+msgstr "{name}: Fütterung nachträglich bestätigt, {amount} ausgegeben"
+
+#. Translators: A Petlibro fault the add-on does not know yet, named by
+#. the device's code. {code} = e.g. PUMP_BLOCK_ERROR.
+#: petlibro_devices.py:1126
+msgid "device code {code}"
+msgstr "Gerätecode {code}"
+
+#. Translators: A Petlibro fault the add-on does not know yet, in the
+#. words of the Petlibro cloud - they are English. {message} = its text.
+#: petlibro_devices.py:1129
+msgid "“{message}” (Petlibro's text)"
+msgstr "„{message}“ (Text von Petlibro)"
+
+#. Translators: A Petlibro fountain reports that its water tank is empty
+#. or not seated properly on the base. Announced, shown in the device
+#. entry and in the history.
+#: constants.py:576
+msgid "water tank empty or not seated on its base"
+msgstr "Wassertank leer oder nicht richtig aufgesetzt"
+
+#. Translators: One drink in the list of a day. {time} = HH:MM, {ml} = e.g.
+#. "12 ml", {duration} = e.g. "19 seconds".
+#: dialog_petlibro.py:1723
+msgid "{time}: {ml}, {duration}"
+msgstr "{time}: {ml}, {duration}"
+
+#. Translators: Description of the script in the NVDA input gestures dialog.
+#: __init__.py:2100
+msgid "Announces a summary of all smart home devices; pressed twice, shows every device in a list"
+msgstr "Sagt eine Zusammenfassung aller Smart Home Geräte an; zweimal gedrückt, zeigt alle Geräte in einer Liste"
+
+#. Translators: Cozytouch announcement: the boost ran out after its set
+#. duration.
+#: change_detection.py:1162 history.py:1207
+msgid "Boost ended"
+msgstr "Boost beendet"
+
+#. Translators: Diagnostics: seconds since the last successful refresh of any
+#. platform. (It used to say "Meross" although every platform sets this time.)
+#: __init__.py:1684
+msgid "Last refresh {seconds} seconds ago"
+msgstr "Letzte Aktualisierung vor {seconds} Sekunden"
+
+#. Translators: Spoken after a login failed because of the network or the
+#. server. {seconds} = when it is tried again.
+#: __init__.py:1103
+msgid "New attempt in {seconds} seconds"
+msgstr "Neuer Versuch in {seconds} Sekunden"
+
+#. Translators: Names of the offline devices in the status summary.
+#: __init__.py:2232
+msgid "Offline: {names}."
+msgstr "Offline: {names}."
+
+#. Translators: History entry: a Netatmo thermostat moved to another zone of
+#. its heating schedule (comfort, night ...) - the schedule itself is
+#. unchanged.
+#: history.py:1195
+msgid "Schedule zone changed"
+msgstr "Zeitplan-Zone gewechselt"
+
+#. Translators: Title of the window that lists every device with its status
+#. (the status command pressed twice).
+#: __init__.py:2208
+msgid "Smart home status"
+msgstr "Smart Home Status"
+
+#. Translators: Summary of the status command. {count} = devices, {detail} =
+#. per platform (e.g. "3 Meross, 1 Netatmo"), {on} = devices switched on,
+#. {offline} = devices without connection.
+#: __init__.py:2226
+msgid "{count} devices ({detail}), {on} switched on, {offline} offline."
+msgstr "{count} Geräte ({detail}), {on} eingeschaltet, {offline} offline."
+
+#. Translators: How a number with decimals is written wherever the add-on
+#. shows or says one (device tree, announcements, history). {integer} is the
+#. part before the decimal separator, {fraction} the part after it. English
+#. writes a point; German translates this as "{integer},{fraction}".
+#: formatting.py:36
+msgid "{integer}.{fraction}"
+msgstr "{integer},{fraction}"
+
+#. Translators: A setpoint with its end time in the history. {temp} = e.g.
+#. "21,5 °C", {time} = HH:MM.
+#: history.py:1382
+msgid "{temp} until {time}"
+msgstr "{temp} bis {time} Uhr"
+
+#. Translators: History entry: the flow duration of a fountain's pet-sensing
+#. mode was changed.
+#: history.py:1284
+msgid "Flow duration changed"
+msgstr "Laufzeit geändert"
+
+#. Translators: Info line of a fountain whose firmware is too old to change
+#. the flow duration. {duration} = e.g. "45 seconds", {version} = the firmware
+#. it needs.
+#: dialog_petlibro.py:957
+msgid "Flow duration: {duration} - changing it needs firmware {version} or later"
+msgstr "Laufzeit: {duration} - Ändern braucht Firmware {version} oder neuer"
+
+#. Translators: Combined info+action label: how long a fountain gives water
+#. once its sensor noticed the pet. {duration} = e.g. "45 seconds".
+#: dialog_petlibro.py:949
+msgid "Flow duration: {duration} - press Enter to change"
+msgstr "Laufzeit: {duration} - Enter zum Ändern"
+
+#. Translators: F1 help for the flow duration line of a Petlibro fountain.
+#: dialog_help.py:460
+msgid "How long the fountain gives water once its sensor noticed the pet: 45, 60, 75 or 90 seconds, as in the Petlibro app. Longer gives more time to drink, shorter saves the battery. Offered in the sensor modes; it needs firmware 0.3.25 or later."
+msgstr "Wie lange der Brunnen Wasser gibt, nachdem sein Sensor das Tier bemerkt hat: 45, 60, 75 oder 90 Sekunden, wie in der Petlibro-App. Länger lässt mehr Zeit zum Trinken, kürzer schont den Akku. Angeboten in den Sensor-Modi; nötig ist Firmware 0.3.25 oder neuer."
+
+#. Translators: Prompt of the flow duration selection.
+#: dialog_petlibro.py:549
+msgid "How long the water flows once the sensor notices the pet. Longer gives more time to drink, shorter saves the battery:"
+msgstr "Wie lange das Wasser fließt, nachdem der Sensor das Tier bemerkt. Länger lässt mehr Zeit zum Trinken, kürzer schont den Akku:"
+
+#. Translators: The flow duration can only be changed in a sensor water mode.
+#: dialog_petlibro.py:538
+msgid "The flow duration applies to the sensor modes only"
+msgstr "Die Laufzeit gilt nur in den Sensor-Modi"
+
+#. Translators: Petlibro announcement: the flow duration of a fountain was
+#. changed elsewhere. {duration} = e.g. "60 seconds".
+#: change_detection.py:1389
+msgid "flow duration {duration}"
+msgstr "Laufzeit {duration}"
+
+#. Translators: Title of the flow duration selection. {name} = fountain.
+#: dialog_petlibro.py:547
+msgid "{name}: flow duration"
+msgstr "{name}: Laufzeit"
+
+#. Translators: Confirmation after changing the flow duration. {duration} =
+#. e.g. "60 seconds".
+#: dialog_petlibro.py:565 dialog_petlibro.py:581
+msgid "{name}: flow duration {duration}"
+msgstr "{name}: Laufzeit {duration}"
+
+#. Translators: A flow duration sent to a fountain that did not answer in time
+#. never arrived.
+#: dialog_petlibro.py:585
+msgid "{name}: the flow duration was not taken over"
+msgstr "{name}: Die Laufzeit wurde nicht übernommen"
+
+#. Translators: The fountain kept another flow duration. {duration} = what it
+#. reports now.
+#: dialog_petlibro.py:572
+msgid "{name}: the fountain reports a flow duration of {duration}"
+msgstr "{name}: Der Brunnen meldet eine Laufzeit von {duration}"
+
+#. Translators: Cozytouch status announcement and line in the device tree: the
+#. water heater is heating right now - with the heat pump or the heating
+#. element, the cloud does not say which.
+#: cozytouch_devices.py:583 dialog_cozytouch.py:803 dialog_help.py:130
+msgid "Currently heating"
+msgstr "Heizt gerade"
+
+#. Translators: F1 help for the "Currently heating" line in the device tree.
+#: dialog_help.py:133
+msgid "The appliance is heating the water right now. Whether with the heat pump or the electric heating element, the cloud does not say."
+msgstr "Das Gerät heizt gerade das Wasser auf. Ob mit der Wärmepumpe oder dem Elektro-Heizstab, verrät die Cloud nicht."
+
+#. Translators: Combined info+action label: today's meals of the feeding plan
+#. - feedings by hand do not count here. Enter opens the list of all meals of
+#. the feeding plan. {done} = e.g. "3 of 4 given".
+#: dialog_petlibro.py:860
+msgid "Planned meals today: {done} - press Enter for the meals of the feeding plan"
+msgstr "Geplante Mahlzeiten heute: {done} - Enter öffnet die Liste des Fütterungsplans"
+
+#. Translators: Action entry when the feeding plan has no meal for today;
+#. Enter opens the list of all meals of the feeding plan.
+#: dialog_petlibro.py:868
+msgid "Planned meals: none today - press Enter for the meals of the feeding plan"
+msgstr "Geplante Mahlzeiten: heute keine - Enter öffnet die Liste des Fütterungsplans"
+
+#. Translators: What's new for this version, shown in the add-on store.
+#. Markdown: NVDA renders it and reads it line by line.
+#: manifest.ini:changelog:
+msgid "- New, experimental: Petlibro feeders and water fountains (Air Smart Feeder PLAF108, Dockstream 2 Cordless PLWF116).\n- New: platform status (Ctrl+P in the device menu).\n- New: the heating times of the Cozytouch heat pump can be changed.\n- NVDA+Ctrl+Shift+P announces a summary; pressed twice, it lists every device.\n- The platforms sign in at the same time, and a sign-in that failed because of the network is retried automatically.\n- A platform fault is announced only once it has lasted two minutes.\n- The history records changes made elsewhere for all platforms, and what a device does on its own as automatic.\n- Ctrl+F in the device menu now finds devices.\n- NVDA no longer freezes while a VeSync, Netatmo or Meross lamp command is sent.\n- Email addresses are stored encrypted, and removing the add-on deletes the stored credentials.\n- Settings of an early version, including the Netatmo password in plain text, are removed from nvda.ini.\n- NVDA starts faster, and Netatmo is polled with far fewer requests.\n- Decimal numbers use the separator of the interface language.\n- Network and server faults no longer play NVDA's error sound."
+msgstr "- Neu, experimentell: Petlibro-Futterautomaten und -Trinkbrunnen (Air Smart Feeder PLAF108, Dockstream 2 Cordless PLWF116).\n- Neu: Plattform-Status (Strg+P im Geräte-Menü).\n- Neu: Die Heizzeiten der Cozytouch-Wärmepumpe lassen sich ändern.\n- NVDA+Strg+Umschalt+P sagt eine Zusammenfassung an; zweimal gedrückt zeigt es alle Geräte in einer Liste.\n- Die Plattformen melden sich gleichzeitig an, und eine am Netz gescheiterte Anmeldung wird von selbst wiederholt.\n- Eine Störung einer Plattform wird erst angesagt, wenn sie zwei Minuten anhält.\n- Der Verlauf hält Änderungen von außen für alle Plattformen fest, und was ein Gerät von sich aus tut, als automatisch.\n- Strg+F im Geräte-Menü findet jetzt Geräte.\n- NVDA friert nicht mehr ein, während ein Befehl an VeSync, Netatmo oder eine Meross-Lampe geht.\n- E-Mail-Adressen werden verschlüsselt gespeichert, und beim Entfernen der Erweiterung werden die Zugangsdaten gelöscht.\n- Einstellungen einer frühen Version, darunter das Netatmo-Passwort im Klartext, werden aus der nvda.ini entfernt.\n- NVDA startet schneller, und Netatmo wird mit deutlich weniger Anfragen abgefragt.\n- Dezimalzahlen verwenden das Trennzeichen der Oberflächensprache.\n- Netzwerk- und Serverstörungen spielen nicht mehr den NVDA-Fehlerton."

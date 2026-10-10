@@ -26,6 +26,8 @@ if "_" not in globals():  # fallback outside of NVDA
     def _(s):
         return s
 
+from .formatting import fmt_decimal
+
 
 def _plausible_reading(value, minimum=0):
     """A sensor reading that can be believed, else None.
@@ -1156,7 +1158,7 @@ class VeSyncTowerFan(_VeSyncBaseDevice):
         if self.temperature is not None:
             try:
                 # Translators: Status announcement: measured temperature.
-                parts.append(_("Temperature: {value:.1f}°C").format(value=float(self.temperature)))
+                parts.append(_("Temperature: {temp}°C").format(temp=fmt_decimal(self.temperature, 1)))
             except (TypeError, ValueError):
                 pass
 

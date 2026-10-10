@@ -47,7 +47,7 @@ from .platform_utils import PLATFORM_LABELS
 VIEW_EVENTS = 0
 VIEW_DEVICES = 1
 
-PLATFORM_KEYS = ('meross', 'netatmo', 'vesync', 'cozytouch')
+PLATFORM_KEYS = ('meross', 'netatmo', 'vesync', 'cozytouch', 'petlibro')
 
 
 def _clock(ts):

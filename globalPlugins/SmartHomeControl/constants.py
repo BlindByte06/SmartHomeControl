@@ -37,6 +37,29 @@ NETATMO_MODE_NAMES = {
     'home': _("Home"),
 }
 
+# Netatmo's default names for the zones of a heating schedule, as its API
+# returns them (English or French). A zone the user named in the app comes
+# back as typed and stays as it is. Here rather than in netatmo_api: the
+# history stores the name as Netatmo sent it and translates it when shown.
+NETATMO_ZONE_NAMES = {
+    # Translators: Netatmo's default zone of a heating schedule.
+    'Comfort': _("Comfort"),
+    'Confort': _("Comfort"),
+    # Translators: Netatmo's default zone of a heating schedule.
+    'Comfort+': _("Comfort+"),
+    'Comfort +': _("Comfort+"),
+    'Confort+': _("Comfort+"),
+    'Confort +': _("Comfort+"),
+    # Translators: Netatmo's default zone of a heating schedule.
+    'Night': _("Night"),
+    # Translators: Netatmo's default zone of a heating schedule.
+    'Eco': _("Eco"),
+    # Translators: Netatmo's default zone of a heating schedule.
+    'Away': _("Away"),
+    # Translators: Netatmo's default zone of a heating schedule.
+    'Frost Guard': _("Frost guard"),
+}
+
 # ============================================================
 # Diffuser spray mode labels
 # Used in: device_dialog.py (_execute_action)
@@ -331,6 +354,22 @@ CONFSPEC = {
     "notifyCozytouchBoost": "boolean(default=true)",
     "notifyCozytouchPower": "boolean(default=true)",
     "notifyCozytouchAway": "boolean(default=true)",
+    # Petlibro (feeders and water fountains)
+    "usePetlibro": "boolean(default=false)",
+    "petlibroEmail": "string(default='')",
+    "petlibroPassword": "string(default='')",
+    "petlibroToken": "string(default='')",
+    # Portions offered first by "Feed now" - the last amount chosen.
+    "petlibroLastPortions": "integer(default=1)",
+    "notifyPetlibroFeedFailed": "boolean(default=true)",
+    "notifyPetlibroFeedExternal": "boolean(default=true)",
+    "notifyPetlibroFeedPlanned": "boolean(default=false)",
+    "notifyPetlibroFoodLow": "boolean(default=true)",
+    "notifyPetlibroWaterLow": "boolean(default=true)",
+    "notifyPetlibroMaintenance": "boolean(default=true)",
+    "notifyPetlibroBattery": "boolean(default=true)",
+    "notifyPetlibroConnection": "boolean(default=true)",
+    "notifyPetlibroSettings": "boolean(default=true)",
     # Faults: whether a platform going away, coming back or answering only
     # in part is spoken. Separate from the notifications above, which are
     # about changes someone MADE - a fault is not a change, and switching the
@@ -425,6 +464,10 @@ PLATFORM_INTERVALS = {
     'netatmo':   {'fg': 15, 'bg': 30},
     'vesync':    {'fg': 15, 'bg': 60},
     'cozytouch': {'fg': 15, 'bg': 30},
+    # Petlibro publishes no limit. One pass costs the device list plus one or
+    # two queries per device, so the background stays at two minutes - a
+    # feeder or a fountain does not change faster than that on its own.
+    'petlibro':  {'fg': 30, 'bg': 120},
 }
 
 # ============================================================
@@ -525,3 +568,44 @@ WEEKDAY_NAMES = (
     _("Monday"), _("Tuesday"), _("Wednesday"), _("Thursday"),
     _("Friday"), _("Saturday"), _("Sunday"),
 )
+
+# Water modes of a Petlibro fountain. The key is what the history stores; the
+# dialog and the history both render it from here.
+PETLIBRO_WATER_MODE_NAMES = {
+    # Translators: Water mode of a Petlibro fountain: the pump is switched off.
+    'off': _("Off"),
+    # Translators: Water mode of a Petlibro fountain: water flows all the time.
+    'constant': _("Constant flow"),
+    # Translators: Water mode of a Petlibro fountain: water flows in intervals.
+    'intermittent': _("Intermittent flow"),
+    # Translators: Water mode of a Petlibro fountain: water flows when the
+    # sensor detects an animal close to the fountain.
+    'sensor_near': _("Sensor, near"),
+    # Translators: Water mode of a Petlibro fountain: water flows when the
+    # sensor detects an animal further away.
+    'sensor_far': _("Sensor, far"),
+}
+
+# Faults and warnings a Petlibro device reports, by the key
+# petlibro_devices.fault_key() makes of them: a record type as it comes
+# (WATER_BOX_LEAVE_ERROR), the cloud's own English text (its exceptionMessage,
+# "Water tank irregularity") upper-cased with underscores. The history stores
+# what the device sent, never the translation; the name is looked up when it
+# is shown.
+PETLIBRO_FAULT_NAMES = {
+    # Translators: A Petlibro fountain reports that its water tank is empty
+    # or not seated properly on the base. Announced, shown in the device
+    # entry and in the history.
+    'WATER_BOX_LEAVE_ERROR': _("water tank empty or not seated on its base"),
+    # Translators: Petlibro announcement: the food container of a feeder is
+    # almost empty.
+    'GRAIN_NOT_ENOUGH': _("food low"),
+}
+
+# Other names for the same fault. Measured on a PLWF116 on 2026-09-26: the
+# cloud's text "Water tank irregularity" came with the tank taken off, and
+# the record WATER_BOX_LEAVE_ERROR four minutes later for the same event.
+PETLIBRO_FAULT_ALIASES = {
+    'WATER_TANK_IRREGULARITY': 'WATER_BOX_LEAVE_ERROR',
+    'SURPLUS_GRAIN_NOT_ENOUGH': 'GRAIN_NOT_ENOUGH',
+}

@@ -47,8 +47,8 @@ jobs:
     # of the version and runs as part of packing anyway.
     - name: Check add-on code
       run: |
-        python -m compileall -q globalPlugins
-        python -m pyflakes globalPlugins/SmartHomeControl
+        python -m compileall -q globalPlugins installTasks.py
+        python -m pyflakes globalPlugins/SmartHomeControl installTasks.py
         python build_addon.py py311
 
     # The checks under tools/checks/ assert what has already broken in this
@@ -65,6 +65,16 @@ jobs:
           python $_.FullName
           if ($LASTEXITCODE -ne 0) { exit 1 }
         }
+
+    # Looks every library pinned in requirements-bundle.txt up in the OSV
+    # vulnerability database - the one pip-audit reads - and fails on a
+    # known vulnerability: raise the version there, then "libs" and "pack".
+    # It asks OSV directly and installs nothing. There is no NVDA on the
+    # runner, so NVDA's own copies of requests, urllib3 and certifi (the ones
+    # that actually run) are only covered when this runs on a machine with
+    # NVDA installed.
+    - name: Audit the bundled libraries
+      run: python build_addon.py audit
 
     # Builds from manifest.ini, globalPlugins/, lib/, doc/ and locale/ - NOT
     # from the whole repository. Checks translations and package integrity

@@ -101,3 +101,26 @@ class _CredentialsMixin:
         else:
             self._encrypted_cozytouch_password = ""
 
+    @property
+    def petlibro_password(self):
+        """Decrypts the Petlibro password on demand."""
+        if self._encrypted_petlibro_password:
+            return decrypt_dpapi(self._encrypted_petlibro_password)
+        return ""
+
+    @petlibro_password.setter
+    def petlibro_password(self, value):
+        """Encrypts the Petlibro password immediately (plain text from the UI)."""
+        if value:
+            self._encrypted_petlibro_password = encrypt_dpapi(value)
+        else:
+            self._encrypted_petlibro_password = ""
+
+    def set_encrypted_petlibro_password(self, encrypted_value):
+        """Sets an already encrypted Petlibro password string (from the config)."""
+        if encrypted_value and is_encrypted(encrypted_value):
+            self._encrypted_petlibro_password = encrypted_value
+        elif encrypted_value:
+            self._encrypted_petlibro_password = encrypt_dpapi(encrypted_value)
+        else:
+            self._encrypted_petlibro_password = ""

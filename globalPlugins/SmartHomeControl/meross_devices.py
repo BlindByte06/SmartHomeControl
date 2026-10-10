@@ -285,27 +285,69 @@ def _install_error_filter():
 
 
 # ============================================================
-# Check whether meross_iot is installed
+# meross_iot is loaded on first use, not at import
 # ============================================================
+# Importing meross_iot pulls in aiohttp and its C extensions. That took about
+# one second on NVDA's main thread while NVDA started (measured in the NVDA
+# log), and it was spent even with Meross switched off. It now happens when
+# the first MerossAPI is built - always on a background thread: the login,
+# the connection test, the credential check.
 
-try:
-    from meross_iot.http_api import MerossHttpClient
-    from meross_iot.manager import MerossManager
-    from meross_iot.controller.device import GenericSubDevice
-    from meross_iot.model.enums import OnlineStatus
-    MEROSS_AVAILABLE = True
+MEROSS_AVAILABLE = None  # None: not tried yet, then True or False
+MerossHttpClient = None  # noqa: N816
+MerossManager = None  # noqa: N816
+GenericSubDevice = None
+OnlineStatus = None
+_load_lock = threading.Lock()
 
-    # SSL fix for NVDA (Python 3.11/win32 and Python 3.13/win-amd64): wire the
-    # certifi CA bundle into aiohttp so Meross certificates are verified even
-    # without the system trust store.
+
+def load_meross():
+    """Imports meross_iot once and prepares it; True when it can be used.
+
+    Thread-safe. Later calls return the first result at once. A module
+    reload (NVDA+Ctrl+F3) starts again from None, so the MS130 patch is bound
+    to the fresh module globals again - see _patch_ms130_event_handler.
+    """
+    global MEROSS_AVAILABLE, MerossHttpClient, MerossManager
+    global GenericSubDevice, OnlineStatus
+    with _load_lock:
+        if MEROSS_AVAILABLE is not None:
+            return MEROSS_AVAILABLE
+        try:
+            from meross_iot.http_api import MerossHttpClient as http_client
+            from meross_iot.manager import MerossManager as manager
+            from meross_iot.controller.device import GenericSubDevice as subdevice
+            from meross_iot.model.enums import OnlineStatus as online_status
+        except Exception as e:
+            # ImportError, but also OSError when a C extension of the
+            # wrong architecture refuses to load - Meross is then
+            # unavailable, and the other platforms go on.
+            MEROSS_AVAILABLE = False
+            log.warning(f"meross_iot is not available: {type(e).__name__}: {e}")
+            return False
+        MerossHttpClient, MerossManager = http_client, manager
+        GenericSubDevice, OnlineStatus = subdevice, online_status
+        _apply_ssl_fix()
+        _install_error_filter()
+        _patch_ms130_event_handler()
+        MEROSS_AVAILABLE = True
+        return True
+
+
+def _apply_ssl_fix():
+    """Wires the certifi CA bundle into the aiohttp sessions of meross_iot.
+
+    NVDA (Python 3.11/win32 and Python 3.13/win-amd64) gives aiohttp no
+    system trust store, so without this the Meross certificates could not
+    be verified.
+    """
     try:
         import ssl
         import certifi
         import aiohttp
-        import warnings
         import meross_iot.http_api as _meross_http_api
 
-        _ssl_context = ssl.create_default_context(cafile=certifi.where())
+        ssl_context = ssl.create_default_context(cafile=certifi.where())
 
         with warnings.catch_warnings():
             warnings.simplefilter("ignore", DeprecationWarning)
@@ -314,21 +356,13 @@ try:
                 """aiohttp.ClientSession with certifi CA bundle for correct SSL verification."""
                 def __init__(self, *args, **kwargs):
                     if 'connector' not in kwargs:
-                        kwargs['connector'] = aiohttp.TCPConnector(ssl=_ssl_context)
+                        kwargs['connector'] = aiohttp.TCPConnector(ssl=ssl_context)
                     super().__init__(*args, **kwargs)
 
         _meross_http_api.ClientSession = _CertifiClientSession
         log.info(f"SSL fix active: meross_iot uses the certifi CA bundle ({certifi.where()})")
-    except Exception as _ssl_fix_err:
-        log.warning(f"SSL fix could not be applied: {_ssl_fix_err}")
-
-except ImportError:
-    MEROSS_AVAILABLE = False
-    MerossHttpClient = None  # noqa: N816
-    MerossManager = None  # noqa: N816
-    GenericSubDevice = None
-    OnlineStatus = None
-    log.warning("meross_iot is not installed")
+    except Exception as e:
+        log.warning(f"SSL fix could not be applied: {e}")
 
 
 # ============================================================
@@ -516,8 +550,9 @@ def _patch_ms130_event_handler():
     data after the reload (MS100 is not affected because it reads directly
     from the meross_iot object).
 
-    Solution: reinstall the handler on EVERY import so it is bound to the
-    current module globals (``set_sensor_data`` etc.). The REAL original
+    Solution: reinstall the handler on every load (``load_meross`` runs it,
+    and a reload starts that over) so it is bound to the current module
+    globals (``set_sensor_data`` etc.). The REAL original
     handler is saved once on the class object and always it (not the most
     recently installed one) is wrapped - so no growing handler chain stacks
     up across multiple reloads.
@@ -565,11 +600,6 @@ def _patch_ms130_event_handler():
     else:
         log.info("MS130 event handler patched")
 
-
-# Run patch and filter at import time
-if MEROSS_AVAILABLE:
-    _install_error_filter()
-    _patch_ms130_event_handler()
 
 
 def _auto_configure_custom_names(devices):

@@ -22,10 +22,18 @@ things worth asserting, none of which needs a network:
   pure-Python fallback: if one side is missing a package, Meross support
   is gone on that architecture, not slower.
 
-What this does NOT do is ask the internet whether a newer version exists
-or whether a CVE has been published. That is a decision with a release
-attached to it, and it belongs to whoever makes the release - not to a
-check that has to pass offline.
+What this does NOT do is ask the internet whether a CVE has been
+published - a check here has to pass offline. ``build_addon.py audit``
+does that against the OSV database, and the build workflow runs it; this
+check only makes sure the audit reads the same pins and stays in the
+workflow.
+
+One more thing the bundle cannot do: NVDA ships requests, urllib3,
+certifi, idna and charset_normalizer itself, its library.zip comes first
+on sys.path, and so NVDA's copies are the ones that run. A fix to those
+in lib/ takes effect only on an NVDA without them. The audit lists that
+overlap on a machine with NVDA installed, and the add-on logs which copy
+ran after each login.
 """
 import base64
 import csv
@@ -194,6 +202,26 @@ def test_compiled_extensions_are_present():
               f'{len(pyds)} .pyd')
 
 
+def test_the_audit():
+    print('== the vulnerability audit reads these pins and runs in the build ==')
+    import importlib.util
+    spec = importlib.util.spec_from_file_location(
+        'build_addon_probe', os.path.join(ROOT, 'build_addon.py'))
+    build = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(build)
+    pure, arch = read_pins()
+    audited = {_normalise(name): version for name, version in build._pinned_packages()}
+    check('the audit looks at every pinned library, in the pinned version',
+          audited == {**pure, **arch},
+          f'{len(audited)} audited, {len(pure) + len(arch)} pinned')
+    workflow = io.open(os.path.join(ROOT, '.github', 'workflows', 'build.yml'),
+                       encoding='utf-8').read()
+    check('the build workflow runs it', 'python build_addon.py audit' in workflow)
+    check('the add-on logs which copy of requests and urllib3 ran',
+          '_log_library_origins()' in io.open(
+              os.path.join(BASE, '__init__.py'), encoding='utf-8').read())
+
+
 def main():
     if not os.path.isdir(LIB):
         print(f'  FEHL   lib/ not found at {LIB}')
@@ -202,6 +230,7 @@ def main():
     test_no_leftovers_from_earlier_versions()
     test_record_hashes()
     test_compiled_extensions_are_present()
+    test_the_audit()
     print()
     if FAILED:
         print(f'FEHLGESCHLAGEN: {len(FAILED)} -> {FAILED}')

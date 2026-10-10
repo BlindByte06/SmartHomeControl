@@ -56,6 +56,27 @@ def source(name):
     return io.open(os.path.join(BASE, name + '.py'), encoding='utf-8').read()
 
 
+def load_package_module(name):
+    """Imports a module of the add-on as part of a package, NVDA stubbed."""
+    import importlib
+    import types
+    for stub in ('logHandler', 'addonHandler'):
+        sys.modules.setdefault(stub, types.ModuleType(stub))
+    sys.modules['logHandler'].log = type('L', (), {
+        level: staticmethod(lambda *a, **k: None)
+        for level in ('debug', 'info', 'warning', 'error')})()
+    sys.modules['addonHandler'].initTranslation = lambda: None
+    if 'requests' not in sys.modules:
+        try:
+            import requests  # noqa: F401
+        except ImportError:
+            sys.modules['requests'] = types.ModuleType('requests')
+    pkg = types.ModuleType('shchealth')
+    pkg.__path__ = [BASE]
+    sys.modules['shchealth'] = pkg
+    return importlib.import_module('shchealth.' + name)
+
+
 def grab_method(module, name, env=None):
     """Holt eine Methode aus der echten Quelldatei und macht sie aufrufbar."""
     import ast
@@ -252,6 +273,63 @@ def main():
           'Ausnahme und galt deshalb als gelungen',
           'self.last_poll_ok = bool(weather_ok or energy_ok)' in netatmo)
 
+    print('== Netatmo fragt sparsam ==')
+    # Der Zeitplaner rief bei jeder Abfrage get_devices() - drei Anfragen,
+    # gemessen rund 110 Mal pro Stunde, bei offenem Menue alle 15 Sekunden.
+    # Die sparsame Abfrage gab es, sie wurde nie aufgerufen. Und
+    # /getstationsdata ging bei einem Konto ohne Wetterstation jedes Mal
+    # mit hinaus.
+    netatmo_mod = load_package_module('netatmo_api')
+    api = netatmo_mod.NetatmoAPI('id', 'secret')
+    api._ensure_valid_token = lambda: None
+    calls = []
+    homes = {'body': {'homes': [{
+        'id': 'h1', 'name': 'Zuhause', 'rooms': [{'id': 'r1', 'name': 'Bad'}],
+        'modules': [{'id': 'm1', 'type': 'NATherm1', 'room_id': 'r1',
+                     'name': 'Thermostat'}]}]}}
+    status = {'body': {'home': {
+        'rooms': [{'id': 'r1', 'therm_setpoint_temperature': 21.0,
+                   'therm_setpoint_mode': 'manual',
+                   'therm_measured_temperature': 20.5}],
+        'modules': [{'id': 'm1', 'reachable': True}]}}}
+
+    def homes_data(gateway_types=None, max_age=None, cached_only=False):
+        calls.append('homesdata (cache)' if cached_only else 'homesdata')
+        return homes
+
+    api.get_stations_data = lambda: calls.append('stations') or {
+        'body': {'devices': []}}
+    api.get_homes_data = homes_data
+    api.get_home_status = lambda home_id=None: calls.append('homestatus') or status
+    devices = api.get_devices()
+    check('die Anmeldung findet den Thermostat', len(devices) == 1)
+    calls.clear()
+    for _round in range(10):
+        api.update_device_status(devices)
+    asked = [c for c in calls if c != 'homesdata (cache)']
+    check('zehn Abfragen kosten zehn Anfragen, nicht dreissig',
+          asked == ['homestatus'] * 10, str(asked))
+    check('und lesen den Wert trotzdem',
+          devices[0].get_setpoint_temp() == 21.0)
+    check('die Abfrage gilt als gelungen', api.last_poll_ok is True)
+    calls.clear()
+    api._last_full_status_refresh -= netatmo_mod.NETATMO_FULL_REFRESH_SECONDS + 1
+    api.update_device_status(devices)
+    check('alle fuenf Minuten ein voller Durchgang',
+          'homesdata' in calls and 'homestatus' in calls, str(calls))
+    check('ohne Wetterstation wird nicht mehr nach ihr gefragt',
+          'stations' not in calls, str(calls))
+    api.get_home_status = lambda home_id=None: (_ for _ in ()).throw(
+        RuntimeError('Netatmo API (503): Service temporarily unavailable'))
+    api.update_device_status(devices)
+    check('antwortet die Heizung nicht, ist das ein Ausfall',
+          api.last_poll_ok is False and 'energy' in api.last_failed_parts,
+          f'{api.last_poll_ok} {api.last_failed_parts}')
+    sched_src = source('scheduler')
+    check('der Zeitplaner benutzt die sparsame Abfrage',
+          'self.netatmo_api.update_device_status(netatmo_devs)' in sched_src
+          and 'self.netatmo_api.get_devices()' not in sched_src)
+
     print('== Der Zeitplaner fuettert den Satz ==')
     sched = source('scheduler')
     for platform in ('meross', 'vesync', 'cozytouch'):
@@ -342,6 +420,57 @@ def main():
           not any(wanted(cfg, state)
                   for state in (ph.OK, ph.PARTIAL, ph.DOWN)))
 
+    print('== Kurze Ausfaelle unterbrechen nicht ==')
+    # 01.10.2026: sieben Ausfaelle an einem Tag, 36 bis 67 Sekunden lang,
+    # jeder bei der naechsten Abfrage vorbei - und vierzehn Ansagen.
+    health = ph.PlatformHealth()
+    health.update('netatmo', True)
+    check('die erste Beobachtung sagt nichts',
+          health.announcement_due('netatmo') is None)
+    health.update('netatmo', False)
+    since = health.get('netatmo')['since']
+    check('ein frischer Ausfall wird noch nicht gesagt',
+          health.announcement_due('netatmo', now=since + 60) is None)
+    check('der Baum zeigt ihn trotzdem sofort',
+          ph.status_suffix(health.get('netatmo')) != '')
+    health.update('netatmo', True)
+    check('vorbei, bevor er gesagt wurde: auch keine Rueckkehr',
+          health.announcement_due('netatmo') is None)
+    check('in der Ereignisliste steht er trotzdem',
+          len(health.events('netatmo')) == 3, str(len(health.events('netatmo'))))
+    health.update('netatmo', False)
+    since = health.get('netatmo')['since']
+    check('nach der Frist wird er gesagt',
+          health.announcement_due('netatmo', now=since + ph.FAULT_ANNOUNCE_GRACE)
+          == ph.DOWN)
+    check('und nur einmal',
+          health.announcement_due('netatmo', now=since + 600) is None)
+    health.update('netatmo', True)
+    check('dann wird auch die Rueckkehr gesagt',
+          health.announcement_due('netatmo') == ph.OK)
+    health = ph.PlatformHealth()
+    health.update('meross', False)
+    check('ein Ausfall schon bei der Anmeldung wird nicht nachgetragen',
+          health.announcement_due('meross', now=time.time() + 3600) is None)
+
+    spoken, announce = announce_probe(ph)
+
+    class Probe:
+        notify_faults = True
+        notify_fault_unreachable = True
+        notify_fault_partial = True
+        notify_fault_recovered = True
+
+    probe = Probe()
+    probe.platform_health = ph.PlatformHealth()
+    probe._netatmo_connected = None
+    probe._fault_announcement_wanted = lambda state: wanted(probe, state)
+    announce(probe, 'netatmo', True, True)
+    announce(probe, 'netatmo', False, True)
+    announce(probe, 'netatmo', True, True)
+    check('der Ablauf im Zeitplaner bleibt bei einem kurzen Ausfall still',
+          spoken == [], str(spoken))
+
     print('== Abgeschaltet heisst still, nicht blind ==')
     spoken, announce = announce_probe(ph)
 
@@ -370,6 +499,32 @@ def main():
           'self.platform_health = PlatformHealth()' in init)
     check('und die Diagnose sagt, seit wann und was fehlt',
           'platform_health.status_suffix(entry)' in init)
+
+    print('== Ein Ausfall ist kein Fehler im Log ==')
+    # Ein ERROR laesst NVDA den Fehlerton spielen, wenn "Ton bei
+    # protokollierten Fehlern" an ist - am 24. September achtmal an einem
+    # Vormittag, jedes Mal fuer ein 503 der Netatmo-Wetterstation.
+    for name in ('netatmo_api', 'vesync_api'):
+        body = source(name).partition('def _log_network_error')[2]
+        body = body.partition('\n    def ')[0]
+        branch = body.partition('if self._is_network_error(exception):')[2]
+        branch = branch.partition('\n        else:')[0]
+        check(f'{name}: ein Netzwerkfehler wird als WARNING geloggt',
+              'log.warning(' in branch and 'log.error(' not in branch)
+    net = source('netatmo_api')
+    check('Netatmo: die vier Abrufe nehmen den Weg mit der Erklaerung',
+          net.count('self._log_api_exception("Netatmo ') >= 4
+          and 'self._log_network_error("Netatmo ' not in net)
+    check('eine 503 bekommt den Klartext und eine Warnung',
+          'log.warning(f"{context}: {hint}. Response: {exception}")' in net)
+    vs = source('vesync_api')
+    pattern = re.search(r'return bool\(re\.search\(r"(.+?)", error_msg\)\)', vs)
+    check('VeSync erkennt die eigene Meldung "VeSync API HTTP 503"',
+          pattern is not None
+          and re.search(pattern.group(1), 'vesync api http 503') is not None
+          and re.search(pattern.group(1), 'vesync api http 404') is None)
+    check('Meross: eine Anmeldung ohne Netz ist eine Warnung',
+          'log.warning(f"Login failed - network error: {e}")' in source('meross_api'))
 
     print()
     if FAILED:

@@ -26,6 +26,8 @@ if "_" not in globals():  # fallback if initTranslation() fails
         return s
 
 from .history import get_history
+from .formatting import fmt_decimal
+from .errors import log_failure
 from .favorites import get_favorites
 from .dialog_helpers import _beep
 from .constants import BEEP_ON, BEEP_OFF, BEEP_ACTION, BEEP_ERROR
@@ -73,6 +75,14 @@ class _CozytouchDialogMixin:
         arguments and returns True/False; ``on_success`` then runs on the UI
         thread (announcement, history, tree rebuild), ``failure_message`` is
         announced on False.
+
+        Every caller marks the change as made here BEFORE it calls this: the
+        poll runs on a thread of its own and can read the new state while
+        the command and its read-back are still on their way (up to fifteen
+        seconds). The history shows it happening - one boost written as
+        "local" and "external" in the same second. ``on_success`` marks it
+        once more, so the window of thirty seconds starts from the
+        confirmation.
         """
         if not self._begin_cloud_action():
             return
@@ -82,7 +92,7 @@ class _CozytouchDialogMixin:
                 ok = action_call()
             except Exception as e:
                 _beep(BEEP_ERROR)
-                log.error(f"Cozytouch error: {e}")
+                log_failure("Cozytouch action failed", e)
                 # Translators: Generic Cozytouch error message with detail
                 # text.
                 self._safe_call_after(
@@ -138,9 +148,12 @@ class _CozytouchDialogMixin:
             ui.message(_("{name}: target temperature {temp} degrees").format(
                 name=device.name, temp=_fmt_temp(device.target_temperature)))
             self.plugin._record_local_cozytouch_action(device.uuid)
-            get_history().log_action(device, 'set_target_temp', f"{_fmt_temp(device.target_temperature)}°C")
+            # The bare number - the history writes it in the language of the day.
+            get_history().log_action(device, 'set_target_temp', str(device.target_temperature))
             self._rebuild_cozytouch_device_children(item, device)
 
+        # Marked before sending - see _run_cozytouch_cloud_action.
+        self.plugin._record_local_cozytouch_action(device.uuid)
         self._run_cozytouch_cloud_action(
             lambda: device.set_target_temperature(temp),
             on_success,
@@ -171,6 +184,8 @@ class _CozytouchDialogMixin:
             get_history().log_action(device, 'set_mode', str(chosen))
             self._rebuild_cozytouch_device_children(item, device)
 
+        # Marked before sending - see _run_cozytouch_cloud_action.
+        self.plugin._record_local_cozytouch_action(device.uuid)
         self._run_cozytouch_cloud_action(
             lambda: device.set_mode(chosen),
             on_success,
@@ -217,12 +232,18 @@ class _CozytouchDialogMixin:
             ui.message(_("{name}: boost duration {minutes} minutes").format(
                 name=device.name, minutes=minutes))
             self.plugin._record_local_cozytouch_action(device.uuid)
+            # The appliance does not report the duration back - without it
+            # the end of the boost cannot be told from somebody's doing.
+            self.plugin._note_local_cozytouch_boost(device.uuid,
+                                                    minutes=minutes)
             # Bare number - the display adds the unit in the current
             # language.
             get_history().log_action(
                 device, 'set_boost_duration', str(minutes))
             self._rebuild_cozytouch_device_children(item, device)
 
+        # Marked before sending - see _run_cozytouch_cloud_action.
+        self.plugin._record_local_cozytouch_action(device.uuid)
         self._run_cozytouch_cloud_action(
             lambda: device.set_boost_duration(minutes),
             on_success,
@@ -241,10 +262,13 @@ class _CozytouchDialogMixin:
             # Translators: Confirmation after toggling boost.
             ui.message(_("{name}: boost {status}").format(name=device.name, status=status))
             self.plugin._record_local_cozytouch_action(device.uuid)
+            self.plugin._note_local_cozytouch_boost(device.uuid, on=new_state)
             get_history().log_action(
                 device, 'boost_on' if new_state else 'boost_off', "")
             self._rebuild_cozytouch_device_children(item, device)
 
+        # Marked before sending - see _run_cozytouch_cloud_action.
+        self.plugin._record_local_cozytouch_action(device.uuid)
         self._run_cozytouch_cloud_action(
             lambda: device.set_boost(new_state),
             on_success,
@@ -267,6 +291,8 @@ class _CozytouchDialogMixin:
                 device, 'toggle_on' if new_state else 'toggle_off', "")
             self._rebuild_cozytouch_device_children(item, device)
 
+        # Marked before sending - see _run_cozytouch_cloud_action.
+        self.plugin._record_local_cozytouch_action(device.uuid)
         self._run_cozytouch_cloud_action(
             lambda: device.set_dhw(new_state),
             on_success,
@@ -288,6 +314,8 @@ class _CozytouchDialogMixin:
                 get_history().log_action(device, 'away_off', "")
                 self._rebuild_cozytouch_device_children(item, device)
 
+            # Marked before sending - see _run_cozytouch_cloud_action.
+            self.plugin._record_local_cozytouch_action(device.uuid)
             self._run_cozytouch_cloud_action(
                 lambda: device.set_away(False),
                 on_success_off,
@@ -316,6 +344,8 @@ class _CozytouchDialogMixin:
                 device, 'away_on', f"{start_str} - {end_str}")
             self._rebuild_cozytouch_device_children(item, device)
 
+        # Marked before sending - see _run_cozytouch_cloud_action.
+        self.plugin._record_local_cozytouch_action(device.uuid)
         self._run_cozytouch_cloud_action(
             lambda: device.set_away(True, start_ts, end_ts),
             on_success_on,
@@ -414,6 +444,8 @@ class _CozytouchDialogMixin:
                     schedule=actual_text, wanted=wanted_text))
             self._rebuild_cozytouch_device_children(item, device)
 
+        # Marked before sending - see _run_cozytouch_cloud_action.
+        self.plugin._record_local_cozytouch_action(device.uuid)
         self._run_cozytouch_cloud_action(
             write, on_success,
             # Translators: Error message when the time program could not be
@@ -768,11 +800,13 @@ class _CozytouchDialogMixin:
         if device.offpeak_active:
             # Translators: Note that off-peak electricity is currently used.
             items.append({'text': _("Off-peak tariff active"), 'kind': 'info', 'action': None})
-        if device.resistance_on:
-            # Translators: Note that the electric heating element is currently
-            # heating.
-            items.append({'text': _("Electric heating element active "
-                                    "(currently heating)"), 'kind': 'info', 'action': None})
+        if device.heating_now:
+            # Translators: Line in the device tree: the water heater is
+            # heating right now. Not "heating element": the cloud value
+            # behind it is also on while only the heat pump heats. F1 picks
+            # its help by this text.
+            items.append({'text': _("Currently heating"), 'kind': 'info',
+                          'action': None})
         sched = device.today_schedule_text
         if sched:
             # Translators: Today's heating time windows, changeable with
@@ -787,7 +821,7 @@ class _CozytouchDialogMixin:
                 # Translators: Total energy consumption. {kwh} = kilowatt
                 # hours.
                 'text': _("Energy consumption, total: {kwh} kWh").format(
-                    kwh=f"{kwh:.1f}".replace(".", ",")),
+                    kwh=fmt_decimal(kwh, 1)),
                 'kind': 'info', 'action': None,
             })
         # ---- Actions (combined info+action label) ----
@@ -1073,8 +1107,7 @@ class _CozytouchDialogMixin:
 
                 wx.CallAfter(self._refresh_after_cozytouch_init, len(devices))
             except Exception as e:
-                log.error(f"Late Cozytouch initialisation failed: "
-                          f"{type(e).__name__}: {e}")
+                log_failure("Late Cozytouch initialisation failed", e)
                 wx.CallAfter(self._offer_login_reentry, 'cozytouch', e)
             finally:
                 plugin.end_platform_login('cozytouch')

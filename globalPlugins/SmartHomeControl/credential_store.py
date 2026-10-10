@@ -56,6 +56,9 @@ SECRET_KEYS = (
     "cozytouchEmail",
     "cozytouchPassword",
     "cozytouchToken",
+    "petlibroEmail",
+    "petlibroPassword",
+    "petlibroToken",
 )
 
 
@@ -204,6 +207,35 @@ def save(conf, values):
         return False
     clear_from_conf(conf)
     return True
+
+
+# Sections an early version of the add-on wrote under its first name. Nothing
+# reads them any more and nothing ever removed them: on a machine that ran that
+# version, [merossSmartControl] still held the Netatmo password and client
+# secret in plain text - and NVDA writes the whole configuration into its log
+# at every start, so both travelled with every log that was sent in.
+LEGACY_SECTIONS = ("merossSmartControl",)
+
+
+def drop_legacy_sections(profile):
+    """Removes the sections of early versions from a configuration profile.
+
+    Args:
+        profile: a profile of NVDA's configuration; ``config.conf.profiles[0]``
+            is nvda.ini itself.
+
+    Returns:
+        list of the section names removed, empty when there were none.
+    """
+    removed = []
+    for name in LEGACY_SECTIONS:
+        try:
+            if name in profile:
+                del profile[name]
+                removed.append(name)
+        except Exception as e:
+            log.warning(f"Could not remove the old section [{name}]: {e}")
+    return removed
 
 
 def clear_from_conf(conf):

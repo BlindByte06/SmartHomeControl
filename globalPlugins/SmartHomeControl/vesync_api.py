@@ -209,15 +209,21 @@ class VeSyncAPI:
         ]
         if any(indicator in error_msg for indicator in network_indicators):
             return True
-        return bool(re.search(r"\((?:http\s)?5\d{2}\)", error_msg))
+        # "(503)", "(HTTP 503)" and this module's own "VeSync API HTTP 503".
+        return bool(re.search(r"\((?:http\s)?5\d{2}\)|\bhttp\s5\d{2}\b", error_msg))
 
     def _log_network_error(self, context, exception):
-        """Logs network errors with deduplication"""
+        """Logs network errors with deduplication (WARNING the first time, then DEBUG)"""
         now = time.time()
         if self._is_network_error(exception):
             self._network_error_count += 1
+            # WARNING, not ERROR: a network that drops or a server that is
+            # down is no fault of NVDA or of this add-on. An ERROR entry
+            # makes NVDA play its error sound for whoever has "Play a sound
+            # for logged errors" switched on - eight times on one morning of
+            # Netatmo 503s.
             if (now - self._last_network_error_time) > self._NETWORK_ERROR_LOG_INTERVAL:
-                log.error(f"{context}: {exception}")
+                log.warning(f"{context}: {exception}")
                 self._last_network_error_time = now
             else:
                 log.debug(f"{context} (retry #{self._network_error_count}): {exception}")
@@ -239,17 +245,20 @@ class VeSyncAPI:
     _AUTH_EXPIRED_CODES = {-11201022, -11201021, -11201001, -11000086}
 
     def _post(self, endpoint, body, headers=None, timeout=API_TIMEOUT,
-              _is_retry=False, fast=False):
+              _is_retry=False, fast=False, repeat=True):
         """Authenticated POST request against the VeSync API.
 
         Args:
             fast: True for calls from the VeSync fast poll. No network retry
                 (so the stop event stays responsive) and the timeout default
                 is ``API_TIMEOUT_FAST`` (5 s).
+            repeat: False for a command that sets something going - see
+                ``call_bypass_v2``. It is then sent once, network error or
+                not.
 
         Retry strategy:
           - In normal mode: 1 retry on ConnectionError/timeout (1 s pause).
-            No retry in fast mode.
+            No retry in fast mode or with ``repeat=False``.
           - On an expired token (``_AUTH_EXPIRED_CODES``) the caller waits on
             the ``_reauth_lock`` and the first thread triggers the reauth;
             all threads then retry with the fresh token.
@@ -263,7 +272,7 @@ class VeSyncAPI:
         try:
             resp = self._session.post(url, headers=headers, json=body, timeout=timeout)
         except (requests.ConnectionError, requests.Timeout) as e:
-            if _is_retry or fast:
+            if _is_retry or fast or not repeat:
                 raise
             log.debug(f"VeSync: network error ({type(e).__name__}), one retry in 1 s...")
             time.sleep(1)
@@ -614,6 +623,14 @@ class VeSyncAPI:
     # ----------------------------------------------------------
     # BypassV2 calls
     # ----------------------------------------------------------
+    # Methods that may go out a second time after a network error. Reading
+    # is harmless, and so is setting a value: the second request sets the
+    # same one. Anything else sets something going, and a timeout does not
+    # say whether the first request arrived - a repeated startCook would
+    # start the programme over. Such a method is sent once; the next poll
+    # shows what the appliance is doing.
+    _REPEATABLE_PREFIXES = ("get", "set", "reset")
+
     def call_bypass_v2(self, device, payload_method, data=None, fast=False):
         """
         Sends a BypassV2 call to a device.
@@ -651,6 +668,7 @@ class VeSyncAPI:
                 "/cloud/v2/deviceManaged/bypassV2",
                 body,
                 fast=fast,
+                repeat=payload_method.startswith(self._REPEATABLE_PREFIXES),
             )
         except Exception as e:
             self._log_network_error(f"VeSync bypassV2 ({payload_method}) error", e)

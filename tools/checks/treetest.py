@@ -146,6 +146,7 @@ class Dev:
         self.is_netatmo = platform == 'netatmo'
         self.is_vesync = platform == 'vesync'
         self.is_cozytouch = platform == 'cozytouch'
+        self.is_petlibro = platform == 'petlibro'
 
 
 METHODS = ('_tree_item_identity', '_capture_selection', '_restore_selection',
@@ -378,11 +379,13 @@ def test_disabled_platforms():
     plugin._devices_lock = threading.RLock()
     plugin.devices = [Dev('p1', 'Plug'), Dev('n1', 'Thermostat', 'netatmo'),
                       Dev('v1', 'Purifier', 'vesync'),
-                      Dev('c1', 'Heat pump', 'cozytouch')]
+                      Dev('c1', 'Heat pump', 'cozytouch'),
+                      Dev('f1', 'Feeder', 'petlibro')]
     plugin.use_meross = True
     plugin.use_netatmo = True
     plugin.use_vesync = True
     plugin.use_cozytouch = True
+    plugin.use_petlibro = True
 
     unchanged = list(plugin.devices)
     check('alles eingeschaltet: nichts wird entfernt',
@@ -394,7 +397,13 @@ def test_disabled_platforms():
     keys = [d.unique_id for d in plugin.devices]
     check('das abgeschaltete VeSync-Geraet ist weg',
           removed == 1 and 'v1' not in keys, str(keys))
-    check('die anderen Plattformen bleiben', keys == ['p1', 'n1', 'c1'])
+    check('die anderen Plattformen bleiben', keys == ['p1', 'n1', 'c1', 'f1'])
+
+    plugin.use_petlibro = False
+    removed = plugin.drop_disabled_platform_devices()
+    keys = [d.unique_id for d in plugin.devices]
+    check('das abgeschaltete Petlibro-Geraet ist weg',
+          removed == 1 and 'f1' not in keys, str(keys))
 
     plugin.use_meross = False
     plugin.use_netatmo = False
@@ -543,9 +552,83 @@ def test_single_dialog():
           'self.plugin._active_dialog is self' in src)
 
 
+# ---------------------------------------------------------------- Suche ----
+def test_search():
+    """Strg+F: die Geraete stehen auf der dritten Ebene.
+
+    Die Suche schaute nur auf Plattform und Kategorie - "plugs" fand
+    "Plugs (2)", ein Geraetename nie etwas. Das Handbuch versprach
+    "Strg + F: Geraet suchen".
+    """
+    print('== Strg+F findet Geraete ==')
+    spoken = []
+    beeps = []
+    env = {'log': Log(), '_': lambda s: s,
+           'ui': type('ui', (), {'message': staticmethod(spoken.append)}),
+           'tones': type('tones', (), {'beep': staticmethod(
+               lambda *a: beeps.append(a))})}
+    names = ('_searchable_items', '_find_device')
+    grab(os.path.join(BASE, 'device_dialog.py'), names, env)
+
+    class Dlg:
+        pass
+
+    for name in names:
+        setattr(Dlg, name, env[name])
+    tree = FakeTree()
+    platform = tree.add(tree.root, 'Meross devices (3)')
+    plugs = tree.add(platform, 'Plugs (2)')
+    coffee = tree.add(plugs, 'Kaffeemaschine (mss310)',
+                      {'type': 'device', 'device': Dev('c', 'Kaffeemaschine')})
+    tree.add(coffee, 'Status: on', {'type': 'info'})
+    lamp = tree.add(plugs, 'Stehlampe Wohnzimmer (mss310)',
+                    {'type': 'device', 'device': Dev('l', 'Stehlampe')})
+    tree.add(lamp, 'Turn Stehlampe off', {'type': 'action', 'action': 'toggle'})
+    strip = tree.add(plugs, 'Steckdosenleiste (mss425)',
+                     {'type': 'device', 'device': Dev('s', 'Leiste')})
+    outlet = tree.add(strip, 'Steckdosenleiste: Pumpe',
+                      {'type': 'device', 'device': Dev('s', 'Leiste'),
+                       'channel': 1})
+    netatmo = tree.add(tree.root, 'Netatmo devices (1)')
+    room = tree.add(netatmo, 'Room Bad (1)')
+    thermo = tree.add(room, 'Thermostat Bad (Thermostat)',
+                      {'type': 'device', 'device': Dev('t', 'Thermostat')})
+    tree.add(thermo, 'Temperature: 21.5°C', {'type': 'info'})
+
+    dlg = Dlg()
+    dlg.tree = tree
+    check('ein Geraet auf der dritten Ebene wird gefunden',
+          dlg._find_device('kaffeemaschine') and tree.selected is coffee,
+          str(tree.selected))
+    check('Gross- und Kleinschreibung zaehlen nicht',
+          dlg._find_device('STEHLAMPE') and tree.selected is lamp)
+    check('auch ein Ausgang einer Leiste',
+          dlg._find_device('pumpe') and tree.selected is outlet)
+    check('und ein Thermostat in seinem Raum',
+          dlg._find_device('thermostat') and tree.selected is thermo)
+    check('der Treffer wird sichtbar gemacht (Eltern aufgeklappt)',
+          thermo in tree.ensured)
+    check('die Ansage nennt den Treffer',
+          spoken and 'Thermostat Bad' in spoken[-1], str(spoken[-1:]))
+    tree.selected = NULL
+    check('Wertzeilen werden nicht durchsucht',
+          not dlg._find_device('21.5') and beeps, str(tree.selected))
+    tree.selected = NULL
+    dlg._find_device('steck')
+    first = tree.selected
+    dlg._find_device('steck')
+    check('dieselbe Suche noch einmal springt zum naechsten Treffer',
+          first is strip and tree.selected is outlet,
+          f'{first} -> {tree.selected}')
+    dlg._find_device('steck')
+    check('und faengt am Ende wieder vorne an', tree.selected is strip,
+          str(tree.selected))
+
+
 def main():
     test_identity()
     test_selection()
+    test_search()
     test_signature()
     test_disabled_platforms()
     test_no_double_announcement()

@@ -11,7 +11,7 @@ PLATFORM_LABELS; all filter/count/group call sites use these helpers.
 """
 
 # Order = display/count order (Meross first, historically).
-PLATFORMS = ('meross', 'netatmo', 'vesync', 'cozytouch')
+PLATFORMS = ('meross', 'netatmo', 'vesync', 'cozytouch', 'petlibro')
 
 # Brand names (untranslated) for announcements and tree labels.
 PLATFORM_LABELS = {
@@ -19,18 +19,18 @@ PLATFORM_LABELS = {
     'netatmo': 'Netatmo',
     'vesync': 'VeSync',
     'cozytouch': 'Cozytouch',
+    'petlibro': 'Petlibro',
 }
 
 # Platforms that sign in with email and password. Netatmo is missing on
 # purpose: its authorisation is granted in the browser (OAuth2), so a
 # refused login is not answered by typing a password again but by the
 # "Connect to Netatmo" button.
-PASSWORD_PLATFORMS = ('meross', 'vesync', 'cozytouch')
+PASSWORD_PLATFORMS = ('meross', 'vesync', 'cozytouch', 'petlibro')
 
 
 def platform_of(device):
-    """Returns the platform key ('meross'/'netatmo'/'vesync'/'cozytouch')
-    of a device wrapper.
+    """Returns the platform key (one of PLATFORMS) of a device wrapper.
 
     Meross is the fallback because Meross wrappers are the only ones
     that do not have to carry explicit is_* flags of the other platforms.
@@ -41,13 +41,15 @@ def platform_of(device):
         return 'vesync'
     if getattr(device, 'is_cozytouch', False):
         return 'cozytouch'
+    if getattr(device, 'is_petlibro', False):
+        return 'petlibro'
     return 'meross'
 
 
 def split_by_platform(devices):
     """Splits a device list into a dict {platform: [devices]}.
 
-    ALWAYS returns all four keys (possibly with an empty list) so
+    ALWAYS returns every platform key (possibly with an empty list) so
     callers do not have to check defensively.
     """
     result = {name: [] for name in PLATFORMS}

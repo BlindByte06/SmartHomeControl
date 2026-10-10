@@ -24,6 +24,8 @@ from .constants import (
     BEEP_ACTION, BEEP_ERROR,
 )
 from .history import get_history
+from .formatting import fmt_decimal
+from .errors import log_failure
 from .dialog_helpers import _beep
 
 log = _nvda_log
@@ -51,10 +53,10 @@ class _NetatmoDialogMixin:
         help_text += _("Valid: 5 to 30 degrees in 0.5°C steps.\n")
         if measured is not None:
             # Translators: Display of the measured room temperature.
-            help_text += _("Current room temperature: {temp}°C\n").format(temp=f"{measured:.1f}")
+            help_text += _("Current room temperature: {temp}°C\n").format(temp=fmt_decimal(measured, 1))
         if current is not None:
             # Translators: Display of the current target temperature.
-            help_text += _("Current target temperature: {temp}°C").format(temp=f"{current:.1f}")
+            help_text += _("Current target temperature: {temp}°C").format(temp=fmt_decimal(current, 1))
         info_label = wx.StaticText(dlg, label=help_text)
         sizer.Add(info_label, 0, wx.ALL, 8)
 
@@ -63,9 +65,10 @@ class _NetatmoDialogMixin:
         temp_label = wx.StaticText(dlg, label=_("&Temperature (°C):"))
         sizer.Add(temp_label, 0, wx.LEFT | wx.TOP, 8)
 
-        # Build the list from 5.0 to 30.0 in 0.5 steps
-        temp_values = [f"{t/2:.1f}" for t in range(10, 61)]  # 5.0 to 30.0
-        temp_ctrl = wx.Choice(dlg, choices=temp_values)
+        # Build the list from 5.0 to 30.0 in 0.5 steps - the numbers, and
+        # their labels written the way the interface language writes them.
+        temp_values = [t / 2 for t in range(10, 61)]  # 5.0 to 30.0
+        temp_ctrl = wx.Choice(dlg, choices=[fmt_decimal(t, 1) for t in temp_values])
         # Translators: Name/tooltip of the temperature selection list.
         temp_ctrl.SetName(_("Temperature"))
         # Translators: Label of the temperature field in the dialog that sets
@@ -73,15 +76,11 @@ class _NetatmoDialogMixin:
         temp_ctrl.SetToolTip(_("Choose target temperature in 0.5°C steps"))
         
         # Preselection based on the current temperature
-        if current is not None:
-            rounded = round(current * 2) / 2
-            target = f"{rounded:.1f}"
-            if target in temp_values:
-                temp_ctrl.SetSelection(temp_values.index(target))
-            else:
-                temp_ctrl.SetSelection(temp_values.index("20.0"))
+        rounded = round(current * 2) / 2 if current is not None else None
+        if rounded in temp_values:
+            temp_ctrl.SetSelection(temp_values.index(rounded))
         else:
-            temp_ctrl.SetSelection(temp_values.index("20.0"))
+            temp_ctrl.SetSelection(temp_values.index(20.0))
         sizer.Add(temp_ctrl, 0, wx.EXPAND | wx.LEFT | wx.RIGHT, 8)
         
         # Duration option: default duration or until a given time
@@ -169,108 +168,121 @@ class _NetatmoDialogMixin:
         dlg.SetSizer(sizer)
         sizer.Fit(dlg)
         
-        if dlg.ShowModal() == wx.ID_OK:
-            try:
-                selection = temp_ctrl.GetSelection()
-                if selection == wx.NOT_FOUND:
-                    tones.beep(300, 100)
-                    # Translators: Message when no temperature was selected.
-                    ui.message(_("Please choose a temperature"))
-                    dlg.Destroy()
-                    return
-                
-                temp = float(temp_values[selection])
-                
-                # Compute the end time
-                if permanent_cb.GetValue():
-                    endtime = None
-                else:
-                    hour_sel = hour_ctrl.GetSelection()
-                    minute_sel = minute_ctrl.GetSelection()
-                    selected_hour = int(hour_choices[hour_sel])
-                    selected_minute = int(minute_choices[minute_sel])
-                    
-                    # Assemble the end time as a datetime
-                    end_dt = now.replace(hour=selected_hour, minute=selected_minute, second=0, microsecond=0)
-                    
-                    # If the time has already passed today, use the next day
-                    if end_dt <= now:
-                        end_dt += datetime.timedelta(days=1)
-                    
-                    endtime = int(end_dt.timestamp())
-                
-                # Set the temperature via the Netatmo API
-                netatmo_api = self.plugin.netatmo_api
-                home_id = getattr(device, 'home_id', '')
-                room_id = getattr(device, 'room_id', '')
-                
-                if netatmo_api and home_id and room_id:
-                    netatmo_api.set_room_thermpoint(home_id, room_id, 'manual', temp, endtime=endtime)
-                    device._therm_setpoint = temp
-                    device._therm_setpoint_mode = 'manual'
-                    device._therm_setpoint_end_time = endtime
-                    _beep(BEEP_OFF)  # formerly 600,80 = success
-                    
-                    # Log to history
-                    history = get_history()
-                    details = f"{temp:.1f}°C"
-                    if endtime:
-                        details += f" bis {time.strftime('%H:%M', time.localtime(endtime))}"
-                    history.log_action(device, 'set_temp', details)
-                    
-                    # Confirmation message
-                    if endtime:
-                        end_str = time.strftime("%H:%M", time.localtime(endtime))
-                        # Translators: Confirmation with end time. {temp} =
-                        # temperature, {end} = time.
-                        ui.message(_("{name}: target temperature set to "
-                                     "{temp}°C until {end}").format(
-                            name=device.name, temp=f"{temp:.1f}", end=end_str))
-                    else:
-                        # Without an explicit end time: Netatmo uses the
-                        # default duration
-                        dur = getattr(device, '_therm_setpoint_default_duration', None)
-                        if dur:
-                            # Translators: Confirmation with default duration.
-                            # {minutes} = minutes.
-                            ui.message(_("{name}: target temperature set to "
-                                         "{temp}°C (default duration: "
-                                         "{minutes} minutes)").format(
-                                name=device.name, temp=f"{temp:.1f}", minutes=dur))
-                        else:
-                            # Translators: Confirmation without a duration.
-                            ui.message(_("{name}: target temperature set to "
-                                         "{temp}°C").format(
-                                name=device.name, temp=f"{temp:.1f}"))
-                    
-                    # Update the info in the tree
-                    sp_text = self._format_setpoint_text(temp, endtime)
-                    self.tree.SetItemText(item, sp_text)
-                    
-                    # Also update the device label in the tree (mode display)
-                    self._update_netatmo_device_label(device)
-                    # Fetch fresh data immediately (confirm end time and mode
-                    # from the API)
-                    self._refresh_netatmo_device_after_action(device)
-                elif not netatmo_api:
-                    tones.beep(200, 100)
-                    # Translators: Error message when the Netatmo API is not
-                    # initialized.
-                    ui.message(_("Netatmo API not available"))
-                else:
-                    tones.beep(200, 100)
-                    # Translators: Error message for missing Netatmo IDs.
-                    ui.message(_("Home or room ID missing"))
-            except ValueError:
-                tones.beep(300, 100)
-                # Translators: Message on invalid temperature selection.
-                ui.message(_("Please choose a valid temperature"))
-            except Exception as e:
-                _beep(BEEP_ERROR)
-                log.error(f"Netatmo thermostat error: {e}")
-                # Translators: Error message with detail text.
-                ui.message(_("Error setting temperature: {error}").format(error=str(e)[:60]))
+        if dlg.ShowModal() != wx.ID_OK:
+            dlg.Destroy()
+            return
+        selection = temp_ctrl.GetSelection()
+        if selection == wx.NOT_FOUND:
+            dlg.Destroy()
+            tones.beep(300, 100)
+            # Translators: Message when no temperature was selected.
+            ui.message(_("Please choose a temperature"))
+            return
+        temp = float(temp_values[selection])
+
+        # Compute the end time
+        if permanent_cb.GetValue():
+            endtime = None
+        else:
+            selected_hour = int(hour_choices[hour_ctrl.GetSelection()])
+            selected_minute = int(minute_choices[minute_ctrl.GetSelection()])
+            end_dt = now.replace(hour=selected_hour, minute=selected_minute,
+                                 second=0, microsecond=0)
+            # If the time has already passed today, use the next day
+            if end_dt <= now:
+                end_dt += datetime.timedelta(days=1)
+            endtime = int(end_dt.timestamp())
         dlg.Destroy()
+
+        netatmo_api = self.plugin.netatmo_api
+        home_id = getattr(device, 'home_id', '')
+        room_id = getattr(device, 'room_id', '')
+        if not netatmo_api:
+            tones.beep(200, 100)
+            # Translators: Error message when the Netatmo API is not
+            # initialized.
+            ui.message(_("Netatmo API not available"))
+            return
+        if not (home_id and room_id):
+            tones.beep(200, 100)
+            # Translators: Error message for missing Netatmo IDs.
+            ui.message(_("Home or room ID missing"))
+            return
+
+        # Every thermostat of the room follows the setting.
+        affected = self._netatmo_devices_in(home_id, room_id)
+        self.plugin._record_local_netatmo_action(affected)
+        # Stored language-neutrally: the number, and the end time after a
+        # bar. The history shows it in the language of the day - the text
+        # stored until now ("21.5°C bis 22:20") stayed German for good.
+        detail = f"{temp:.1f}"
+        if endtime:
+            detail += "|" + time.strftime('%H:%M', time.localtime(endtime))
+
+        def worker_done(_result):
+            self.plugin._record_local_netatmo_action(affected)
+            get_history().log_action(device, 'set_temp', detail)
+
+        def done(_result):
+            device._therm_setpoint = temp
+            device._therm_setpoint_mode = 'manual'
+            device._therm_setpoint_end_time = endtime
+            _beep(BEEP_OFF)  # formerly 600,80 = success
+            if endtime:
+                end_str = time.strftime("%H:%M", time.localtime(endtime))
+                # Translators: Confirmation with end time. {temp} =
+                # temperature, {end} = time.
+                ui.message(_("{name}: target temperature set to "
+                             "{temp}°C until {end}").format(
+                    name=device.name, temp=fmt_decimal(temp, 1), end=end_str))
+            else:
+                # Without an explicit end time: Netatmo uses the default
+                # duration
+                dur = getattr(device, '_therm_setpoint_default_duration', None)
+                if dur:
+                    # Translators: Confirmation with default duration.
+                    # {minutes} = minutes.
+                    ui.message(_("{name}: target temperature set to "
+                                 "{temp}°C (default duration: "
+                                 "{minutes} minutes)").format(
+                        name=device.name, temp=fmt_decimal(temp, 1), minutes=dur))
+                else:
+                    # Translators: Confirmation without a duration.
+                    ui.message(_("{name}: target temperature set to "
+                                 "{temp}°C").format(
+                        name=device.name, temp=fmt_decimal(temp, 1)))
+            try:
+                # Update the info in the tree
+                self.tree.SetItemText(item, self._format_setpoint_text(temp, endtime))
+            except Exception as e:
+                log.debug(f"Ignored error after setting the temperature: {e}")
+            # Also update the device label in the tree (mode display)
+            self._update_netatmo_device_label(device)
+            # Fetch fresh data (confirm end time and mode from the API)
+            self._refresh_netatmo_device_after_action(device)
+
+        def failed(error):
+            # Translators: Error message with detail text.
+            ui.message(_("Error setting temperature: {error}").format(
+                error=str(error)[:60]))
+
+        self._run_cloud_call(
+            "Netatmo thermostat",
+            lambda: netatmo_api.set_room_thermpoint(
+                home_id, room_id, 'manual', temp, endtime=endtime),
+            done, on_error=failed, worker_done=worker_done)
+
+    def _netatmo_devices_in(self, home_id, room_id=None):
+        """The uuids of the Netatmo devices of a home, or of one of its rooms.
+
+        What a command changes: the heating mode changes every thermostat of
+        the home, a setpoint every one in the room.
+        """
+        with self.plugin._devices_lock:
+            return [d.uuid for d in self.plugin.devices
+                    if getattr(d, 'is_netatmo', False)
+                    and getattr(d, 'home_id', None) == home_id
+                    and (room_id is None or getattr(d, 'room_id', None) == room_id)]
 
     def _format_setpoint_text(self, setpoint, end_time=None):
         """Formats the target temperature text for the tree incl. optional end time"""
@@ -279,7 +291,7 @@ class _NetatmoDialogMixin:
             return _("Set target temperature")
         # Translators: Display of the current target temperature in the device
         # tree.
-        text = _("Target temperature: {temp}°C").format(temp=f"{setpoint:.1f}")
+        text = _("Target temperature: {temp}°C").format(temp=fmt_decimal(setpoint, 1))
         if end_time and end_time > time.time():
             end_str = time.strftime("%H:%M", time.localtime(end_time))
             # Translators: End time suffix after the target temperature.
@@ -370,50 +382,22 @@ class _NetatmoDialogMixin:
                 import time as _time
                 _time.sleep(delay)
                 
-                # Fetch fresh data from the API
-                fresh_devices = netatmo_api.get_devices()
-                fresh_map = {d.uuid: d for d in fresh_devices}
-                
-                # Update all Netatmo devices in place
-                for dev in self.plugin.devices:
-                    if getattr(dev, 'is_netatmo', False):
-                        fresh = fresh_map.get(dev.uuid)
-                        if fresh:
-                            dev._dashboard_data = fresh._dashboard_data
-                            dev._therm_measured = fresh._therm_measured
-                            dev._therm_setpoint = fresh._therm_setpoint
-                            dev._therm_setpoint_mode = fresh._therm_setpoint_mode
-                            dev._therm_setpoint_end_time = fresh._therm_setpoint_end_time
-                            dev._boiler_status = fresh._boiler_status
-                            dev._schedule_zone_name = fresh._schedule_zone_name
-                            dev._therm_setpoint_default_duration = fresh._therm_setpoint_default_duration
-                            dev._anticipating = fresh._anticipating
-                            dev._open_window = fresh._open_window
-                            dev._next_schedule_change = fresh._next_schedule_change
-                            dev.is_offline = fresh.is_offline
-                            dev.raw_data = fresh.raw_data
-                
-                # Update the state tracking (prevents duplicate change
-                # announcements)
-                if hasattr(self.plugin, '_previous_netatmo_therm_states'):
-                    for dev in fresh_devices:
+                # A full pass, in place - the tree holds these objects.
+                with self.plugin._devices_lock:
+                    netatmo_devs = [d for d in self.plugin.devices
+                                    if getattr(d, 'is_netatmo', False)]
+                netatmo_api.update_device_status(netatmo_devs, full=True)
+
+                # The read-back is the new baseline of the comparison, built
+                # by the same function the poll uses (prevents the change
+                # made here from being announced as one made elsewhere).
+                states = getattr(self.plugin, '_previous_netatmo_therm_states', None)
+                if states is not None:
+                    for dev in netatmo_devs:
                         if getattr(dev, 'is_thermostat', False):
-                            # Normalization consistent with
-                            # _detect_netatmo_changes
-                            raw_et = dev._therm_setpoint_end_time
-                            norm_et = self.plugin._normalize_end_time(raw_et) if hasattr(self.plugin, '_normalize_end_time') else raw_et
-                            raw_sp = dev._therm_setpoint
-                            norm_sp = round(raw_sp, 1) if raw_sp is not None else None
-                            self.plugin._previous_netatmo_therm_states[dev.uuid] = {
-                                'setpoint': norm_sp,
-                                'mode': dev._therm_setpoint_mode,
-                                'end_time': norm_et,
-                                'zone_name': getattr(dev, '_schedule_zone_name', None),
-                                'boiler': getattr(dev, '_boiler_status', None),
-                                'anticipating': getattr(dev, '_anticipating', None),
-                                'open_window': getattr(dev, '_open_window', None),
-                            }
-                
+                            states[dev.uuid] = self.plugin._snapshot_netatmo_state(
+                                dev, states.get(dev.uuid))
+
                 # Update the UI on the main thread
                 if not self._is_destroyed:
                     wx.CallAfter(self._finish_netatmo_refresh, device)
@@ -481,37 +465,49 @@ class _NetatmoDialogMixin:
         else:
             dlg.SetSelection(0)
         
-        if dlg.ShowModal() == wx.ID_OK:
-            selection = dlg.GetSelection()
-            mode_key = mode_keys[selection]
-            mode_display = NETATMO_MODE_NAMES.get(mode_key, mode_key)
+        chosen = dlg.ShowModal() == wx.ID_OK
+        selection = dlg.GetSelection()
+        dlg.Destroy()
+        if not chosen:
+            return
+        mode_key = mode_keys[selection]
+        mode_display = NETATMO_MODE_NAMES.get(mode_key, mode_key)
+        # The heating mode is the home's: every thermostat in it changes.
+        affected = self._netatmo_devices_in(home_id)
+        self.plugin._record_local_netatmo_action(affected)
 
+        def worker_done(_result):
+            self.plugin._record_local_netatmo_action(affected)
+            # Mode key - the display translates it.
+            get_history().log_action(device, 'therm_mode', str(mode_key))
+
+        def done(_result):
+            device._therm_setpoint_mode = mode_key
+            _beep(BEEP_OFF)  # formerly 600,80 = success
+            # Translators: Confirmation after a heating mode change. {mode}
+            # = mode name.
+            ui.message(_("{name}: heating mode set to {mode}").format(
+                name=device.name, mode=mode_display))
             try:
-                netatmo_api.set_therm_mode(home_id, mode_key)
-                device._therm_setpoint_mode = mode_key
-                _beep(BEEP_OFF)  # formerly 600,80 = success
-                # Translators: Confirmation after a heating mode change. {mode}
-                # = mode name.
-                ui.message(_("{name}: heating mode set to {mode}").format(
-                    name=device.name, mode=mode_display))
-                # Mode key - the display translates it.
-                get_history().log_action(device, 'therm_mode', str(mode_key))
-                # Update the tree text
                 # Translators: Combined info+action label in the device tree.
                 self.tree.SetItemText(item, _("Heating mode: {mode} - press "
                                               "Enter to change").format(mode=mode_display))
-                # Update the device label in the tree (mode display in the
-                # name)
-                self._update_netatmo_device_label(device)
-                # Fetch fresh data immediately (the setpoint changes depending
-                # on the mode)
-                self._refresh_netatmo_device_after_action(device)
             except Exception as e:
-                _beep(BEEP_ERROR)
-                log.error(f"Netatmo heating mode error: {e}")
-                # Translators: Error message with detail text.
-                ui.message(_("Error setting heating mode: {error}").format(error=str(e)[:60]))
-        dlg.Destroy()
+                log.debug(f"Ignored error after setting the heating mode: {e}")
+            # Update the device label in the tree (mode display in the name)
+            self._update_netatmo_device_label(device)
+            # Fetch fresh data (the setpoint changes depending on the mode)
+            self._refresh_netatmo_device_after_action(device)
+
+        def failed(error):
+            # Translators: Error message with detail text.
+            ui.message(_("Error setting heating mode: {error}").format(
+                error=str(error)[:60]))
+
+        self._run_cloud_call(
+            "Netatmo heating mode",
+            lambda: netatmo_api.set_therm_mode(home_id, mode_key),
+            done, on_error=failed, worker_done=worker_done)
 
     def _handle_netatmo_switch_schedule(self, device, item):
         """Shows the dialog for switching the Netatmo heating schedule.
@@ -547,7 +543,7 @@ class _NetatmoDialogMixin:
                 return
             if isinstance(result, Exception):
                 _beep(BEEP_ERROR)
-                _nvda_log.error(f"Netatmo heating schedules error: {result}")
+                log_failure("Netatmo heating schedules error", result)
                 # Translators: Error message when the heating schedules cannot
                 # be fetched.
                 ui.message(_("Error loading heating schedules"))
@@ -586,35 +582,43 @@ class _NetatmoDialogMixin:
             )
             try:
                 dlg.SetSelection(current_idx)
-                if dlg.ShowModal() == wx.ID_OK:
-                    selection = dlg.GetSelection()
-                    sched = schedules[selection]
-                    try:
-                        netatmo_api.switch_home_schedule(home_id, sched['id'])
-                        # Drop the cache, otherwise the device menu keeps
-                        # showing the previous schedule for up to
-                        # HOMESDATA_CACHE_SECONDS.
-                        netatmo_api.invalidate_homesdata_cache()
-                        _beep(BEEP_OFF)
-                        # Translators: Success message when switching the
-                        # heating schedule.
-                        ui.message(_("{name}: heating schedule '{schedule}' "
-                                     "activated").format(
-                            name=device.name, schedule=sched['name'],
-                        ))
-                        get_history().log_action(device, 'switch_schedule', sched["name"])
-                        self._refresh_netatmo_device_after_action(device)
-                    except Exception as e:
-                        _beep(BEEP_ERROR)
-                        _nvda_log.error(f"Netatmo heating schedule error: {e}")
-                        # Translators: Error text when switching the heating
-                        # schedule.
-                        ui.message(_("Error switching heating schedule: "
-                                     "{error}").format(
-                            error=str(e)[:60],
-                        ))
+                chosen = dlg.ShowModal() == wx.ID_OK
+                selection = dlg.GetSelection()
             finally:
                 dlg.Destroy()
+            if not chosen:
+                return
+            sched = schedules[selection]
+            affected = self._netatmo_devices_in(home_id)
+            self.plugin._record_local_netatmo_action(affected)
+
+            def call():
+                netatmo_api.switch_home_schedule(home_id, sched['id'])
+                # Drop the cache, otherwise the device menu keeps showing the
+                # previous schedule for up to HOMESDATA_CACHE_SECONDS.
+                netatmo_api.invalidate_homesdata_cache()
+
+            def worker_done(_result):
+                self.plugin._record_local_netatmo_action(affected)
+                get_history().log_action(device, 'switch_schedule', sched["name"])
+
+            def done(_result):
+                _beep(BEEP_OFF)
+                # Translators: Success message when switching the heating
+                # schedule.
+                ui.message(_("{name}: heating schedule '{schedule}' "
+                             "activated").format(
+                    name=device.name, schedule=sched['name'],
+                ))
+                self._refresh_netatmo_device_after_action(device)
+
+            def failed(error):
+                # Translators: Error text when switching the heating schedule.
+                ui.message(_("Error switching heating schedule: "
+                             "{error}").format(error=str(error)[:60]))
+
+            self._run_cloud_call("Netatmo heating schedule", call, done,
+                                 on_error=failed, worker_done=worker_done)
 
         def worker():
             result = fetch_schedules()
@@ -634,30 +638,38 @@ class _NetatmoDialogMixin:
             ui.message(_("Netatmo API or home ID missing"))
             return
         
-        try:
+        affected = self._netatmo_devices_in(home_id)
+        self.plugin._record_local_netatmo_action(affected)
+
+        def call():
             # Set the room back to the schedule
             if room_id:
                 netatmo_api.set_room_thermpoint(home_id, room_id, 'home')
             # Also set the home mode to schedule
             netatmo_api.set_therm_mode(home_id, 'schedule')
+
+        def worker_done(_result):
+            self.plugin._record_local_netatmo_action(affected)
+            get_history().log_action(device, 'back_to_schedule', "")
+
+        def done(_result):
             device._therm_setpoint_mode = 'schedule'
             device._therm_setpoint_end_time = None
             _beep(BEEP_OFF)  # formerly 600,80 = success
             # Translators: Confirmation after returning to the heating
             # schedule.
             ui.message(_("{name}: back to schedule").format(name=device.name))
-            # Translators: History detail: schedule reactivated.
-            get_history().log_action(device, 'back_to_schedule', "")
             # Update the device label in the tree (mode display)
             self._update_netatmo_device_label(device)
-            # Fetch fresh data immediately (new setpoint depending on the
-            # schedule)
+            # Fetch fresh data (new setpoint depending on the schedule)
             self._refresh_netatmo_device_after_action(device)
-        except Exception as e:
-            _beep(BEEP_ERROR)
-            log.error(f"Netatmo schedule error: {e}")
+
+        def failed(error):
             # Translators: Generic error message with detail text.
-            ui.message(_("Error: {error}").format(error=str(e)[:60]))
+            ui.message(_("Error: {error}").format(error=str(error)[:60]))
+
+        self._run_cloud_call("Netatmo back to schedule", call, done,
+                             on_error=failed, worker_done=worker_done)
 
     def _compute_netatmo_thermostat_items(self, device):
         """Computes the ordered list of all tree items of a Netatmo thermostat.
@@ -708,7 +720,7 @@ class _NetatmoDialogMixin:
                     # Translators: Next schedule change with temperature.
                     nc_text = _("Next schedule change: {zone} ({temp}°C) at "
                                 "{time}").format(
-                        zone=nc_zone, temp=f"{nc_temp:.1f}", time=change_time_str)
+                        zone=nc_zone, temp=fmt_decimal(nc_temp, 1), time=change_time_str)
                 else:
                     # Translators: Next schedule change without temperature.
                     nc_text = _("Next schedule change: {zone} at {time}").format(
@@ -938,7 +950,7 @@ class _NetatmoDialogMixin:
                         # Translators: Next schedule change with temperature.
                         nc_text = _("Next schedule change: {zone} ({temp}°C) "
                                     "at {time}").format(
-                            zone=nc_zone, temp=f"{nc_temp:.1f}", time=change_time_str)
+                            zone=nc_zone, temp=fmt_decimal(nc_temp, 1), time=change_time_str)
                     else:
                         # Translators: Next schedule change without
                         # temperature.

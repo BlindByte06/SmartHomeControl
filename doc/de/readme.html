@@ -33,7 +33,7 @@ gespeichert.</p>
 <h2 id="inhalt">Inhalt</h2>
 <ul>
 <li><a href="#tastenkurzel">Tastenkürzel</a></li>
-<li><a href="#unterstutzte-plattformen-und-gerate">Unterstützte Plattformen und Geräte</a> (Cozytouch/Atlantic ist <strong>experimentell</strong>)</li>
+<li><a href="#unterstutzte-plattformen-und-gerate">Unterstützte Plattformen und Geräte</a> (Cozytouch/Atlantic und Petlibro sind <strong>experimentell</strong>)</li>
 <li><a href="#einrichtung">Einrichtung</a></li>
 <li><a href="#netatmo-redirect-uri-und-port">Netatmo: Redirect-URI und Port</a></li>
 <li><a href="#bedienung">Bedienung</a></li>
@@ -51,7 +51,11 @@ gespeichert.</p>
 <h2 id="tastenkurzel">Tastenkürzel</h2>
 <ul>
 <li><strong>NVDA + Umschalt + H</strong>: Smart-Home-Menü öffnen (Geräteübersicht)</li>
-<li><strong>NVDA + Strg + Umschalt + P</strong>: Status aller Geräte ansagen</li>
+<li><strong>NVDA + Strg + Umschalt + P</strong>: Zusammenfassung aller Geräte
+  ansagen – wie viele es sind, wie viele eingeschaltet, welche offline sind
+  und ein Wasseralarm. <strong>Zweimal gedrückt</strong> öffnet sich die
+  Liste aller Geräte mit ihrem Zustand in einem Lesefenster, Zeile für Zeile
+  und auf der Braillezeile lesbar.</li>
 </ul>
 <p>Der Einstellungs-Dialog ist über die Schaltfläche „Einstellungen (Alt+E)"
 im Geräte-Menü erreichbar.</p>
@@ -61,7 +65,9 @@ im Geräte-Menü erreichbar.</p>
 <li><strong>Strg + P</strong>: Plattform-Status – was gestört war und welche
   Geräte nicht geantwortet haben (siehe unten)</li>
 <li><strong>Strg + T</strong>: Statuszeile erneut ansagen</li>
-<li><strong>Strg + F</strong>: Gerät suchen</li>
+<li><strong>Strg + F</strong>: Gerät suchen – durchsucht Plattformen,
+  Kategorien, Geräte und die Ausgänge einer Steckdosenleiste. Dieselbe Suche
+  noch einmal springt zum nächsten Treffer.</li>
 <li><strong>Strg + B</strong>: das gewählte Gerät oder den gewählten Ausgang zu
 den Favoriten hinzufügen oder daraus entfernen</li>
 <li><strong>F1</strong>: Hilfe zum gewählten Gerät mit seinen Möglichkeiten</li>
@@ -132,7 +138,9 @@ im Geräte-Menü einstellbar".</p>
 <li><strong>Nicht schaltbar:</strong> Meross-Sensoren (Temperatur/Feuchte,
   Wasserleck) und Meross-Hubs; sämtliche Netatmo-Geräte; die
   Cosori-Heißluftfritteuse, die sich nicht ein- und ausschalten, sondern nur
-  mit einem Garprogramm bedienen lässt. Thermostate und
+  mit einem Garprogramm bedienen lässt; Petlibro-Futterautomaten und
+  -Trinkbrunnen, damit eine zweimal gedrückte Ziffer nie eine Mahlzeit
+  auslöst. Thermostate und
   Heizkörperventile lassen sich zwar verstellen, aber nicht ein- und
   ausschalten; Wetterstation und Raumluft-Monitor sind reine Anzeige. Ihren
   Status sagt der erste Druck wie gewohnt an – einstellen lassen sie sich im
@@ -334,8 +342,13 @@ Wassertemperatur liefert die Cloud bei diesem Modell nicht), Heizmodus,
 Boost-Funktion (inklusive experimentell einstellbarer Boost-Laufzeit),
 Abwesenheits-Modus mit planbarem Zeitraum, verfügbarer
 Warmwasservorrat in Prozent sowie Anzeige der heute programmierten
-Heizzeiten und des Status von Elektro-Heizstab und Niedertarif. Die
+Heizzeiten, ob das Gerät gerade heizt und ob der Niedertarif gilt. Die
 Nennkapazität (in Litern) lässt sich in den Einstellungen hinterlegen.</p>
+<p>„Heizt gerade" sagt nur, dass das Gerät heizt, nicht womit: Die Cloud meldet
+dasselbe, ob die Wärmepumpe oder der Elektro-Heizstab arbeitet. Wer es wissen
+will, liest den Energieverbrauch im Abstand einer Stunde zweimal ab - die
+Wärmepumpe allein braucht höchstens 0,7 kWh in der Stunde, mit dem Heizstab
+sind es bis zu 2,5.</p>
 <p>Die drei Heizmodi:</p>
 <ul>
 <li><strong>Manuell</strong> – heizt dauerhaft auf die eingestellte Zieltemperatur.</li>
@@ -354,15 +367,130 @@ Nennkapazität (in Litern) lässt sich in den Einstellungen hinterlegen.</p>
   nicht – möglich, denn dieses Schreiben ist bisher an einem einzigen
   Modell erprobt –, wird das gesagt, statt einen Erfolg zu melden.</p></li>
 </ul>
+<h3 id="petlibro">Petlibro (experimentell)</h3>
+<p><strong>Experimentell.</strong> Getestet mit dem Futterautomaten Air Smart
+Feeder (PLAF108) und dem Trinkbrunnen Dockstream 2 Cordless (PLWF116). Die
+Anbindung nutzt die Cloud der Petlibro-App so, wie die Community sie
+erschlossen hat; Petlibro kann sie jederzeit ändern. Andere Petlibro-
+Futterautomaten und -Brunnen erscheinen mit denselben Funktionen, soweit sie
+dieselben Werte melden; andere Produkte (Katzentoiletten, Kameras) zeigen nur
+ihren Status. Der Geräteeintrag trägt die Modellnummer in Klammern, etwa
+„Air Smart Feeder (PLAF108)“.</p>
+<p>Mengen stehen in Portionen (Futterautomat) und Millilitern (Brunnen),
+gleich welche Einheit in der Petlibro-App eingestellt ist: Die App rechnet nur
+für die Anzeige um, die Erweiterung spricht in dem, was die Geräte wirklich
+melden.</p>
+<h4 id="petlibro-futterautomat">Futterautomaten</h4>
+<ul>
+<li><strong>Status:</strong> ob genug Futter da ist, was heute insgesamt
+  gegeben wurde (geplante Mahlzeiten und Fütterungen von Hand), die letzte und
+  die nächste Fütterung, Akku und Netzteil. Die Zeile „Geplante Mahlzeiten
+  heute“ zählt nur die Mahlzeiten des Fütterungsplans.</li>
+<li><strong>Jetzt füttern:</strong> Enter öffnet eine Liste der Mengen
+  (höchstens so viel, wie der Automat auf einmal gibt – beim Air Smart Feeder
+  16 Portionen); vorausgewählt ist die zuletzt gewählte Menge. Der Befehl geht
+  <strong>einmal</strong> hinaus und wird nie wiederholt. Danach wartet die
+  Erweiterung auf den eigenen Eintrag des Automaten zu dieser Fütterung und
+  sagt an, was der Automat als ausgegeben meldet. Kommt keine Bestätigung –
+  keine Verbindung, oder der Automat hat der Cloud nicht geantwortet –, wird
+  gesagt, dass unbekannt ist, ob Futter ausgegeben wurde. Die letzte Fütterung
+  im Geräteeintrag zeigt es kurz darauf; vor einem erneuten Füttern lohnt der
+  Blick dorthin.</li>
+<li><strong>Fütterungsplan:</strong> schaltet alle geplanten Mahlzeiten ein
+  oder aus.</li>
+<li><strong>Mahlzeiten:</strong> Enter öffnet eine Liste mit einer Zeile je
+  Mahlzeit (Name, Uhrzeit, Portionen, Wochentage, wenn nicht täglich, Stand
+  von heute). Eine Mahlzeit lässt sich nur für heute überspringen, ausschalten,
+  ändern (Uhrzeit, Portionen, Wochentage, Name und – bei Automaten mit
+  Lautsprecher – der Essensruf; der Air Smart Feeder hat keinen),
+  hinzufügen oder löschen – das Löschen fragt vorher nach. Auch alle
+  Mahlzeiten von heute lassen sich auf einmal aussetzen. Die Wochentage sind
+  sieben Kontrollkästchen; eine neue Mahlzeit beginnt ohne Haken. Für eine
+  tägliche Mahlzeit werden alle sieben angekreuzt; bleibt keiner angehakt,
+  wird sie einmal gegeben.</li>
+<li><strong>Trockenmittel:</strong> die Erinnerung zum Wechseln, siehe
+  unten.</li>
+<li><strong>Licht:</strong> die Kontrollleuchte ein oder aus.</li>
+</ul>
+<p><strong>Das Trockenmittel.</strong> Ein kleines Beutelchen Silikagel hält
+das Trockenfutter im Behälter trocken und knusprig und schützt es vor
+Schimmel. Beim Air Smart Feeder sitzt es in der Halterung an der Unterseite
+des Deckels vom Futterbehälter – nicht lose zwischen dem Futter. Die Halterung
+ist klein: Petlibro nennt Beutelchen zu 0,5 Gramm, höchstens 2,8 × 1,6 cm,
+wie sie Schuhen oder Elektronik beiliegen (Suchbegriff „Silica Gel 0,5 g“).
+Die größeren Trockenmittelbeutel von Petlibro selbst sind für die
+Granary-Automaten gedacht und passen hier nicht. Petlibro empfiehlt, das
+Beutelchen alle zwei Wochen zu wechseln.</p>
+<p>Die Erinnerung in der App und in der Erweiterung zählt nur Tage auf dem
+Petlibro-Server – sie zählt weiter, während der Automat ausgeschaltet ist, und
+weiß nicht, ob ein Beutelchen gewechselt wurde. Vom letzten Zurücksetzen an
+zählt sie den Wechselabstand herunter, beim Air Smart Feeder 14 Tage:</p>
+<ul>
+<li>„Wechsel in 3 Tagen“: Das Beutelchen ist in drei Tagen dran.</li>
+<li>„Wechsel heute fällig“: Die 14 Tage laufen heute ab.</li>
+<li>„Seit 1 Tag überfällig“: Die 14 Tage sind seit gestern um, das
+  Beutelchen hätte gestern gewechselt werden sollen. Das letzte Zurücksetzen
+  liegt 15 Tage zurück.</li>
+<li>„Seit 27 Tagen überfällig“ entsprechend: Das letzte Zurücksetzen liegt 41
+  Tage zurück.</li>
+</ul>
+<p>Nach dem Wechsel setzt Enter auf der Zeile die Erinnerung zurück; vorher
+kommt eine Rückfrage, in der „Abbrechen“ vorausgewählt ist.</p>
+<h4 id="petlibro-trinkbrunnen">Trinkbrunnen</h4>
+<ul>
+<li><strong>Status:</strong> Wasserstand in Prozent und Millilitern, was
+  heute (und gestern) getrunken wurde, Akku und Ladezustand.</li>
+<li><strong>Einzelne Trinkvorgänge:</strong> Enter auf der Trink-Zeile
+  öffnet eine Liste der Trinkvorgänge des Tages – Uhrzeit, Menge und wie lange
+  jeder dauerte – für heute und die sechs Tage davor.</li>
+<li><strong>Wassermodus:</strong> aus, Dauerbetrieb oder – bei Brunnen mit
+  Anwesenheitssensor wie dem Dockstream 2 Cordless – Wasser, sobald der Sensor
+  ein Tier in der Nähe oder weiter entfernt bemerkt. Petlibro-Brunnen ohne
+  Anwesenheitssensor – der Dockstream Smart Fountain (PLWF105), der Dockstream
+  RFID (PLWF305) und der Dockstream 2 mit Netzteil (PLWF106) – bieten statt
+  der Sensor-Modi einen Intervallbetrieb: Das Wasser fließt eine eingestellte
+  Zeit lang und pausiert dann eine eingestellte Zeit; beide Zeiten werden in
+  der Petlibro-App festgelegt und von der Erweiterung übernommen. Diese
+  Brunnen sind mit der Erweiterung nicht getestet. Dauerbetrieb steht nur am
+  Netzteil zur Wahl, denn im Akkubetrieb gibt der Brunnen laut Petlibro nur
+  dann Wasser, wenn der Sensor ein Tier bemerkt. Ist trotzdem Dauerbetrieb
+  gespeichert, während er auf Akku läuft, fließt gar kein Wasser; der
+  Geräteeintrag sagt das dann. „Nah“ ist
+  die Voreinstellung von Petlibro, „fern“ macht den Sensor empfindlicher, er
+  reagiert also schon auf ein Tier in größerem Abstand.</li>
+<li><strong>Laufzeit:</strong> wie lange das Wasser fließt, nachdem der
+  Sensor ein Tier bemerkt hat – 45, 60, 75 oder 90 Sekunden, wie in der
+  Petlibro-App. Länger lässt mehr Zeit zum Trinken, kürzer schont den Akku.
+  Die Zeile steht nur in den Sensor-Modi, denn die Laufzeit gehört zu ihnen.
+  Ändern lässt sie sich laut Petlibro ab Firmware 0.3.25; bei älterer
+  Firmware zeigt die Zeile den Wert nur an. Im Akkubetrieb kann die
+  Bestätigung einige Minuten dauern, wie bei jeder Änderung dort.</li>
+<li><strong>Wasser-Warnung:</strong> die Menge, unter der der Brunnen sein
+  Wasser als knapp meldet, in Millilitern (650 bis 3000, wie in der App).</li>
+<li><strong>Filter und Reinigung:</strong> die beiden Erinnerungen. Beide
+  werden jeweils nach dem Filterwechsel oder der Reinigung mit Enter
+  zurückgesetzt – auch hier mit Rückfrage.</li>
+<li><strong>Licht:</strong> die Kontrollleuchte ein oder aus.</li>
+</ul>
+<p><strong>Im Akkubetrieb dauern Änderungen.</strong> Ein Dockstream 2
+Cordless im Akkubetrieb wacht nur ab und zu auf. Die Cloud nimmt eine Änderung
+sofort an, hört aber nicht rechtzeitig vom Brunnen; die Änderung kommt an,
+wenn er aufwacht, nach etwa zwei Minuten. Die Erweiterung sagt, dass die
+Änderung unterwegs ist, wartet darauf und meldet sie, sobald der Brunnen sie
+anzeigt (oder nach zehn Minuten, dass sie nicht angekommen ist).</p>
+<p>Eine Favoriten-Ziffer sagt den Status eines Petlibro-Geräts an, schaltet
+es aber nie – eine zweimal gedrückte Ziffer darf keine Mahlzeit auslösen.</p>
 <hr />
 <h2 id="einrichtung">Einrichtung</h2>
 <p>Voraussetzung: Die Geräte müssen vorab einmal mit der jeweiligen
-Hersteller-App (Meross, Netatmo, VeSync, Cozytouch) eingerichtet worden
+Hersteller-App (Meross, Netatmo, VeSync, Cozytouch, Petlibro) eingerichtet worden
 sein – die Erweiterung übernimmt sie dann aus dem Konto.</p>
 <p>Das Menü wird mit <strong>NVDA + Umschalt + H</strong> geöffnet. Ohne
 bestehende Anmeldung öffnet sich automatisch der Einstellungs-Dialog. Dort
 die gewünschten Plattformen aktivieren und die Zugangsdaten eintragen –
-Details pro Plattform in den folgenden Abschnitten. Zum Schluss: im Tab
+Details pro Plattform in den folgenden Abschnitten. Eine Plattform, für die
+neue Zugangsdaten eingetragen werden, schaltet das Speichern selbst ein, auch
+ohne vorheriges Häkchen im Tab „Allgemein". Zum Schluss: im Tab
 „Allgemein" optional „Automatische Anmeldung" aktivieren (die Verbindung wird
 dann bei jedem NVDA-Start automatisch aufgebaut) und speichern. Die Geräte werden geladen
 und stehen sofort im Menü zur Verfügung – ein NVDA-Neustart ist nicht
@@ -404,6 +532,25 @@ eintragen.</p>
 Litern, damit der Vorrat zusätzlich in Litern geschätzt wird. Der Reiter ist
 im Einstellungsdialog als „experimentell“ gekennzeichnet – siehe
 <a href="#reifegrad-und-hinweise">Reifegrad und Hinweise</a>.</p>
+<h3 id="petlibro-einrichten">Petlibro einrichten (experimentell)</h3>
+<p><strong>Wichtig:</strong> Petlibro erlaubt je Konto nur eine Anmeldung zur
+selben Zeit. Die Anmeldung der Erweiterung meldet die Petlibro-App auf dem
+Handy vom selben Konto ab, und eine Anmeldung auf dem Handy beendet die
+Sitzung der Erweiterung (die sich dann von selbst neu anmeldet, was wiederum
+das Handy abmeldet). Der Ausweg ist ein zweites Petlibro-Konto:</p>
+<ol>
+<li>Ein zweites Konto <strong>in der Petlibro-App</strong> anlegen – ein auf
+  der Website angelegtes Konto wird für diesen Zugang nicht angenommen.</li>
+<li>Im Hauptkonto die Futterautomaten und Brunnen für das zweite Konto
+  freigeben und die Freigabe im zweiten Konto annehmen.</li>
+<li>Im Tab „Petlibro“ der Erweiterung E-Mail und Passwort des
+  <strong>zweiten</strong> Kontos eintragen und die Verbindung testen.</li>
+</ol>
+<p>Für das zweite Konto empfiehlt sich ein Passwort, das nirgends sonst
+verwendet wird. Petlibro nimmt das Passwort – bei der App wie bei der
+Erweiterung – als MD5-Prüfsumme ohne Salz entgegen. Die Übertragung ist
+verschlüsselt, aber gerät die Prüfsumme je in fremde Hände, lässt sich ein
+schwaches Passwort daraus leicht zurückgewinnen.</p>
 <hr />
 <h2 id="netatmo-redirect-uri-und-port">Netatmo: Redirect-URI und Port</h2>
 <h3 id="was-ist-die-redirect-uri">Was ist die Redirect-URI?</h3>
@@ -455,7 +602,9 @@ sind Zeitpunkt, Gerät, Plattform, Ereignis und Herkunft. Die Spalte Herkunft
 benennt, woher die Aktion kam: „du" bei einer Aktion über diese Erweiterung,
 „extern" bei Hersteller-App, Sprachassistent oder Schalter am Gerät, und
 „automatisch" bei Einträgen, welche die Erweiterung selbst festhält, etwa einem
-Wasseralarm.</p>
+Wasseralarm, und bei dem, was ein Gerät von sich aus tut: ein Netatmo-Heizplan,
+der um 22 Uhr in seine Nachtzone wechselt („Zeitplan-Zone gewechselt"), oder
+ein Boost der Wärmepumpe, der nach seiner Dauer abläuft („Boost beendet").</p>
 <p><strong>Messwerte</strong> – statt tausender Einzelwerte eine Zeile je Gerät
 und Größe: Gerät, Größe, letzter Wert und Zeitpunkt der letzten Messung. Die
 Eingabetaste auf einer Zeile öffnet die Einzelheiten – kleinster und größter
@@ -501,7 +650,8 @@ die Hersteller-App, Alexa oder den Schalter am Gerät geschaltet wird. Im Tab
 „Benachrichtigungen" lässt sich pro Plattform und Ereignistyp festlegen, was
 angesagt wird (z. B. Schalten, Modus, Lüfterstufe, Luftqualität, Filter,
 Thermostat-Soll, Kessel-Status). Eigene Aktionen im Dialog werden nicht
-doppelt gemeldet.</p>
+doppelt gemeldet. Im Verlauf steht eine Änderung von außen in jedem Fall,
+auch wenn ihre Ansage abgeschaltet ist.</p>
 <p>Die Wassersensoren sind ein Sonderfall: ein MS400 oder MS405 meldet einen
 Zustand, keinen Messwert. Ein Wechsel wird mit einem Fehlerton angesagt und als
 Ereignis im Verlauf festgehalten („Wasseralarm" oder „Kein Wasser mehr
@@ -513,10 +663,24 @@ voreingestellt an; abschalten lässt es sich unter Benachrichtigungen → Meross
 keine Änderung, und der Hauptschalter für externe Änderungen betrifft sie
 nicht. Vier Schalter: überhaupt ansagen, nicht mehr erreichbar, nur teilweise
 erreichbar, wieder erreichbar. Voreingestellt sind alle an.</p>
+<p>Angesagt wird eine Störung erst, wenn sie zwei Minuten anhält: die Clouds
+setzen mehrmals am Tag für weniger als eine Minute aus, und jeder dieser
+Aussetzer hat sonst zweimal unterbrochen – beim Ausfall und bei der Rückkehr.
+Die Rückkehr wird nur angesagt, wenn vorher die Störung angesagt wurde. Im
+Gerätebaum, in der Statuszeile und im Plattform-Status steht eine Störung
+sofort.</p>
 <p>Was hier abgeschaltet ist, wird trotzdem festgehalten: der Gerätebaum, die
 Statuszeile und der <a href="#plattform-status">Plattform-Status</a> zeigen es
 weiterhin. „Aus" heißt also „nicht dazwischenreden", nicht „nicht
 mitschreiben".</p>
+<p>Petlibro hat einen eigenen Abschnitt. Voreingestellt an: fehlgeschlagene
+Fütterungen und Störungen eines Geräts, Fütterungen von anderswo (App, Taste
+am Automaten), knappes Futter, knappes Wasser, fälliges Trockenmittel, fälliger
+Filter oder fällige Reinigung, schwacher Akku, ein Gerät geht offline oder
+kommt zurück, sowie anderswo geänderte Einstellungen (Fütterungsplan,
+Wassermodus, Licht). Voreingestellt aus: jede geplante Mahlzeit, denn das wären
+mehrere Ansagen am Tag. Fütterungen und fehlgeschlagene Fütterungen landen in
+jedem Fall im Verlauf.</p>
 <hr />
 <h2 id="hinweise-zu-cloud-limits">Hinweise zu Cloud-Limits</h2>
 <p>Meross begrenzt die Cloud auf <strong>200 Nachrichten pro Stunde und
@@ -554,6 +718,12 @@ vorübergehend ausfallen.</p>
   nur die Warmwasser-Wärmepumpe Austria Email Revolution Evo 3. Andere
   Cozytouch-Geräte (z. B. Heizkörper, Klimageräte) werden derzeit fälschlich
   ebenfalls als Warmwasser-Wärmepumpe dargestellt und sind nicht nutzbar.</li>
+<li><strong>Petlibro (experimentell):</strong> Das Protokoll ist inoffiziell;
+  was die Erweiterung darüber weiß, stammt aus der Community-Integration für
+  Home Assistant und wurde an einem echten Konto nachgeprüft. Getestet mit dem
+  Air Smart Feeder (PLAF108) und dem Trinkbrunnen Dockstream 2 Cordless
+  (PLWF116). Petlibro erlaubt je Konto nur eine Anmeldung zur selben Zeit –
+  siehe <a href="#petlibro-einrichten">Petlibro einrichten</a>.</li>
 </ul>
 <hr />
 <h2 id="datenschutz-und-sicherheit">Datenschutz und Sicherheit</h2>
@@ -563,26 +733,49 @@ vorübergehend ausfallen.</p>
   NVDA-Konfiguration, sondern in einer eigenen Datei neben der Erweiterung –
   so geraten sie auch nicht ins Protokoll. Passwörter und Tokens liegen dort
   <strong>verschlüsselt</strong> und lassen sich nur auf dem Rechner und im
-  Benutzerkonto wieder lesen, auf dem sie gespeichert wurden; die
-  E-Mail-Adressen stehen im Klartext, denn an sie richtet sich die Anmeldung.
+  Benutzerkonto wieder lesen, auf dem sie gespeichert wurden – seit 26.10.1
+  auch die E-Mail-Adressen; ältere Einträge im Klartext werden beim nächsten
+  Speichern verschlüsselt.
   Die Datei wird beim Schreiben von den geerbten Zugriffsrechten
   ausgenommen, damit andere Konten desselben Rechners sie nicht lesen
   können.</li>
+<li>Wird die Erweiterung entfernt, löscht sie die Datei mit den
+  Zugangsdaten mit; bei einem Update bleibt sie erhalten. Verlauf, Messwerte,
+  Energiedaten und Favoriten bleiben als eigene Aufzeichnungen liegen – im
+  Ordner der Erweiterungen als <code>SmartHomeControl_*.json</code> – und
+  lassen sich dort von Hand löschen.</li>
 <li>Die Kommunikation läuft direkt mit den jeweiligen Hersteller-Clouds – es
   werden keine Daten an Dritte gesendet.</li>
+<li>Eine frühe Version hat in der NVDA-Konfiguration einen eigenen Abschnitt
+  <code>[merossSmartControl]</code> angelegt, in dem das Netatmo-Passwort und
+  das Client-Secret im Klartext standen. NVDA schreibt seine Konfiguration
+  bei jedem Start ins Protokoll, und so standen beide in jedem Protokoll. Die
+  Erweiterung entfernt diesen Abschnitt beim Start. Wurde von einem solchen
+  Rechner je ein NVDA-Protokoll oder die <code>nvda.ini</code> weitergegeben,
+  sollte das Netatmo-Passwort geändert werden.</li>
+<li>Netatmo, VeSync, Cozytouch und Petlibro verbinden sich über die
+  Netzwerk-Bibliotheken, die NVDA selbst mitbringt (requests, urllib3,
+  certifi); deren Sicherheitsupdates kommen mit NVDA-Updates. Meross nutzt
+  eine mitgelieferte Bibliothek (aiohttp). Welche Versionen laufen, steht
+  nach jeder Anmeldung im NVDA-Protokoll.</li>
 </ul>
 <hr />
 <h2 id="fehlerbehebung">Fehlerbehebung</h2>
 <ul>
 <li><strong>Keine Geräte sichtbar:</strong> Zugangsdaten und aktivierte
   Plattform im Einstellungs-Dialog prüfen; danach speichern (die Anmeldung
-  läuft im Hintergrund).</li>
+  läuft im Hintergrund). Scheitert die Anmeldung am Netz – etwa weil NVDA vor
+  dem WLAN startet –, versucht die Erweiterung es nach 30 Sekunden, nach einer
+  und nach zwei Minuten und danach alle fünf Minuten erneut und sagt an,
+  sobald die Geräte bereit sind. Ein abgelehntes Passwort wird nicht
+  wiederholt.</li>
 <li><strong>Gerät offline:</strong> Prüfen, ob das Gerät in der Hersteller-App
   erreichbar ist.</li>
 <li><strong>Eine Plattform meldet „nicht erreichbar":</strong> meist eine
   vorübergehende Cloud-/Netzwerkstörung – die Erweiterung verbindet sich
   automatisch wieder und sagt an, sobald die Plattform wieder verbunden
-  ist. Die Ansage kommt nur einmal; nachsehen lässt sich der Zustand jederzeit
+  ist. Die Ansage kommt nur einmal und erst, wenn die Störung zwei Minuten
+  anhält; nachsehen lässt sich der Zustand jederzeit
   an der Plattform-Zeile im Gerätebaum („Netatmo-Geräte (7) – seit 11:30 nicht
   erreichbar"), in der Statuszeile (Strg + T) und in der Verbindungsdiagnose.
   Sind die Werte darunter merklich alt geworden, steht an derselben Zeile

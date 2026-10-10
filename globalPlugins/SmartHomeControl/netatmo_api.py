@@ -39,12 +39,14 @@ if "_" not in globals():  # fallback if initTranslation() fails
     def _(s):
         return s
 
+from .formatting import fmt_decimal, fmt_number
+
 from .constants import (
     NETATMO_AUTH_URL, NETATMO_TOKEN_URL, NETATMO_API_BASE,
     NETATMO_REDIRECT_HOST, NETATMO_REDIRECT_PORT, NETATMO_REDIRECT_PATH,
     netatmo_redirect_uri,
     NETATMO_DEFAULT_SCOPES, NETATMO_MODE_NAMES, HOMESDATA_CACHE_SECONDS,
-    NETATMO_FULL_REFRESH_SECONDS,
+    NETATMO_FULL_REFRESH_SECONDS, NETATMO_ZONE_NAMES,
 )
 
 # Local aliases for backward compatibility
@@ -110,7 +112,10 @@ class NetatmoDevice:
         self._therm_setpoint_mode = None  # 'schedule', 'manual', 'away', 'hg', 'max'
         self._therm_setpoint_end_time = None  # Unix timestamp when the manual setpoint ends
         self._boiler_status = None  # True/False
-        self._schedule_zone_name = None  # active schedule zone name (e.g. 'Komfort', 'Eco', 'Nacht')
+        self._schedule_zone_name = None  # active schedule zone name, translated (e.g. 'Komfort', 'Eco', 'Nacht')
+        # The same zone as Netatmo names it - for the history, which never
+        # stores translated text (see change_detection._EXTERNAL_ACTIONS).
+        self._schedule_zone_raw = None
         self._therm_setpoint_default_duration = None  # default duration of manual setpoints in minutes
         self._anticipating = None  # True/False - pre-heating active (heats early to reach the target temp in time)
         self._open_window = None  # True/False - open window detected (heating paused)
@@ -274,12 +279,12 @@ class NetatmoDevice:
 
         temp = self.get_temperature()
         if temp is not None:
-            parts.append(f"{temp}°C")
+            parts.append(f"{fmt_decimal(temp, 1)}°C")
 
         humidity = self.get_humidity()
         if humidity is not None:
             # Translators: Status announcement: relative humidity.
-            parts.append(_("{value}% humidity").format(value=humidity))
+            parts.append(_("{value}% humidity").format(value=fmt_number(humidity)))
 
         co2 = self.get_co2()
         if co2 is not None:
@@ -291,12 +296,12 @@ class NetatmoDevice:
 
         pressure = self.get_pressure()
         if pressure is not None:
-            parts.append(f"{pressure} mbar")
+            parts.append(f"{fmt_decimal(pressure, 1)} mbar")
 
         rain = self.get_rain()
         if rain is not None:
             # Translators: Status announcement: rain amount.
-            parts.append(_("{value} mm rain").format(value=rain))
+            parts.append(_("{value} mm rain").format(value=fmt_number(rain)))
 
         wind = self.get_wind_strength()
         if wind is not None:
@@ -312,7 +317,7 @@ class NetatmoDevice:
         if setpoint is not None:
             # Translators: Status announcement: target temperature of a
             # thermostat.
-            parts.append(_("Target: {value:.1f}°C").format(value=setpoint))
+            parts.append(_("Target: {temp}°C").format(temp=fmt_decimal(setpoint, 1)))
         # Show the heating mode (thermostats only)
         mode = self.get_setpoint_mode()
         if mode:
@@ -370,9 +375,9 @@ class NetatmoDevice:
                 if temp is not None:
                     # Translators: Status announcement: next schedule change
                     # (zone, temperature, time).
-                    nc_text = _("Next change: {zone} ({temp:.1f}°C) at {time}").format(
+                    nc_text = _("Next change: {zone} ({temp}°C) at {time}").format(
                         zone=next_change.get('zone_name', ''),
-                        temp=temp,
+                        temp=fmt_decimal(temp, 1),
                         time=change_str)
                 else:
                     # Translators: Status announcement: next schedule change
@@ -398,6 +403,28 @@ class NetatmoDevice:
     def _update_status(self):
         """Compatibility stub (Netatmo needs no local status update)"""
 
+    # The values a poll brings, taken over by take_values_from(). One list
+    # instead of three copies of it: the scheduler, the dialog and the full
+    # status pass each kept their own, and the dialog's had already lost
+    # the name of the active schedule.
+    _POLLED_FIELDS = (
+        '_dashboard_data', '_therm_measured', '_therm_setpoint',
+        '_therm_setpoint_mode', '_therm_setpoint_end_time', '_boiler_status',
+        '_schedule_zone_name', '_schedule_zone_raw',
+        '_therm_setpoint_default_duration', '_anticipating', '_open_window',
+        '_next_schedule_change', '_active_schedule_name', 'is_offline',
+        'raw_data',
+    )
+
+    def take_values_from(self, fresh):
+        """Copies what a fresh poll read into this device, in place.
+
+        In place because the device tree and the favourites hold on to this
+        object - a new one would leave them showing the old values.
+        """
+        for name in self._POLLED_FIELDS:
+            setattr(self, name, getattr(fresh, name, None))
+
     @staticmethod
     def _translate_zone_name(name):
         """Translates default Netatmo zone names.
@@ -408,20 +435,7 @@ class NetatmoDevice:
         """
         if not name:
             return name
-        # Translators: Translations of Netatmo's default zone names.
-        translations = {
-            'Comfort': _("Comfort"),
-            'Confort': _("Comfort"),
-            'Comfort+': _("Comfort+"),
-            'Comfort +': _("Comfort+"),
-            'Confort+': _("Comfort+"),
-            'Confort +': _("Comfort+"),
-            'Night': _("Night"),
-            'Eco': _("Eco"),
-            'Away': _("Away"),
-            'Frost Guard': _("Frost guard"),
-        }
-        return translations.get(name, name)
+        return NETATMO_ZONE_NAMES.get(name, name)
 
 
 # ============================================================
@@ -485,7 +499,7 @@ class _OAuthCallbackHandler(BaseHTTPRequestHandler):
             self.wfile.write(
                 '<html><body style="font-family:sans-serif;text-align:center;padding:40px">'
                 '<h1>Authorization successful</h1>'
-                '<p>You can close this window now and return to NVDA.</p>'
+                '<p>This window can be closed now; NVDA continues.</p>'
                 '</body></html>'.encode('utf-8')
             )
         elif 'error' in params:
@@ -511,6 +525,15 @@ class _OAuthCallbackHandler(BaseHTTPRequestHandler):
 
     def log_message(self, format, *args):
         """Suppress HTTP server logs (they would otherwise appear in the NVDA log)"""
+
+
+# How long an account whose stations answer came back empty is not asked for
+# its weather stations again.
+NO_WEATHER_RECHECK_SECONDS = 1800
+
+
+class _WeatherSkipped(Exception):
+    """The weather half was deliberately not asked (see get_devices)."""
 
 
 # ============================================================
@@ -571,6 +594,8 @@ class NetatmoAPI:
         # getstationsdata + homesdata). In between, update_device_status only
         # polls /homestatus - see there.
         self._last_full_status_refresh = 0.0
+        # Until when /getstationsdata is skipped (account without a station).
+        self._no_weather_until = 0.0
 
         # Network error deduplication: prevents ERROR log spam during network
         # outages
@@ -595,13 +620,17 @@ class NetatmoAPI:
         return bool(re.search(r'\((?:http\s)?5\d{2}\)', error_msg))
 
     def _log_network_error(self, context, exception):
-        """Logs network errors with deduplication (ERROR only the first time, then DEBUG)"""
+        """Logs network errors with deduplication (WARNING the first time, then DEBUG)"""
         now = time.time()
         if self._is_network_error(exception):
             self._network_error_count += 1
-            # First occurrence or after a long pause: log as ERROR
+            # WARNING, not ERROR: a network that drops or a server that is
+            # down is no fault of NVDA or of this add-on. An ERROR entry
+            # makes NVDA play its error sound for whoever has "Play a sound
+            # for logged errors" switched on - eight times on one morning of
+            # Netatmo 503s.
             if (now - self._last_network_error_time) > self._NETWORK_ERROR_LOG_INTERVAL:
-                log.error(f"{context}: {exception}")
+                log.warning(f"{context}: {exception}")
                 self._last_network_error_time = now
             else:
                 # Repeated error: only DEBUG
@@ -632,7 +661,7 @@ class NetatmoAPI:
             # Translators: Explanation for HTTP 5xx from the Netatmo API.
             # Shown/logged when Netatmo's own servers are unavailable.
             return _("Netatmo servers temporarily unavailable – not a problem "
-                     "with the add-on or your settings; the next update will "
+                     "with the add-on or the settings; the next update will "
                      "try again")
         return None
 
@@ -890,7 +919,11 @@ class NetatmoAPI:
         if resp.status_code != 200:
             # 4xx = refresh token really invalid -> discard the tokens
             # 5xx = transient server error -> keep the tokens, retry later
-            if 400 <= resp.status_code < 500:
+            # 429 (too many requests) and 408 (request timeout) are 4xx as
+            # well, but they say nothing about the token: discarding it on
+            # them cost the whole authorisation, to be granted again in the
+            # browser, for a rate limit that was over a minute later.
+            if 400 <= resp.status_code < 500 and resp.status_code not in (408, 429):
                 detail = self._format_api_error(resp)
                 log.error(f"Netatmo login expired ({detail}). Tokens are discarded.")
                 self.access_token = None
@@ -1292,11 +1325,13 @@ class NetatmoAPI:
                 if current_zone_id is None and timetable:
                     current_zone_id = timetable[-1].get('zone_id')
 
-                zone_name = zone_name_map.get(current_zone_id, None)
-                if zone_name:
-                    zone_name = NetatmoDevice._translate_zone_name(zone_name)
+                raw_zone = zone_name_map.get(current_zone_id, None)
+                zone_name = raw_zone
+                if raw_zone:
+                    zone_name = NetatmoDevice._translate_zone_name(raw_zone)
                     log.debug(f"Netatmo: active zone for room {room_id}: {zone_name}")
                 result['current_zone_name'] = zone_name
+                result['current_zone_raw'] = raw_zone
 
                 # ---- Compute the next schedule change ----
                 next_entry = None
@@ -1362,8 +1397,15 @@ class NetatmoAPI:
         """
         devices = []
 
-        # 1. Weather stations
+        # 1. Weather stations - not asked again for half an hour on an
+        # account that has none. /getstationsdata used to go out on every
+        # poll, a third of all Netatmo requests, for an answer that was
+        # "0 weather station modules" every time (measured 2026-10-01) -
+        # and it was the request that answered 503 most often.
+        skip_weather = time.time() < self._no_weather_until
         try:
+            if skip_weather:
+                raise _WeatherSkipped()
             stations_data = self.get_stations_data()
             body = stations_data.get('body', {})
 
@@ -1386,11 +1428,18 @@ class NetatmoAPI:
             log.debug(f"Netatmo: {len(devices)} weather station module(s) found")
             weather_ok = True
             weather_count = len(devices)
+            if not weather_count:
+                self._no_weather_until = time.time() + NO_WEATHER_RECHECK_SECONDS
 
+        except _WeatherSkipped:
+            # Not asked, so neither answered nor failed: the account has no
+            # station, and 'weather' is not among its known parts.
+            weather_ok = False
+            weather_count = 0
         except Exception as e:
             weather_ok = False
             weather_count = 0
-            self._log_network_error("Netatmo weather station data error", e)
+            self._log_api_exception("Netatmo weather station data error", e)
 
         # 2. Energy / thermostat
         try:
@@ -1488,7 +1537,7 @@ class NetatmoAPI:
 
         except Exception as e:
             energy_ok = False
-            self._log_network_error("Netatmo energy data error", e)
+            self._log_api_exception("Netatmo energy data error", e)
 
         # Which half did not answer. Only halves this account really has:
         # a part counts as known once it has answered with devices, so an
@@ -1540,6 +1589,8 @@ class NetatmoAPI:
                         zone_name = schedule_info.get('current_zone_name')
                         if zone_name:
                             dev._schedule_zone_name = zone_name
+                            dev._schedule_zone_raw = schedule_info.get(
+                                'current_zone_raw')
                         next_change = schedule_info.get('next_change')
                         if next_change:
                             dev._next_schedule_change = next_change
@@ -1550,34 +1601,58 @@ class NetatmoAPI:
             log.debug(f"Netatmo: failed to resolve the schedule zones: {e}")
 
         self._devices = devices
+        # A full pass just ran - the next status update may take the light
+        # path (see update_device_status).
+        self._last_full_status_refresh = time.time()
         return devices
 
-    def update_device_status(self, devices):
-        """Updates the status of all Netatmo devices.
+    def update_device_status(self, devices, full=False):
+        """Brings the Netatmo devices up to date, in place.
 
         Light path (the normal case): one /homestatus call per home updates
-        the changing thermostat fields. The full pass via get_devices()
-        (getstationsdata + homesdata + schedule lookup, >=3 calls) runs at
-        most every NETATMO_FULL_REFRESH_SECONDS - weather values and
-        schedules rarely change, and with the 15 s fg poll interval the full
-        pass would otherwise exceed Netatmo's user limit of ~500 calls/hour.
+        the changing thermostat fields, and the schedule zone is worked out
+        from the cached schedules - no request for it. The full pass via
+        get_devices() (getstationsdata + homesdata + homestatus) runs at most
+        every NETATMO_FULL_REFRESH_SECONDS, or when ``full`` is set (a
+        refresh the user asked for).
+
+        The scheduler used to call get_devices() on every poll and this
+        method not at all: about 110 full passes an hour in the background,
+        three requests each, and every 15 seconds with the menu open - above
+        the roughly 500 requests an hour Netatmo allows a user.
+
+        Returns the devices the full pass found that are not in ``devices``
+        yet (a thermostat added in the app, or a half that did not answer at
+        the sign-in); the light path finds none.
         """
         now = time.time()
         energy_devs = [d for d in devices
                        if getattr(d, 'is_netatmo', False)
                        and getattr(d, 'home_id', None)]
-        if (not energy_devs
+        if (full or not energy_devs
                 or now - self._last_full_status_refresh >= NETATMO_FULL_REFRESH_SECONDS):
             self._last_full_status_refresh = now
-            self._update_device_status_full(devices)
-            return
+            return self._update_device_status_full(devices)
 
-        for home_id in sorted({d.home_id for d in energy_devs}):
+        # The schedules come from the cache only. The cache is refilled by
+        # every full pass, so it is at most five minutes old - and the
+        # zones change with the clock, not with the cache.
+        try:
+            schedules = self.get_homes_data(gateway_types='NAPlug',
+                                            cached_only=True)
+        except Exception as e:
+            log.debug(f"Netatmo: cached schedules not readable: {e}")
+            schedules = None
+
+        homes = sorted({d.home_id for d in energy_devs})
+        homes_ok = 0
+        for home_id in homes:
             try:
                 status = self.get_home_status(home_id)
             except Exception as e:
-                self._log_network_error("Netatmo homestatus error", e)
+                self._log_api_exception("Netatmo homestatus error", e)
                 continue
+            homes_ok += 1
             home = status.get('body', {}).get('home', {})
             status_rooms = {r.get('id'): r for r in home.get('rooms', [])}
             status_modules = {m.get('id'): m for m in home.get('modules', [])}
@@ -1607,33 +1682,51 @@ class NetatmoAPI:
                     open_window_val = room.get('open_window')
                     if open_window_val is not None:
                         device._open_window = bool(open_window_val)
+                if (schedules is not None
+                        and getattr(device, 'is_thermostat', False)
+                        and device._therm_setpoint_mode == 'schedule'):
+                    info = self._resolve_schedule_info(
+                        home_id, device.room_id, homes_data=schedules)
+                    if info:
+                        if info.get('current_zone_name'):
+                            device._schedule_zone_name = info['current_zone_name']
+                            device._schedule_zone_raw = info.get('current_zone_raw')
+                        if info.get('next_change'):
+                            device._next_schedule_change = info['next_change']
+                        if info.get('active_schedule_name'):
+                            device._active_schedule_name = info['active_schedule_name']
+
+        # Only the heating was asked; the weather half keeps what the last
+        # full pass found.
+        energy_ok = homes_ok > 0
+        failed = [part for part in self.last_failed_parts if part != 'energy']
+        if not energy_ok and 'energy' in self._known_parts:
+            failed.append('energy')
+        self.last_failed_parts = tuple(failed)
+        self.last_poll_ok = bool(energy_ok or (
+            'weather' in self._known_parts and 'weather' not in failed))
+        return []
 
     def _update_device_status_full(self, devices):
-        """Full status pass: complete get_devices() and field transfer."""
+        """Full status pass: get_devices() and the values taken over in place.
+
+        Returns the devices that are new compared with ``devices``.
+        """
         try:
             fresh_devices = self.get_devices()
-            fresh_map = {d.uuid: d for d in fresh_devices}
-
-            for device in devices:
-                if hasattr(device, 'is_netatmo') and device.is_netatmo:
-                    fresh = fresh_map.get(device.uuid)
-                    if fresh:
-                        device._dashboard_data = fresh._dashboard_data
-                        device._therm_measured = fresh._therm_measured
-                        device._therm_setpoint = fresh._therm_setpoint
-                        device._therm_setpoint_mode = fresh._therm_setpoint_mode
-                        device._therm_setpoint_end_time = fresh._therm_setpoint_end_time
-                        device._boiler_status = fresh._boiler_status
-                        device._schedule_zone_name = fresh._schedule_zone_name
-                        device._therm_setpoint_default_duration = fresh._therm_setpoint_default_duration
-                        device._anticipating = fresh._anticipating
-                        device._open_window = fresh._open_window
-                        device._next_schedule_change = fresh._next_schedule_change
-                        device._active_schedule_name = fresh._active_schedule_name
-                        device.is_offline = fresh.is_offline
-                        device.raw_data = fresh.raw_data
         except Exception as e:
-            self._log_network_error("Netatmo status update error", e)
+            self._log_api_exception("Netatmo status update error", e)
+            self.last_poll_ok = False
+            return []
+        fresh_map = {d.uuid: d for d in fresh_devices}
+        known = set()
+        for device in devices:
+            if getattr(device, 'is_netatmo', False):
+                known.add(device.uuid)
+                fresh = fresh_map.get(device.uuid)
+                if fresh:
+                    device.take_values_from(fresh)
+        return [d for d in fresh_devices if d.uuid not in known]
 
     def logout(self):
         """Discards the tokens"""

@@ -44,8 +44,10 @@ RETENTION_SECONDS = 8 * 86400
 # Gaps larger than this (device offline, NVDA closed) are NOT counted as
 # consumption - better honestly too little than invented kWh.
 MAX_GAP_SECONDS = 900.0
-# Batched saving (same approach as history.py).
-SAVE_DEBOUNCE_SECONDS = 120
+# Batched saving (same approach as history.py). Every save rewrites the
+# whole file - about 650 KB with a week of samples - so not more often than
+# every five minutes; a crash costs at most those minutes of an estimate.
+SAVE_DEBOUNCE_SECONDS = 300
 SAVE_DEBOUNCE_MAX_SAMPLES = 20
 
 
@@ -95,7 +97,10 @@ class EnergyLog:
                 dev['samples'] = [s for s in dev.get('samples', []) if s[0] >= cutoff]
             tmp = ENERGY_FILE + ".tmp"
             with open(tmp, 'w', encoding='utf-8') as f:
-                json.dump(self._data, f, ensure_ascii=False, indent=None)
+                # dumps + write, not dump: json.dump writes in chunks through
+                # the pure-Python encoder - 57 ms for this file against 16 ms
+                # (measured on 646 KB), on NVDA's process, every few minutes.
+                f.write(json.dumps(self._data, ensure_ascii=False))
             os.replace(tmp, ENERGY_FILE)
             self._dirty = False
             self._last_save_time = time.time()

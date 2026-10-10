@@ -12,6 +12,7 @@ import threading
 import time
 from logHandler import log
 
+from .errors import log_failure
 from .constants import (
     MEROSS_METRICS_MIN_INTERVAL,
     MEROSS_HOURLY_BUDGET,
@@ -33,8 +34,9 @@ if "_" not in globals():  # fallback if initTranslation() fails
     def _(s):
         return s
 
+from . import meross_devices as _meross
 from .meross_devices import (
-    MEROSS_AVAILABLE,
+    load_meross,
     MerossDevice,
     MerossOfflineDevice,
     is_sensor_type,
@@ -44,17 +46,13 @@ from .meross_devices import (
     mark_hub_battery_attempt,
 )
 
-# Conditional imports only if meross_iot is available
-if MEROSS_AVAILABLE:
-    from .meross_devices import MerossHttpClient, MerossManager, OnlineStatus
-
-
 
 class MerossAPI:
     """Meross cloud API handler"""
     
     def __init__(self):
-        if not MEROSS_AVAILABLE:
+        # Loads meross_iot on first use - see load_meross.
+        if not load_meross():
             raise ImportError(
                 "meross_iot is not installed.\n"
                 "Install it with: pip install meross-iot"
@@ -214,7 +212,7 @@ class MerossAPI:
             originating_device_uuid = push_notification.originating_device_uuid if hasattr(push_notification, 'originating_device_uuid') else None
             raw_data = push_notification.raw_data if hasattr(push_notification, 'raw_data') else {}
             
-            log.debug(f"Push-Notification empfangen: Namespace={namespace}, UUID={originating_device_uuid}, Devices={len(target_devices) if target_devices else 0}")
+            log.debug(f"Push notification received: namespace={namespace}, UUID={originating_device_uuid}, Devices={len(target_devices) if target_devices else 0}")
             
             # Process toggle events (on/off). The namespace can be:
             # Namespace.CONTROL_TOGGLEX, Namespace.CONTROL_TOGGLE, etc.
@@ -514,13 +512,15 @@ class MerossAPI:
         try:
             self._run_async(self._login(password))
         except (ConnectionError, TimeoutError, OSError) as e:
-            log.error(f"Login failed - network error: {e}")
+            # WARNING: no network at startup is not a fault, and an ERROR
+            # plays NVDA's error sound (see NetatmoAPI._log_network_error).
+            log.warning(f"Login failed - network error: {e}")
             self._cleanup()
             # Translators: Error message when the Meross login fails for
             # network reasons. {error} = technical detail.
             raise ConnectionError(_("Connection error: {error}").format(error=e))
         except Exception as e:
-            log.error(f"Login failed: {e}")
+            log_failure("Meross login failed", e)
             self._cleanup()
             raise
         finally:
@@ -553,7 +553,7 @@ class MerossAPI:
         self - so it is collected by the GC after the function ends.
         """
         try:
-            self.http_client = await MerossHttpClient.async_from_user_password(
+            self.http_client = await _meross.MerossHttpClient.async_from_user_password(
                 api_base_url=self.api_base_url,
                 email=self.email,
                 password=password
@@ -562,7 +562,7 @@ class MerossAPI:
             password = None
             del password
 
-        self.manager = MerossManager(http_client=self.http_client)
+        self.manager = _meross.MerossManager(http_client=self.http_client)
         await self.manager.async_init()
 
         # Register the push notification handler for external status changes
@@ -801,7 +801,7 @@ class MerossAPI:
                     
                     # Check whether the device is REALLY offline or only had an
                     # enrollment timeout
-                    if http_dev.online_status == OnlineStatus.ONLINE:
+                    if http_dev.online_status == _meross.OnlineStatus.ONLINE:
                         # The device is ONLINE according to the HTTP API but
                         # enrollment failed. Typical for devices like the
                         # MOD150 (diffuser) that are slow/problematic during
@@ -983,13 +983,13 @@ class MerossAPI:
                 log.info(f"Fallback successful: {len(devices)} device(s) loaded")
                 return devices
             except Exception as fallback_error:
-                log.error(f"The fallback failed too: {fallback_error}")
+                log_failure("The device list fallback failed too", fallback_error)
                 # Translators: Error message on timeout of the Meross device
                 # query.
                 raise TimeoutError(_("Device query is taking too long - "
                                      "possibly too many devices are offline"))
         except Exception as e:
-            log.error(f"Failed to fetch the devices: {e}")
+            log_failure("Failed to fetch the devices", e)
             raise
     
     @staticmethod
@@ -1076,7 +1076,7 @@ class MerossAPI:
                 if sid in id_to_value:
                     set_subdevice_battery(sid, id_to_value[sid])
                     polled_any = True
-                    log.debug(f"Batterie {getattr(subdev, 'name', '?')}: {id_to_value[sid]}%")
+                    log.debug(f"Battery {getattr(subdev, 'name', '?')}: {id_to_value[sid]}%")
                 else:
                     log.debug(f"Battery {getattr(subdev, 'name', '?')} (id={sid}): no value in the response")
 
@@ -1358,7 +1358,7 @@ class MerossAPI:
             log.debug(f"Status update timed out after {timeout:.0f}s - some devices did not answer in time")
             # No raise - partial updates are OK
         except Exception as e:
-            log.error(f"Update failed: {type(e).__name__}: {e}")
+            log_failure("Status update failed", e)
             raise
     
     @staticmethod
@@ -1592,7 +1592,7 @@ class MerossAPI:
         try:
             self._run_async(_set_state())
         except Exception as e:
-            log.error(f"Switching failed: {e}")
+            log_failure("Switching failed", e)
             raise
     
     def set_diffuser_spray_mode(self, uuid, spray_mode):
@@ -1638,7 +1638,7 @@ class MerossAPI:
         try:
             self._run_async(_set_spray())
         except Exception as e:
-            log.error(f"Failed to set the spray mode: {e}")
+            log_failure("Failed to set the spray mode", e)
             raise
     
     # ==================== Lamp functions (MSL450, MSL610, MSL320)
@@ -1699,7 +1699,7 @@ class MerossAPI:
         try:
             self._run_async(_set_light())
         except Exception as e:
-            log.error(f"Failed to set the light colour: {e}")
+            log_failure("Failed to set the light colour", e)
             raise
     
     def set_light_rgb(self, uuid, red, green, blue, channel=0):
