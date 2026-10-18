@@ -625,8 +625,47 @@ def test_search():
           str(tree.selected))
 
 
+def test_netatmo_favorite_row():
+    """Netatmo: die Favoritenzeile ueberlebt Aufklappen und Live-Update.
+
+    Am 18.10.2026 gemeldet: im Baum gab es bei Netatmo kein "Zu Favoriten
+    hinzufuegen", nur Strg+B. Der erste Aufbau legte die Zeile an, aber
+    das Aufklappen baute die Kinder ohne sie neu auf - und bei Thermostaten
+    zaehlte das Live-Update eine Zeile zu viel und baute ebenfalls ohne sie
+    neu.
+    """
+    print('== Netatmo: die Favoritenzeile bleibt ==')
+    import ast
+    src = io.open(os.path.join(BASE, 'device_dialog.py'), encoding='utf-8').read()
+    tree = ast.parse(src)
+    update = next((ast.get_source_segment(src, n) for n in ast.walk(tree)
+                   if isinstance(n, ast.FunctionDef)
+                   and n.name == '_update_device_item'), '')
+    start = update.find("if getattr(device, 'is_netatmo', False):")
+    end = update.find('return', start)
+    check('Aufklappen: der Netatmo-Zweig haengt die Favoritenzeile an',
+          start >= 0 and '_add_favorite_action(item, device)' in update[start:end])
+
+    src = io.open(os.path.join(BASE, 'dialog_netatmo.py'), encoding='utf-8').read()
+    tree = ast.parse(src)
+    items = next((ast.get_source_segment(src, n) for n in ast.walk(tree)
+                  if isinstance(n, ast.FunctionDef)
+                  and n.name == '_compute_netatmo_thermostat_items'), '')
+    check('Live-Update: die Thermostat-Zeilen enthalten die Favoritenzeile',
+          '_favorite_action_label(' in items)
+    first = next((ast.get_source_segment(src, n) for n in ast.walk(tree)
+                  if isinstance(n, ast.FunctionDef)
+                  and n.name == '_add_single_netatmo_device'), '')
+    check('und als letzte Zeile, wie beim ersten Aufbau',
+          items.rfind('_favorite_action_label(')
+          > items.rfind('netatmo_back_to_schedule')
+          and first.rfind('_add_favorite_action(')
+          > first.rfind('netatmo_back_to_schedule'))
+
+
 def main():
     test_identity()
+    test_netatmo_favorite_row()
     test_selection()
     test_search()
     test_signature()

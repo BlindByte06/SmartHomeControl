@@ -609,9 +609,10 @@ def test_schedule_detail():
           "','.join(str(d) for d in result['done'])" in dialog)
 
 
-def _detection_mixin(names, clock):
+def _detection_mixin(names, clock, extra=None):
     """Die genannten Methoden von _ChangeDetectionMixin aus der echten
-    Quelle, samt Tabelle und Toleranz, mit einer Uhr, die der Test stellt."""
+    Quelle, samt Tabelle und Toleranz, mit einer Uhr, die der Test stellt.
+    ``extra`` ergaenzt die Namen, die die Methoden sonst importieren."""
     import ast
     import textwrap
 
@@ -645,6 +646,7 @@ def _detection_mixin(names, clock):
     env = {'log': Log(), 'time': clock, '_': lambda t: t,
            '__name__': 'globalPlugins.SmartHomeControl.change_detection',
            '__package__': 'globalPlugins.SmartHomeControl'}
+    env.update(extra or {})
     for part in module_parts:
         exec(compile(part, 'module', 'exec'), env)
     exec(compile(class_src, 'mixin', 'exec'), env)
@@ -674,18 +676,41 @@ def test_automatic_origin():
     clock = Clock()
     names = ('_log_external_state_changes', '_cozytouch_boost_runs',
              '_note_cozytouch_boost', '_note_local_cozytouch_boost',
+             '_cozytouch_boost_from_history',
              '_cozytouch_boost_ran_out', '_record_local_cozytouch_action',
              '_is_recent_local_cozytouch_action', '_snapshot_cozytouch_state',
+             '_expect_cozytouch', '_same_cozytouch_value',
+             '_check_cozytouch_expectations', '_accept_local_change',
              '_detect_cozytouch_changes', '_normalize_end_time',
              '_record_local_netatmo_action', '_is_recent_local_netatmo_action',
              '_snapshot_netatmo_state', '_netatmo_change_by_schedule',
-             '_detect_netatmo_changes')
-    Mixin, missing = _detection_mixin(names, clock)
+             '_detect_netatmo_changes',
+             '_record_local_vesync_action', '_is_recent_local_vesync_action',
+             '_snapshot_vesync_state', '_announce_fryer_temp_verdict',
+             '_detect_vesync_changes')
+    spoken = []
+
+    class Wx:
+        @staticmethod
+        def CallAfter(func, *args):
+            func(*args)
+
+    class Ui:
+        @staticmethod
+        def message(text):
+            spoken.append(text)
+
+    Mixin, missing = _detection_mixin(names, clock, extra={
+        'wx': Wx, 'ui': Ui, '_beep': lambda *a: None,
+        'BEEP_ACTION': 1, 'BEEP_ERROR': 2, 'BEEP_ON': 3, 'BEEP_OFF': 4,
+        'BEEP_EXTERNAL_CHANGE': 5})
     check('alle Teile der Erkennung gefunden', not missing, str(missing))
     if missing:
         return
 
     written = []
+    # Was der Verlauf schon enthaelt - fuer die Erkennung nach einem Neustart.
+    stored = []
 
     class History:
         def log_action(self, device, action, detail="", source=None):
@@ -693,6 +718,16 @@ def test_automatic_origin():
 
         def log_external_action(self, uuid, name, platform, action, detail=""):
             written.append(('extern', action, detail))
+
+        def get_entries(self, device_uuid=None, event_type=None,
+                        max_entries=200, since_hours=None, platform=None):
+            found = [e for e in stored
+                     if device_uuid is None or e['device_uuid'] == device_uuid]
+            if since_hours:
+                found = [e for e in found
+                         if e['timestamp'] >= clock.now - since_hours * 3600]
+            found.sort(key=lambda e: e['timestamp'], reverse=True)
+            return found[:max_entries]
 
     package = sys.modules.setdefault(
         'globalPlugins', types.ModuleType('globalPlugins'))
@@ -732,7 +767,10 @@ def test_automatic_origin():
         m = Mixin()
         m._previous_cozytouch_states = {}
         m._recent_cozytouch_actions = {}
+        m._cozytouch_expected = {}
         m._previous_netatmo_therm_states = {}
+        m._previous_vesync_states = {}
+        m._recent_vesync_actions = {}
         m.announce_external_changes = False
         return m
 
@@ -815,6 +853,151 @@ def test_automatic_origin():
     check('eine Dauer ohne laufenden Boost wird nicht vorgemerkt',
           written == [('extern', 'boost_off', '')], str(written))
 
+    # 18.10.: 13:18:18 Boost ein, 13:19:45 Dauer 120 Minuten, 15:19:48 aus -
+    # als "extern" verbucht. Beginn und Dauer lebten nur im Speicher, ein
+    # NVDA-Neustart dazwischen nahm sie mit. Der Verlauf hat beides.
+    def entry(at, action, details=''):
+        return {'timestamp': at, 'device_uuid': 'ct-1', 'action': action,
+                'details': details}
+
+    stored[:] = [entry(100, 'boost_on'),
+                 entry(143, 'set_boost_duration', '115'),
+                 entry(187, 'set_boost_duration', '120')]
+    m, dev = plugin(), Heater()  # nach dem Neustart
+    dev.boost_on = True
+    poll(m, dev, 3600)
+    poll(m, dev, 3630)
+    written.clear()
+    dev.boost_on = False
+    poll(m, dev, 187 + 120 * 60 + 3)
+    check('Neustart waehrend des Boosts: das Ende ist trotzdem "automatisch"',
+          written == [('system', 'boost_ended', '')], str(written))
+
+    stored[:] = [entry(0, 'boost_on'), entry(20 * 60, 'boost_off')]
+    m, dev = plugin(), Heater()
+    dev.boost_on = True
+    poll(m, dev, 3600)
+    poll(m, dev, 3630)
+    written.clear()
+    dev.boost_on = False
+    poll(m, dev, 3 * 3600)
+    check('ein im Verlauf schon beendeter Boost wird nicht wiederverwendet',
+          written == [('extern', 'boost_off', '')], str(written))
+
+    # Ein Boost von gestern, dessen Ende NVDA verpasst hat: der jetzt
+    # laufende ist ein anderer.
+    stored[:] = [entry(100, 'boost_on'),
+                 entry(150, 'set_boost_duration', '30')]
+    m, dev = plugin(), Heater()
+    dev.boost_on = True
+    poll(m, dev, 20 * 3600)
+    poll(m, dev, 20 * 3600 + 30)
+    written.clear()
+    dev.boost_on = False
+    poll(m, dev, 20 * 3600 + 10 * 60)
+    check('ein laengst abgelaufener Boost aus dem Verlauf zaehlt nicht',
+          written == [('extern', 'boost_off', '')], str(written))
+    stored.clear()
+
+    # Gesendet, die Cloud bestaetigt nicht, das Geraet nimmt ihn spaeter
+    # doch an. Frueher: "Boost konnte nicht umgeschaltet werden", und der
+    # spaeter laufende Boost stand als "extern" im Verlauf.
+    m, dev = plugin(), Heater()
+    poll(m, dev, 0)
+    clock.now = 10
+    m._record_local_cozytouch_action(dev.uuid)
+    m._expect_cozytouch(dev, 'boost', True, confirm='Revolution: boost on',
+                        fail='Revolution: Boost could not be toggled',
+                        history_action='boost_on')
+    poll(m, dev, 30)
+    written.clear()
+    spoken.clear()
+    dev.boost_on = True
+    poll(m, dev, 75)  # das Fenster fuer eigene Aenderungen ist vorbei
+    check('spaet angekommener Boost: als eigener im Verlauf, nicht extern',
+          written == [(None, 'boost_on', '')], str(written))
+    check('und bestaetigt angesagt', spoken == ['Revolution: boost on'],
+          str(spoken))
+    written.clear()
+    dev.boost_on = False
+    poll(m, dev, 75 + 30 * 60)
+    check('sein Ende danach ist wieder eine normale Aenderung',
+          written == [('extern', 'boost_off', '')], str(written))
+
+    m, dev = plugin(), Heater()
+    poll(m, dev, 0)
+    m._expect_cozytouch(dev, 'mode', '3', confirm='Revolution: mode Eco+',
+                        fail='Revolution: Mode could not be set',
+                        history_action='set_mode', detail='3')
+    spoken.clear()
+    poll(m, dev, 300)
+    check('noch nicht da: still', spoken == [], str(spoken))
+    poll(m, dev, 700)
+    check('nie angekommen: nach zehn Minuten gesagt',
+          spoken == ['Revolution: Mode could not be set'], str(spoken))
+
+    # Eine bestaetigte eigene Aenderung wird die neue Vergleichsbasis: die
+    # naechste Abfrage kann nach dem Fenster von 30 s kommen.
+    m, dev = plugin(), Heater()
+    poll(m, dev, 0)
+    clock.now = 20
+    dev.target_temperature = 50.0
+    m._record_local_cozytouch_action(dev.uuid)
+    m._accept_local_change('cozytouch', dev)
+    written.clear()
+    poll(m, dev, 90)
+    check('Cozytouch: eigene Temperatur nach dem Fenster nicht extern',
+          written == [], str(written))
+
+    # VeSync am 18.10.: 18:48:36 Abfrage (Stufe 2), 18:48:51 Stufe 1 hier
+    # gestellt, naechste Abfrage 18:49:38 - und "Stufe 1, extern" stand im
+    # Verlauf neben "Stufe 1, du".
+    # load_history_funcs leitet "from .constants import" auf seine Tabellen
+    # um; dort fehlt, was keine Tabelle ist.
+    consts = sys.modules.get('shc.constants') or sys.modules.setdefault(
+        'globalPlugins.SmartHomeControl.constants',
+        types.ModuleType('globalPlugins.SmartHomeControl.constants'))
+    for name, value in (('VESYNC_PURIFIER_MODE_NAMES', {}),
+                        ('VESYNC_FAN_MODE_NAMES', {}),
+                        ('VESYNC_AIR_QUALITY_NAMES', {}),
+                        ('VESYNC_NIGHTLIGHT_MODE_NAMES', {}),
+                        ('VESYNC_AUTO_PREFERENCE_NAMES', {}),
+                        ('VESYNC_PURIFIER_LEVEL_LABELS_3', {}),
+                        ('VESYNC_FILTER_WARN_THRESHOLD', 10),
+                        ('VESYNC_FRYER_COOK_ANNOUNCEMENTS', {})):
+        if not hasattr(consts, name):
+            setattr(consts, name, value)
+
+    class VeSyncPurifier:
+        uuid = unique_id = 'vs-1'
+        name = 'Luftreiniger Philipp Zimmer'
+        is_on = True
+        is_offline = False
+        mode = 'manual'
+        fan_level = 2
+        air_quality = 1
+        filter_life = 92
+
+    def vesync(m, dev, at):
+        clock.now = at
+        m._detect_vesync_changes([dev])
+
+    m, purifier = plugin(), VeSyncPurifier()
+    vesync(m, purifier, 0)          # 18:48:36
+    clock.now = 15                  # 18:48:51
+    m._record_local_vesync_action(purifier.uuid)
+    purifier.fan_level = 1
+    m._record_local_vesync_action(purifier.uuid)
+    m._accept_local_change('vesync', purifier)
+    written.clear()
+    vesync(m, purifier, 62)         # 18:49:38
+    check('VeSync: die eigene Stufe kommt nicht als "extern" zurueck',
+          written == [], str(written))
+    purifier.fan_level = 3
+    vesync(m, purifier, 122)
+    check('VeSync: eine Stufe von anderswo bleibt extern',
+          written == [('extern', 'set_fan_speed', '3')], str(written))
+
     # Netatmo um 22:00: der Wochenplan wechselt in die Nachtzone - an
     # einem Abend in einer Abfrage, am 01.10. auf zwei verteilt.
     class Thermostat:
@@ -872,6 +1055,19 @@ def test_automatic_origin():
     init = io.open(os.path.join(BASE, '__init__.py'), encoding='utf-8').read()
     check('F5 fuehrt die Boost-Buchfuehrung mit',
           'self._note_cozytouch_boost(' in init)
+    # Und dass die Dialoge die neue Basis wirklich setzen - und Cozytouch
+    # seine Buchfuehrung nicht mehr an ein offenes Menue bindet.
+    vesync_dialog = io.open(os.path.join(BASE, 'dialog_vesync.py'),
+                            encoding='utf-8').read()
+    check('der VeSync-Dialog nimmt die eigene Aenderung als Basis',
+          "_accept_local_change('vesync', device)" in vesync_dialog)
+    check('der Cozytouch-Dialog ebenso',
+          "_accept_local_change('cozytouch', device)" in dialog)
+    check('die Favoritenebene ebenso',
+          "_accept_local_change('vesync', device)" in init
+          and "_accept_local_change('cozytouch', device)" in init)
+    check('Cozytouch: Verlauf und Boost auch bei geschlossenem Menue',
+          dialog.count('worker_done=worker_done') >= 5)
 
 
 def test_saved_without_a_next_entry():

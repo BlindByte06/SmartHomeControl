@@ -96,6 +96,24 @@ COZYTOUCH_MODEL_NAMES = {
 PROTECT_WINDOW = 30.0
 
 
+class CozytouchPending(Exception):
+    """A change the cloud accepted but the appliance has not shown yet.
+
+    The execution state the cloud reports is not reliable (state 4 for a
+    mode the appliance took), and the appliance can take longer than the
+    add-on waits: a boost announced as "could not be toggled" was running a
+    little later. So it is neither a success nor a failure - ``field`` and
+    ``expected`` say what to watch for in the change snapshot
+    (_snapshot_cozytouch_state), or ``field`` is None when there is nothing
+    to watch. The counterpart of petlibro_devices.PetlibroPending.
+    """
+
+    def __init__(self, field=None, expected=None):
+        super().__init__(f"pending: {field}={expected!r}")
+        self.field = field
+        self.expected = expected
+
+
 def _to_float(value, default=None):
     """Safely converts a Cozytouch value (often '53.2000000...') to float."""
     try:
@@ -310,6 +328,10 @@ class CozytouchWaterHeater:
             CAP_TARGET_TEMP: "target_temp",
             CAP_HEATING_MODE: "mode",
             CAP_BOOST: "boost",
+            # Its own field: protecting "boost" for it kept the boost switch
+            # from updating, and left the duration just set to be overwritten
+            # by the next poll.
+            CAP_BOOST_TOTAL_TIME: "boost_time",
             CAP_DHW_ON: "dhw",
             CAP_AWAY: "away",
             CAP_AWAY_TS: "away",
@@ -476,7 +498,9 @@ class CozytouchWaterHeater:
         log.info(f"Cozytouch: writing the time program of day {weekday} "
                  f"(capability {cap}): {value!r}, so far {before_raw!r}")
 
-        if not self._api.set_capability(self.device_id, cap, value):
+        # "is False", not "not": None means accepted but not shown yet, and
+        # the read-back below is exactly what settles that.
+        if self._api.set_capability(self.device_id, cap, value) is False:
             log.warning("Cozytouch: the cloud refused the time program")
             return False, self.schedule_windows(weekday)
 
@@ -585,36 +609,37 @@ class CozytouchWaterHeater:
 
     # ---------------- Setters (write + optimistically set locally)
     # ----------------
+    def _write(self, cap, value, protect, field=None, expected=None):
+        """Writes one capability; the local cache follows a confirmed write.
+
+        Returns True or False. Raises CozytouchPending when the cloud took
+        the write but the appliance has not shown the value yet - ``field``
+        and ``expected`` are what the change detection then watches for.
+        """
+        ok = self._api.set_capability(self.device_id, cap, value)
+        if ok is None:
+            raise CozytouchPending(field, expected)
+        if ok:
+            with self._lock:
+                self._caps[cap] = value
+            self._protect(protect)
+        return ok
+
     def set_target_temperature(self, temp):
         """Sets the target temperature (degrees Celsius)."""
         lo, hi = self.target_temp_min, self.target_temp_max
         temp = max(lo, min(hi, float(temp)))
-        value = str(temp)
-        ok = self._api.set_capability(self.device_id, CAP_TARGET_TEMP, value)
-        if ok:
-            with self._lock:
-                self._caps[CAP_TARGET_TEMP] = value
-            self._protect("target_temp")
-        return ok
+        return self._write(CAP_TARGET_TEMP, str(temp), "target_temp",
+                           'target_temp', temp)
 
     def set_mode(self, mode_value):
         """Sets the operating mode (capability value as string, e.g. '3')."""
         value = str(mode_value)
-        ok = self._api.set_capability(self.device_id, CAP_HEATING_MODE, value)
-        if ok:
-            with self._lock:
-                self._caps[CAP_HEATING_MODE] = value
-            self._protect("mode")
-        return ok
+        return self._write(CAP_HEATING_MODE, value, "mode", 'mode', value)
 
     def set_boost(self, on):
-        value = "1" if on else "0"
-        ok = self._api.set_capability(self.device_id, CAP_BOOST, value)
-        if ok:
-            with self._lock:
-                self._caps[CAP_BOOST] = value
-            self._protect("boost")
-        return ok
+        return self._write(CAP_BOOST, "1" if on else "0", "boost",
+                           'boost', bool(on))
 
     def set_boost_duration(self, minutes):
         """Sets the boost duration (CAP 232) in minutes.
@@ -622,24 +647,16 @@ class CozytouchWaterHeater:
         EXPERIMENTAL: the reference implementation treats this capability as
         read-only (diagnostics). Whether the cloud accepts the write is
         checked by the value verification in set_capability, so a rejection
-        produces an honest error instead of a silent failure.
+        produces an honest error instead of a silent failure. The change
+        detection does not follow the duration, so a pending write has
+        nothing to watch for.
         """
-        value = str(int(minutes))
-        ok = self._api.set_capability(self.device_id, CAP_BOOST_TOTAL_TIME, value)
-        if ok:
-            with self._lock:
-                self._caps[CAP_BOOST_TOTAL_TIME] = value
-            self._protect("boost")
-        return ok
+        return self._write(CAP_BOOST_TOTAL_TIME, str(int(minutes)),
+                           "boost_time")
 
     def set_dhw(self, on):
-        value = "1" if on else "0"
-        ok = self._api.set_capability(self.device_id, CAP_DHW_ON, value)
-        if ok:
-            with self._lock:
-                self._caps[CAP_DHW_ON] = value
-            self._protect("dhw")
-        return ok
+        return self._write(CAP_DHW_ON, "1" if on else "0", "dhw",
+                           'is_on', bool(on))
 
     def set_away(self, on, start_ts=None, end_ts=None):
         """Toggles away mode via the coordinated API call.

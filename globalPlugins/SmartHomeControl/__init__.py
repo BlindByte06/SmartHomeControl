@@ -123,6 +123,7 @@ from .meross_api import MerossAPI
 from .netatmo_api import NetatmoAPI
 from .vesync_api import VeSyncAPI
 from .cozytouch_api import CozytouchAPI
+from .cozytouch_devices import CozytouchPending
 from .petlibro_api import PetlibroAPI, PetlibroError
 from .device_dialog import SmartHomeControlDialog
 from .settings_panel import (
@@ -335,6 +336,8 @@ class GlobalPlugin(_CredentialsMixin, _SchedulerMixin, _ChangeDetectionMixin,
         # Prevents the user's own change from being announced again as an
         # external change on the next poll (analogous to VeSync).
         self._recent_cozytouch_actions = {}
+        # Changes the cloud accepted that the appliance had not shown yet.
+        self._cozytouch_expected = {}
 
         # Petlibro: the same pair, plus the work records already seen per
         # feeder - a feeding is noticed by a record id that is new.
@@ -2561,6 +2564,10 @@ class GlobalPlugin(_CredentialsMixin, _SchedulerMixin, _ChangeDetectionMixin,
             # VeSync devices: their own toggle logic
             if getattr(device, 'is_vesync', False):
                 new_state = not device.is_on
+                # Marked before sending, as in the dialog: the poll runs on a
+                # thread of its own and can read the new state while the
+                # command is still on its way.
+                self._record_local_vesync_action(device_uuid)
                 device.toggle_switch(new_state)
                 status = _("on") if new_state else _("off")
                 self._record_local_toggle(device_uuid, new_state)
@@ -2568,6 +2575,7 @@ class GlobalPlugin(_CredentialsMixin, _SchedulerMixin, _ChangeDetectionMixin,
                 # background refresh does not announce the user's own switching
                 # as an external change.
                 self._record_local_vesync_action(device_uuid)
+                self._accept_local_change('vesync', device)
                 self._log_toggle(device, new_state)
                 return _("{name}: {status}").format(name=device.name, status=status)
 
@@ -2583,13 +2591,38 @@ class GlobalPlugin(_CredentialsMixin, _SchedulerMixin, _ChangeDetectionMixin,
             # dialog mixin)
             if getattr(device, 'is_cozytouch', False):
                 new_state = not device.is_on
-                if not device.set_dhw(new_state):
-                    # Translators: Error message when toggling hot water
-                    # production fails.
-                    raise RuntimeError(_("Hot water could not be toggled"))
+                # Marked before sending, as in the dialog: set_dhw waits up
+                # to half a minute for the appliance, and a poll in between
+                # read the new state as a change made elsewhere.
+                self._record_local_cozytouch_action(device_uuid)
                 status = _("on") if new_state else _("off")
+                # Translators: Error message when toggling hot water
+                # production fails.
+                failure = _("Hot water could not be toggled")
+                try:
+                    ok = device.set_dhw(new_state)
+                except CozytouchPending as pending:
+                    # Accepted, not shown yet - followed by the polls, as in
+                    # the dialog (see _run_cozytouch_cloud_action).
+                    self._record_local_cozytouch_action(device_uuid)
+                    self._expect_cozytouch(
+                        device, pending.field, pending.expected,
+                        # Translators: Confirmation after switching hot water
+                        # production on/off.
+                        confirm=_("{name}: operation {status}").format(
+                            name=device.name, status=status),
+                        fail=f"{device.name}: {failure}",
+                        history_action='toggle_on' if new_state else 'toggle_off')
+                    # Translators: A change was sent to a device that has not
+                    # answered the cloud yet.
+                    return _("{name}: sent, but the device has not answered "
+                             "yet - the change is announced as soon as the "
+                             "device reports it.").format(name=device.name)
+                if not ok:
+                    raise RuntimeError(failure)
                 self._record_local_toggle(device_uuid, new_state)
                 self._record_local_cozytouch_action(device_uuid)
+                self._accept_local_change('cozytouch', device)
                 self._log_toggle(device, new_state)
                 return _("{name}: {status}").format(name=device.name, status=status)
 
@@ -2605,7 +2638,14 @@ class GlobalPlugin(_CredentialsMixin, _SchedulerMixin, _ChangeDetectionMixin,
             # the list) - then report cleanly instead of an AttributeError.
             if not self.api:
                 raise RuntimeError(_("Not logged in"))
-            self.api.set_device_state(device.uuid, new_state, channel=channel)
+            # Marked before sending: the device's push of its new state can
+            # arrive before this call returns (see _begin_local_toggle).
+            self._begin_local_toggle(device_uuid, new_state)
+            try:
+                self.api.set_device_state(device.uuid, new_state, channel=channel)
+            except Exception:
+                self._forget_local_toggle(device_uuid)
+                raise
             
             # Update the status
             log_target = device

@@ -3073,7 +3073,13 @@ class SmartHomeControlDialog(_NetatmoDialogMixin, _VeSyncDialogMixin, _MerossDia
                                                                  "press Enter "
                                                                  "to activate"))
                         self.tree.SetItemData(back_item, {'type': 'action', 'device': device, 'action': 'netatmo_back_to_schedule'})
-                
+
+                # The favorites row, as in the first build. This path runs on
+                # every expand and used to end without it, so the row was
+                # gone the moment it could have been seen - Ctrl+B was the
+                # only way to make a Netatmo device a favorite.
+                self._add_favorite_action(item, device)
+
                 # No toggle for Netatmo devices (thermostats, gateways, etc.)
                 return
             

@@ -447,10 +447,22 @@ class _OAuthState:
     Each OAuth flow gets its own state container to avoid race
     conditions with parallel calls.
     """
-    def __init__(self):
+    def __init__(self, expected_state=None):
         self.auth_code = None
         self.auth_state = None
         self.auth_error = None
+        # The state this sign-in sent; a callback carrying another one does
+        # not belong to it.
+        self.expected_state = expected_state
+
+    def matches(self, state):
+        """True when ``state`` is the one this sign-in sent."""
+        if not self.expected_state or not state:
+            return False
+        # As bytes: compare_digest refuses a str with non-ASCII characters,
+        # and the state comes from whoever called the URL.
+        return hmac.compare_digest(state.encode('utf-8'),
+                                   self.expected_state.encode('utf-8'))
 
 
 # ============================================================
@@ -470,8 +482,14 @@ class _OAuthCallbackHandler(BaseHTTPRequestHandler):
     which is 32 random bytes the page cannot know - a forged code is
     therefore rejected further down rather than exchanged.
 
+    A code that comes with another state is answered with 400 and does
+    not end the wait: it used to be taken, the wait ended, and the sign-in
+    then failed the state check - so any page could cut a sign-in short
+    with a made-up code. An error with another state is ignored the same
+    way.
+
     What is left is that such a page can end this one sign-in attempt by
-    sending ``?error=``, since an error carries no state to check against
+    sending ``?error=`` WITHOUT a state, since an error does not carry one
     in every server's answer. The cost of that is a sign-in that has to
     be started again, and the alternative - ignoring errors without a
     matching state - would swallow the real ones.
@@ -486,9 +504,20 @@ class _OAuthCallbackHandler(BaseHTTPRequestHandler):
             self.end_headers()
             return
 
+        oauth = self.server.oauth_state
+        state = params.get('state', [None])[0]
+        if 'code' in params and not oauth.matches(state):
+            self.send_response(400)
+            self.end_headers()
+            return
+        if 'error' in params and state and not oauth.matches(state):
+            self.send_response(400)
+            self.end_headers()
+            return
+
         if 'code' in params:
-            self.server.oauth_state.auth_code = params['code'][0]
-            self.server.oauth_state.auth_state = params.get('state', [None])[0]
+            oauth.auth_code = params['code'][0]
+            oauth.auth_state = state
             self.send_response(200)
             self.send_header('Content-Type', 'text/html; charset=utf-8')
             self.end_headers()
@@ -789,7 +818,7 @@ class NetatmoAPI:
         server.timeout = 5  # short timeout per handle_request() pass
 
         # Instance-based OAuth state (safe with parallel calls)
-        server.oauth_state = _OAuthState()
+        server.oauth_state = _OAuthState(expected_state=state)
 
         # Assemble the auth URL
         params = {

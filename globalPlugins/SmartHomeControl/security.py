@@ -74,20 +74,65 @@ def _salt_path_candidates():
     return paths
 
 
+def _current_account():
+    """The account this process runs as, "DOMAIN\\user", from Windows itself.
+
+    getpass.getuser() reads the USERNAME variable - an environment value,
+    not the identity of the process. When it is set to something else, the
+    rights were granted to an account that does not exist, and icacls
+    failed without a word.
+    """
+    try:
+        name_sam_compatible = 2
+        get_name = ctypes.windll.secur32.GetUserNameExW
+        size = ctypes.wintypes.ULONG(0)
+        get_name(name_sam_compatible, None, ctypes.byref(size))
+        if size.value:
+            buffer = ctypes.create_unicode_buffer(size.value)
+            if get_name(name_sam_compatible, buffer, ctypes.byref(size)):
+                return buffer.value
+    except Exception as e:
+        log.debug(f"GetUserNameExW unavailable: {type(e).__name__}")
+    return getpass.getuser()
+
+
+def _icacls_path():
+    """icacls.exe from the system folder, never one found by searching.
+
+    Started by its bare name, Windows looks in NVDA's own folder and in
+    the current directory before the system folder - an icacls.exe placed
+    there would have run with the add-on's rights.
+    """
+    windows = os.environ.get('SystemRoot') or os.environ.get('WINDIR') \
+        or 'C:\\Windows'
+    candidate = os.path.join(windows, 'System32', 'icacls.exe')
+    return candidate if os.path.isfile(candidate) else None
+
+
 def _restrict_file_acl(path):
     """Restrict the Windows ACL to the current user – best effort."""
     try:
         import subprocess
+        icacls = _icacls_path()
+        if icacls is None:
+            log.debug("icacls.exe not found in the system folder - rights "
+                      "left as they are")
+            return
         # CREATE_NO_WINDOW: without this flag a console window flashes up
         # on Windows and steals the focus - NVDA then announces its title.
         # Windows-only, hence getattr with a default of 0.
         no_window = getattr(subprocess, 'CREATE_NO_WINDOW', 0)
-        subprocess.run(
-            ['icacls', path, '/inheritance:r', '/grant:r',
-             f'{getpass.getuser()}:F'],
+        result = subprocess.run(
+            [icacls, path, '/inheritance:r', '/grant:r',
+             f'{_current_account()}:F'],
             check=False, capture_output=True, timeout=5,
             creationflags=no_window,
         )
+        if result.returncode != 0:
+            # Expected on FAT32/exFAT (a portable NVDA on a stick) - but now
+            # visible in a debug log instead of passing unnoticed.
+            log.debug(f"icacls could not restrict the rights "
+                      f"(exit code {result.returncode})")
     except Exception as e:
         log.debug(f"Restricting the ACL of the salt file failed: {e}")
 

@@ -1332,6 +1332,25 @@ def _detail_is_redundant(action):
     return action.endswith(('_on', '_off'))
 
 
+def _away_period_text(value):
+    """An away period stored as "start-end" in Unix seconds, rendered in the
+    notation of the region: "18.10.2026 13:30 - 20.10.2026 13:30".
+
+    The period used to be stored as text written with a fixed "%d.%m.%Y" -
+    German under every interface language, and for good. Such entries give
+    None here and are shown as they were stored.
+    """
+    start, dash, end = value.partition('-')
+    if not dash or not start.isdigit() or not end.isdigit():
+        return None
+    try:
+        begin_dt = datetime.fromtimestamp(int(start))
+        end_dt = datetime.fromtimestamp(int(end))
+    except (OverflowError, OSError, ValueError):
+        return None
+    return f"{local_datetime(begin_dt)} - {local_datetime(end_dt)}"
+
+
 def _schedule_detail_text(value):
     """Renders a stored time program: "Monday, Saturday: 07:20-17:50".
 
@@ -1440,6 +1459,10 @@ def _detail_text(action, details):
             return _("Level {level}").format(level=digits)
     if action == 'set_schedule':
         rendered = _schedule_detail_text(value)
+        if rendered:
+            return rendered
+    if action == 'away_on':
+        rendered = _away_period_text(value)
         if rendered:
             return rendered
     if action == 'set_boost_duration':

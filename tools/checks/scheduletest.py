@@ -92,8 +92,162 @@ def make_device(mod, api, monday='[[420,1020],[0,0],[0,0]]'):
     return device
 
 
+def test_confirmation(mod):
+    """Wann ein Befehl als angenommen, abgelehnt oder unterwegs gilt.
+
+    Gemeldet im Oktober 2026: "Boost konnte nicht umgeschaltet werden" - und
+    kurz darauf lief er. Die Ausfuehrung endete nicht mit "erledigt", und
+    1,5 Sekunden spaeter stand der Wert noch nicht in der Cloud; das war der
+    einzige Blick. Jetzt wird mehrmals nachgesehen, und was die Cloud
+    angenommen, das Geraet aber noch nicht gezeigt hat, ist weder Erfolg
+    noch Fehler.
+    """
+    print('== Bestaetigung eines Befehls ==')
+    import requests
+    api_mod = importlib.import_module('shcschedule.cozytouch_api')
+
+    class Clock:
+        now = 1000.0
+
+        def time(self):
+            return self.now
+
+        def sleep(self, seconds):
+            self.now += seconds
+
+    def make_api(exec_states, values, post=(201, 77)):
+        """``values``: was das Geraet bei jedem Zuruecklesen zeigt (das
+        letzte bleibt stehen); ein Zustand ``'drop'`` laesst das Netz beim
+        Verfolgen der Ausfuehrung reissen."""
+        api_mod.time = Clock()
+        api = api_mod.CozytouchAPI()
+        calls = {'post': 0, 'reads': 0}
+        states = list(exec_states)
+        shown = list(values)
+
+        def request(method, path, **kw):
+            if method == 'POST':
+                calls['post'] += 1
+                if isinstance(post, Exception):
+                    raise post
+                return post
+            if path.startswith('/magellan/executions/'):
+                state = states.pop(0) if states else 1
+                if state == 'drop':
+                    raise requests.ConnectionError('weg')
+                return 200, {'state': state}
+            calls['reads'] += 1
+            value = shown.pop(0) if len(shown) > 1 else shown[0]
+            return 200, [{'capabilityId': 165, 'value': value}]
+
+        api._request = request
+        return api, calls
+
+    api, calls = make_api([4], ['0', '0', '1'])
+    check('Ausfuehrung "fehlgeschlagen", Wert kommt spaeter: angenommen',
+          api.set_capability(1, 165, '1') is True)
+    check('dafuer wurde mehrmals nachgesehen', calls['reads'] == 3,
+          str(calls))
+
+    api, calls = make_api([], ['0'])
+    check('nie bestaetigt, nie gezeigt: unterwegs (None), kein Fehler',
+          api.set_capability(1, 165, '1') is None)
+
+    api, calls = make_api([2, 'drop'], ['1'])
+    check('Netz reisst beim Verfolgen: der Wert entscheidet',
+          api.set_capability(1, 165, '1') is True)
+
+    api, calls = make_api([], ['1'], post=requests.ReadTimeout('spaet'))
+    check('keine Antwort auf das Senden: der Wert entscheidet',
+          api.set_capability(1, 165, '1') is True)
+    check('und gesendet wurde genau einmal', calls['post'] == 1, str(calls))
+
+    api, calls = make_api([], ['0'], post=(400, None))
+    check('abgelehnt bleibt abgelehnt (False)',
+          api.set_capability(1, 165, '1') is False)
+    check('ohne nachzusehen', calls['reads'] == 0, str(calls))
+
+    api, calls = make_api([3], ['0'])
+    check('"erledigt" genuegt wie bisher', api.set_capability(1, 165, '1') is True
+          and calls['reads'] == 0, str(calls))
+
+    print('== Kein zweites Senden nach einer verspaeteten Antwort ==')
+
+    class Session:
+        def __init__(self, error):
+            self.error = error
+            self.sent = []
+
+        def request(self, method, url, **kw):
+            self.sent.append(method)
+            raise self.error
+
+    api_mod.time = Clock()
+    api = api_mod.CozytouchAPI()
+    api._session = Session(requests.ReadTimeout('spaet'))
+    try:
+        api._request('POST', '/magellan/executions/writecapability',
+                     json_body={})
+    except requests.ReadTimeout:
+        pass
+    check('ein Schreibbefehl geht nach einem Lese-Timeout nicht noch einmal',
+          api._session.sent == ['POST'], str(api._session.sent))
+    api._session = Session(requests.ReadTimeout('spaet'))
+    try:
+        api._request('GET', '/magellan/capabilities/?deviceId=1')
+    except requests.ReadTimeout:
+        pass
+    check('ein Lesen darf es', api._session.sent == ['GET', 'GET'],
+          str(api._session.sent))
+    api._session = Session(requests.ConnectionError('kein Netz'))
+    try:
+        api._request('POST', '/magellan/executions/writecapability',
+                     json_body={})
+    except requests.ConnectionError:
+        pass
+    check('eine nie zustande gekommene Verbindung wird wiederholt',
+          api._session.sent == ['POST', 'POST'], str(api._session.sent))
+
+    print('== Das Geraet: unterwegs ist eine eigene Antwort ==')
+
+    class PendingApi:
+        def set_capability(self, device_id, capability_id, value):
+            return None
+
+    device = make_device(mod, PendingApi())
+    try:
+        device.set_boost(True)
+        raised = None
+    except mod.CozytouchPending as e:
+        raised = e
+    check('set_boost meldet "unterwegs" mit Feld und Wert',
+          raised is not None and raised.field == 'boost'
+          and raised.expected is True, repr(raised))
+    check('und schreibt nichts in den Zwischenspeicher',
+          165 not in device._caps, str(device._caps))
+    try:
+        device.set_boost_duration(60)
+        raised = None
+    except mod.CozytouchPending as e:
+        raised = e
+    check('die Boost-Dauer ebenso, ohne Feld zum Beobachten',
+          raised is not None and raised.field is None, repr(raised))
+
+    print('== Die Boost-Dauer hat ihren eigenen Schutz ==')
+    device = make_device(mod, Api(accept=True))
+    device._caps[165] = '1'
+    device.set_boost_duration(120)
+    device.apply_capabilities([{'capabilityId': 232, 'value': '0'},
+                               {'capabilityId': 165, 'value': '0'}])
+    check('die eben gesetzte Dauer bleibt stehen',
+          device._caps.get(232) == '120', str(device._caps.get(232)))
+    check('der Boost-Schalter selbst folgt weiter der Cloud',
+          device._caps.get(165) == '0', str(device._caps.get(165)))
+
+
 def main():
     mod = load_devices()
+    test_confirmation(mod)
     # Ohne das wartet jeder misslungene Schreibvorgang dreimal drei Sekunden.
     mod.SCHEDULE_READBACK_PAUSE = 0
 

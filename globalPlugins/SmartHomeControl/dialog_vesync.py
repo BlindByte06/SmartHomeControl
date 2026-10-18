@@ -59,6 +59,9 @@ class _VeSyncDialogMixin:
 
         def worker_done(_result):
             self.plugin._record_local_vesync_action(device.uuid)
+            # The next poll may come after the window - see
+            # _accept_local_change.
+            self.plugin._accept_local_change('vesync', device)
             if history_action:
                 get_history().log_action(device, history_action, detail)
 

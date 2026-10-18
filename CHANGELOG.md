@@ -2,6 +2,30 @@
 
 The GitHub release notes are built from the section of the released version.
 
+## 26.10.2 (October 2026)
+
+### Fixes
+
+- Netatmo: the device menu offers "Add to favorites" and "Remove from favorites" again. The entry disappeared as soon as a device was expanded, and from thermostats with every update; only Ctrl+B was left.
+- VeSync and Cozytouch: a setting changed in the device menu is no longer written to the history a second time as changed elsewhere. When the next update came more than thirty seconds later - VeSync updates once a minute in the background - the change was compared against the state from before it.
+- Cozytouch: a command the appliance takes over only after a delay is no longer reported as failed. The value is read back several times; a change the cloud accepted but the appliance has not shown yet is announced as sent and confirmed once it arrives, or reported after ten minutes if it never does.
+- Cozytouch: a network drop while a command is followed no longer reports an error for a command that went through, and a command whose answer came too late is not sent a second time.
+- Cozytouch: the history entry and the start of a boost are recorded even when the device menu is closed before the appliance answers.
+- Cozytouch: a boost that runs out after an NVDA restart is recorded as "Boost ended", automatic, instead of switched off elsewhere. Its start and duration are taken from the history.
+- Cozytouch: a boost duration that was just set is no longer overwritten in the menu by the next update.
+- Cozytouch: switching hot water from the favourites layer is marked as a change made here before it is sent.
+- Cozytouch: the away period is shown in the date format of the region and stored language-neutrally in the history. It used to be German under every interface language.
+- Meross: a device switched here is marked before the command goes out, so the device's own report of its new state is not taken for a change made elsewhere.
+
+### Security Fixes
+
+- Netatmo sign-in: a call of the local callback address with a wrong state is turned away and no longer ends the sign-in.
+- The rights of the credentials file are set with icacls.exe from the system folder and for the account the process runs as, not for whatever the USERNAME variable says.
+
+### Documentation
+
+- README: five platforms, Petlibro included; a duplicated section removed; the note on personal data in the log reflects that credentials are no longer part of NVDA's configuration.
+
 ## 26.10.1 (October 2026)
 
 ### Petlibro (new, experimental)

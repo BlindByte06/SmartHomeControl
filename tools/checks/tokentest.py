@@ -198,8 +198,69 @@ def test_callback_registered():
               n_cb >= 1 and n_create >= 1, f'{n_create} Instanzen, {n_cb} Callbacks')
 
 
+def test_oauth_callback():
+    """Ein fremder Aufruf der Rueckruf-Adresse beendet die Anmeldung nicht.
+
+    Jede im Browser offene Seite erreicht den lokalen Rueckruf. Ein "code"
+    mit falschem state wurde frueher angenommen, das Warten endete, und die
+    Anmeldung scheiterte dann an der state-Pruefung - eine erfundene Adresse
+    genuegte, um sie abzubrechen.
+    """
+    print('== Netatmo-Anmeldung: fremde Rueckrufe ==')
+    import hmac
+    import html
+    import types
+    from urllib.parse import urlparse, parse_qs
+    src = io.open(os.path.join(BASE, 'netatmo_api.py'), encoding='utf-8').read()
+    tree = ast.parse(src)
+    parts = [ast.get_source_segment(src, n) for n in tree.body
+             if isinstance(n, ast.ClassDef)
+             and n.name in ('_OAuthState', '_OAuthCallbackHandler')]
+    check('beide Klassen gefunden', len(parts) == 2, str(len(parts)))
+    if len(parts) != 2:
+        return
+
+    class BaseHTTPRequestHandler:
+        pass
+
+    env = {'hmac': hmac, 'html': html, 'urlparse': urlparse,
+           'parse_qs': parse_qs, 'NETATMO_REDIRECT_PATH': '/callback',
+           'BaseHTTPRequestHandler': BaseHTTPRequestHandler}
+    for part in parts:
+        exec(compile(part, 'netatmo_api.py', 'exec'), env)
+    State, Handler = env['_OAuthState'], env['_OAuthCallbackHandler']
+    oauth = State(expected_state='richtig')
+
+    def call(path):
+        handler = Handler.__new__(Handler)
+        handler.path = path
+        handler.server = types.SimpleNamespace(oauth_state=oauth)
+        handler.wfile = io.BytesIO()
+        answer = []
+        handler.send_response = answer.append
+        handler.send_header = lambda *a: None
+        handler.end_headers = lambda: None
+        handler.do_GET()
+        return answer[0] if answer else None
+
+    check('code mit falschem state: abgewiesen',
+          call('/callback?code=boese&state=falsch') == 400)
+    check('und nicht uebernommen', oauth.auth_code is None, str(oauth.auth_code))
+    check('code ohne state: abgewiesen',
+          call('/callback?code=boese') == 400 and oauth.auth_code is None)
+    check('ein Zeichen ausserhalb von ASCII bringt nichts zum Absturz',
+          call('/callback?code=boese&state=%C3%A4') == 400)
+    check('Fehler mit falschem state: ignoriert',
+          call('/callback?error=x&state=falsch') == 400
+          and oauth.auth_error is None)
+    check('der echte Rueckruf wird angenommen',
+          call('/callback?code=echt&state=richtig') == 200
+          and oauth.auth_code == 'echt')
+
+
 def main():
     test_api_notifies()
+    test_oauth_callback()
     test_plugin_persists()
     test_diagnostics()
     test_callback_registered()

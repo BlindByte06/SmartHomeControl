@@ -24,6 +24,7 @@ from .constants import (
     BEEP_ACTION, BEEP_ERROR,
 )
 from .history import get_history
+from .favorites import get_favorites
 from .formatting import fmt_decimal
 from .errors import log_failure
 from .dialog_helpers import _beep
@@ -767,6 +768,13 @@ class _NetatmoDialogMixin:
                 'text': _("Back to schedule - press Enter to activate"),
                 'kind': 'action', 'action': 'netatmo_back_to_schedule',
             })
+
+        # The favorites row last, as _add_favorite_action puts it. Missing
+        # here, the live update counted one row too many on every poll and
+        # rebuilt the thermostat without it.
+        fav_text, fav_action = self._favorite_action_label(
+            get_favorites().is_favorite(device.unique_id))
+        items.append({'text': fav_text, 'kind': 'action', 'action': fav_action})
 
         return items
 
