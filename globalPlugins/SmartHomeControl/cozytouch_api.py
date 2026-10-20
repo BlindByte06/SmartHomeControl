@@ -44,6 +44,12 @@ CLIENT_ID = "Q3RfMUpWeVRtSUxYOEllZkE3YVVOQmpGblpVYToyRWNORHpfZHkzNDJVSnFvMlo3cFN
 
 API_TIMEOUT = 15
 EXECUTION_POLL_TIMEOUT = 15  # max. seconds to wait for execution completion
+# When the execution does not end in "done", the value itself is read back:
+# first after VERIFY_FIRST_PAUSE seconds, then every VERIFY_PAUSE seconds for
+# up to VERIFY_TIMEOUT seconds.
+VERIFY_FIRST_PAUSE = 1.5
+VERIFY_PAUSE = 3
+VERIFY_TIMEOUT = 15
 
 
 class CozytouchAPI:
@@ -104,6 +110,12 @@ class CozytouchAPI:
         ``reauth=False`` for a request whose 403 is an expected answer and
         says nothing about the token - the away capabilities on some
         accounts. Each of those used to cost a full password sign-in.
+
+        A request that changes something is not sent again after a read
+        timeout: it went out, only the answer did not come back, and the
+        cloud may well have carried it out. The caller decides what that
+        means (see _set_capability_ex). A connection that never came about
+        is retried for every method.
         """
         url = API_BASE + path
         if headers is None:
@@ -114,7 +126,8 @@ class CozytouchAPI:
                 timeout=timeout,
             )
         except (requests.ConnectionError, requests.Timeout) as e:
-            if _is_retry:
+            if _is_retry or (method != "GET"
+                             and isinstance(e, requests.ReadTimeout)):
                 raise
             log.debug(f"Cozytouch: network error ({type(e).__name__}), one retry in 1 s")
             time.sleep(1)
@@ -327,40 +340,52 @@ class CozytouchAPI:
         return None
 
     def set_capability(self, device_id, capability_id, value):
-        """Writes a capability and waits for the execution to complete.
+        """Writes a capability and waits for the appliance to take it.
 
-        Returns True if the execution was confirmed as completed (state==3).
+        Returns True when the value is confirmed, False when the cloud
+        refused the write, and None when the cloud accepted it but the
+        appliance has not shown the value yet - see _set_capability_ex.
         """
         ok, _status = self._set_capability_ex(device_id, capability_id, value)
         return ok
 
-    def _set_capability_ex(self, device_id, capability_id, value, quiet=False):
+    def _set_capability_ex(self, device_id, capability_id, value, quiet=False,
+                           verify_timeout=VERIFY_TIMEOUT):
         """Like set_capability, but returns (ok, http_status).
 
-        ``quiet`` downgrades the failure log to DEBUG - used for the
-        best-effort away-mode capability writes, where an HTTP 403 is
-        expected on some accounts and must not alarm the user. Such a 403
-        does not mean an expired token either, so it does not sign in again.
+        ``ok`` is True (confirmed), False (refused) or None (accepted, not
+        shown yet). ``quiet`` downgrades the failure log to DEBUG - used for
+        the best-effort away-mode capability writes, where an HTTP 403 is
+        expected on some accounts and must not alarm the user; they also
+        pass a short ``verify_timeout``, since nothing waits for them. Such
+        a 403 does not mean an expired token either, so it does not sign in
+        again.
         """
-        status, exec_resp = self._request(
-            "POST", "/magellan/executions/writecapability",
-            json_body={
-                "capabilityId": int(capability_id),
-                "deviceId": int(device_id),
-                "value": str(value),
-            },
-            reauth=not quiet,
-        )
-        if status != 201:
+        try:
+            status, exec_resp = self._request(
+                "POST", "/magellan/executions/writecapability",
+                json_body={
+                    "capabilityId": int(capability_id),
+                    "deviceId": int(device_id),
+                    "value": str(value),
+                },
+                reauth=not quiet,
+            )
+        except requests.ReadTimeout:
+            # Sent, but no answer: the cloud may have taken it. Not a
+            # refusal - the read-back below decides.
+            log.debug("Cozytouch: writecapability sent, no answer in time - "
+                      "checking the value instead")
+            status, exec_resp = None, None
+        if status is not None and status != 201:
             _log = log.debug if quiet else log.warning
             _log(f"Cozytouch: writecapability failed (HTTP {status})")
             return False, status
-        exec_id = self._extract_execution_id(exec_resp)
-        if exec_id is None:
+        exec_id = self._extract_execution_id(exec_resp) if status else None
+        if status and exec_id is None:
             log.warning(
                 f"Cozytouch: writecapability without a usable executionId "
                 f"(HTTP {status}, response type {type(exec_resp).__name__})")
-            return False, status
 
         # Poll for completion (state: 1=waiting, 2=running, 3=done).
         #
@@ -372,46 +397,72 @@ class CozytouchAPI:
         # A wrong False would hurt twice here: an error tone despite a
         # successful change AND the change would not be registered as a local
         # action, so the next poll would report it as an external one.
-        # Therefore every unclear result (state 4, unknown states, timeout)
-        # is checked against the ACTUAL capability value on the device - the
-        # only reliable truth.
-        deadline = time.time() + EXECUTION_POLL_TIMEOUT
-        timed_out = True
+        # Therefore every unclear result (state 4, unknown states, timeout,
+        # a network that dropped while following the execution) is checked
+        # against the ACTUAL capability value on the device - the only
+        # reliable truth.
         state = None
-        while time.time() < deadline:
-            st, exec_data = self._request(
-                "GET", "/magellan/executions/" + str(exec_id)
-            )
-            state = exec_data.get("state") if isinstance(exec_data, dict) else None
-            if state == 3:
-                return True, status
-            if state is not None and state not in (1, 2):
-                # Cloud reports a failure (e.g. state 4) - verify it.
-                timed_out = False
-                break
-            time.sleep(1)
+        if exec_id is not None:
+            deadline = time.time() + EXECUTION_POLL_TIMEOUT
+            try:
+                while time.time() < deadline:
+                    st, exec_data = self._request(
+                        "GET", "/magellan/executions/" + str(exec_id)
+                    )
+                    state = (exec_data.get("state")
+                             if isinstance(exec_data, dict) else None)
+                    if state == 3:
+                        return True, status
+                    if state is not None and state not in (1, 2):
+                        # Cloud reports a failure (e.g. state 4) - verify it.
+                        break
+                    time.sleep(1)
+            except (requests.ConnectionError, requests.Timeout) as e:
+                # The write itself was accepted (HTTP 201); only following it
+                # failed. That used to end as "Cozytouch error" for a change
+                # that had gone through.
+                log.debug(f"Cozytouch: execution {exec_id} could not be "
+                          f"followed ({type(e).__name__}) - checking the "
+                          f"value instead")
 
-        # Wait briefly until the new value is visible in the cloud, then
-        # check the real device state.
-        time.sleep(1.5)
-        verified = self._verify_capability_value(device_id, capability_id, value)
+        verified = self._wait_for_value(device_id, capability_id, value,
+                                        verify_timeout)
         if verified:
             log.debug(
                 f"Cozytouch: execution {exec_id} (state {state}) - value was applied "
                 f"anyway, counted as success")
             return True, status
-        if timed_out and verified is None:
-            # Timeout AND no verification possible: the write was accepted
-            # with HTTP 201, so count it as success (the device may just be
-            # slow) rather than report a false error.
-            log.debug(
-                f"Cozytouch: execution {exec_id} unconfirmed, no check possible - "
-                f"write accepted (HTTP 201), counted as success")
-            return True, status
-        log.warning(
-            f"Cozytouch: execution {exec_id} failed "
-            f"(state {state}, value not applied)")
-        return False, status
+        # Accepted, but not shown (yet). The appliance can take longer than
+        # any wait here: a boost reported as failed was running a little
+        # later. Neither success nor failure - the caller watches for it.
+        log.info(
+            f"Cozytouch: capability {capability_id}={value!r} accepted "
+            f"(execution {exec_id}, state {state}) but not shown yet")
+        return None, status
+
+    def _wait_for_value(self, device_id, capability_id, value, timeout):
+        """Reads the value back until it shows or ``timeout`` has passed.
+
+        One look 1.5 seconds after the execution used to decide everything,
+        and an appliance that took a little longer was reported as having
+        refused. Returns True as soon as the value shows, False when it
+        could be read and still differed at the end, None when it could
+        not be read at all.
+        """
+        deadline = time.time() + max(0, timeout)
+        result = None
+        pause = VERIFY_FIRST_PAUSE
+        while True:
+            time.sleep(pause)
+            pause = VERIFY_PAUSE
+            verified = self._verify_capability_value(
+                device_id, capability_id, value)
+            if verified:
+                return True
+            if verified is False:
+                result = False
+            if time.time() + pause > deadline:
+                return result
 
     def _verify_capability_value(self, device_id, capability_id, expected_value):
         """Checks whether a capability really carries the expected value.
@@ -500,13 +551,15 @@ class CozytouchAPI:
             else:
                 ts_value = "[0,0]"
             ok_ts, st_ts = self._set_capability_ex(
-                device_id, ts_capability_id, ts_value, quiet=True)
+                device_id, ts_capability_id, ts_value, quiet=True,
+                verify_timeout=0)
             # A 403 on the first write answers for the second one as well.
             if st_ts == 403:
                 ok_mode, st_mode = False, 403
             else:
                 ok_mode, st_mode = self._set_capability_ex(
-                    device_id, mode_capability_id, "1" if on else "0", quiet=True)
+                    device_id, mode_capability_id, "1" if on else "0",
+                    quiet=True, verify_timeout=0)
             if 403 in (st_ts, st_mode):
                 log.info(
                     "Cozytouch: writecapability for absence not allowed (HTTP 403) - "

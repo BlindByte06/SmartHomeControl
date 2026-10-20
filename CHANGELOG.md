@@ -11,8 +11,9 @@ The GitHub release notes are built from the section of the released version.
 ### Security Fixes
 
 - Credentials are no longer sent along when a cloud redirects to another host.
+- A call of the local Netatmo sign-in address with a wrong state is turned away and no longer ends the sign-in.
 - The VeSync account ID no longer appears in the NVDA log.
-- The rights of the credential file are set only with icacls from the Windows system folder.
+- The rights of the credential file are set with icacls from the Windows system folder, for the account NVDA runs as.
 
 ### Changes
 
@@ -23,20 +24,30 @@ The GitHub release notes are built from the section of the released version.
 - Meross garage door openers and roller shutters are shown but not switched.
 - Shortcuts with Alt, Control or Windows end the favourites layer and work as usual.
 - The help of the favourites tab (F1) opens as a list.
-- Dates of the Cozytouch away mode follow the notation of the region.
+- A Cozytouch change the cloud accepted but the appliance has not shown yet is announced as sent and confirmed once it arrives, or reported after ten minutes if it never does.
+- Dates of the Cozytouch away mode follow the notation of the region, also in the history.
 
 ### Bug Fixes
 
 - NVDA no longer crashes when the device menu is closed after a device was switched from the favourites tab.
 - Enter or Space on a VeSync or Cozytouch device no longer freezes NVDA.
 - A leak sensor that already detects water when NVDA starts is now announced.
+- The Netatmo device menu offers "Add to favorites" again.
+- A setting changed in the VeSync or Cozytouch device menu is no longer recorded a second time as changed elsewhere.
+- A Meross device switched here is no longer recorded as switched elsewhere.
+- Cozytouch hot water switched from the favourites layer is no longer recorded as switched elsewhere.
+- A Cozytouch command that the appliance takes over late is no longer reported as failed.
+- A network drop while a Cozytouch command is followed no longer reports an error for a command that went through.
+- A Cozytouch command whose answer comes too late is not sent a second time.
+- A Cozytouch boost that runs out after an NVDA restart is recorded as "Boost ended", automatic.
+- A Cozytouch boost duration that was just set is no longer overwritten by the next update.
+- Cozytouch and Petlibro changes, the start of a boost included, reach the history even when the device menu is closed first.
 - A Meross account with two-factor authentication is named as the reason the sign-in fails.
 - A wrong Meross password no longer plays NVDA's error sound.
 - Testing the Netatmo connection no longer invalidates the running sign-in.
 - Netatmo tokens are renewed only when Netatmo rejects the token itself.
 - A Cozytouch server fault at sign-in is retried.
 - Switching the Cozytouch away mode no longer signs in to Cozytouch again.
-- Cozytouch and Petlibro changes reach the history even when the device menu is closed first.
 - NVDA exits faster on a slow network.
 - Damaged data files are kept as "unreadable" instead of being overwritten.
 - The Meross connection test always closes its session.

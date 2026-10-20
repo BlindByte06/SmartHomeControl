@@ -34,7 +34,6 @@ import time
 import csv
 import io
 import locale
-import re
 import threading
 from datetime import datetime
 
@@ -1363,6 +1362,28 @@ def _detail_is_redundant(action):
     return action.endswith(('_on', '_off'))
 
 
+def _away_period_text(value):
+    """An away period stored as "start-end" in Unix seconds, rendered in the
+    notation of the region: "18.10.2026 13:30 until 20.10.2026 13:30".
+
+    The period used to be stored as text written with a fixed "%d.%m.%Y" -
+    German under every interface language, and for good. Such entries give
+    None here and are shown as they were stored.
+    """
+    start, dash, end = value.partition('-')
+    if not dash or not start.isdigit() or not end.isdigit():
+        return None
+    try:
+        begin_dt = datetime.fromtimestamp(int(start))
+        end_dt = datetime.fromtimestamp(int(end))
+    except (OverflowError, OSError, ValueError):
+        return None
+    # Translators: The absence period of the heat pump in the history.
+    # {start}/{end} = date and time.
+    return _("{start} until {end}").format(
+        start=local_datetime(begin_dt), end=local_datetime(end_dt))
+
+
 def _schedule_detail_text(value):
     """Renders a stored time program: "Monday, Saturday: 07:20-17:50".
 
@@ -1438,26 +1459,6 @@ def _temperature_detail_text(value):
     return text
 
 
-def _away_detail_text(value):
-    """The absence of the heat pump, stored as "<start>-<end>" in seconds.
-
-    Rendered in the region's notation. Entries written before hold the
-    German date text itself ("19.10.2026 08:00 - 21.10.2026 08:00") and
-    are shown as they are - None tells the caller so.
-    """
-    match = re.fullmatch(r'(\d{9,11})-(\d{9,11})', value.strip())
-    if not match:
-        return None
-    try:
-        start, end = (datetime.fromtimestamp(int(g)) for g in match.groups())
-    except (OverflowError, OSError, ValueError):
-        return None
-    # Translators: The absence period of the heat pump in the history.
-    # {start}/{end} = date and time.
-    return _("{start} until {end}").format(
-        start=local_datetime(start), end=local_datetime(end))
-
-
 def _detail_text(action, details):
     """Renders a detail in the CURRENT language where that is possible.
 
@@ -1494,7 +1495,7 @@ def _detail_text(action, details):
         if rendered:
             return rendered
     if action == 'away_on':
-        rendered = _away_detail_text(value)
+        rendered = _away_period_text(value)
         if rendered:
             return rendered
     if action == 'set_boost_duration':

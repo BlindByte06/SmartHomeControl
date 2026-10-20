@@ -88,9 +88,34 @@ BOOST_END_TOLERANCE = 180
 class _ChangeDetectionMixin:
     """Compares state snapshots and announces external changes."""
 
-    def _record_local_toggle(self, device_uuid, new_state):
-        """Remembers local switch actions to avoid duplicate announcements"""
-        now = time.time()
+    def _begin_local_toggle(self, device_uuid, new_state, timeout=30.0):
+        """Marks a switching command as on its way, BEFORE it is sent.
+
+        A Meross device answers a command with a push of its new state, and
+        the push travels the MQTT connection the answer to the command comes
+        back on: it can arrive before the call that sent the command has
+        returned - and the mark used to be set only then, so the user's own
+        switching could be taken for somebody else's. The mark holds until
+        the command returns (_record_local_toggle then starts the usual
+        short window) or ``timeout`` has passed; _forget_local_toggle drops
+        it when the command fails.
+        """
+        self._record_local_toggle(device_uuid, new_state,
+                                  at=time.time() + timeout)
+
+    def _forget_local_toggle(self, device_uuid):
+        """Drops the mark of a switching command that did not go through."""
+        self._recent_local_toggles.pop(device_uuid, None)
+        if "_ch" in device_uuid:
+            self._recent_local_toggles.pop(device_uuid.split("_ch", 1)[0], None)
+
+    def _record_local_toggle(self, device_uuid, new_state, at=None):
+        """Remembers local switch actions to avoid duplicate announcements.
+
+        ``at`` lies in the future for a command still on its way (see
+        _begin_local_toggle).
+        """
+        now = time.time() if at is None else at
         self._recent_local_toggles[device_uuid] = (new_state, now)
         # Channels: also mark the parent UUID (without a state check for multi-
         # channel)
@@ -626,6 +651,35 @@ class _ChangeDetectionMixin:
         """
         self._recent_vesync_actions[device_uuid] = time.time()
 
+    def _accept_local_change(self, platform, device):
+        """Takes the settings a confirmed change made here left as the
+        baseline of the comparison.
+
+        The window for changes made here is thirty seconds, but the next
+        poll can come later - VeSync polls once a minute in the background -
+        and the snapshot it compares against was taken BEFORE the change. On
+        2026-10-18 a fan level set here at 18:48:51 went into the history as
+        "you", and the poll 47 seconds later wrote the same level once more
+        as "external". Petlibro had the same fault and the same cure
+        (_accept_local_petlibro_change).
+
+        Only the fields someone can set are taken over: a reading that came
+        with the same answer - air quality, filter life - keeps its old
+        value and is still reported.
+        """
+        states, snapshot = {
+            'vesync': ('_previous_vesync_states', '_snapshot_vesync_state'),
+            'cozytouch': ('_previous_cozytouch_states',
+                          '_snapshot_cozytouch_state'),
+        }[platform]
+        prev = getattr(self, states).get(device.uuid)
+        if prev is None:
+            return
+        now = getattr(self, snapshot)(device)
+        for field, _keys, _with_value in _EXTERNAL_ACTIONS[platform]:
+            if field in now:
+                prev[field] = now[field]
+
     def _is_recent_local_vesync_action(self, device_uuid, window=30.0):
         """True if a local action happened within 'window' seconds.
 
@@ -1103,10 +1157,58 @@ class _ChangeDetectionMixin:
         run = runs.get(uuid)
         if run is None:
             began = prev is not None and prev.get('boost') is False
-            run = runs[uuid] = {'start': time.time() if began else None,
-                                'minutes': None}
+            if began:
+                run = runs[uuid] = {'start': time.time(), 'minutes': None}
+            else:
+                # Already running when first seen - after a sign-in, and
+                # above all after an NVDA restart. The history may know it.
+                start, known = self._cozytouch_boost_from_history(uuid)
+                run = runs[uuid] = {'start': start, 'minutes': known}
         if minutes:
             run['minutes'] = minutes
+
+    def _cozytouch_boost_from_history(self, uuid):
+        """Start and duration of a running boost, read from the history.
+
+        What the dialog and the poll learn about a boost lives in memory and
+        is gone after an NVDA restart: on 2026-10-18 a boost switched on at
+        13:18 and set to 120 minutes ran out at 15:19:48 and went into the
+        history as switched off by somebody else. The history survives the
+        restart and holds both - the switching on (from here, or noticed as
+        made elsewhere) and a duration set from here while it ran.
+
+        Returns (start, minutes); either may be None.
+        """
+        try:
+            from .history import get_history
+            entries = get_history().get_entries(
+                device_uuid=uuid, event_type='action', since_hours=25,
+                max_entries=50)
+        except Exception as e:
+            log.debug(f"Cozytouch: boost not found in the history: {e}")
+            return None, None
+        minutes = None
+        for entry in entries:  # newest first
+            action = entry.get('action')
+            if action in ('boost_off', 'boost_ended'):
+                # The last boost the history knows of is over; this one
+                # started unseen.
+                return None, None
+            if action == 'set_boost_duration' and minutes is None:
+                digits = ''.join(c for c in str(entry.get('details') or '')
+                                 if c.isdigit())
+                if digits:
+                    minutes = int(digits)
+            if action == 'boost_on':
+                start = entry.get('timestamp')
+                if (start and minutes and time.time()
+                        > start + minutes * 60 + BOOST_END_TOLERANCE):
+                    # That one should have ended long ago - its end fell
+                    # into a time NVDA was not running, and the boost seen
+                    # now is another one.
+                    return None, None
+                return start, minutes
+        return None, None
 
     def _note_local_cozytouch_boost(self, uuid, on=None, minutes=None):
         """The dialog switched a boost on or off, or set its duration.
@@ -1142,6 +1244,68 @@ class _ChangeDetectionMixin:
             return False
         return time.time() - started >= minutes * 60 - BOOST_END_TOLERANCE
 
+    def _expect_cozytouch(self, device, field, expected, confirm, fail,
+                          history_action=None, detail="", window=600.0):
+        """Waits for a change the appliance has not shown yet (see
+        cozytouch_devices.CozytouchPending), as _expect_petlibro does.
+
+        Answered by the next polls: ``confirm`` is spoken and the history
+        written - as the user's own change - when the appliance reports
+        ``expected``; ``fail`` is spoken when ``window`` seconds pass
+        without it. Before this the dialog said "could not be toggled", and
+        the boost that arrived a little later was announced and written as
+        somebody else's.
+        """
+        if getattr(self, '_cozytouch_expected', None) is None:
+            self._cozytouch_expected = {}
+        self._cozytouch_expected.setdefault(device.uuid, {})[field] = {
+            'expected': expected, 'until': time.time() + window,
+            'confirm': confirm, 'fail': fail,
+            'history': history_action, 'detail': detail}
+
+    @staticmethod
+    def _same_cozytouch_value(actual, expected):
+        """Equal, or the same number ("55" and 55.0, the cloud's 55.0000)."""
+        if actual == expected:
+            return True
+        if isinstance(actual, bool) or isinstance(expected, bool):
+            return False
+        try:
+            return abs(float(actual) - float(expected)) < 0.01
+        except (TypeError, ValueError):
+            return False
+
+    def _check_cozytouch_expectations(self, dev, new):
+        """Confirms or gives up waiting changes; returns the fields they cover."""
+        waiting = (getattr(self, '_cozytouch_expected', None) or {}).get(dev.uuid)
+        if not waiting:
+            return set()
+        covered = set()
+        now = time.time()
+        for field, expect in list(waiting.items()):
+            covered.add(field)
+            if self._same_cozytouch_value(new.get(field), expect['expected']):
+                del waiting[field]
+                wx.CallAfter(_beep, BEEP_ACTION)
+                wx.CallAfter(ui.message, expect['confirm'])
+                log.info(f"Cozytouch: {dev.name} took "
+                         f"{field}={expect['expected']!r}")
+                if expect['history']:
+                    try:
+                        from .history import get_history
+                        get_history().log_action(dev, expect['history'],
+                                                 expect['detail'])
+                    except Exception as e:
+                        log.debug(f"History entry (Cozytouch {field}) "
+                                  f"failed: {e}")
+            elif now > expect['until']:
+                del waiting[field]
+                wx.CallAfter(_beep, BEEP_ERROR)
+                wx.CallAfter(ui.message, expect['fail'])
+                log.warning(f"Cozytouch: {dev.name} did not take "
+                            f"{field}={expect['expected']!r}")
+        return covered
+
     def _detect_cozytouch_changes(self, devices):
         """Detects external changes (app/physical) and announces them.
 
@@ -1168,8 +1332,16 @@ class _ChangeDetectionMixin:
                            and self._cozytouch_boost_ran_out(dev, uuid))
             self._note_cozytouch_boost(uuid, prev, new_state,
                                        getattr(dev, 'boost_total_time', None))
+            # A change sent from here that the appliance had not shown yet
+            # is answered here - with a confirmation, not as a change made
+            # elsewhere. The fields it covers leave the comparison.
+            covered = self._check_cozytouch_expectations(dev, new_state)
             if prev is None:
                 continue  # first observation: only remember, do not announce
+            if covered:
+                prev = dict(prev)
+                for key in covered:
+                    prev[key] = new_state.get(key)
             # Do not report the user's own recent action as an external change.
             if self._is_recent_local_cozytouch_action(uuid):
                 log.debug(f"Cozytouch change suppressed (local action): {dev.name}")

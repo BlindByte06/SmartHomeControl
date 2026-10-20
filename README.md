@@ -10,13 +10,14 @@ without the manufacturer apps.
 
 ## What it does
 
-Four platforms, each usable on its own: **Meross** (plugs, power strips,
+Five platforms, each usable on its own: **Meross** (plugs, power strips,
 lights, LED strips, aroma diffusers, hubs with temperature and water
 sensors), **Netatmo** (thermostats and valves, weather station and indoor air
 as a display), **VeSync / Levoit** (air purifiers and tower fans, Cosori air
-fryers with start and stop for cooking programmes) and
+fryers with start and stop for cooking programmes),
 **Cozytouch / Atlantic** (hot water heat pump, **experimental** — only one
-device model tested so far).
+device model tested so far) and **Petlibro** (feeders and water fountains,
+**experimental**).
 
 Everything is reached from one tree view: navigate with the arrow keys,
 switch with Enter, with speech and tone feedback for every action. Frequently
@@ -66,6 +67,13 @@ add-on store; translating them is enough to make the store show the add-on in
 that language. The manual (`doc/<language>/readme.html`) is optional - NVDA
 falls back to the English one.
 
+For whoever builds the add-on: NVDA loads the compiled `nvda.mo` next to the
+`.po`, so it has to be regenerated after every change
+(`python build_addon.py mo`), and `locale/<language>/manifest.ini` carries
+the store texts (`python build_addon.py manifests`). `python build_addon.py
+i18n` checks that `.po`, `.mo` and the code agree and names what is missing.
+German (`locale/de/`) is complete and can serve as an example.
+
 ---
 
 ## Reporting a problem
@@ -89,35 +97,12 @@ Please include in the report:
   and the NVDA version
 
 **Before sending, please check the log for personal data.** It contains
-device and home names as given in the manufacturer app. NVDA also writes the
-complete configuration into the log at startup, which includes the email
-address in plain text and the stored passwords and tokens — those in
-encrypted form, readable only on the machine and user account they were
-saved on. The add-on itself logs none of that, but error messages passed
-through from the manufacturer libraries are beyond its control, so a quick
-look is worth it.
-
----
-
----
-
-## Translating
-
-The interface language of the source is **English**, so an interface without a
-matching translation stays English. Translations live under `locale/<lang>/`:
-
-- `locale/SmartHomeControl.pot` is the template — start from a copy of it as
-  `locale/<lang>/LC_MESSAGES/nvda.po`.
-- The compiled `nvda.mo` next to it is what NVDA loads at runtime, so it has to
-  be regenerated after every change (`msgfmt nvda.po -o nvda.mo`, or
-  `polib`). `python build_addon.py i18n` checks that `.po`, `.mo` and the code
-  agree and names what is missing.
-- `locale/<lang>/manifest.ini` translates the summary and description shown in
-  the add-on store (see `locale/de/manifest.ini` for the format).
-
-German (`locale/de/`) is complete and can serve as an example.
-
----
+device and home names as given in the manufacturer app. Email addresses,
+passwords and tokens are kept in a file of their own beside the add-on, not
+in NVDA's configuration, so the configuration NVDA writes into the log at
+startup no longer carries them. The add-on itself logs none of that, but
+error messages passed through from the manufacturer libraries are beyond its
+control, so a quick look is worth it.
 
 ---
 

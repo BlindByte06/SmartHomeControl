@@ -3,7 +3,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: SmartHomeControl\n"
 "Report-Msgid-Bugs-To: blindbyte06@gmail.com\n"
-"POT-Creation-Date: 2026-10-17 21:47+0000\n"
+"POT-Creation-Date: 2026-10-20 16:14+0000\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
@@ -18,12 +18,12 @@ msgid ""
 msgstr ""
 
 #. Translators: Liter estimate after the percentage.
-#: dialog_cozytouch.py:854
+#: dialog_cozytouch.py:918
 msgid " (approx. {liters} liters)"
 msgstr ""
 
 #. Translators: End time suffix after the target temperature.
-#: dialog_netatmo.py:298
+#: dialog_netatmo.py:299
 msgid " (until {end})"
 msgstr ""
 
@@ -35,7 +35,7 @@ msgstr ""
 
 #. Translators: Filter warning in the device label. {percent} = remaining
 #. life.
-#: dialog_vesync.py:876
+#: dialog_vesync.py:879
 msgid " - Warning: replace filter {percent}%"
 msgstr ""
 
@@ -46,7 +46,7 @@ msgid " - press Enter for the single drinks"
 msgstr ""
 
 #. Translators: Usage hint after the target temperature.
-#: dialog_netatmo.py:300
+#: dialog_netatmo.py:301
 msgid " - press Enter to change"
 msgstr ""
 
@@ -64,9 +64,9 @@ msgid ""
 msgstr ""
 
 #. Translators: Cancel button of a Petlibro safety question.
-#: dialog_petlibro.py:160 dialog_petlibro.py:1602 dialog_vesync.py:301
-#: dialog_vesync.py:632 dialog_vesync.py:694 dialog_vesync.py:325
-#: dialog_vesync.py:517 dialog_vesync.py:521 settings_panel.py:339
+#: dialog_petlibro.py:160 dialog_petlibro.py:1602 dialog_vesync.py:304
+#: dialog_vesync.py:635 dialog_vesync.py:697 dialog_vesync.py:328
+#: dialog_vesync.py:520 dialog_vesync.py:524 settings_panel.py:339
 #: settings_panel.py:1384
 msgid "&Cancel"
 msgstr ""
@@ -99,7 +99,7 @@ msgid "&Cozytouch (experimental)"
 msgstr ""
 
 #. Translators: Label of the weekday box in the time program dialog.
-#: dialog_cozytouch.py:532 dialog_petlibro.py:1786
+#: dialog_cozytouch.py:596 dialog_petlibro.py:1786
 msgid "&Day:"
 msgstr ""
 
@@ -135,7 +135,7 @@ msgid "&Email:"
 msgstr ""
 
 #. Translators: Label of the end field in the time program dialog.
-#: dialog_cozytouch.py:551 dialog_cozytouch.py:751
+#: dialog_cozytouch.py:615 dialog_cozytouch.py:815
 msgid "&End:"
 msgstr ""
 
@@ -173,7 +173,7 @@ msgid "&History (Ctrl+H)"
 msgstr ""
 
 #. Translators: Label of the hour selection.
-#: dialog_netatmo.py:108
+#: dialog_netatmo.py:109
 msgid "&Hour:"
 msgstr ""
 
@@ -214,7 +214,7 @@ msgid "&New meal..."
 msgstr ""
 
 #. Translators: Button labels of the first safety prompt.
-#: dialog_vesync.py:301
+#: dialog_vesync.py:304
 msgid "&Next"
 msgstr ""
 
@@ -260,7 +260,7 @@ msgstr ""
 
 #. Translators: Button that refreshes the device list. & marks the
 #. accelerator, F5 does the same.
-#: device_dialog.py:3738 device_dialog.py:293 dialog_platform_status.py:127
+#: device_dialog.py:3744 device_dialog.py:293 dialog_platform_status.py:127
 msgid "&Refresh (F5)"
 msgstr ""
 
@@ -275,7 +275,7 @@ msgid "&Save"
 msgstr ""
 
 #. Translators: Label of the start field in the time program dialog.
-#: dialog_cozytouch.py:545 dialog_cozytouch.py:747
+#: dialog_cozytouch.py:609 dialog_cozytouch.py:811
 msgid "&Start:"
 msgstr ""
 
@@ -285,7 +285,7 @@ msgid "&Status:"
 msgstr ""
 
 #. Translators: Label of the temperature selection list.
-#: dialog_netatmo.py:65
+#: dialog_netatmo.py:66
 msgid "&Temperature (°C):"
 msgstr ""
 
@@ -310,30 +310,30 @@ msgid "&View:"
 msgstr ""
 
 #. Translators: Label of the window box in the time program dialog.
-#: dialog_cozytouch.py:539
+#: dialog_cozytouch.py:603
 msgid "&Window:"
 msgstr ""
 
 #. Translators: Button labels of the prompt before the time or temperature of
 #. a running programme is changed.
-#: dialog_vesync.py:632
+#: dialog_vesync.py:635
 msgid "&Yes, change"
 msgstr ""
 
 #. Translators: Button labels of the second safety prompt.
-#: dialog_vesync.py:325
+#: dialog_vesync.py:328
 msgid "&Yes, reset"
 msgstr ""
 
 #. Translators: Button labels of the prompt before starting a cooking
 #. programme, when the settings can still be changed.
-#: dialog_vesync.py:516 dialog_vesync.py:521
+#: dialog_vesync.py:519 dialog_vesync.py:524
 msgid "&Yes, start"
 msgstr ""
 
 #. Translators: Button labels of the prompt before stopping a cooking
 #. programme.
-#: dialog_vesync.py:694
+#: dialog_vesync.py:697
 msgid "&Yes, stop"
 msgstr ""
 
@@ -343,7 +343,7 @@ msgid "'{text}' not found"
 msgstr ""
 
 #. Translators: Marker on the active heating schedule in the selection list.
-#: dialog_netatmo.py:567
+#: dialog_netatmo.py:568
 msgid "(active)"
 msgstr ""
 
@@ -359,8 +359,15 @@ msgid ""
 "- NVDA no longer crashes when the device menu is closed after a device was switched from the favourites tab.\n"
 "- Enter or Space on a VeSync or Cozytouch device no longer freezes NVDA.\n"
 "- A leak sensor that already detects water when NVDA starts is now announced.\n"
+"- The Netatmo device menu offers \"Add to favorites\" again.\n"
+"- A setting changed in the VeSync or Cozytouch device menu is no longer also recorded as changed elsewhere.\n"
+"- A Meross device switched here is no longer taken for one switched elsewhere.\n"
+"- A Cozytouch command the appliance takes over late is announced as sent and confirmed once it arrives, instead of being reported as failed.\n"
+"- A Cozytouch boost that runs out after an NVDA restart is recorded as ended.\n"
+"- The Cozytouch away period is shown in the date format of the region.\n"
 "- A Meross account with two-factor authentication is named as the reason the sign-in fails, and such a sign-in is no longer retried for good.\n"
 "- Testing the Netatmo connection no longer invalidates the running sign-in.\n"
+"- A foreign call of the Netatmo callback address no longer ends the sign-in.\n"
 "- A Cozytouch server fault at sign-in is retried.\n"
 "- Renewed tokens no longer write NVDA's whole configuration to disk.\n"
 "- NVDA exits faster on a slow network.\n"
@@ -368,7 +375,7 @@ msgid ""
 msgstr ""
 
 #. Translators: As above, in case the device name is unavailable.
-#: change_detection.py:139
+#: change_detection.py:164
 msgid ""
 "A Meross device is temporarily being updated less often – its cloud limit "
 "has been reached"
@@ -384,20 +391,20 @@ msgstr ""
 
 #. Translators: Usage hint at the end of the favorites layer overview
 #. (announced after pressing 0 in the layer).
-#: __init__.py:2096
+#: __init__.py:2099
 msgid ""
 "A digit announces the status, the same digit again toggles, Escape cancels"
 msgstr ""
 
 #. Translators: Error message when the bundled cryptography library is
 #. missing.
-#: security.py:214 security.py:229
+#: security.py:242 security.py:257
 msgid "AES decryption not available (PyCryptodome missing)"
 msgstr ""
 
 #. Translators: Error message when the bundled cryptography library is
 #. missing.
-#: security.py:198
+#: security.py:226
 msgid "AES encryption not available (PyCryptodome missing)"
 msgstr ""
 
@@ -407,13 +414,13 @@ msgid "Accumulated energy consumption of the device in kilowatt hours."
 msgstr ""
 
 #. Translators: Column heading in the CSV export of the history.
-#: history.py:1041
+#: history.py:1040
 msgid "Action"
 msgstr ""
 
 #. Translators: CSV column with the untranslated action key (e.g.
 #. "toggle_off") for further processing.
-#: history.py:1044
+#: history.py:1043
 msgid "Action key"
 msgstr ""
 
@@ -490,8 +497,8 @@ msgid "Active platforms"
 msgstr ""
 
 #. Translators: Action entry in the device tree.
-#: dialog_cozytouch.py:830 dialog_favorites.py:58 dialog_petlibro.py:782
-#: dialog_vesync.py:1251
+#: dialog_cozytouch.py:894 dialog_favorites.py:58 dialog_petlibro.py:782
+#: dialog_vesync.py:1254
 msgid "Add to favorites - Enter"
 msgstr ""
 
@@ -507,7 +514,7 @@ msgstr ""
 
 #. Translators: Name of a measured quantity, in the history and as a CSV
 #. column heading.
-#: history.py:147
+#: history.py:146
 msgid "Air pressure"
 msgstr ""
 
@@ -538,7 +545,7 @@ msgstr ""
 
 #. Translators: VeSync purifier announcement: new air quality level
 #. (excellent/good/moderate/poor).
-#: change_detection.py:967
+#: change_detection.py:1021
 msgid "Air quality {level}"
 msgstr ""
 
@@ -555,12 +562,12 @@ msgid "Air quality: {level}"
 msgstr ""
 
 #. Translators: Air quality in percent in the device tree.
-#: dialog_vesync.py:1095
+#: dialog_vesync.py:1098
 msgid "Air quality: {percent}%"
 msgstr ""
 
 #. Translators: Air quality rating in the device tree.
-#: dialog_help.py:585 dialog_vesync.py:1086
+#: dialog_help.py:585 dialog_vesync.py:1089
 msgid "Air quality: {value}"
 msgstr ""
 
@@ -581,12 +588,12 @@ msgid "All meals of today are given"
 msgstr ""
 
 #. Translators: History entry: today's meals were given back.
-#: history.py:1314
+#: history.py:1313
 msgid "All meals of today given back"
 msgstr ""
 
 #. Translators: Confirmation: every meal of today is skipped.
-#: dialog_petlibro.py:1632 history.py:1312
+#: dialog_petlibro.py:1632 history.py:1311
 msgid "All meals of today skipped"
 msgstr ""
 
@@ -777,7 +784,7 @@ msgid "Announce when the water of a fountain runs low"
 msgstr ""
 
 #. Translators: Description of the script in the NVDA input gestures dialog.
-#: __init__.py:2282
+#: __init__.py:2285
 msgid ""
 "Announces a summary of all smart home devices; pressed twice, shows every "
 "device in a list"
@@ -785,7 +792,7 @@ msgstr ""
 
 #. Translators: Description of the script in the NVDA input gestures dialog.
 #. No default gesture - the user assigns one if needed.
-#: __init__.py:1667
+#: __init__.py:1670
 msgid ""
 "Announces the energy consumption of the metering plugs (today and last 7 "
 "days)"
@@ -793,7 +800,7 @@ msgstr ""
 
 #. Translators: Heading of the day group in the time program dialog. The
 #. edited windows are written to every day ticked here.
-#: dialog_cozytouch.py:572
+#: dialog_cozytouch.py:636
 msgid "Apply to these days"
 msgstr ""
 
@@ -834,7 +841,7 @@ msgid "Auto profile '{value}' is not supported"
 msgstr ""
 
 #. Translators: The following texts describe actions in the device history.
-#: history.py:1268
+#: history.py:1267
 msgid "Auto profile changed"
 msgstr ""
 
@@ -845,12 +852,12 @@ msgstr ""
 
 #. Translators: VeSync announcement: the auto profile
 #. (default/efficient/quiet) determines the control behavior in auto mode.
-#: change_detection.py:955
+#: change_detection.py:1009
 msgid "Auto profile {profile}"
 msgstr ""
 
 #. Translators: Combined info+action label in the device tree.
-#: dialog_vesync.py:1163
+#: dialog_vesync.py:1166
 msgid "Auto profile: {profile} - press Enter to change"
 msgstr ""
 
@@ -872,64 +879,64 @@ msgid "Away"
 msgstr ""
 
 #. Translators: Cozytouch status announcement: away mode active.
-#: cozytouch_devices.py:578 dialog_help.py:556
+#: cozytouch_devices.py:602 dialog_help.py:556
 msgid "Away mode active"
 msgstr ""
 
 #. Translators: Error message when toggling away mode fails.
-#: dialog_cozytouch.py:392 dialog_cozytouch.py:353
+#: dialog_cozytouch.py:456 dialog_cozytouch.py:420
 msgid "Away mode could not be toggled"
 msgstr ""
 
 #. Translators: Cozytouch announcement: away mode switched on/off.
-#: change_detection.py:1220
+#: change_detection.py:1392
 msgid "Away mode off"
 msgstr ""
 
 #. Translators: Cozytouch announcement: away mode switched on/off.
-#: change_detection.py:1220
+#: change_detection.py:1392
 msgid "Away mode on"
 msgstr ""
 
 #. Translators: Cozytouch status announcement: away mode is scheduled but its
 #. start time has not been reached yet.
-#: cozytouch_devices.py:575
+#: cozytouch_devices.py:599
 msgid "Away mode scheduled"
 msgstr ""
 
 #. Translators: The following texts describe actions in the device history.
-#: history.py:1265
+#: history.py:1264
 msgid "Away mode switched off"
 msgstr ""
 
 #. Translators: The following texts describe actions in the device history.
-#: history.py:1264
+#: history.py:1263
 msgid "Away mode switched on"
 msgstr ""
 
 #. Translators: Combined info+action label in the device tree.
-#: dialog_cozytouch.py:968 dialog_cozytouch.py:965
+#: dialog_cozytouch.py:1031 dialog_cozytouch.py:1028
 msgid "Away mode: {state} - press Enter to toggle"
 msgstr ""
 
 #. Translators: Combined info+action label in the device tree: away mode is
 #. active/scheduled until the given date and time.
-#: dialog_cozytouch.py:960
+#: dialog_cozytouch.py:1023
 msgid "Away mode: {state} until {end} - press Enter to turn off"
 msgstr ""
 
 #. Translators: Choices in the heating mode dialog.
-#: dialog_netatmo.py:441
+#: dialog_netatmo.py:442
 msgid "Away – reduced temperature"
 msgstr ""
 
 #. Translators: The following texts describe actions in the device history.
-#: history.py:1237
+#: history.py:1236
 msgid "Back to schedule"
 msgstr ""
 
 #. Translators: Action entry for returning to schedule mode.
-#: device_dialog.py:3144 dialog_netatmo.py:767 dialog_netatmo.py:1004
+#: device_dialog.py:3144 dialog_netatmo.py:768 dialog_netatmo.py:1012
 msgid "Back to schedule - press Enter to activate"
 msgstr ""
 
@@ -1006,72 +1013,72 @@ msgid "Boiler status: shows whether the heating is currently active or off."
 msgstr ""
 
 #. Translators: Cozytouch status announcement: boost mode is running.
-#: cozytouch_devices.py:570 dialog_help.py:554
+#: cozytouch_devices.py:594 dialog_help.py:554
 msgid "Boost active"
 msgstr ""
 
 #. Translators: Error message when toggling boost fails.
-#: dialog_cozytouch.py:301
+#: dialog_cozytouch.py:345
 msgid "Boost could not be toggled"
 msgstr ""
 
 #. Translators: Error when the cloud rejects the boost duration write (the
 #. capability may be read-only on some models).
-#: dialog_cozytouch.py:274
+#: dialog_cozytouch.py:335
 msgid ""
 "Boost duration could not be set - the device may not accept this change"
 msgstr ""
 
 #. Translators: Input prompt for the boost duration in minutes.
-#: dialog_cozytouch.py:221
+#: dialog_cozytouch.py:282
 msgid "Boost duration in minutes (e.g. 60):"
 msgstr ""
 
 #. Translators: History entry: the duration of the boost was set.
-#: history.py:1261
+#: history.py:1260
 msgid "Boost duration set"
 msgstr ""
 
 #. Translators: Combined info+action label: boost has no time limit set,
 #. changeable with Enter.
-#: dialog_cozytouch.py:939
+#: dialog_cozytouch.py:1003
 msgid "Boost duration: no time limit set - press Enter to change"
 msgstr ""
 
 #. Translators: Combined info+action label: boost duration in minutes,
 #. changeable with Enter.
-#: dialog_cozytouch.py:930
+#: dialog_cozytouch.py:994
 msgid "Boost duration: {minutes} minutes - press Enter to change"
 msgstr ""
 
 #. Translators: Cozytouch announcement: the boost ran out after its set
 #. duration.
-#: change_detection.py:1209 history.py:1259
+#: change_detection.py:1381 history.py:1258
 msgid "Boost ended"
 msgstr ""
 
 #. Translators: Cozytouch announcement: boost mode switched on or off.
-#: change_detection.py:1213
+#: change_detection.py:1385
 msgid "Boost off"
 msgstr ""
 
 #. Translators: Cozytouch announcement: boost mode switched on or off.
-#: change_detection.py:1213
+#: change_detection.py:1385
 msgid "Boost on"
 msgstr ""
 
 #. Translators: The following texts describe actions in the device history.
-#: history.py:1256
+#: history.py:1255
 msgid "Boost switched off"
 msgstr ""
 
 #. Translators: The following texts describe actions in the device history.
-#: history.py:1255
+#: history.py:1254
 msgid "Boost switched on"
 msgstr ""
 
 #. Translators: Combined info+action label in the device tree.
-#: dialog_cozytouch.py:917
+#: dialog_cozytouch.py:981
 msgid "Boost: {state} - press Enter to toggle"
 msgstr ""
 
@@ -1091,12 +1098,12 @@ msgid "Bright yellow"
 msgstr ""
 
 #. Translators: The following texts describe actions in the device history.
-#: history.py:1250
+#: history.py:1249
 msgid "Brightness changed"
 msgstr ""
 
 #. Translators: Title of the brightness dialog.
-#: device_dialog.py:3565
+#: device_dialog.py:3571
 msgid "Brightness for {name}"
 msgstr ""
 
@@ -1146,7 +1153,7 @@ msgstr ""
 
 #. Translators: Button labels of the prompt before starting a cooking
 #. programme, when the settings can still be changed.
-#: dialog_vesync.py:516
+#: dialog_vesync.py:519
 msgid "C&hange..."
 msgstr ""
 
@@ -1158,7 +1165,7 @@ msgstr ""
 
 #. Translators: Name of a measured quantity, in the history and as a CSV
 #. column heading.
-#: history.py:144
+#: history.py:143
 msgid "CO₂"
 msgstr ""
 
@@ -1173,13 +1180,13 @@ msgid "CSV files (*.csv)|*.csv"
 msgstr ""
 
 #. Translators: Message when the user cancels an action.
-#: __init__.py:1995 __init__.py:2109 dialog_cozytouch.py:361
-#: dialog_cozytouch.py:429 dialog_petlibro.py:304 dialog_petlibro.py:497
+#: __init__.py:1998 __init__.py:2112 dialog_cozytouch.py:428
+#: dialog_cozytouch.py:493 dialog_petlibro.py:304 dialog_petlibro.py:497
 #: dialog_petlibro.py:533 dialog_petlibro.py:591 dialog_petlibro.py:1612
-#: dialog_vesync.py:417 dialog_vesync.py:456 dialog_vesync.py:471
-#: dialog_vesync.py:477 dialog_vesync.py:580 dialog_vesync.py:607
-#: dialog_vesync.py:644 dialog_vesync.py:706 dialog_vesync.py:311
-#: dialog_vesync.py:332 dialog_vesync.py:438
+#: dialog_vesync.py:420 dialog_vesync.py:459 dialog_vesync.py:474
+#: dialog_vesync.py:480 dialog_vesync.py:583 dialog_vesync.py:610
+#: dialog_vesync.py:647 dialog_vesync.py:709 dialog_vesync.py:314
+#: dialog_vesync.py:335 dialog_vesync.py:441
 msgid "Cancelled"
 msgstr ""
 
@@ -1200,7 +1207,7 @@ msgstr ""
 
 #. Translators: Action entry in the device tree, changes the time of a loaded
 #. cooking programme.
-#: dialog_vesync.py:1015
+#: dialog_vesync.py:1018
 msgid "Change cooking time - Enter"
 msgstr ""
 
@@ -1224,7 +1231,7 @@ msgstr ""
 
 #. Translators: Title of the dialog that changes the time or temperature of a
 #. running cooking programme.
-#: dialog_vesync.py:627
+#: dialog_vesync.py:630
 msgid "Change programme"
 msgstr ""
 
@@ -1242,7 +1249,7 @@ msgstr ""
 #. Translators: Safety prompt before the temperature of a running programme is
 #. changed. {name} = device name, {temperature} = new set temperature with
 #. unit.
-#: dialog_vesync.py:587
+#: dialog_vesync.py:590
 msgid "Change the temperature on {name} to {temperature}?"
 msgstr ""
 
@@ -1280,33 +1287,33 @@ msgid "Child lock is not supported by this device"
 msgstr ""
 
 #. Translators: VeSync announcement: the child lock locks the buttons.
-#: change_detection.py:929
+#: change_detection.py:983
 msgid "Child lock off"
 msgstr ""
 
 #. Translators: VeSync announcement: the child lock locks the buttons.
-#: change_detection.py:928
+#: change_detection.py:982
 msgid "Child lock on"
 msgstr ""
 
 #. Translators: The following texts describe actions in the device history.
-#: history.py:1277
+#: history.py:1276
 msgid "Child lock switched off"
 msgstr ""
 
 #. Translators: The following texts describe actions in the device history.
-#: history.py:1276
+#: history.py:1275
 msgid "Child lock switched on"
 msgstr ""
 
 #. Translators: Line in the device tree: the child lock is off, Enter turns it
 #. on.
-#: dialog_vesync.py:1221
+#: dialog_vesync.py:1224
 msgid "Child lock: off - press Enter to turn on"
 msgstr ""
 
 #. Translators: Combined info+action label in the device tree.
-#: dialog_vesync.py:1218
+#: dialog_vesync.py:1221
 msgid "Child lock: on - press Enter to turn off"
 msgstr ""
 
@@ -1319,7 +1326,7 @@ msgstr ""
 #. gestures dialog. Keep it short: the input gestures dialog shows a list in
 #. which every entry is read out in one go. Details are in the manual and are
 #. announced in the layer by key 0.
-#: __init__.py:1880
+#: __init__.py:1883
 msgid ""
 "Choose a favorite by digit (a digit announces its status, the same digit "
 "again toggles it)"
@@ -1327,12 +1334,12 @@ msgstr ""
 
 #. Translators: Announced when the favorites layer opens and waits for a
 #. digit. Keep it short - it is spoken on every use.
-#: __init__.py:1913
+#: __init__.py:1916
 msgid "Choose a favorite: digit 1 to 9"
 msgstr ""
 
 #. Translators: Help text in the light color dialog.
-#: device_dialog.py:3447
+#: device_dialog.py:3453
 msgid "Choose a light color for {name}."
 msgstr ""
 
@@ -1345,12 +1352,12 @@ msgid ""
 msgstr ""
 
 #. Translators: Title of the heating mode dialog.
-#: dialog_netatmo.py:459
+#: dialog_netatmo.py:460
 msgid "Choose heating mode"
 msgstr ""
 
 #. Translators: Help text in the heating mode dialog. {name} = device name.
-#: dialog_netatmo.py:448
+#: dialog_netatmo.py:449
 msgid "Choose heating mode for {name}.\n"
 msgstr ""
 
@@ -1363,7 +1370,7 @@ msgstr ""
 
 #. Translators: Hint text above the heating schedule selection. {name}=device
 #. name, {count}=number of available schedules.
-#: dialog_netatmo.py:575
+#: dialog_netatmo.py:576
 msgid ""
 "Choose heating schedule for {name}.\n"
 "{count} schedules available."
@@ -1395,22 +1402,22 @@ msgstr ""
 
 #. Translators: Label of the temperature field in the dialog that sets the
 #. target temperature.
-#: dialog_netatmo.py:76
+#: dialog_netatmo.py:77
 msgid "Choose target temperature in 0.5°C steps"
 msgstr ""
 
 #. Translators: Prompt in the auto profile dialog.
-#: dialog_vesync.py:265
+#: dialog_vesync.py:268
 msgid "Choose the auto profile:"
 msgstr ""
 
 #. Translators: Prompt in the fan level dialog.
-#: dialog_vesync.py:173
+#: dialog_vesync.py:176
 msgid "Choose the fan speed:"
 msgstr ""
 
 #. Translators: Prompt in the night light dialog.
-#: dialog_vesync.py:242
+#: dialog_vesync.py:245
 msgid "Choose the night light mode:"
 msgstr ""
 
@@ -1423,7 +1430,7 @@ msgid ""
 msgstr ""
 
 #. Translators: Prompt in the mode selection dialog.
-#: dialog_cozytouch.py:188 dialog_vesync.py:132
+#: dialog_cozytouch.py:246 dialog_vesync.py:135
 msgid "Choose the operating mode:"
 msgstr ""
 
@@ -1442,7 +1449,7 @@ msgid "Choose the water mode:"
 msgstr ""
 
 #. Translators: History entry: the cleaning reminder of a fountain was reset.
-#: history.py:1329
+#: history.py:1328
 msgid "Cleaning reminder reset"
 msgstr ""
 
@@ -1482,12 +1489,12 @@ msgid "Close dialog"
 msgstr ""
 
 #. Translators: The following texts describe actions in the device history.
-#: history.py:1252
+#: history.py:1251
 msgid "Color changed"
 msgstr ""
 
 #. Translators: Title of the light color dialog.
-#: device_dialog.py:3467
+#: device_dialog.py:3473
 msgid "Color temperature for {name}"
 msgstr ""
 
@@ -1547,7 +1554,7 @@ msgid "Comfort+"
 msgstr ""
 
 #. Translators: Title of the second safety prompt.
-#: dialog_vesync.py:321
+#: dialog_vesync.py:324
 msgid "Confirmation"
 msgstr ""
 
@@ -1571,7 +1578,7 @@ msgstr ""
 
 #. Translators: Note that the Cozytouch connection is being established in the
 #. background.
-#: dialog_cozytouch.py:1180 settings_panel.py:1670
+#: dialog_cozytouch.py:1243 settings_panel.py:1670
 msgid "Connecting to Cozytouch..."
 msgstr ""
 
@@ -1589,7 +1596,7 @@ msgstr ""
 
 #. Translators: Note that the VeSync connection is being established in the
 #. background.
-#: dialog_vesync.py:1456 settings_panel.py:1566
+#: dialog_vesync.py:1459 settings_panel.py:1566
 msgid "Connecting to VeSync..."
 msgstr ""
 
@@ -1601,7 +1608,7 @@ msgstr ""
 
 #. Translators: Description of the script in the NVDA input gestures dialog.
 #. No default gesture - the user assigns one if needed.
-#: __init__.py:1777
+#: __init__.py:1780
 msgid ""
 "Connection diagnostics: announce the status of all smart home platforms"
 msgstr ""
@@ -1665,24 +1672,24 @@ msgstr ""
 
 #. Translators: History entry: time or temperature of a running cooking
 #. programme was changed.
-#: history.py:1287
+#: history.py:1286
 msgid "Cooking programme adjusted"
 msgstr ""
 
 #. Translators: History entry: a cooking programme was started from the add-
 #. on.
-#: history.py:1284
+#: history.py:1283
 msgid "Cooking programme started"
 msgstr ""
 
 #. Translators: History entry: a cooking programme was stopped from the add-
 #. on.
-#: history.py:1281
+#: history.py:1280
 msgid "Cooking programme stopped"
 msgstr ""
 
 #. Translators: Title of the cooking time entry.
-#: dialog_vesync.py:462 dialog_vesync.py:597
+#: dialog_vesync.py:465 dialog_vesync.py:600
 msgid "Cooking time"
 msgstr ""
 
@@ -1692,7 +1699,7 @@ msgid "Cool white"
 msgstr ""
 
 #. Translators: Choices for the light color (with description).
-#: device_dialog.py:3441
+#: device_dialog.py:3447
 msgid "Cool white - bright, bluish light for concentration (approx. 6500K)"
 msgstr ""
 
@@ -1719,7 +1726,7 @@ msgstr ""
 
 #. Translators: Error message on a Cozytouch connection problem. {error} =
 #. technical error type.
-#: cozytouch_api.py:183
+#: cozytouch_api.py:196
 msgid "Cozytouch connection error: {error}"
 msgstr ""
 
@@ -1736,7 +1743,7 @@ msgid "Cozytouch email address"
 msgstr ""
 
 #. Translators: Generic Cozytouch error message with detail text.
-#: dialog_cozytouch.py:108 settings_panel.py:1708 settings_panel.py:1711
+#: dialog_cozytouch.py:143 settings_panel.py:1708 settings_panel.py:1711
 msgid "Cozytouch error: {error}"
 msgstr ""
 
@@ -1763,7 +1770,7 @@ msgstr ""
 
 #. Translators: Error message of the Cozytouch sign-in: the credentials were
 #. refused.
-#: cozytouch_api.py:199
+#: cozytouch_api.py:212
 msgid "Cozytouch: incorrect email or password"
 msgstr ""
 
@@ -1774,13 +1781,13 @@ msgid "Cozytouch: invalid email address"
 msgstr ""
 
 #. Translators: Error message of the Cozytouch sign-in, shown to the user.
-#: cozytouch_api.py:191
+#: cozytouch_api.py:204
 msgid "Cozytouch: invalid response during login"
 msgstr ""
 
 #. Translators: Error message of the Cozytouch sign-in with the HTTP status
 #. code.
-#: cozytouch_api.py:202
+#: cozytouch_api.py:215
 msgid "Cozytouch: login failed (HTTP {code})"
 msgstr ""
 
@@ -1792,12 +1799,12 @@ msgstr ""
 
 #. Translators: Error when the Cozytouch cloud does not hand out the device
 #. list. {code} = HTTP status.
-#: cozytouch_api.py:230 cozytouch_api.py:225
+#: cozytouch_api.py:243 cozytouch_api.py:238
 msgid "Cozytouch: the device list could not be read (HTTP {code})"
 msgstr ""
 
 #. Translators: Confirmation after loading the Cozytouch devices afterwards.
-#: dialog_cozytouch.py:1191
+#: dialog_cozytouch.py:1254
 msgid "Cozytouch: {count} device(s) loaded"
 msgstr ""
 
@@ -1823,7 +1830,7 @@ msgstr ""
 
 #. Translators: Shown in the dialog that sets the brightness: the value set at
 #. the moment.
-#: device_dialog.py:3559
+#: device_dialog.py:3565
 msgid "Current brightness: {value}%"
 msgstr ""
 
@@ -1833,7 +1840,7 @@ msgid "Current color: RGB({r}, {g}, {b})\n"
 msgstr ""
 
 #. Translators: Actual heating target when it differs from the setpoint.
-#: dialog_cozytouch.py:905
+#: dialog_cozytouch.py:969
 msgid "Current heating target: {temp} degrees"
 msgstr ""
 
@@ -1848,12 +1855,12 @@ msgid "Current mains voltage in volts."
 msgstr ""
 
 #. Translators: Display when the heating mode is manual.
-#: dialog_netatmo.py:455
+#: dialog_netatmo.py:456
 msgid "Current mode: manual"
 msgstr ""
 
 #. Translators: Display of the current heating mode.
-#: dialog_netatmo.py:451
+#: dialog_netatmo.py:452
 msgid "Current mode: {mode}"
 msgstr ""
 
@@ -1868,29 +1875,29 @@ msgid "Current room temperature from the sensor. Updates automatically."
 msgstr ""
 
 #. Translators: Display of the measured room temperature.
-#: dialog_netatmo.py:56
+#: dialog_netatmo.py:57
 msgid "Current room temperature: {temp}°C\n"
 msgstr ""
 
 #. Translators: Spoken in the dialog that sets the light colour: what is set
 #. at the moment.
-#: device_dialog.py:3459
+#: device_dialog.py:3465
 msgid "Current setting: cool white"
 msgstr ""
 
 #. Translators: Spoken in the dialog that sets the light colour: what is set
 #. at the moment.
-#: device_dialog.py:3455
+#: device_dialog.py:3461
 msgid "Current setting: daylight"
 msgstr ""
 
 #. Translators: Current light color in the help text.
-#: device_dialog.py:3451
+#: device_dialog.py:3457
 msgid "Current setting: warm white"
 msgstr ""
 
 #. Translators: Display of the current target temperature.
-#: dialog_netatmo.py:59
+#: dialog_netatmo.py:60
 msgid "Current target temperature: {temp}°C"
 msgstr ""
 
@@ -1903,7 +1910,7 @@ msgstr ""
 #. Translators: Cozytouch status announcement and line in the device tree: the
 #. water heater is heating right now - with the heat pump or the heating
 #. element, the cloud does not say which.
-#: cozytouch_devices.py:583 dialog_cozytouch.py:869 dialog_help.py:130
+#: cozytouch_devices.py:607 dialog_cozytouch.py:933 dialog_help.py:130
 msgid "Currently heating"
 msgstr ""
 
@@ -1940,7 +1947,7 @@ msgstr ""
 
 #. Translators: Date format hint in the away scheduling dialog. {example} = a
 #. date and time in the notation the field expects.
-#: dialog_cozytouch.py:741
+#: dialog_cozytouch.py:805
 msgid "Date and time as in the example: {example}"
 msgstr ""
 
@@ -1950,7 +1957,7 @@ msgid "Daylight"
 msgstr ""
 
 #. Translators: Choices for the light color (with description).
-#: device_dialog.py:3439
+#: device_dialog.py:3445
 msgid "Daylight - neutral, natural light for working (approx. 4000K)"
 msgstr ""
 
@@ -1981,7 +1988,7 @@ msgid "Delete the meal {meal} for good?"
 msgstr ""
 
 #. Translators: History entry: the desiccant reminder was reset.
-#: history.py:1326
+#: history.py:1325
 msgid "Desiccant reminder reset"
 msgstr ""
 
@@ -2009,7 +2016,7 @@ msgid ""
 msgstr ""
 
 #. Translators: Column heading in the CSV export of the history.
-#: history.py:1047
+#: history.py:1046
 msgid "Details"
 msgstr ""
 
@@ -2042,7 +2049,7 @@ msgstr ""
 
 #. Translators: Error message when a diffuser action is accidentally executed
 #. on another device type.
-#: __init__.py:2844
+#: __init__.py:2884
 msgid "Device is not a diffuser"
 msgstr ""
 
@@ -2053,18 +2060,18 @@ msgstr ""
 
 #. Translators: Spoken when the shortcut for the device menu is pressed while
 #. the menu is already open.
-#: __init__.py:1580
+#: __init__.py:1583
 msgid "Device menu is already open"
 msgstr ""
 
 #. Translators: Column headers of the CSV export (history).
-#: history.py:1032
+#: history.py:1031
 msgid "Device name"
 msgstr ""
 
 #. Translators: Error message when a device can no longer be found in the
 #. device list via its UUID (e.g. after a reload).
-#: __init__.py:2730 __init__.py:2839
+#: __init__.py:2733 __init__.py:2879
 msgid "Device not found"
 msgstr ""
 
@@ -2158,33 +2165,33 @@ msgid "Display control is not supported by this device"
 msgstr ""
 
 #. Translators: VeSync announcement: LED display on the device.
-#: change_detection.py:919
+#: change_detection.py:973
 msgid "Display off"
 msgstr ""
 
 #. Translators: VeSync announcement: LED display on the device.
-#: change_detection.py:918
+#: change_detection.py:972
 msgid "Display on"
 msgstr ""
 
 #. Translators: The following texts describe actions in the device history.
-#: history.py:1275
+#: history.py:1274
 msgid "Display switched off"
 msgstr ""
 
 #. Translators: The following texts describe actions in the device history.
-#: history.py:1274
+#: history.py:1273
 msgid "Display switched on"
 msgstr ""
 
 #. Translators: Line in the device tree: the display is off, Enter turns it
 #. on.
-#: dialog_vesync.py:1209
+#: dialog_vesync.py:1212
 msgid "Display: off - press Enter to turn on"
 msgstr ""
 
 #. Translators: Combined info+action label in the device tree.
-#: dialog_vesync.py:1206
+#: dialog_vesync.py:1209
 msgid "Display: on - press Enter to turn off"
 msgstr ""
 
@@ -2205,13 +2212,13 @@ msgid "Drunk today: {ml} in {count} drinks"
 msgstr ""
 
 #. Translators: Label of the duration section in the thermostat dialog.
-#: dialog_netatmo.py:88
+#: dialog_netatmo.py:89
 msgid "Duration:"
 msgstr ""
 
 #. Translators: How long the selected cooking programme will take, before it
 #. has started running. {value} = time, e.g. "6 min".
-#: dialog_vesync.py:961
+#: dialog_vesync.py:964
 msgid "Duration: {value}"
 msgstr ""
 
@@ -2252,14 +2259,14 @@ msgid "Efficient"
 msgstr ""
 
 #. Translators: Validation error when email or password is missing.
-#: cozytouch_api.py:163 meross_api.py:493 petlibro_api.py:219
+#: cozytouch_api.py:176 meross_api.py:493 petlibro_api.py:219
 #: vesync_api.py:393
 msgid "Email and password required"
 msgstr ""
 
 #. Translators: Netatmo thermostat announcement: the time limit of a manual
 #. setting was removed.
-#: change_detection.py:557
+#: change_detection.py:582
 msgid "End time removed"
 msgstr ""
 
@@ -2271,7 +2278,7 @@ msgid "Energy consumption"
 msgstr ""
 
 #. Translators: Total energy consumption. {kwh} = kilowatt hours.
-#: dialog_cozytouch.py:884
+#: dialog_cozytouch.py:948
 msgid "Energy consumption, total: {kwh} kWh"
 msgstr ""
 
@@ -2285,7 +2292,7 @@ msgid ""
 msgstr ""
 
 #. Translators: Validation error in the time program dialog.
-#: dialog_cozytouch.py:657
+#: dialog_cozytouch.py:721
 msgid "Enter both times, or leave both empty to delete the window"
 msgstr ""
 
@@ -2295,12 +2302,12 @@ msgid "Enter device name:"
 msgstr ""
 
 #. Translators: Help text in the thermostat dialog. {name} = device name.
-#: dialog_netatmo.py:51
+#: dialog_netatmo.py:52
 msgid "Enter target temperature for {name}.\n"
 msgstr ""
 
 #. Translators: Help texts in the brightness dialog.
-#: device_dialog.py:3551
+#: device_dialog.py:3557
 msgid "Enter the brightness for {name}."
 msgstr ""
 
@@ -2320,27 +2327,27 @@ msgstr ""
 
 #. Translators: Generic fallback when the status query for a single device
 #. fails.
-#: __init__.py:2471 device_dialog.py:2348
+#: __init__.py:2474 device_dialog.py:2348
 msgid "Error"
 msgstr ""
 
 #. Translators: Error message when the heating schedules cannot be fetched.
-#: dialog_netatmo.py:549
+#: dialog_netatmo.py:550
 msgid "Error loading heating schedules"
 msgstr ""
 
 #. Translators: Error message with detail text.
-#: dialog_netatmo.py:504
+#: dialog_netatmo.py:505
 msgid "Error setting heating mode: {error}"
 msgstr ""
 
 #. Translators: Error message with detail text.
-#: dialog_netatmo.py:266
+#: dialog_netatmo.py:267
 msgid "Error setting temperature: {error}"
 msgstr ""
 
 #. Translators: Error text when switching the heating schedule.
-#: dialog_netatmo.py:617
+#: dialog_netatmo.py:618
 msgid "Error switching heating schedule: {error}"
 msgstr ""
 
@@ -2350,7 +2357,7 @@ msgid "Error while loading: {error}"
 msgstr ""
 
 #. Translators: Generic error message with detail text.
-#: __init__.py:2380 dialog_netatmo.py:669
+#: __init__.py:2383 dialog_netatmo.py:670
 msgid "Error: {error}"
 msgstr ""
 
@@ -2425,12 +2432,12 @@ msgid "Fan level {level} is not supported"
 msgstr ""
 
 #. Translators: The following texts describe actions in the device history.
-#: history.py:1267
+#: history.py:1266
 msgid "Fan speed changed"
 msgstr ""
 
 #. Translators: Note that the fan level is currently controlled automatically.
-#: dialog_vesync.py:1138
+#: dialog_vesync.py:1141
 msgid "Fan speed: automatically controlled - press Enter to set manually"
 msgstr ""
 
@@ -2441,7 +2448,7 @@ msgid "Fan speed: {level}"
 msgstr ""
 
 #. Translators: Combined info+action label in the device tree.
-#: dialog_vesync.py:1150
+#: dialog_vesync.py:1153
 msgid "Fan speed: {level} - press Enter to change"
 msgstr ""
 
@@ -2452,7 +2459,7 @@ msgstr ""
 
 #. Translators: History entry: a Petlibro device reported a fault (e.g. the
 #. fountain's water tank empty or off its base).
-#: history.py:1302
+#: history.py:1301
 msgid "Fault reported"
 msgstr ""
 
@@ -2474,7 +2481,7 @@ msgid "Faults"
 msgstr ""
 
 #. Translators (bestehende msgid)
-#: __init__.py:2052 __init__.py:2140 __init__.py:2211
+#: __init__.py:2055 __init__.py:2143 __init__.py:2214
 msgid "Favorite {number} is not assigned"
 msgstr ""
 
@@ -2498,7 +2505,7 @@ msgstr ""
 
 #. Translators: History entry: food was given by hand (from here, the app or
 #. the button on the feeder).
-#: history.py:1295
+#: history.py:1294
 msgid "Fed by hand"
 msgstr ""
 
@@ -2519,17 +2526,17 @@ msgid "Feeders"
 msgstr ""
 
 #. Translators: History entry: the feeder reported a failed feeding.
-#: history.py:1299
+#: history.py:1298
 msgid "Feeding failed"
 msgstr ""
 
 #. Translators: History entry: the feeding plan was switched off.
-#: history.py:1306
+#: history.py:1305
 msgid "Feeding plan switched off"
 msgstr ""
 
 #. Translators: History entry: the feeding plan was switched on.
-#: history.py:1304
+#: history.py:1303
 msgid "Feeding plan switched on"
 msgstr ""
 
@@ -2546,7 +2553,7 @@ msgid "Feeding {amount}, waiting for the feeder..."
 msgstr ""
 
 #. Translators: Announced while the energy data is being fetched.
-#: __init__.py:1680
+#: __init__.py:1683
 msgid "Fetching energy data..."
 msgstr ""
 
@@ -2568,12 +2575,12 @@ msgid "Filter life:"
 msgstr ""
 
 #. Translators: Remaining filter life in the device tree.
-#: dialog_vesync.py:1102
+#: dialog_vesync.py:1105
 msgid "Filter life: {percent}%"
 msgstr ""
 
 #. Translators: The following texts describe actions in the device history.
-#: history.py:1278
+#: history.py:1277
 msgid "Filter reset"
 msgstr ""
 
@@ -2637,13 +2644,13 @@ msgid "Find devices"
 msgstr ""
 
 #. Translators: Firmware version of the device.
-#: dialog_cozytouch.py:997 dialog_petlibro.py:841
+#: dialog_cozytouch.py:1060 dialog_petlibro.py:841
 msgid "Firmware version: {version}"
 msgstr ""
 
 #. Translators: History entry: the flow duration of a fountain's pet-sensing
 #. mode was changed.
-#: history.py:1336
+#: history.py:1335
 msgid "Flow duration changed"
 msgstr ""
 
@@ -2662,7 +2669,7 @@ msgid "Flow duration: {duration} - press Enter to change"
 msgstr ""
 
 #. Translators: History entry: the food container of a feeder is almost empty.
-#: history.py:1343
+#: history.py:1342
 msgid "Food low"
 msgstr ""
 
@@ -2697,7 +2704,7 @@ msgid "Frost guard"
 msgstr ""
 
 #. Translators: Choices in the heating mode dialog.
-#: dialog_netatmo.py:442
+#: dialog_netatmo.py:443
 msgid "Frost guard – minimum temperature"
 msgstr ""
 
@@ -2750,30 +2757,30 @@ msgstr ""
 
 #. Translators: Netatmo thermostat announcement: the boiler is currently
 #. heating.
-#: change_detection.py:566
+#: change_detection.py:591
 msgid "Heating active"
 msgstr ""
 
 #. Translators: Netatmo thermostat announcement: new heating mode (e.g.
 #. schedule, manual, away).
-#: change_detection.py:533
+#: change_detection.py:558
 msgid "Heating mode: {mode}"
 msgstr ""
 
 #. Translators: Combined info+action label in the device tree.
-#: device_dialog.py:3098 device_dialog.py:848 dialog_netatmo.py:744
-#: dialog_netatmo.py:977 dialog_netatmo.py:493
+#: device_dialog.py:3098 device_dialog.py:848 dialog_netatmo.py:745
+#: dialog_netatmo.py:985 dialog_netatmo.py:494
 msgid "Heating mode: {mode} - press Enter to change"
 msgstr ""
 
 #. Translators: Netatmo thermostat announcement: the boiler is currently
 #. heating.
-#: change_detection.py:566
+#: change_detection.py:591
 msgid "Heating off"
 msgstr ""
 
 #. Translators: The following texts describe actions in the device history.
-#: history.py:1243
+#: history.py:1242
 msgid "Heating schedule switched"
 msgstr ""
 
@@ -2784,18 +2791,18 @@ msgid "Heating schedule: {name} - press Enter to switch"
 msgstr ""
 
 #. Translators: Combined info+action label in the device tree.
-#: dialog_netatmo.py:752 dialog_netatmo.py:992
+#: dialog_netatmo.py:753 dialog_netatmo.py:1000
 msgid "Heating schedule: {schedule} - press Enter to switch"
 msgstr ""
 
 #. Translators: History entry: the heating time program was changed.
-#: history.py:1263
+#: history.py:1262
 msgid "Heating times changed"
 msgstr ""
 
 #. Translators: Title of the dialog that changes the time program. {name} =
 #. device name.
-#: dialog_cozytouch.py:522
+#: dialog_cozytouch.py:586
 msgid "Heating times – {name}"
 msgstr ""
 
@@ -2817,14 +2824,14 @@ msgid "Heating:"
 msgstr ""
 
 #. Translators: Boiler status in the device tree.
-#: device_dialog.py:1031 device_dialog.py:3052 dialog_netatmo.py:694
-#: dialog_netatmo.py:919 netatmo_api.py:351
+#: device_dialog.py:1031 device_dialog.py:3052 dialog_netatmo.py:695
+#: dialog_netatmo.py:927 netatmo_api.py:351
 msgid "Heating: active"
 msgstr ""
 
 #. Translators: Boiler status in the device tree.
-#: device_dialog.py:1031 device_dialog.py:3052 dialog_netatmo.py:694
-#: dialog_netatmo.py:919 netatmo_api.py:351
+#: device_dialog.py:1031 device_dialog.py:3052 dialog_netatmo.py:695
+#: dialog_netatmo.py:927 netatmo_api.py:351
 msgid "Heating: off"
 msgstr ""
 
@@ -2874,22 +2881,22 @@ msgid "History refreshed"
 msgstr ""
 
 #. Translators: Netatmo heating mode (home).
-#: constants.py:37 netatmo_api.py:1496
+#: constants.py:37 netatmo_api.py:1525
 msgid "Home"
 msgstr ""
 
 #. Translators: Error message for missing Netatmo IDs.
-#: dialog_netatmo.py:209
+#: dialog_netatmo.py:210
 msgid "Home or room ID missing"
 msgstr ""
 
 #. Translators: Error message when toggling hot water production fails.
-#: __init__.py:2760 dialog_cozytouch.py:329
+#: __init__.py:2772 dialog_cozytouch.py:376
 msgid "Hot water could not be toggled"
 msgstr ""
 
 #. Translators: Device type display for a Cozytouch hot water heat pump.
-#: cozytouch_devices.py:272 cozytouch_devices.py:215
+#: cozytouch_devices.py:290 cozytouch_devices.py:233
 msgid "Hot water heat pump"
 msgstr ""
 
@@ -2899,7 +2906,7 @@ msgid "Hot water heat pumps ({count})"
 msgstr ""
 
 #. Translators: Help text in the dialog that changes the time program.
-#: dialog_cozytouch.py:526
+#: dialog_cozytouch.py:590
 msgid ""
 "Hot water is heated inside these windows. Times as HH:MM.\n"
 "Leaving both fields empty deletes the window."
@@ -2913,7 +2920,7 @@ msgid "Hot water supply:"
 msgstr ""
 
 #. Translators: Cozytouch status announcement: remaining hot water supply.
-#: cozytouch_devices.py:559 dialog_cozytouch.py:847
+#: cozytouch_devices.py:583 dialog_cozytouch.py:911
 msgid "Hot water supply: {percent} percent"
 msgstr ""
 
@@ -2924,13 +2931,13 @@ msgid "Hot water supply: {percent}%"
 msgstr ""
 
 #. Translators: Name/tooltip of the hour selection.
-#: dialog_netatmo.py:114
+#: dialog_netatmo.py:115
 msgid "Hour"
 msgstr ""
 
 #. Translators: Label of the hours field in the dialog that sets how long the
 #. temperature holds.
-#: dialog_netatmo.py:117
+#: dialog_netatmo.py:118
 msgid "Hour until which the temperature should apply"
 msgstr ""
 
@@ -2957,7 +2964,7 @@ msgstr ""
 
 #. Translators: Name of a measured quantity, in the history and as a CSV
 #. column heading.
-#: history.py:141
+#: history.py:140
 msgid "Humidity"
 msgstr ""
 
@@ -3028,12 +3035,12 @@ msgstr ""
 
 #. Translators: Error message for an invalid date/time input. {example} = a
 #. date and time in the notation the field expects.
-#: dialog_cozytouch.py:772
+#: dialog_cozytouch.py:836
 msgid "Invalid date or time. Expected as in the example: {example}"
 msgstr ""
 
 #. Translators: Error message for an unknown diffuser action.
-#: __init__.py:2856
+#: __init__.py:2896
 msgid "Invalid diffuser action: {action}"
 msgstr ""
 
@@ -3053,7 +3060,7 @@ msgid "Invalid format. Enter three comma-separated values, e.g. 255,128,0"
 msgstr ""
 
 #. Translators: Message on non-numeric temperature input.
-#: dialog_cozytouch.py:156
+#: dialog_cozytouch.py:206
 msgid "Invalid input"
 msgstr ""
 
@@ -3063,12 +3070,12 @@ msgid "Invalid input - enter millilitres between 650 and 3000"
 msgstr ""
 
 #. Translators: Message on invalid boost duration input.
-#: dialog_cozytouch.py:246
+#: dialog_cozytouch.py:307
 msgid "Invalid input - please enter minutes between 1 and 1440"
 msgstr ""
 
 #. Translators: Error message on non-numeric brightness input.
-#: device_dialog.py:3621
+#: device_dialog.py:3627
 msgid "Invalid input. Allowed: a number from 0 to 100."
 msgstr ""
 
@@ -3083,12 +3090,12 @@ msgid "Invalid time - enter hours and minutes, e.g. 07:30"
 msgstr ""
 
 #. Translators: Error message for an invalid time in the time program dialog.
-#: dialog_cozytouch.py:650
+#: dialog_cozytouch.py:714
 msgid "Invalid time. Expected HH:MM, for example 07:00"
 msgstr ""
 
 #. Translators: Error message for a brightness value out of range.
-#: device_dialog.py:3581
+#: device_dialog.py:3587
 msgid "Invalid value: {value}. Allowed: 0 to 100."
 msgstr ""
 
@@ -3170,7 +3177,7 @@ msgstr ""
 
 #. Translators: Diagnostics: seconds since the last successful refresh of any
 #. platform. (It used to say "Meross" although every platform sets this time.)
-#: __init__.py:1847
+#: __init__.py:1850
 msgid "Last refresh {seconds} seconds ago"
 msgstr ""
 
@@ -3190,24 +3197,24 @@ msgid "Latest value"
 msgstr ""
 
 #. Translators: VeSync fan level announcement (e.g. "level 3").
-#: change_detection.py:879 dialog_vesync.py:167 history.py:1491
+#: change_detection.py:933 dialog_vesync.py:170 history.py:1492
 #: vesync_devices.py:727 vesync_devices.py:1163
 msgid "Level {level}"
 msgstr ""
 
 #. Translators: VeSync fan level announcement with a descriptive name (e.g.
 #. "level 1 (low)") for models with 3 levels.
-#: change_detection.py:887
+#: change_detection.py:941
 msgid "Level {level} ({label})"
 msgstr ""
 
 #. Translators: List entry of a fan level with plain-text suffix.
-#: dialog_vesync.py:161
+#: dialog_vesync.py:164
 msgid "Level {level} – {label}"
 msgstr ""
 
 #. Translators: The following texts describe actions in the device history.
-#: history.py:1251
+#: history.py:1250
 msgid "Light color changed"
 msgstr ""
 
@@ -3230,18 +3237,18 @@ msgid "Light color: warm white (cozy) - press Enter to change"
 msgstr ""
 
 #. Translators: Spray mode of a Meross diffuser (light).
-#: constants.py:69 device_dialog.py:2836 history.py:1238
+#: constants.py:69 device_dialog.py:2836 history.py:1237
 #: meross_devices.py:1025
 msgid "Light spray"
 msgstr ""
 
 #. Translators: History entry: the light was switched off.
-#: history.py:1340
+#: history.py:1339
 msgid "Light switched off"
 msgstr ""
 
 #. Translators: History entry: the light was switched on.
-#: history.py:1338
+#: history.py:1337
 msgid "Light switched on"
 msgstr ""
 
@@ -3267,7 +3274,7 @@ msgid "Loading devices, please wait."
 msgstr ""
 
 #. Translators: Placeholder entry while the device list is loading.
-#: __init__.py:2319 device_dialog.py:397 device_dialog.py:407
+#: __init__.py:2322 device_dialog.py:397 device_dialog.py:407
 #: device_dialog.py:266 device_dialog.py:621 settings_panel.py:1317
 msgid "Loading devices..."
 msgstr ""
@@ -3279,24 +3286,24 @@ msgstr ""
 
 #. Translators: Announcement while the heating schedules are loaded from the
 #. cloud.
-#: dialog_netatmo.py:531
+#: dialog_netatmo.py:532
 msgid "Loading heating schedules..."
 msgstr ""
 
 #. Translators: Short loading announcement on a filter/sort change.
-#: device_dialog.py:1629 device_dialog.py:1647 device_dialog.py:3650
+#: device_dialog.py:1629 device_dialog.py:1647 device_dialog.py:3656
 #: dialog_petlibro.py:1820
 msgid "Loading..."
 msgstr ""
 
 #. Translators: Spoken while the add-on signs in to the platforms at startup.
-#: __init__.py:1125
+#: __init__.py:1128
 msgid "Logging in to {platforms}..."
 msgstr ""
 
 #. Translators: Spoken when the device menu is opened while the sign-in is
 #. still running.
-#: __init__.py:1550
+#: __init__.py:1553
 msgid "Login in progress..."
 msgstr ""
 
@@ -3312,7 +3319,7 @@ msgstr ""
 
 #. Translators: Netatmo heating mode (manually set temperature).
 #: constants.py:29 constants.py:104 cozytouch_devices.py:80
-#: dialog_netatmo.py:317 vesync_devices.py:718
+#: dialog_netatmo.py:318 vesync_devices.py:718
 msgid "Manual"
 msgstr ""
 
@@ -3329,7 +3336,7 @@ msgid "Maximum"
 msgstr ""
 
 #. Translators: History entry: a meal was added to the plan.
-#: history.py:1320
+#: history.py:1319
 msgid "Meal added"
 msgstr ""
 
@@ -3367,37 +3374,37 @@ msgid "Meal at {time} switched {state}"
 msgstr ""
 
 #. Translators: History entry: a meal of the plan was changed.
-#: history.py:1322
+#: history.py:1321
 msgid "Meal changed"
 msgstr ""
 
 #. Translators: History entry: a meal was deleted from the plan.
-#: history.py:1324
+#: history.py:1323
 msgid "Meal deleted"
 msgstr ""
 
 #. Translators: History entry: the feeder gave a planned meal.
-#: history.py:1297
+#: history.py:1296
 msgid "Meal given"
 msgstr ""
 
 #. Translators: History entry: a meal skipped for today was given back.
-#: history.py:1310
+#: history.py:1309
 msgid "Meal given back for today"
 msgstr ""
 
 #. Translators: History entry: one meal was skipped for today.
-#: history.py:1308
+#: history.py:1307
 msgid "Meal skipped today"
 msgstr ""
 
 #. Translators: History entry: a meal of the plan was switched off.
-#: history.py:1318
+#: history.py:1317
 msgid "Meal switched off"
 msgstr ""
 
 #. Translators: History entry: a meal of the plan was switched on.
-#: history.py:1316
+#: history.py:1315
 msgid "Meal switched on"
 msgstr ""
 
@@ -3452,7 +3459,7 @@ msgstr ""
 
 #. Translators: Announcement that ONLY the named Meross device is temporarily
 #. updated less often because its (per-device) cloud limit is reached.
-#: change_detection.py:134
+#: change_detection.py:159
 msgid "Meross {name}: updates paused – cloud limit of this device reached"
 msgstr ""
 
@@ -3479,18 +3486,18 @@ msgid "Meross: {count} device(s) loaded"
 msgstr ""
 
 #. Translators: Label of the minute selection.
-#: dialog_netatmo.py:128
+#: dialog_netatmo.py:129
 msgid "Mi&nute:"
 msgstr ""
 
 #. Translators: Name/tooltip of the minute selection.
-#: dialog_netatmo.py:134
+#: dialog_netatmo.py:135
 msgid "Minute"
 msgstr ""
 
 #. Translators: Label of the minutes field in the dialog that sets how long
 #. the temperature holds.
-#: dialog_netatmo.py:137
+#: dialog_netatmo.py:138
 msgid "Minute until which the temperature should apply (5-minute steps)"
 msgstr ""
 
@@ -3511,17 +3518,17 @@ msgid "Mode '{mode}' is not supported by this device"
 msgstr ""
 
 #. Translators: The following texts describe actions in the device history.
-#: history.py:1236 history.py:1242
+#: history.py:1235 history.py:1241
 msgid "Mode changed"
 msgstr ""
 
 #. Translators: Error message when the mode change fails.
-#: dialog_cozytouch.py:212
+#: dialog_cozytouch.py:255
 msgid "Mode could not be set"
 msgstr ""
 
 #. Translators: Cozytouch announcement: new heating mode.
-#: change_detection.py:1204
+#: change_detection.py:1376
 msgid "Mode {mode}"
 msgstr ""
 
@@ -3531,20 +3538,20 @@ msgid "Mode: manual"
 msgstr ""
 
 #. Translators: VeSync announcement: new mode (auto/manual/sleep/turbo).
-#: change_detection.py:856 cozytouch_devices.py:563 dialog_help.py:552
+#: change_detection.py:910 cozytouch_devices.py:587 dialog_help.py:552
 #: dialog_help.py:574 dialog_help.py:662 netatmo_api.py:340
 #: vesync_devices.py:724 vesync_devices.py:1160
 msgid "Mode: {mode}"
 msgstr ""
 
 #. Translators: Combined info+action label in the device tree.
-#: dialog_vesync.py:1128
+#: dialog_vesync.py:1131
 msgid "Mode: {mode} - press Enter to change"
 msgstr ""
 
 #. Translators: Fallback when the model ID is not yet known to the add-on.
 #. Helps users report new models.
-#: dialog_cozytouch.py:982
+#: dialog_cozytouch.py:1045
 msgid "Model ID: {model_id} (unknown model)"
 msgstr ""
 
@@ -3560,22 +3567,22 @@ msgid "Monday"
 msgstr ""
 
 #. Translators: The following texts describe actions in the device history.
-#: history.py:1273
+#: history.py:1272
 msgid "Mute switched off"
 msgstr ""
 
 #. Translators: The following texts describe actions in the device history.
-#: history.py:1272
+#: history.py:1271
 msgid "Mute switched on"
 msgstr ""
 
 #. Translators: Line in the device tree: the sound is off, Enter turns it on.
-#: dialog_vesync.py:1197
+#: dialog_vesync.py:1200
 msgid "Mute: off - press Enter to turn on"
 msgstr ""
 
 #. Translators: Combined info+action label in the device tree.
-#: dialog_vesync.py:1194
+#: dialog_vesync.py:1197
 msgid "Mute: on - press Enter to turn off"
 msgstr ""
 
@@ -3590,17 +3597,17 @@ msgid "Navigate with arrow keys, Enter to confirm, Escape to cancel."
 msgstr ""
 
 #. Translators: Usage hint in the light color dialog.
-#: device_dialog.py:3461
+#: device_dialog.py:3467
 msgid "Navigate with arrow keys, Enter to confirm."
 msgstr ""
 
 #. Translators: Error message when the Netatmo API is not initialized.
-#: dialog_netatmo.py:204
+#: dialog_netatmo.py:205
 msgid "Netatmo API not available"
 msgstr ""
 
 #. Translators: Error message for a missing Netatmo API or home ID.
-#: dialog_netatmo.py:433 dialog_netatmo.py:524 dialog_netatmo.py:638
+#: dialog_netatmo.py:434 dialog_netatmo.py:525 dialog_netatmo.py:639
 msgid "Netatmo API or home ID missing"
 msgstr ""
 
@@ -3621,7 +3628,7 @@ msgstr ""
 
 #. Translators: Error message when the user declines the Netatmo authorization
 #. in the browser or Netatmo returns an error.
-#: netatmo_api.py:828
+#: netatmo_api.py:857
 msgid "Netatmo authorization denied: {error}"
 msgstr ""
 
@@ -3671,7 +3678,7 @@ msgid "Netatmo favorites ({count})"
 msgstr ""
 
 #. Translators: Error message: Netatmo authorization expired.
-#: __init__.py:1828 netatmo_api.py:938
+#: __init__.py:1831 netatmo_api.py:967
 msgid "Netatmo login is no longer valid. Please reconnect in the settings."
 msgstr ""
 
@@ -3682,23 +3689,23 @@ msgid "Netatmo redirect port"
 msgstr ""
 
 #. Translators: Explanation for HTTP 429 from the Netatmo API.
-#: netatmo_api.py:662
+#: netatmo_api.py:691
 msgid "Netatmo request limit reached – the add-on will try again later"
 msgstr ""
 
 #. Translators: Short hint for HTTP 5xx errors of the Netatmo API.
-#: netatmo_api.py:1027
+#: netatmo_api.py:1056
 msgid "Netatmo server temporarily unreachable"
 msgstr ""
 
 #. Translators: Error message: Netatmo server unreachable.
-#: netatmo_api.py:944
+#: netatmo_api.py:973
 msgid "Netatmo server temporarily unreachable (HTTP {code})"
 msgstr ""
 
 #. Translators: Explanation for HTTP 5xx from the Netatmo API. Shown/logged
 #. when Netatmo's own servers are unavailable.
-#: netatmo_api.py:667
+#: netatmo_api.py:696
 msgid ""
 "Netatmo servers temporarily unavailable – not a problem with the add-on or "
 "the settings; the next update will try again"
@@ -3706,18 +3713,18 @@ msgstr ""
 
 #. Translators: Diagnostics: Netatmo token expired (auto-renewal happens on
 #. the next request).
-#: __init__.py:1840
+#: __init__.py:1843
 msgid "Netatmo token: expired, will be renewed on the next request"
 msgstr ""
 
 #. Translators: Diagnostics: Netatmo token remaining lifetime.
-#: __init__.py:1834
+#: __init__.py:1837
 msgid "Netatmo token: valid for another {minutes} minutes"
 msgstr ""
 
 #. Translators: Note after new Netatmo client data: the OAuth2 authorisation
 #. in the browser has to be granted again.
-#: device_dialog.py:3789
+#: device_dialog.py:3795
 msgid "Netatmo: authorise again with the Connect button in the settings"
 msgstr ""
 
@@ -3749,7 +3756,7 @@ msgid "Netatmo: {count} device(s) found"
 msgstr ""
 
 #. Translators: Diagnostics: network considered offline.
-#: __init__.py:1814
+#: __init__.py:1817
 msgid "Network: offline (failed attempts: {count})"
 msgstr ""
 
@@ -3760,7 +3767,7 @@ msgstr ""
 
 #. Translators: Spoken after a login failed because of the network or the
 #. server. {seconds} = when it is tried again.
-#: __init__.py:1229
+#: __init__.py:1232
 msgid "New attempt in {seconds} seconds"
 msgstr ""
 
@@ -3796,14 +3803,14 @@ msgstr ""
 #. Translators: Line in the device tree. F1 finds its help by the beginning of
 #. this text, so it and the "Next schedule change:" in the help have to be
 #. translated the same way.
-#: device_dialog.py:1069 device_dialog.py:3081 dialog_netatmo.py:721
-#: dialog_netatmo.py:951
+#: device_dialog.py:1069 device_dialog.py:3081 dialog_netatmo.py:722
+#: dialog_netatmo.py:959
 msgid "Next schedule change: {zone} ({temp}°C) at {time}"
 msgstr ""
 
 #. Translators: Next schedule change without temperature.
-#: device_dialog.py:1072 device_dialog.py:3084 dialog_netatmo.py:726
-#: dialog_netatmo.py:957
+#: device_dialog.py:1072 device_dialog.py:3084 dialog_netatmo.py:727
+#: dialog_netatmo.py:965
 msgid "Next schedule change: {zone} at {time}"
 msgstr ""
 
@@ -3813,7 +3820,7 @@ msgid "Night"
 msgstr ""
 
 #. Translators: The following texts describe actions in the device history.
-#: history.py:1269
+#: history.py:1268
 msgid "Night light changed"
 msgstr ""
 
@@ -3830,7 +3837,7 @@ msgstr ""
 
 #. Translators: VeSync Core 200S announcement: night light mode
 #. (on/off/dimmed).
-#: change_detection.py:941
+#: change_detection.py:995
 msgid "Night light {mode}"
 msgstr ""
 
@@ -3840,13 +3847,13 @@ msgid "Night light: {mode}"
 msgstr ""
 
 #. Translators: Combined info+action label in the device tree.
-#: dialog_vesync.py:1175
+#: dialog_vesync.py:1178
 msgid "Night light: {mode} - press Enter to change"
 msgstr ""
 
 #. Translators: Error message when VeSync was enabled but neither a token nor
 #. email/password are configured.
-#: __init__.py:1421
+#: __init__.py:1424
 msgid "No VeSync credentials configured"
 msgstr ""
 
@@ -3864,7 +3871,7 @@ msgstr ""
 
 #. Translators: Announced when a device currently provides no sensor/status
 #. data.
-#: __init__.py:2449 history.py:1206
+#: __init__.py:2452 history.py:1205
 msgid "No data"
 msgstr ""
 
@@ -3880,7 +3887,7 @@ msgstr ""
 
 #. Translators: Announced when the login succeeded but there are no devices in
 #. the account.
-#: __init__.py:1196 __init__.py:2367 device_dialog.py:2609
+#: __init__.py:1199 __init__.py:2370 device_dialog.py:2609
 msgid "No devices found"
 msgstr ""
 
@@ -3895,7 +3902,7 @@ msgid "No drinks recorded on this day"
 msgstr ""
 
 #. Translators: Message when no energy data is available.
-#: __init__.py:1747
+#: __init__.py:1750
 msgid "No energy data available. Metering plugs must be connected."
 msgstr ""
 
@@ -3905,17 +3912,17 @@ msgid "No events found"
 msgstr ""
 
 #. Translators: Message when the device has no selectable fan levels.
-#: dialog_vesync.py:153
+#: dialog_vesync.py:156
 msgid "No fan speed available"
 msgstr ""
 
 #. Translators (existing msgid from the favorites tab)
-#: __init__.py:1898 dialog_favorites.py:326
+#: __init__.py:1901 dialog_favorites.py:326
 msgid "No favorites yet – add them in the devices tab with Ctrl+B"
 msgstr ""
 
 #. Translators: When the Netatmo cloud returns no heating schedules.
-#: dialog_netatmo.py:556
+#: dialog_netatmo.py:557
 msgid "No heating schedules found"
 msgstr ""
 
@@ -3948,31 +3955,31 @@ msgid "No measurements found"
 msgstr ""
 
 #. Translators: Diagnostics: no platform is enabled.
-#: __init__.py:1851
+#: __init__.py:1854
 msgid "No platform enabled"
 msgstr ""
 
 #. Translators: Message when a cooking programme is to be started but the
 #. appliance has not reported one yet.
-#: dialog_vesync.py:399
+#: dialog_vesync.py:402
 msgid ""
 "No programme has been reported by this appliance yet. Selecting one on the "
 "appliance itself teaches it to the add-on."
 msgstr ""
 
 #. Translators: Error message when no OAuth refresh token is stored.
-#: netatmo_api.py:911
+#: netatmo_api.py:940
 msgid "No refresh token available – please authorize again"
 msgstr ""
 
 #. Translators: Error message when the browser callback does not return within
 #. the timeout (e.g. browser window closed by the user).
-#: netatmo_api.py:836
+#: netatmo_api.py:865
 msgid "No response received from Netatmo. Timeout or browser window closed."
 msgstr ""
 
 #. Translators: Message when a selection list has no options.
-#: dialog_cozytouch.py:45 dialog_petlibro.py:135 dialog_vesync.py:92
+#: dialog_cozytouch.py:57 dialog_petlibro.py:135 dialog_vesync.py:95
 msgid "No selection available"
 msgstr ""
 
@@ -3988,13 +3995,13 @@ msgid "No water detected"
 msgstr ""
 
 #. Translators: The following texts describe actions in the device history.
-#: history.py:1290
+#: history.py:1289
 msgid "No water detected any more"
 msgstr ""
 
 #. Translators: Name of a measured quantity, in the history and as a CSV
 #. column heading.
-#: history.py:156
+#: history.py:155
 msgid "Noise"
 msgstr ""
 
@@ -4015,7 +4022,7 @@ msgid "Not answering: {value}"
 msgstr ""
 
 #. Translators: Error message: no valid Netatmo access configured.
-#: netatmo_api.py:964
+#: netatmo_api.py:993
 msgid "Not authorized – please connect to Netatmo in the settings"
 msgstr ""
 
@@ -4025,8 +4032,8 @@ msgid "Not done - {reason}"
 msgstr ""
 
 #. Translators: Diagnostics: not logged in at all.
-#: __init__.py:1785 __init__.py:1893 __init__.py:2135 __init__.py:2207
-#: __init__.py:2299 __init__.py:2787 meross_api.py:648 meross_api.py:1105
+#: __init__.py:1788 __init__.py:1896 __init__.py:2138 __init__.py:2210
+#: __init__.py:2302 __init__.py:2820 meross_api.py:648 meross_api.py:1105
 #: meross_api.py:1523 meross_api.py:1624 meross_api.py:1679 vesync_api.py:525
 #: vesync_api.py:661 vesync_api.py:797
 msgid "Not logged in"
@@ -4040,7 +4047,7 @@ msgstr ""
 
 #. Translators: Spoken when the device menu is opened while no platform is
 #. signed in - the settings open instead.
-#: __init__.py:1557
+#: __init__.py:1560
 msgid "Not logged in – opening settings"
 msgstr ""
 
@@ -4072,7 +4079,7 @@ msgid "Notes:"
 msgstr ""
 
 #. Translators: Message when nothing was changed in the time program dialog.
-#: dialog_cozytouch.py:687
+#: dialog_cozytouch.py:751
 msgid "Nothing changed"
 msgstr ""
 
@@ -4080,8 +4087,8 @@ msgstr ""
 #: constants.py:73 constants.py:280 constants.py:576 device_dialog.py:2753
 #: device_dialog.py:1414 device_dialog.py:925 device_dialog.py:1220
 #: device_dialog.py:1104 device_dialog.py:1249 device_dialog.py:2810
-#: device_dialog.py:919 device_dialog.py:1191 dialog_cozytouch.py:968
-#: dialog_cozytouch.py:918 dialog_help.py:502 dialog_help.py:541
+#: device_dialog.py:919 device_dialog.py:1191 dialog_cozytouch.py:1031
+#: dialog_cozytouch.py:982 dialog_help.py:502 dialog_help.py:541
 #: dialog_help.py:568 dialog_help.py:781 dialog_meross.py:60
 #: dialog_petlibro.py:835 dialog_petlibro.py:894 meross_devices.py:1022
 msgid "Off"
@@ -4102,7 +4109,7 @@ msgid "Off-peak tariff"
 msgstr ""
 
 #. Translators: Note that off-peak electricity is currently used.
-#: dialog_cozytouch.py:863
+#: dialog_cozytouch.py:927
 msgid "Off-peak tariff active"
 msgstr ""
 
@@ -4118,7 +4125,7 @@ msgid "Offline only"
 msgstr ""
 
 #. Translators: Names of the offline devices in the status summary.
-#: __init__.py:2414
+#: __init__.py:2417
 msgid "Offline: {names}."
 msgstr ""
 
@@ -4126,7 +4133,7 @@ msgstr ""
 #: constants.py:278 device_dialog.py:2753 device_dialog.py:1414
 #: device_dialog.py:925 device_dialog.py:1220 device_dialog.py:1104
 #: device_dialog.py:1249 device_dialog.py:2810 device_dialog.py:919
-#: device_dialog.py:1191 dialog_cozytouch.py:953 dialog_cozytouch.py:918
+#: device_dialog.py:1191 dialog_cozytouch.py:1017 dialog_cozytouch.py:982
 #: dialog_help.py:502 dialog_help.py:541 dialog_help.py:568 dialog_help.py:781
 #: dialog_petlibro.py:835 dialog_petlibro.py:894
 msgid "On"
@@ -4134,7 +4141,7 @@ msgstr ""
 
 #. Translators: State of the hot water heat pump in the device tree: switched
 #. on by its schedule, not by hand.
-#: dialog_cozytouch.py:953
+#: dialog_cozytouch.py:1017
 msgid "On (scheduled)"
 msgstr ""
 
@@ -4165,7 +4172,7 @@ msgstr ""
 
 #. Translators: Netatmo announcement: the thermostat detected an open window
 #. (sudden temperature drop).
-#: change_detection.py:601 dialog_help.py:679
+#: change_detection.py:626 dialog_help.py:679
 msgid "Open window detected"
 msgstr ""
 
@@ -4184,8 +4191,8 @@ msgid "Open window:"
 msgstr ""
 
 #. Translators: Note about a detected open window.
-#: device_dialog.py:1050 device_dialog.py:3067 dialog_netatmo.py:708
-#: dialog_netatmo.py:936
+#: device_dialog.py:1050 device_dialog.py:3067 dialog_netatmo.py:709
+#: dialog_netatmo.py:944
 msgid "Open window: detected (heating paused)"
 msgstr ""
 
@@ -4201,42 +4208,42 @@ msgid "Opening browser. Please sign in to Netatmo and authorize."
 msgstr ""
 
 #. Translators: Spoken when the device menu opens.
-#: __init__.py:1588
+#: __init__.py:1591
 msgid "Opening device overview..."
 msgstr ""
 
 #. Translators: Description of the script in the NVDA input gestures dialog.
-#: __init__.py:1541
+#: __init__.py:1544
 msgid "Opens the Smart Home Control menu"
 msgstr ""
 
 #. Translators: Description of the script in the NVDA input gestures dialog.
-#: __init__.py:1658
+#: __init__.py:1661
 msgid "Opens the Smart Home settings"
 msgstr ""
 
 #. Translators: Combined info+action label in the device tree.
-#: dialog_cozytouch.py:912
+#: dialog_cozytouch.py:976
 msgid "Operating mode: {mode} - press Enter to change"
 msgstr ""
 
 #. Translators: Cozytouch announcement: hot water operation switched on/off.
-#: change_detection.py:1191 cozytouch_devices.py:566
+#: change_detection.py:1363 cozytouch_devices.py:590
 msgid "Operation off"
 msgstr ""
 
 #. Translators: Cozytouch announcement: hot water operation switched on/off.
-#: change_detection.py:1191 cozytouch_devices.py:566
+#: change_detection.py:1363 cozytouch_devices.py:590
 msgid "Operation on"
 msgstr ""
 
 #. Translators: Operating state in the device tree.
-#: dialog_cozytouch.py:858
+#: dialog_cozytouch.py:922
 msgid "Operation: off"
 msgstr ""
 
 #. Translators: Operating state in the device tree.
-#: dialog_cozytouch.py:858
+#: dialog_cozytouch.py:922
 msgid "Operation: on"
 msgstr ""
 
@@ -4252,22 +4259,22 @@ msgid "Orange tones"
 msgstr ""
 
 #. Translators: VeSync tower fan announcement: oscillation.
-#: change_detection.py:900
+#: change_detection.py:954
 msgid "Oscillation off"
 msgstr ""
 
 #. Translators: VeSync tower fan announcement: oscillation.
-#: change_detection.py:899
+#: change_detection.py:953
 msgid "Oscillation on"
 msgstr ""
 
 #. Translators: The following texts describe actions in the device history.
-#: history.py:1271
+#: history.py:1270
 msgid "Oscillation switched off"
 msgstr ""
 
 #. Translators: The following texts describe actions in the device history.
-#: history.py:1270
+#: history.py:1269
 msgid "Oscillation switched on"
 msgstr ""
 
@@ -4278,7 +4285,7 @@ msgstr ""
 
 #. Translators: Line in the device tree: oscillation is off, Enter turns it
 #. on.
-#: dialog_vesync.py:1186
+#: dialog_vesync.py:1189
 msgid "Oscillation: off - press Enter to turn on"
 msgstr ""
 
@@ -4288,7 +4295,7 @@ msgid "Oscillation: on"
 msgstr ""
 
 #. Translators: Combined info+action label in the device tree.
-#: dialog_vesync.py:1183
+#: dialog_vesync.py:1186
 msgid "Oscillation: on - press Enter to turn off"
 msgstr ""
 
@@ -4329,7 +4336,7 @@ msgstr ""
 
 #. Translators: Name of a measured quantity, in the history and as a CSV
 #. column heading.
-#: history.py:153
+#: history.py:152
 msgid "Particulate matter PM10"
 msgstr ""
 
@@ -4342,7 +4349,7 @@ msgstr ""
 
 #. Translators: Name of a measured quantity, in the history and as a CSV
 #. column heading.
-#: history.py:150
+#: history.py:149
 msgid "Particulate matter PM2.5"
 msgstr ""
 
@@ -4493,7 +4500,7 @@ msgstr ""
 
 #. Translators: Column headers of the event view.
 #: dialog_history.py:257 dialog_platform_status.py:158
-#: dialog_platform_status.py:164 history.py:1032
+#: dialog_platform_status.py:164 history.py:1031
 msgid "Platform"
 msgstr ""
 
@@ -4515,7 +4522,7 @@ msgid "Play the &meal call before the meal"
 msgstr ""
 
 #. Translators: Message when no temperature was selected.
-#: dialog_netatmo.py:179
+#: dialog_netatmo.py:180
 msgid "Please choose a temperature"
 msgstr ""
 
@@ -4556,7 +4563,7 @@ msgstr ""
 
 #. Translators: Message after an entry outside the permitted range.
 #. {low}/{high} = the permitted values.
-#: dialog_vesync.py:371
+#: dialog_vesync.py:374
 msgid "Please enter a whole number between {low} and {high}"
 msgstr ""
 
@@ -4574,7 +4581,7 @@ msgstr ""
 
 #. Translators: Message when an action is triggered while the previous one is
 #. still running.
-#: device_dialog.py:541 device_dialog.py:3646 dialog_petlibro.py:1437
+#: device_dialog.py:541 device_dialog.py:3652 dialog_petlibro.py:1437
 msgid "Please wait - the previous action is still running"
 msgstr ""
 
@@ -4590,7 +4597,7 @@ msgstr ""
 
 #. Translators: Error when starting the local OAuth callback server because
 #. the port is in use by another program. {port} = port number.
-#: netatmo_api.py:788
+#: netatmo_api.py:817
 msgid ""
 "Port {port} is in use. Choose a different Netatmo port in the settings (and "
 "register it at dev.netatmo.com as well), or close the program blocking it. "
@@ -4629,13 +4636,13 @@ msgid "Pre-heating active"
 msgstr ""
 
 #. Translators: Netatmo announcement: pre-heating has finished.
-#: change_detection.py:592
+#: change_detection.py:617
 msgid "Pre-heating finished"
 msgstr ""
 
 #. Translators: Netatmo announcement: the thermostat is pre-heating for an
 #. upcoming target temperature increase.
-#: change_detection.py:588
+#: change_detection.py:613
 msgid "Pre-heating started"
 msgstr ""
 
@@ -4647,8 +4654,8 @@ msgid "Pre-heating:"
 msgstr ""
 
 #. Translators: Note that the thermostat is pre-heating.
-#: device_dialog.py:1040 device_dialog.py:3060 dialog_netatmo.py:701
-#: dialog_netatmo.py:928
+#: device_dialog.py:1040 device_dialog.py:3060 dialog_netatmo.py:702
+#: dialog_netatmo.py:936
 msgid "Pre-heating: active"
 msgstr ""
 
@@ -4693,13 +4700,13 @@ msgstr ""
 
 #. Translators: Cooking state of an air fryer. {state} = what the appliance
 #. reports, e.g. "standby".
-#: dialog_vesync.py:921
+#: dialog_vesync.py:924
 msgid "Programme state: {state}"
 msgstr ""
 
 #. Translators: Selected cooking programme of an air fryer. {mode} = programme
 #. name, e.g. "Steak".
-#: dialog_vesync.py:945
+#: dialog_vesync.py:948
 msgid "Programme: {mode}"
 msgstr ""
 
@@ -4767,7 +4774,7 @@ msgstr ""
 
 #. Translators: Second safety prompt before the filter reset. {name} = device
 #. name.
-#: dialog_vesync.py:318
+#: dialog_vesync.py:321
 msgid ""
 "Really reset the filter life of {name} to 100%?\n"
 "\n"
@@ -4801,17 +4808,17 @@ msgid "Refresh devices"
 msgstr ""
 
 #. Translators: Message after a manual refresh.
-#: device_dialog.py:3724
+#: device_dialog.py:3730
 msgid "Refreshed - {online} devices online"
 msgstr ""
 
 #. Translators: Message after a manual refresh with duration.
-#: device_dialog.py:3720
+#: device_dialog.py:3726
 msgid "Refreshed in {seconds}s - {online} devices online"
 msgstr ""
 
 #. Translators: Status while a manual refresh is running.
-#: device_dialog.py:3655
+#: device_dialog.py:3661
 msgid "Refreshing..."
 msgstr ""
 
@@ -4829,19 +4836,19 @@ msgstr ""
 
 #. Translators: Remaining cooking time of an air fryer. {value} = time, e.g.
 #. "7 min 12 s".
-#: dialog_vesync.py:953
+#: dialog_vesync.py:956
 msgid "Remaining time: {value}"
 msgstr ""
 
 #. Translators: Action entry in the device tree.
-#: dialog_cozytouch.py:828 dialog_favorites.py:56 dialog_petlibro.py:779
-#: dialog_vesync.py:1245
+#: dialog_cozytouch.py:892 dialog_favorites.py:56 dialog_petlibro.py:779
+#: dialog_vesync.py:1248
 msgid "Remove from favorites - Enter"
 msgstr ""
 
 #. Translators: VeSync purifier warning: remaining filter life low (in
 #. percent). Replace the filter soon.
-#: change_detection.py:981
+#: change_detection.py:1035
 msgid "Replace filter soon, remaining life {percent} percent"
 msgstr ""
 
@@ -4862,7 +4869,7 @@ msgid "Reset desiccant reminder"
 msgstr ""
 
 #. Translators: Title of the filter reset dialog.
-#: dialog_vesync.py:297
+#: dialog_vesync.py:300
 msgid "Reset filter life"
 msgstr ""
 
@@ -4875,7 +4882,7 @@ msgid ""
 msgstr ""
 
 #. Translators: Action entry for the filter reset.
-#: dialog_vesync.py:1228
+#: dialog_vesync.py:1231
 msgid "Reset filter life to 100% - press Enter to execute"
 msgstr ""
 
@@ -4886,7 +4893,7 @@ msgstr ""
 
 #. Translators: First safety prompt before the filter reset. {name} = device
 #. name.
-#: dialog_vesync.py:292
+#: dialog_vesync.py:295
 msgid ""
 "Reset the filter life of {name} to 100%?\n"
 "\n"
@@ -4937,7 +4944,7 @@ msgid "Schedule"
 msgstr ""
 
 #. Translators: Title of the away scheduling dialog. {name} = device name.
-#: dialog_cozytouch.py:734
+#: dialog_cozytouch.py:798
 msgid "Schedule absence – {name}"
 msgstr ""
 
@@ -4953,18 +4960,18 @@ msgstr ""
 #. Translators: History entry: a Netatmo thermostat moved to another zone of
 #. its heating schedule (comfort, night ...) - the schedule itself is
 #. unchanged.
-#: history.py:1247
+#: history.py:1246
 msgid "Schedule zone changed"
 msgstr ""
 
 #. Translators: Netatmo thermostat announcement: the schedule switched to a
 #. different zone (e.g. day -> night).
-#: change_detection.py:543
+#: change_detection.py:568
 msgid "Schedule zone: {zone}"
 msgstr ""
 
 #. Translators: Choices in the heating mode dialog.
-#: dialog_netatmo.py:440
+#: dialog_netatmo.py:441
 msgid "Schedule – automatic according to heating program"
 msgstr ""
 
@@ -4986,7 +4993,7 @@ msgstr ""
 
 #. Translators: Security error message when the OAuth2 CSRF state parameter
 #. does not match. Should only happen on attack attempts.
-#: netatmo_api.py:846
+#: netatmo_api.py:875
 msgid "Security error: state parameter does not match (CSRF protection)"
 msgstr ""
 
@@ -5082,7 +5089,7 @@ msgid ""
 msgstr ""
 
 #. Translators: Action entry when no target temperature is known.
-#: dialog_netatmo.py:291
+#: dialog_netatmo.py:292
 msgid "Set target temperature"
 msgstr ""
 
@@ -5096,12 +5103,12 @@ msgstr ""
 
 #. Translators: Temperature an air fryer was set to, as opposed to the one it
 #. currently measures. {value} = number with unit.
-#: dialog_vesync.py:978
+#: dialog_vesync.py:981
 msgid "Set temperature: {value}"
 msgstr ""
 
 #. Translators: Help text in the away scheduling dialog.
-#: dialog_cozytouch.py:737
+#: dialog_cozytouch.py:801
 msgid ""
 "Set the absence period. During the absence, hot water production is reduced."
 msgstr ""
@@ -5111,7 +5118,7 @@ msgstr ""
 #. Deliberately "set to" rather than "add": the value sent becomes the new
 #. remaining time, measured twice - it replaces what was left, it is not added
 #. to it.
-#: dialog_vesync.py:616
+#: dialog_vesync.py:619
 msgid "Set the cooking time on {name} to {minutes} minutes?"
 msgstr ""
 
@@ -5124,7 +5131,7 @@ msgid ""
 msgstr ""
 
 #. Translators: Title of the thermostat dialog.
-#: dialog_netatmo.py:45
+#: dialog_netatmo.py:46
 msgid "Set thermostat"
 msgstr ""
 
@@ -5177,7 +5184,7 @@ msgstr ""
 
 #. Translators: Category name in the NVDA input gestures dialog. Brand name,
 #. do not translate.
-#: __init__.py:251 manifest.ini:summary
+#: __init__.py:252 manifest.ini:summary
 msgid "Smart Home Control"
 msgstr ""
 
@@ -5208,7 +5215,7 @@ msgstr ""
 
 #. Translators: Title of the window that lists every device with its status
 #. (the status command pressed twice).
-#: __init__.py:2390
+#: __init__.py:2393
 msgid "Smart home status"
 msgstr ""
 
@@ -5230,12 +5237,12 @@ msgid "Sorted: {sort}"
 msgstr ""
 
 #. Translators: VeSync announcement: sounds (the device's beeps).
-#: change_detection.py:910 dialog_vesync.py:202
+#: change_detection.py:964 dialog_vesync.py:205
 msgid "Sounds on"
 msgstr ""
 
 #. Translators: Column headers of the event view.
-#: dialog_history.py:258 history.py:1041
+#: dialog_history.py:258 history.py:1040
 msgid "Source"
 msgstr ""
 
@@ -5246,7 +5253,7 @@ msgid "Spray mode: {mode}"
 msgstr ""
 
 #. Translators: The following texts describe actions in the device history.
-#: device_dialog.py:2844 history.py:1240
+#: device_dialog.py:2844 history.py:1239
 msgid "Spray off"
 msgstr ""
 
@@ -5262,18 +5269,18 @@ msgid ""
 msgstr ""
 
 #. Translators: Title of the dialog that starts a cooking programme.
-#: dialog_vesync.py:508 dialog_vesync.py:413
+#: dialog_vesync.py:511 dialog_vesync.py:416
 msgid "Start programme"
 msgstr ""
 
 #. Translators: Action entry in the device tree, starts a cooking programme.
-#: dialog_vesync.py:1007
+#: dialog_vesync.py:1010
 msgid "Start programme - Enter"
 msgstr ""
 
 #. Translators: Question before a cooking programme is started, with the
 #. programme, the appliance, the temperature and the time.
-#: dialog_vesync.py:502
+#: dialog_vesync.py:505
 msgid ""
 "Start {programme} on {name}?\n"
 "\n"
@@ -5342,7 +5349,7 @@ msgid "Status: not connected"
 msgstr ""
 
 #. Translators: Operating state in the device tree.
-#: device_dialog.py:2252 dialog_vesync.py:1070 dialog_vesync.py:928
+#: device_dialog.py:2252 dialog_vesync.py:1073 dialog_vesync.py:931
 msgid "Status: off"
 msgstr ""
 
@@ -5350,14 +5357,14 @@ msgstr ""
 #. this text, so it and the "Status:" in the help have to be translated the
 #. same way.
 #: device_dialog.py:2181 device_dialog.py:2828 device_dialog.py:2126
-#: device_dialog.py:2228 dialog_cozytouch.py:837 dialog_help.py:517
+#: device_dialog.py:2228 dialog_cozytouch.py:901 dialog_help.py:517
 #: dialog_help.py:539 dialog_help.py:566 dialog_help.py:621 dialog_help.py:725
-#: dialog_petlibro.py:799 dialog_vesync.py:896
+#: dialog_petlibro.py:799 dialog_vesync.py:899
 msgid "Status: offline"
 msgstr ""
 
 #. Translators: Operating state in the device tree.
-#: device_dialog.py:2252 dialog_vesync.py:1070 dialog_vesync.py:928
+#: device_dialog.py:2252 dialog_vesync.py:1073 dialog_vesync.py:931
 msgid "Status: on"
 msgstr ""
 
@@ -5390,25 +5397,25 @@ msgid "Steak"
 msgstr ""
 
 #. Translators: Title of the dialog that stops a cooking programme.
-#: dialog_vesync.py:689
+#: dialog_vesync.py:692
 msgid "Stop programme"
 msgstr ""
 
 #. Translators: Action entry in the device tree, stops a running cooking
 #. programme.
-#: dialog_vesync.py:1023
+#: dialog_vesync.py:1026
 msgid "Stop programme - Enter"
 msgstr ""
 
 #. Translators: Safety prompt before a cooking programme is stopped, with no
 #. remaining time known. {name} = device name, {programme} = programme name.
-#: dialog_vesync.py:678
+#: dialog_vesync.py:681
 msgid "Stop the programme {programme} on {name}?"
 msgstr ""
 
 #. Translators: Safety prompt before a cooking programme is stopped. {name} =
 #. device name, {programme} = programme name, {remaining} = remaining time.
-#: dialog_vesync.py:671
+#: dialog_vesync.py:674
 msgid ""
 "Stop the programme {programme} on {name}?\n"
 "\n"
@@ -5425,7 +5432,7 @@ msgstr ""
 
 #. Translators: Safety prompt before a cooking programme is stopped. {name} =
 #. device name.
-#: dialog_vesync.py:683
+#: dialog_vesync.py:686
 msgid "Stop the running programme on {name}?"
 msgstr ""
 
@@ -5445,7 +5452,7 @@ msgid "Strong red"
 msgstr ""
 
 #. Translators: Spray mode of a Meross diffuser (strong).
-#: constants.py:71 device_dialog.py:2840 history.py:1239
+#: constants.py:71 device_dialog.py:2840 history.py:1238
 #: meross_devices.py:1028
 msgid "Strong spray"
 msgstr ""
@@ -5472,8 +5479,8 @@ msgid "Switch action. Press Enter or Space to turn on or off."
 msgstr ""
 
 #. Translators: Action entry for switching the heating schedule.
-#: device_dialog.py:3119 dialog_netatmo.py:756 dialog_netatmo.py:988
-#: dialog_netatmo.py:580
+#: device_dialog.py:3119 dialog_netatmo.py:757 dialog_netatmo.py:996
+#: dialog_netatmo.py:581
 msgid "Switch heating schedule"
 msgstr ""
 
@@ -5510,53 +5517,53 @@ msgid "Switch to white mode - press Enter to open"
 msgstr ""
 
 #. Translators: The following texts describe actions in the device history.
-#: history.py:1234
+#: history.py:1233
 msgid "Switched off"
 msgstr ""
 
 #. Translators: The following texts describe actions in the device history.
-#: history.py:1233
+#: history.py:1232
 msgid "Switched on"
 msgstr ""
 
 #. Translators: Error message when toggling a favorite fails.
-#: __init__.py:2200
+#: __init__.py:2203
 msgid "Switching failed: {error}"
 msgstr ""
 
 #. Translators: Error message when the API rejects the setting.
-#: dialog_cozytouch.py:177
+#: dialog_cozytouch.py:216
 msgid "Target temperature could not be set"
 msgstr ""
 
 #. Translators: Input prompt for the target temperature. {lo}/{hi} = bounds.
-#: dialog_cozytouch.py:133
+#: dialog_cozytouch.py:183
 msgid "Target temperature in degrees ({lo} to {hi}):"
 msgstr ""
 
 #. Translators: The following texts describe actions in the device history.
-#: history.py:1254
+#: history.py:1253
 msgid "Target temperature set"
 msgstr ""
 
 #. Translators: Cozytouch announcement: new target temperature in degrees.
-#: change_detection.py:1198
+#: change_detection.py:1370
 msgid "Target temperature {temp} degrees"
 msgstr ""
 
 #. Translators: Cozytouch status announcement: configured target temperature.
-#: cozytouch_devices.py:548
+#: cozytouch_devices.py:572
 msgid "Target temperature: {temp} degrees"
 msgstr ""
 
 #. Translators: Combined info+action label in the device tree.
-#: dialog_cozytouch.py:893
+#: dialog_cozytouch.py:957
 msgid "Target temperature: {temp} degrees - press Enter to change"
 msgstr ""
 
 #. Translators: Netatmo thermostat announcement: new target temperature in °C.
-#: change_detection.py:522 device_dialog.py:2163 dialog_help.py:550
-#: dialog_netatmo.py:294
+#: change_detection.py:547 device_dialog.py:2163 dialog_help.py:550
+#: dialog_netatmo.py:295
 msgid "Target temperature: {temp}°C"
 msgstr ""
 
@@ -5567,27 +5574,27 @@ msgid "Target: {temp}°C"
 msgstr ""
 
 #. Translators: Name/tooltip of the temperature selection list.
-#: dialog_netatmo.py:73 dialog_vesync.py:449 dialog_vesync.py:573
-#: history.py:138
+#: dialog_netatmo.py:74 dialog_vesync.py:452 dialog_vesync.py:576
+#: history.py:137
 msgid "Temperature"
 msgstr ""
 
 #. Translators: Prompt of the temperature entry. {low}/{high} = the permitted
 #. values.
-#: dialog_vesync.py:452 dialog_vesync.py:576
+#: dialog_vesync.py:455 dialog_vesync.py:579
 msgid "Temperature between {low} and {high}:"
 msgstr ""
 
 #. Translators: An air fryer accepted a temperature change and did not carry
 #. it out. {value} = the temperature the appliance is still set to, with its
 #. unit.
-#: change_detection.py:742
+#: change_detection.py:796
 msgid "Temperature not applied, the appliance stays at {value}"
 msgstr ""
 
 #. Translators: Tree entry for an air fryer, in place of a control for the
 #. temperature. The appliance accepts no temperature while cooking.
-#: dialog_vesync.py:998
+#: dialog_vesync.py:1001
 msgid ""
 "Temperature only settable when starting the programme, or at the appliance"
 msgstr ""
@@ -5598,7 +5605,7 @@ msgid "Temperature sensors"
 msgstr ""
 
 #. Translators: The following texts describe actions in the device history.
-#: history.py:1235
+#: history.py:1234
 msgid "Temperature set"
 msgstr ""
 
@@ -5612,13 +5619,13 @@ msgstr ""
 #. Translators: Measured temperature in the device tree.
 #: device_dialog.py:970 device_dialog.py:2142 device_dialog.py:2192
 #: dialog_help.py:625 dialog_help.py:606 dialog_help.py:730
-#: dialog_vesync.py:1109 vesync_devices.py:1175
+#: dialog_vesync.py:1112 vesync_devices.py:1175
 msgid "Temperature: {temp}°C"
 msgstr ""
 
 #. Translators: Measured temperature of an air fryer. {value} = number with
 #. unit.
-#: dialog_vesync.py:969
+#: dialog_vesync.py:972
 msgid "Temperature: {value}"
 msgstr ""
 
@@ -5709,7 +5716,7 @@ msgstr ""
 
 #. Translators: The appliance accepted the command but kept its old time
 #. program. {schedule} = what still stands there.
-#: dialog_cozytouch.py:479
+#: dialog_cozytouch.py:543
 msgid ""
 "The appliance did not take the change. The heating times are still "
 "{schedule}"
@@ -5724,7 +5731,7 @@ msgstr ""
 
 #. Translators: The appliance stored something other than what was asked for.
 #. {schedule} = what it holds now, {wanted} = what was asked for.
-#: dialog_cozytouch.py:487
+#: dialog_cozytouch.py:551
 msgid "The appliance stored {schedule} instead of {wanted}"
 msgstr ""
 
@@ -5737,7 +5744,7 @@ msgstr ""
 
 #. Translators: Tree entry for an air fryer whose programme is loaded but not
 #. yet running.
-#: dialog_vesync.py:1036
+#: dialog_vesync.py:1039
 msgid "The cooking time can only be changed once the programme runs"
 msgstr ""
 
@@ -5751,12 +5758,12 @@ msgid ""
 msgstr ""
 
 #. Translators: Validation error in the time program dialog.
-#: dialog_cozytouch.py:668
+#: dialog_cozytouch.py:732
 msgid "The end has to be after the start"
 msgstr ""
 
 #. Translators: Validation error in the away scheduling dialog.
-#: dialog_cozytouch.py:780
+#: dialog_cozytouch.py:844
 msgid "The end must be after the start and in the future"
 msgstr ""
 
@@ -5784,7 +5791,7 @@ msgstr ""
 
 #. Translators: Spoken when the settings are opened while they are open
 #. already.
-#: __init__.py:1618 device_dialog.py:3751
+#: __init__.py:1621 device_dialog.py:3757
 msgid "The settings are already open"
 msgstr ""
 
@@ -5801,12 +5808,12 @@ msgid "The time has to be between {low} and {high} minutes"
 msgstr ""
 
 #. Translators: Error message when the time program could not be changed.
-#: dialog_cozytouch.py:498
+#: dialog_cozytouch.py:562
 msgid "The time program could not be changed"
 msgstr ""
 
 #. Translators: Validation error in the time program dialog.
-#: dialog_cozytouch.py:674
+#: dialog_cozytouch.py:738
 msgid "The windows of one day must not overlap"
 msgstr ""
 
@@ -5839,13 +5846,13 @@ msgid "Thursday"
 msgstr ""
 
 #. Translators: Column headers of the event view.
-#: dialog_history.py:257 dialog_platform_status.py:164 history.py:1032
+#: dialog_history.py:257 dialog_platform_status.py:164 history.py:1031
 msgid "Time"
 msgstr ""
 
 #. Translators: Prompt of the cooking time entry. {low}/{high} = the permitted
 #. values in minutes.
-#: dialog_vesync.py:465 dialog_vesync.py:600
+#: dialog_vesync.py:468 dialog_vesync.py:603
 msgid "Time in minutes, between {low} and {high}:"
 msgstr ""
 
@@ -5862,12 +5869,12 @@ msgid "Timeout - please try again"
 msgstr ""
 
 #. Translators: Error message on a refresh timeout.
-#: device_dialog.py:3676
+#: device_dialog.py:3682
 msgid "Timeout – please try again"
 msgstr ""
 
 #. Translators: Validation error in the time program dialog.
-#: dialog_cozytouch.py:680
+#: dialog_cozytouch.py:744
 msgid "Times have to lie within one day"
 msgstr ""
 
@@ -5886,7 +5893,7 @@ msgstr ""
 #. Translators: Today's heating time windows, changeable with Enter.
 #. {schedule} = window text. The beginning of this line has to stay the same
 #. as in the F1 help.
-#: dialog_cozytouch.py:876
+#: dialog_cozytouch.py:940
 msgid "Today's heating times: {schedule} - press Enter to change"
 msgstr ""
 
@@ -5956,12 +5963,12 @@ msgid "Turn hot water production on or off. Press Enter or Space to execute."
 msgstr ""
 
 #. Translators: Action entry for switching operation on/off.
-#: dialog_cozytouch.py:945
+#: dialog_cozytouch.py:1009
 msgid "Turn operation off"
 msgstr ""
 
 #. Translators: Action entry for switching operation on/off.
-#: dialog_cozytouch.py:945
+#: dialog_cozytouch.py:1009
 msgid "Turn operation on"
 msgstr ""
 
@@ -5987,14 +5994,14 @@ msgstr ""
 #. Translators: Action entry for switching on/off. {name} = device name.
 #: device_dialog.py:1110 device_dialog.py:1225 device_dialog.py:1272
 #: device_dialog.py:2784 device_dialog.py:2858 device_dialog.py:821
-#: dialog_vesync.py:1117
+#: dialog_vesync.py:1120
 msgid "Turn {name} off"
 msgstr ""
 
 #. Translators: Action entry for switching on/off. {name} = device name.
 #: device_dialog.py:1110 device_dialog.py:1225 device_dialog.py:1272
 #: device_dialog.py:2784 device_dialog.py:2858 device_dialog.py:821
-#: dialog_vesync.py:1117
+#: dialog_vesync.py:1120
 msgid "Turn {name} on"
 msgstr ""
 
@@ -6012,18 +6019,18 @@ msgid ""
 msgstr ""
 
 #. Translators: Column heading in the CSV export of the history.
-#: history.py:1036
+#: history.py:1035
 msgid "Type"
 msgstr ""
 
 #. Translators: Short hint for an unexpected response of the Netatmo API.
-#: netatmo_api.py:1031
+#: netatmo_api.py:1060
 msgid "Unexpected response from the Netatmo server"
 msgstr ""
 
 #. Translators: Name shown for a favourite whose device is unknown.
-#: dialog_favorites.py:258 dialog_history.py:386 dialog_netatmo.py:319
-#: history.py:1174 history.py:1125 history.py:1126 history.py:936
+#: dialog_favorites.py:258 dialog_history.py:386 dialog_netatmo.py:320
+#: history.py:1173 history.py:1124 history.py:1125 history.py:935
 #: meross_api.py:1581 meross_devices.py:1035
 msgid "Unknown"
 msgstr ""
@@ -6045,7 +6052,7 @@ msgstr ""
 
 #. Translators: Name of a Netatmo heating schedule that has no name in the
 #. Netatmo app.
-#: netatmo_api.py:1236
+#: netatmo_api.py:1265
 msgid "Unnamed schedule"
 msgstr ""
 
@@ -6079,12 +6086,12 @@ msgid "Use &VeSync (Levoit, Cosori, Etekcity)"
 msgstr ""
 
 #. Translators: Checkbox label without a known default duration.
-#: dialog_netatmo.py:98
+#: dialog_netatmo.py:99
 msgid "Use &default duration (as configured in the Netatmo app)"
 msgstr ""
 
 #. Translators: Checkbox label with a known default duration.
-#: dialog_netatmo.py:95
+#: dialog_netatmo.py:96
 msgid "Use &default duration ({minutes} minutes)"
 msgstr ""
 
@@ -6094,12 +6101,12 @@ msgid "V&eSync email:"
 msgstr ""
 
 #. Translators: Valid range of the temperature input.
-#: dialog_netatmo.py:53
+#: dialog_netatmo.py:54
 msgid "Valid: 5 to 30 degrees in 0.5°C steps.\n"
 msgstr ""
 
 #. Translators: Explanation in the dialog that sets the brightness.
-#: device_dialog.py:3554
+#: device_dialog.py:3560
 msgid "Value between 0 (off) and 100 (maximum brightness)."
 msgstr ""
 
@@ -6312,7 +6319,7 @@ msgid "VeSync: this programme has no identifier and cannot be started"
 msgstr ""
 
 #. Translators: Confirmation after loading the VeSync devices afterwards.
-#: dialog_vesync.py:1467
+#: dialog_vesync.py:1470
 msgid "VeSync: {count} device(s) loaded"
 msgstr ""
 
@@ -6362,7 +6369,7 @@ msgstr ""
 
 #. Translators: Tree entry for an air fryer that has not reported its state
 #. yet.
-#: dialog_vesync.py:1048
+#: dialog_vesync.py:1051
 msgid "Waiting for the appliance"
 msgstr ""
 
@@ -6377,7 +6384,7 @@ msgid "Warm white"
 msgstr ""
 
 #. Translators: Choices for the light color (with description).
-#: device_dialog.py:3437
+#: device_dialog.py:3443
 msgid "Warm white - cozy, warm light like candlelight (approx. 2700K)"
 msgstr ""
 
@@ -6388,17 +6395,17 @@ msgstr ""
 
 #. Translators: Filter warning as the first tree entry. {percent} = remaining
 #. life.
-#: dialog_vesync.py:1062
+#: dialog_vesync.py:1065
 msgid "Warning: replace filter, remaining life {percent}%"
 msgstr ""
 
 #. Translators: The following texts describe actions in the device history.
-#: history.py:1289
+#: history.py:1288
 msgid "Water alarm"
 msgstr ""
 
 #. Translators: Alarm of a Meross water sensor. {name} = device.
-#: __init__.py:2425 change_detection.py:196
+#: __init__.py:2428 change_detection.py:221
 msgid "Water alarm: {name}"
 msgstr ""
 
@@ -6421,12 +6428,12 @@ msgstr ""
 
 #. Translators: History entry: the water of a fountain is below the warning
 #. threshold.
-#: history.py:1346
+#: history.py:1345
 msgid "Water low"
 msgstr ""
 
 #. Translators: History entry: the water mode of a fountain changed.
-#: history.py:1331
+#: history.py:1330
 msgid "Water mode changed"
 msgstr ""
 
@@ -6457,13 +6464,13 @@ msgid "Water warning below: {ml} - press Enter to change"
 msgstr ""
 
 #. Translators: History entry: the low water warning was changed.
-#: history.py:1333
+#: history.py:1332
 msgid "Water warning changed"
 msgstr ""
 
 #. Translators: Name of a Netatmo weather station whose name the cloud does
 #. not report.
-#: netatmo_api.py:1450
+#: netatmo_api.py:1479
 msgid "Weather station"
 msgstr ""
 
@@ -6504,7 +6511,7 @@ msgstr ""
 
 #. Translators: Prompt of the programme list. {count} = how many programmes
 #. the appliance has shown so far.
-#: dialog_vesync.py:407
+#: dialog_vesync.py:410
 msgid "Which programme? The appliance has reported {count} so far."
 msgstr ""
 
@@ -6520,12 +6527,12 @@ msgid "White tones"
 msgstr ""
 
 #. Translators: Name of the connected Wi-Fi network.
-#: dialog_cozytouch.py:992
+#: dialog_cozytouch.py:1055
 msgid "Wi-Fi network: {ssid}"
 msgstr ""
 
 #. Translators: Wi-Fi signal strength in dBm.
-#: dialog_cozytouch.py:987 dialog_petlibro.py:839
+#: dialog_cozytouch.py:1050 dialog_petlibro.py:839
 msgid "Wi-Fi signal: {dbm} dBm"
 msgstr ""
 
@@ -6541,7 +6548,7 @@ msgid "Wind: {wind} km/h"
 msgstr ""
 
 #. Translators: Netatmo announcement: the open window was closed.
-#: change_detection.py:605
+#: change_detection.py:630
 msgid "Window closed"
 msgstr ""
 
@@ -6553,13 +6560,13 @@ msgstr ""
 #. Translators: Entry for an unused window in the time program dialog.
 #. {number} = 1, 2 or 3. The number has to stay: two entries reading the same
 #. make the arrow keys sound as if nothing happened.
-#: dialog_cozytouch.py:594
+#: dialog_cozytouch.py:658
 msgid "Window {number}: unused"
 msgstr ""
 
 #. Translators: Entry for a window in the time program dialog. {number} = 1, 2
 #. or 3, {times} = e.g. 07:00-17:00.
-#: dialog_cozytouch.py:599
+#: dialog_cozytouch.py:663
 msgid "Window {number}: {times}"
 msgstr ""
 
@@ -6598,12 +6605,12 @@ msgid "answers again, last missed at {time}"
 msgstr ""
 
 #. Translators: Origin of a history event - triggered automatically.
-#: history.py:1219
+#: history.py:1218
 msgid "automatic"
 msgstr ""
 
 #. Translators: Petlibro announcement: the battery is low.
-#: change_detection.py:1392
+#: change_detection.py:1564
 msgid "battery low"
 msgstr ""
 
@@ -6614,22 +6621,22 @@ msgid "battery {battery}"
 msgstr ""
 
 #. Translators: Battery level in the status announcement.
-#: __init__.py:2276
+#: __init__.py:2279
 msgid "battery {percent}%"
 msgstr ""
 
 #. Translators: The low water warning in the history. {ml} = value.
-#: history.py:1517
+#: history.py:1518
 msgid "below {ml} ml"
 msgstr ""
 
 #. Translators: Petlibro announcement: a fountain should be cleaned.
-#: change_detection.py:1388 petlibro_devices.py:975
+#: change_detection.py:1560 petlibro_devices.py:975
 msgid "cleaning due"
 msgstr ""
 
 #. Translators: Diagnostics: platform is connected.
-#: __init__.py:1804
+#: __init__.py:1807
 msgid "connected"
 msgstr ""
 
@@ -6646,13 +6653,13 @@ msgstr ""
 
 #. Translators: Cozytouch status announcement: actually targeted heating goal
 #. (incl. Eco/boost adjustment) if it differs from the target temperature.
-#: cozytouch_devices.py:554
+#: cozytouch_devices.py:578
 msgid "current heating target: {temp} degrees"
 msgstr ""
 
 #. Translators: Petlibro announcement: the desiccant of a feeder should be
 #. replaced.
-#: change_detection.py:1380 petlibro_devices.py:628
+#: change_detection.py:1552 petlibro_devices.py:628
 msgid "desiccant due"
 msgstr ""
 
@@ -6663,7 +6670,7 @@ msgid "device code {code}"
 msgstr ""
 
 #. Translators: Diagnostics: platform is disconnected.
-#: __init__.py:1807
+#: __init__.py:1810
 msgid "disconnected"
 msgstr ""
 
@@ -6673,7 +6680,7 @@ msgid "drunk today {ml}"
 msgstr ""
 
 #. Translators: Water leak sensor state in the status announcement.
-#: __init__.py:2258
+#: __init__.py:2261
 msgid "dry"
 msgstr ""
 
@@ -6691,7 +6698,7 @@ msgstr ""
 #. NVDA (manufacturer app, voice assistant, button on the device).
 #. Deliberately not more specific: which of these it was cannot be determined
 #. from the cloud notification.
-#: history.py:1216
+#: history.py:1215
 msgid "external"
 msgstr ""
 
@@ -6708,19 +6715,19 @@ msgstr ""
 
 #. Translators: Petlibro announcement: the feeding plan was switched on or off
 #. elsewhere.
-#: change_detection.py:1410 dialog_petlibro.py:751 petlibro_devices.py:620
+#: change_detection.py:1582 dialog_petlibro.py:751 petlibro_devices.py:620
 msgid "feeding plan off"
 msgstr ""
 
 #. Translators: Petlibro announcement: the feeding plan was switched on or off
 #. elsewhere.
-#: change_detection.py:1409
+#: change_detection.py:1581
 msgid "feeding plan on"
 msgstr ""
 
 #. Translators: Petlibro announcement: the filter of a fountain should be
 #. replaced.
-#: change_detection.py:1384 petlibro_devices.py:971
+#: change_detection.py:1556 petlibro_devices.py:971
 msgid "filter due"
 msgstr ""
 
@@ -6731,13 +6738,13 @@ msgstr ""
 
 #. Translators: Petlibro announcement: the flow duration of a fountain was
 #. changed elsewhere. {duration} = e.g. "60 seconds".
-#: change_detection.py:1435
+#: change_detection.py:1607
 msgid "flow duration {duration}"
 msgstr ""
 
 #. Translators: Petlibro announcement: the food container of a feeder is
 #. almost empty.
-#: change_detection.py:1369 constants.py:602 dialog_petlibro.py:753
+#: change_detection.py:1541 constants.py:602 dialog_petlibro.py:753
 #: petlibro_devices.py:624
 msgid "food low"
 msgstr ""
@@ -6760,24 +6767,24 @@ msgstr ""
 
 #. Translators: Status announcement for a Meross hub (it only relays its
 #. sensors). {count} = number of connected sensors.
-#: __init__.py:2263
+#: __init__.py:2266
 msgid "hub with {count} sensors"
 msgstr ""
 
 #. Translators: Relative time in the history (less than 1 minute ago).
-#: history.py:1178
+#: history.py:1177
 msgid "just now"
 msgstr ""
 
 #. Translators: Petlibro announcement: the light was switched on or off
 #. elsewhere.
-#: change_detection.py:1422
+#: change_detection.py:1594
 msgid "light off"
 msgstr ""
 
 #. Translators: Petlibro announcement: the light was switched on or off
 #. elsewhere.
-#: change_detection.py:1422
+#: change_detection.py:1594
 msgid "light on"
 msgstr ""
 
@@ -6787,7 +6794,7 @@ msgid "moderate"
 msgstr ""
 
 #. Translators: VeSync announcement: sounds (the device's beeps).
-#: change_detection.py:909 dialog_vesync.py:202
+#: change_detection.py:963 dialog_vesync.py:205
 msgid "muted"
 msgstr ""
 
@@ -6805,7 +6812,7 @@ msgstr ""
 
 #. Translators: Why a login failed: the cloud did not answer (no network, or
 #. the manufacturer's server is down). Spoken after "Netatmo login failed:".
-#: __init__.py:1390 dialog_petlibro.py:81
+#: __init__.py:1393 dialog_petlibro.py:81
 msgid "no connection to the cloud"
 msgstr ""
 
@@ -6815,7 +6822,7 @@ msgid "no data"
 msgstr ""
 
 #. Translators: Heating windows in the history when a day has none left.
-#: history.py:1408
+#: history.py:1429
 msgid "no heating times"
 msgstr ""
 
@@ -6826,12 +6833,12 @@ msgid "no water flow"
 msgstr ""
 
 #. Translators: Time program without active heating windows.
-#: cozytouch_devices.py:202
+#: cozytouch_devices.py:220
 msgid "none"
 msgstr ""
 
 #. Translators: Diagnostics: platform has not polled yet.
-#: __init__.py:1810
+#: __init__.py:1813
 msgid "not polled yet"
 msgstr ""
 
@@ -6841,33 +6848,33 @@ msgid "not yet updated"
 msgstr ""
 
 #. Translators: Status "switched on" for smart home devices (short).
-#: __init__.py:2809 __init__.py:2736 __init__.py:2761 __init__.py:2267
-#: change_detection.py:346 change_detection.py:838 device_dialog.py:2170
-#: dialog_cozytouch.py:290 dialog_cozytouch.py:316 dialog_cozytouch.py:344
+#: __init__.py:2849 __init__.py:2743 __init__.py:2769 __init__.py:2270
+#: change_detection.py:371 change_detection.py:892 device_dialog.py:2170
+#: dialog_cozytouch.py:341 dialog_cozytouch.py:370 dialog_cozytouch.py:411
 #: dialog_help.py:603 dialog_help.py:672 dialog_help.py:713
 #: dialog_petlibro.py:412 dialog_petlibro.py:1532 dialog_petlibro.py:402
-#: dialog_petlibro.py:714 dialog_petlibro.py:730 dialog_vesync.py:77
-#: dialog_vesync.py:190 dialog_vesync.py:214 dialog_vesync.py:225
-#: dialog_vesync.py:871 dialog_vesync.py:1170 vesync_devices.py:1612
+#: dialog_petlibro.py:714 dialog_petlibro.py:730 dialog_vesync.py:80
+#: dialog_vesync.py:193 dialog_vesync.py:217 dialog_vesync.py:228
+#: dialog_vesync.py:874 dialog_vesync.py:1173 vesync_devices.py:1612
 #: vesync_devices.py:711 vesync_devices.py:1148
 msgid "off"
 msgstr ""
 
 #. Translators: Announced when a device is currently unreachable.
-#: __init__.py:2451 __init__.py:2220 change_detection.py:1351
-#: cozytouch_devices.py:542 netatmo_api.py:399 petlibro_devices.py:428
+#: __init__.py:2454 __init__.py:2223 change_detection.py:1523
+#: cozytouch_devices.py:566 netatmo_api.py:399 petlibro_devices.py:428
 #: petlibro_devices.py:610 petlibro_devices.py:945 vesync_devices.py:707
 #: vesync_devices.py:1144 vesync_devices.py:1603
 msgid "offline"
 msgstr ""
 
 #. Translators: Status "switched on" for smart home devices (short).
-#: __init__.py:2809 __init__.py:2736 __init__.py:2761 __init__.py:2267
-#: change_detection.py:346 change_detection.py:838 dialog_cozytouch.py:290
-#: dialog_cozytouch.py:316 dialog_help.py:603 dialog_petlibro.py:412
+#: __init__.py:2849 __init__.py:2743 __init__.py:2769 __init__.py:2270
+#: change_detection.py:371 change_detection.py:892 dialog_cozytouch.py:341
+#: dialog_cozytouch.py:370 dialog_help.py:603 dialog_petlibro.py:412
 #: dialog_petlibro.py:1532 dialog_petlibro.py:402 dialog_petlibro.py:714
-#: dialog_petlibro.py:730 dialog_vesync.py:77 dialog_vesync.py:190
-#: dialog_vesync.py:214 dialog_vesync.py:225 dialog_vesync.py:871
+#: dialog_petlibro.py:730 dialog_vesync.py:80 dialog_vesync.py:193
+#: dialog_vesync.py:217 dialog_vesync.py:228 dialog_vesync.py:874
 #: vesync_devices.py:1612 vesync_devices.py:711 vesync_devices.py:1148
 msgid "on"
 msgstr ""
@@ -6878,7 +6885,7 @@ msgid "once"
 msgstr ""
 
 #. Translators: Petlibro announcement: the device got its connection back.
-#: change_detection.py:1351
+#: change_detection.py:1523
 msgid "online again"
 msgstr ""
 
@@ -6956,7 +6963,7 @@ msgid "the feeder is feeding right now"
 msgstr ""
 
 #. Translators: Placeholder for an unknown mode.
-#: device_dialog.py:2097 dialog_vesync.py:1075
+#: device_dialog.py:2097 dialog_vesync.py:1078
 msgid "unknown"
 msgstr ""
 
@@ -6968,7 +6975,7 @@ msgstr ""
 
 #. Translators: Netatmo thermostat announcement: until when the manual target
 #. temperature applies (HH:MM).
-#: change_detection.py:553
+#: change_detection.py:578
 msgid "until {time}"
 msgstr ""
 
@@ -6979,7 +6986,7 @@ msgid "values from {time}"
 msgstr ""
 
 #. Translators: Water leak sensor state in the status announcement.
-#: __init__.py:2258
+#: __init__.py:2261
 msgid "water detected"
 msgstr ""
 
@@ -6990,13 +6997,13 @@ msgstr ""
 
 #. Translators: Petlibro announcement: the water of a fountain is below the
 #. warning threshold.
-#: change_detection.py:1375 dialog_petlibro.py:766 petlibro_devices.py:955
+#: change_detection.py:1547 dialog_petlibro.py:766 petlibro_devices.py:955
 msgid "water low"
 msgstr ""
 
 #. Translators: Petlibro announcement: the water mode of a fountain was
 #. changed elsewhere. {mode} = new mode.
-#: change_detection.py:1415
+#: change_detection.py:1587
 msgid "water mode {mode}"
 msgstr ""
 
@@ -7009,7 +7016,7 @@ msgstr ""
 
 #. Translators: Petlibro announcement: the low water warning threshold was
 #. changed elsewhere. {ml} = e.g. "1100 ml".
-#: change_detection.py:1427
+#: change_detection.py:1599
 msgid "water warning below {ml}"
 msgstr ""
 
@@ -7032,7 +7039,7 @@ msgstr ""
 #. Translators: Origin of a history event - the user switched the device
 #. themselves through this add-on. Addressed as "you": the speaker of the text
 #. is the add-on, so "me" would read as if the add-on had done it.
-#: history.py:1225
+#: history.py:1224
 msgid "you"
 msgstr ""
 
@@ -7048,7 +7055,7 @@ msgid "{count} day"
 msgstr ""
 
 #. Translators: Relative time in the history (days).
-#: history.py:1191
+#: history.py:1190
 msgid "{count} day ago"
 msgstr ""
 
@@ -7058,7 +7065,7 @@ msgid "{count} days"
 msgstr ""
 
 #. Translators: Relative time in the history (days).
-#: history.py:1192
+#: history.py:1191
 msgid "{count} days ago"
 msgstr ""
 
@@ -7071,7 +7078,7 @@ msgstr ""
 #. Translators: Summary of the status command. {count} = devices, {detail} =
 #. per platform (e.g. "3 Meross, 1 Netatmo"), {on} = devices switched on,
 #. {offline} = devices without connection.
-#: __init__.py:2408
+#: __init__.py:2411
 msgid "{count} devices ({detail}), {on} switched on, {offline} offline."
 msgstr ""
 
@@ -7097,12 +7104,12 @@ msgid "{count} events shown (total: {total})"
 msgstr ""
 
 #. Translators: Relative time in the history (hours).
-#: history.py:1187
+#: history.py:1186
 msgid "{count} hour ago"
 msgstr ""
 
 #. Translators: Relative time in the history (hours).
-#: history.py:1188
+#: history.py:1187
 msgid "{count} hours ago"
 msgstr ""
 
@@ -7128,7 +7135,7 @@ msgid "{count} minute"
 msgstr ""
 
 #. Translators: Relative time in the history (minutes).
-#: history.py:1182
+#: history.py:1181
 msgid "{count} minute ago"
 msgstr ""
 
@@ -7138,17 +7145,17 @@ msgid "{count} minutes"
 msgstr ""
 
 #. Translators: Relative time in the history (minutes).
-#: history.py:1183
+#: history.py:1182
 msgid "{count} minutes ago"
 msgstr ""
 
 #. Translators: Amount of food in the history, exactly one portion.
-#: history.py:1509 petlibro_devices.py:156
+#: history.py:1510 petlibro_devices.py:156
 msgid "{count} portion"
 msgstr ""
 
 #. Translators: Amount of food in the history. {count} = portions.
-#: history.py:1511 petlibro_devices.py:158
+#: history.py:1512 petlibro_devices.py:158
 msgid "{count} portions"
 msgstr ""
 
@@ -7164,13 +7171,13 @@ msgstr ""
 
 #. Translators: Confirmation after changing the time program. {days} = the
 #. weekdays it was written to, {schedule} = the new windows.
-#: dialog_cozytouch.py:473
+#: dialog_cozytouch.py:537
 msgid "{days}: heating times now {schedule}"
 msgstr ""
 
 #. Translators: A changed time program in the history. {days} = the weekdays
 #. it was written to, {schedule} = the windows.
-#: history.py:1411
+#: history.py:1432
 msgid "{days}: {schedule}"
 msgstr ""
 
@@ -7219,7 +7226,7 @@ msgid "{minutes} min {seconds} sec"
 msgstr ""
 
 #. Translators: Boost duration in the history. {minutes} = minutes.
-#: history.py:1504
+#: history.py:1505
 msgid "{minutes} minutes"
 msgstr ""
 
@@ -7240,25 +7247,25 @@ msgid "{name} ({reason})"
 msgstr ""
 
 #. Translators: Tree label of a device without connection.
-#: dialog_cozytouch.py:802 dialog_meross.py:129 dialog_petlibro.py:740
-#: dialog_vesync.py:856
+#: dialog_cozytouch.py:866 dialog_meross.py:129 dialog_petlibro.py:740
+#: dialog_vesync.py:859
 msgid "{name} ({type}) - offline"
 msgstr ""
 
 #. Translators: Tree label with target temperature. {temp} = temperature.
-#: dialog_cozytouch.py:819
+#: dialog_cozytouch.py:883
 msgid "{name} ({type}) - target {temp}°C"
 msgstr ""
 
 #. Translators: Tree label when the actual heating target differs from the
 #. setpoint. {active} = actual target, {temp} = setpoint.
-#: dialog_cozytouch.py:812
+#: dialog_cozytouch.py:876
 msgid "{name} ({type}) - target {temp}°C, current heating target {active}°C"
 msgstr ""
 
 #. Translators: Device label with type and room name. {name} = device name,
 #. {type} = device type, {room} = room name.
-#: dialog_netatmo.py:329
+#: dialog_netatmo.py:330
 msgid "{name} ({type}, room {room})"
 msgstr ""
 
@@ -7268,7 +7275,7 @@ msgid "{name} - offline"
 msgstr ""
 
 #. Translators: Fallback display name for a device channel.
-#: __init__.py:2803
+#: __init__.py:2843
 msgid "{name} channel {number}"
 msgstr ""
 
@@ -7283,7 +7290,7 @@ msgstr ""
 
 #. Translators: Error when a device is recognised but cannot be operated yet.
 #. {name} = device name, {type} = model designation.
-#: __init__.py:2171 __init__.py:2772 meross_api.py:1546 vesync_devices.py:2088
+#: __init__.py:2174 __init__.py:2805 meross_api.py:1546 vesync_devices.py:2088
 msgid "{name} is shown but cannot be operated yet ({type})"
 msgstr ""
 
@@ -7315,76 +7322,76 @@ msgid "{name}: already in favorites"
 msgstr ""
 
 #. Translators: Title of the auto profile dialog. {name} = device name.
-#: dialog_vesync.py:263
+#: dialog_vesync.py:266
 msgid "{name}: auto profile"
 msgstr ""
 
 #. Translators: Confirmation after an auto profile change. {profile} = profile
 #. name.
-#: dialog_vesync.py:277
+#: dialog_vesync.py:280
 msgid "{name}: auto profile {profile}"
 msgstr ""
 
 #. Translators: Confirmation after scheduling away mode. {start}/{end} = date
 #. and time.
-#: dialog_cozytouch.py:382
+#: dialog_cozytouch.py:445
 msgid "{name}: away from {start} until {end}"
 msgstr ""
 
 #. Translators: Confirmation after toggling away mode.
-#: dialog_cozytouch.py:343
+#: dialog_cozytouch.py:410
 msgid "{name}: away mode {status}"
 msgstr ""
 
 #. Translators: Confirmation after returning to the heating schedule.
-#: dialog_netatmo.py:661
+#: dialog_netatmo.py:662
 msgid "{name}: back to schedule"
 msgstr ""
 
 #. Translators: Title of the boost duration dialog. {name} = device name.
-#: dialog_cozytouch.py:227
+#: dialog_cozytouch.py:288
 msgid "{name}: boost duration"
 msgstr ""
 
 #. Translators: Confirmation after changing the boost duration.
-#: dialog_cozytouch.py:263
+#: dialog_cozytouch.py:324
 msgid "{name}: boost duration {minutes} minutes"
 msgstr ""
 
 #. Translators: Confirmation after toggling boost.
-#: dialog_cozytouch.py:292
+#: dialog_cozytouch.py:343
 msgid "{name}: boost {status}"
 msgstr ""
 
 #. Translators: Error message when setting the brightness.
-#: device_dialog.py:3606
+#: device_dialog.py:3612
 msgid "{name}: brightness cannot be set"
 msgstr ""
 
 #. Translators: Confirmation after a brightness change.
-#: device_dialog.py:3590
+#: device_dialog.py:3596
 msgid "{name}: brightness set to {percent}%"
 msgstr ""
 
 #. Translators: Message when the user tries to switch a device that cannot be
 #. switched on/off (sensors, Netatmo devices).
-#: __init__.py:2162 __init__.py:2750
+#: __init__.py:2165 __init__.py:2758
 msgid "{name}: cannot be switched – adjustable in the device menu"
 msgstr ""
 
 #. Translators: Confirmation after the time or temperature of a running
 #. programme was changed. {name} = device name.
-#: dialog_vesync.py:654
+#: dialog_vesync.py:657
 msgid "{name}: change sent"
 msgstr ""
 
 #. Translators: Confirmation after toggling the child lock.
-#: dialog_vesync.py:231
+#: dialog_vesync.py:234
 msgid "{name}: child lock {status}"
 msgstr ""
 
 #. Translators: Title of the mode selection dialog. {name} = device name.
-#: dialog_cozytouch.py:186 dialog_vesync.py:130
+#: dialog_cozytouch.py:244 dialog_vesync.py:133
 msgid "{name}: choose mode"
 msgstr ""
 
@@ -7404,7 +7411,7 @@ msgid "{name}: color set to RGB({r}, {g}, {b})"
 msgstr ""
 
 #. Translators: Error message when setting the color temperature.
-#: device_dialog.py:3521
+#: device_dialog.py:3527
 msgid "{name}: color temperature cannot be set"
 msgstr ""
 
@@ -7417,7 +7424,7 @@ msgid ""
 msgstr ""
 
 #. Translators: Error message on a general connection error.
-#: device_dialog.py:3373
+#: device_dialog.py:3379
 msgid "{name}: connection error"
 msgstr ""
 
@@ -7428,17 +7435,17 @@ msgid "{name}: desiccant reminder reset, next change in {days}"
 msgstr ""
 
 #. Translators: Message when the favorite's device is not loaded.
-#: __init__.py:2144 __init__.py:2214
+#: __init__.py:2147 __init__.py:2217
 msgid "{name}: device not available"
 msgstr ""
 
 #. Translators: Error message when opening the brightness dialog.
-#: device_dialog.py:3631
+#: device_dialog.py:3637
 msgid "{name}: dialog error"
 msgstr ""
 
 #. Translators: Confirmation after toggling the device display.
-#: dialog_vesync.py:220
+#: dialog_vesync.py:223
 msgid "{name}: display {status}"
 msgstr ""
 
@@ -7449,17 +7456,17 @@ msgid "{name}: drinks"
 msgstr ""
 
 #. Translators: Generic error message with detail text.
-#: device_dialog.py:3395
+#: device_dialog.py:3401
 msgid "{name}: error - {error}"
 msgstr ""
 
 #. Translators: Error message when opening a sub-dialog.
-#: device_dialog.py:3541
+#: device_dialog.py:3547
 msgid "{name}: error opening the dialog"
 msgstr ""
 
 #. Translators: Error message on a diffuser mode change.
-#: device_dialog.py:3286
+#: device_dialog.py:3292
 msgid "{name}: error while setting"
 msgstr ""
 
@@ -7469,13 +7476,13 @@ msgid "{name}: error – {error}"
 msgstr ""
 
 #. Translators: Title of the fan level dialog. {name} = device name.
-#: dialog_vesync.py:171
+#: dialog_vesync.py:174
 msgid "{name}: fan speed"
 msgstr ""
 
 #. Translators: Petlibro announcement: a feeding was started elsewhere (app,
 #. button on the feeder). {amount} = e.g. "2 portions".
-#: change_detection.py:1534
+#: change_detection.py:1706
 msgid "{name}: fed from elsewhere, {amount}"
 msgstr ""
 
@@ -7487,13 +7494,13 @@ msgstr ""
 #. Translators: Petlibro announcement: the feeder confirmed a "Feed now" late,
 #. after the add-on had said it was not confirmed. {amount} = e.g. "1
 #. portion".
-#: change_detection.py:1524
+#: change_detection.py:1696
 msgid "{name}: feeding confirmed after all, {amount} given"
 msgstr ""
 
 #. Translators: Petlibro announcement: the feeder reported a failed feeding or
 #. a blocked outlet.
-#: change_detection.py:1569
+#: change_detection.py:1741
 msgid "{name}: feeding failed"
 msgstr ""
 
@@ -7503,7 +7510,7 @@ msgid "{name}: feeding plan {state}"
 msgstr ""
 
 #. Translators: Confirmation after a successful filter reset.
-#: dialog_vesync.py:340
+#: dialog_vesync.py:343
 msgid "{name}: filter life reset"
 msgstr ""
 
@@ -7548,12 +7555,12 @@ msgid ""
 msgstr ""
 
 #. Translators: Confirmation after a heating mode change. {mode} = mode name.
-#: dialog_netatmo.py:489
+#: dialog_netatmo.py:490
 msgid "{name}: heating mode set to {mode}"
 msgstr ""
 
 #. Translators: Success message when switching the heating schedule.
-#: dialog_netatmo.py:609
+#: dialog_netatmo.py:610
 msgid "{name}: heating schedule '{schedule}' activated"
 msgstr ""
 
@@ -7563,7 +7570,7 @@ msgid "{name}: is not a favorite"
 msgstr ""
 
 #. Translators: Confirmation after a level change. {level} = fan level.
-#: dialog_vesync.py:185
+#: dialog_vesync.py:188
 msgid "{name}: level {level}"
 msgstr ""
 
@@ -7574,13 +7581,13 @@ msgstr ""
 
 #. Translators: Petlibro announcement: a planned meal gave less than planned.
 #. {amount} = given, {expected} = planned.
-#: change_detection.py:1546
+#: change_detection.py:1718
 msgid "{name}: meal gave only {amount} of {expected}"
 msgstr ""
 
 #. Translators: Petlibro announcement: a planned meal was given. {amount} =
 #. e.g. "3 portions".
-#: change_detection.py:1553
+#: change_detection.py:1725
 msgid "{name}: meal given, {amount}"
 msgstr ""
 
@@ -7590,22 +7597,22 @@ msgid "{name}: meals"
 msgstr ""
 
 #. Translators: Success feedback after a diffuser mode change.
-#: __init__.py:2878
+#: __init__.py:2918
 msgid "{name}: mode set"
 msgstr ""
 
 #. Translators: Confirmation after a mode change. {mode} = mode name.
-#: dialog_cozytouch.py:203 dialog_vesync.py:145
+#: dialog_cozytouch.py:253 dialog_vesync.py:148
 msgid "{name}: mode {mode}"
 msgstr ""
 
 #. Translators: Title of the night light dialog. {name} = device name.
-#: dialog_vesync.py:240
+#: dialog_vesync.py:243
 msgid "{name}: night light"
 msgstr ""
 
 #. Translators: Confirmation after a night light change. {mode} = mode name.
-#: dialog_vesync.py:254
+#: dialog_vesync.py:257
 msgid "{name}: night light {mode}"
 msgstr ""
 
@@ -7623,12 +7630,12 @@ msgid "{name}: no connection"
 msgstr ""
 
 #. Translators: Error message when there is no internet connection.
-#: device_dialog.py:3369
+#: device_dialog.py:3375
 msgid "{name}: no internet connection"
 msgstr ""
 
 #. Translators: A water sensor no longer detects water.
-#: change_detection.py:201
+#: change_detection.py:226
 msgid "{name}: no water detected any more"
 msgstr ""
 
@@ -7644,28 +7651,28 @@ msgid "{name}: not fed - {reason}"
 msgstr ""
 
 #. Translators: Message when the device is offline.
-#: __init__.py:2182 device_dialog.py:3252 dialog_meross.py:403
+#: __init__.py:2185 device_dialog.py:3258 dialog_meross.py:403
 msgid "{name}: offline"
 msgstr ""
 
 #. Translators: Confirmation after switching hot water production on/off.
-#: dialog_cozytouch.py:319
+#: __init__.py:2783 dialog_cozytouch.py:373
 msgid "{name}: operation {status}"
 msgstr ""
 
 #. Translators: Confirmation after toggling oscillation.
-#: dialog_vesync.py:196
+#: dialog_vesync.py:199
 msgid "{name}: oscillation {status}"
 msgstr ""
 
 #. Translators: Confirmation after a cooking programme was stopped. {name} =
 #. device name.
-#: dialog_vesync.py:713
+#: dialog_vesync.py:716
 msgid "{name}: programme stopped"
 msgstr ""
 
 #. Translators: Message when the connection is being re-established.
-#: device_dialog.py:3386
+#: device_dialog.py:3392
 msgid "{name}: reconnecting"
 msgstr ""
 
@@ -7674,17 +7681,16 @@ msgstr ""
 msgid "{name}: removed from favorites"
 msgstr ""
 
-#. Translators: A change was sent to a Petlibro device that has not answered
-#. the cloud yet.
-#: dialog_petlibro.py:260
+#. Translators: A change was sent to a device that has not answered the cloud
+#. yet.
+#: __init__.py:2789 dialog_cozytouch.py:168 dialog_petlibro.py:260
 msgid ""
 "{name}: sent, but the device has not answered yet - the change is announced "
 "as soon as the device reports it."
 msgstr ""
 
-#. Translators: As above, for a change the add-on cannot watch for (a reminder
-#. reset).
-#: dialog_petlibro.py:266
+#. Translators: As above, for a change the add-on cannot watch for.
+#: dialog_cozytouch.py:172 dialog_petlibro.py:266
 msgid ""
 "{name}: sent, but the device has not answered yet - the device menu shows "
 "the change once it arrives."
@@ -7709,22 +7715,22 @@ msgstr ""
 
 #. Translators: Error message when switching a device on/off fails (e.g. cloud
 #. unreachable, device offline).
-#: device_dialog.py:3409
+#: device_dialog.py:3415
 msgid "{name}: switching error"
 msgstr ""
 
 #. Translators: Title of the target temperature dialog. {name} = device name.
-#: dialog_cozytouch.py:139
+#: dialog_cozytouch.py:189
 msgid "{name}: target temperature"
 msgstr ""
 
 #. Translators: Confirmation without a duration.
-#: dialog_netatmo.py:251
+#: dialog_netatmo.py:252
 msgid "{name}: target temperature set to {temp}°C"
 msgstr ""
 
 #. Translators: Confirmation with default duration. {minutes} = minutes.
-#: dialog_netatmo.py:245
+#: dialog_netatmo.py:246
 msgid ""
 "{name}: target temperature set to {temp}°C (default duration: {minutes} "
 "minutes)"
@@ -7732,12 +7738,12 @@ msgstr ""
 
 #. Translators: Confirmation with end time. {temp} = temperature, {end} =
 #. time.
-#: dialog_netatmo.py:235
+#: dialog_netatmo.py:236
 msgid "{name}: target temperature set to {temp}°C until {end}"
 msgstr ""
 
 #. Translators: Confirmation after setting the target temperature.
-#: dialog_cozytouch.py:167
+#: dialog_cozytouch.py:213
 msgid "{name}: target temperature {temp} degrees"
 msgstr ""
 
@@ -7811,7 +7817,7 @@ msgid "{name}: the water warning was not taken over"
 msgstr ""
 
 #. Translators: Error message on timeout.
-#: device_dialog.py:3356 device_dialog.py:3517 device_dialog.py:3602
+#: device_dialog.py:3362 device_dialog.py:3523 device_dialog.py:3608
 msgid "{name}: timeout"
 msgstr ""
 
@@ -7822,14 +7828,14 @@ msgstr ""
 
 #. Translators: Energy summary from the device's own meter without a current
 #. power value.
-#: __init__.py:1721
+#: __init__.py:1724
 msgid ""
 "{name}: today {today} kilowatt hours, last 7 days {week} kilowatt hours"
 msgstr ""
 
 #. Translators: Energy summary from the device's own meter. {name} = device,
 #. {today}/{week} = kWh, {watt} = current watts.
-#: __init__.py:1710
+#: __init__.py:1713
 msgid ""
 "{name}: today {today} kilowatt hours, last 7 days {week} kilowatt hours, "
 "currently {watt} watts"
@@ -7837,14 +7843,14 @@ msgstr ""
 
 #. Translators: Energy summary estimated from background samples (only covers
 #. the time NVDA was running).
-#: __init__.py:1735
+#: __init__.py:1738
 msgid ""
 "{name}: today {today} kilowatt hours, last 7 days {week} kilowatt hours, "
 "currently {watt} watts (estimated, only recorded while NVDA was running)"
 msgstr ""
 
 #. Translators: Error message when the device is unreachable.
-#: device_dialog.py:3353 device_dialog.py:3392
+#: device_dialog.py:3359 device_dialog.py:3398
 msgid "{name}: unreachable"
 msgstr ""
 
@@ -7886,24 +7892,24 @@ msgid "{name}: {color} set"
 msgstr ""
 
 #. Translators: Confirmation after a diffuser mode change.
-#: device_dialog.py:3223
+#: device_dialog.py:3229
 msgid "{name}: {mode}"
 msgstr ""
 
 #. Translators: Confirmation after a light color change.
-#: device_dialog.py:3505
+#: device_dialog.py:3511
 msgid "{name}: {mode} set"
 msgstr ""
 
 #. Translators: Confirmation after a cooking programme was sent to the
 #. appliance. {name} = device name, {programme} = programme name.
-#: dialog_vesync.py:556
+#: dialog_vesync.py:559
 msgid "{name}: {programme} set"
 msgstr ""
 
 #. Translators: Announcement of an external switch state change.
-#: __init__.py:2815 __init__.py:2743 __init__.py:2765 device_dialog.py:1413
-#: dialog_vesync.py:82 dialog_vesync.py:206
+#: __init__.py:2855 __init__.py:2751 __init__.py:2798 device_dialog.py:1413
+#: dialog_vesync.py:85 dialog_vesync.py:209
 msgid "{name}: {status}"
 msgstr ""
 
@@ -8060,34 +8066,34 @@ msgstr ""
 
 #. Translators: The absence period of the heat pump in the history.
 #. {start}/{end} = date and time.
-#: history.py:1457
+#: history.py:1383
 msgid "{start} until {end}"
 msgstr ""
 
 #. Translators: A setpoint with its end time in the history. {temp} = e.g.
 #. "21,5 °C", {time} = HH:MM.
-#: history.py:1437
+#: history.py:1458
 msgid "{temp} until {time}"
 msgstr ""
 
 #. Translators: A temperature with its unit, put together with other pieces
 #. into one announcement.
-#: __init__.py:2248
+#: __init__.py:2251
 msgid "{temp}°C"
 msgstr ""
 
 #. Translators: Fallback for a history entry of unknown type.
-#: history.py:1143
+#: history.py:1142
 msgid "{time} – {name}: unknown event"
 msgstr ""
 
 #. Translators: A meal in the history. {time} = HH:MM, {count} = portions.
-#: history.py:1535
+#: history.py:1536
 msgid "{time}, {count} portion"
 msgstr ""
 
 #. Translators: A meal in the history. {time} = HH:MM, {count} = portions.
-#: history.py:1536
+#: history.py:1537
 msgid "{time}, {count} portions"
 msgstr ""
 
@@ -8099,7 +8105,7 @@ msgstr ""
 
 #. Translators: Success message after login. {total} = number of devices,
 #. {detail} = breakdown per platform (e.g. "3 Meross, 1 Netatmo").
-#: __init__.py:1190
+#: __init__.py:1193
 msgid "{total} devices ready ({detail})"
 msgstr ""
 
@@ -8119,12 +8125,12 @@ msgid "{value} mm rain"
 msgstr ""
 
 #. Translators: Relative humidity in the status announcement.
-#: __init__.py:2252 netatmo_api.py:287
+#: __init__.py:2255 netatmo_api.py:287
 msgid "{value}% humidity"
 msgstr ""
 
 #. Translators: Current power draw in the status announcement.
-#: __init__.py:2271
+#: __init__.py:2274
 msgid "{watt} watts"
 msgstr ""
 

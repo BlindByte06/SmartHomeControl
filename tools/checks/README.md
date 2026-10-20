@@ -44,7 +44,13 @@ region's separators, and that no German string has crept back into the code.
 Also that what a device does by itself is written as "automatic": the
 boost of 2026-10-02, switched on here, set to 65 minutes and booked as
 "external" when it ran out, is replayed through the real detection, and
-so is the Netatmo week schedule moving to its night zone at 22:00.
+so is the Netatmo week schedule moving to its night zone at 22:00. Since
+2026-10-18 also: that a boost running across an NVDA restart still ends as
+"automatic" (start and duration come back from the history), that a change
+the appliance shows only later is confirmed as the user's own rather than
+written as "external", and that a setting changed here - a VeSync fan level,
+a Cozytouch temperature - is not written a second time as "external" by a
+poll that comes after the thirty-second window.
 
 **layertest.py** — the favorites layer: which keys end it, that a digit only
 announces and the same digit switches, and that devices which cannot be
@@ -78,7 +84,9 @@ a device added, removed, renamed, gone offline, another filter - and to
 nothing else, because that is what decides whether a refresh rebuilds at all:
 a rebuild reports a selection twice and NVDA reads the entry two and three
 times. And that a platform switched off really loses its devices, in the
-refresh as well as when the settings are saved.
+refresh as well as when the settings are saved. Also that a Netatmo device
+keeps its favorites row when it is expanded and when a thermostat is
+updated - it lost it both ways, and only Ctrl+B was left.
 
 **credentialstest.py** - the credential store. NVDA writes its complete
 configuration into the log at startup, so anything in `nvda.ini` travels with
@@ -132,7 +140,12 @@ itself and always agree. These checks cover the parser, the validation
 (reversed, overlapping and out-of-range windows), a refusing cloud, a cloud
 that confirms while the appliance keeps its old program, an appliance that
 stores something else - and that the protection window does not blind the
-read-back.
+read-back. Also when a single command counts as taken, refused or still on
+its way: a boost reported as "could not be toggled" was running a little
+later, because one look 1.5 seconds after the execution decided everything.
+The value is now read back several times, a dropped network while following
+the execution or a late answer to the write leaves the decision to the
+value, and a write is never sent a second time after a read timeout.
 
 **healthtest.py** - whether an unreachable platform is noticed, and whether
 the add-on stays quiet where nothing is wrong. The Netatmo cloud answers with
@@ -192,7 +205,8 @@ previous value), from both the bypassV2 response and the device list.
 
 **tokentest.py** — the Netatmo token handling: that a rotated refresh token
 is persisted, and that the diagnostics read the live value rather than a
-copy taken at sign-in.
+copy taken at sign-in. Also the local callback of the sign-in: a call with a
+wrong state is turned away instead of ending the sign-in.
 
 **petlibrotest.py** - the Petlibro feeder and water fountain, the first
 devices here whose commands reach an animal. Replays the status of a real
