@@ -1,0 +1,84 @@
+{
+ "aiohappyeyeballs==2.7.1": {
+  "aiohappyeyeballs-2.7.1-py3-none-any.whl": "9243213661e29250eb41368e5daa826fc017156c3b8a11440826b2e3ed376472"
+ },
+ "aiohttp==3.14.3": {
+  "aiohttp-3.14.3-cp311-cp311-win32.whl": "a4af35c443e0b1a1bd6a8af3f3485d7fda15c142751a00f3ff8090f0b93346fa",
+  "aiohttp-3.14.3-cp311-cp311-win_amd64.whl": "e1e74298bab6ee0d6e749ed4fd1901c7e604bdda32c03d787a2cc71c46d0433d",
+  "aiohttp-3.14.3-cp313-cp313-win32.whl": "5f08ec777f35ee70720233b8b9811d3bb5d728137f30ac91b7457709c3261ac0",
+  "aiohttp-3.14.3-cp313-cp313-win_amd64.whl": "dff9461ec275f22135650d5ba4b4931a11f3958df7dfbb8db630000d4dee0883"
+ },
+ "aiosignal==1.4.0": {
+  "aiosignal-1.4.0-py3-none-any.whl": "053243f8b92b990551949e63930a839ff0cf0b0ebbe0597b0f3fb19e1a0fe82e"
+ },
+ "attrs==26.1.0": {
+  "attrs-26.1.0-py3-none-any.whl": "c647aa4a12dfbad9333ca4e71fe62ddc36f4e63b2d260a37a8b83d2f043ac309"
+ },
+ "certifi==2026.7.22": {
+  "certifi-2026.7.22-py3-none-any.whl": "62f22742b58a1a33014a2b6b706588a8d7e2a88ae7bd1a6ebe8c992928483775"
+ },
+ "charset_normalizer==3.5.1": {
+  "charset_normalizer-3.5.1-cp311-cp311-win32.whl": "ac00177c4831ffa650f8609e4bdddd5fe09c03b1c0c47acece7e6ea20421598b",
+  "charset_normalizer-3.5.1-cp311-cp311-win_amd64.whl": "f9b1e28d0e8dbfa858abdba91d6b547beaf2df1a59bec6da6faae7b96a4991a9",
+  "charset_normalizer-3.5.1-cp313-cp313-win32.whl": "d63600d620ad0064c3a748b950ac5ea38a80190e5498532efefa4b7b3f1da1f3",
+  "charset_normalizer-3.5.1-cp313-cp313-win_amd64.whl": "aea996a6aba25260827c9ea511d1addfde2da9eb686ac961838509086188b7e6",
+  "charset_normalizer-3.5.1-cp37-abi3-win32.whl": "dd732602a7009217f658d5863d12d79d373a4de0eebc111094bcdd3bb8e0a6cc",
+  "charset_normalizer-3.5.1-cp37-abi3-win_amd64.whl": "70055ff39b97c99e7ae40ea3e393fb62aa2e44dbd9b29f8d14f42fb0025c3959",
+  "charset_normalizer-3.5.1-py3-none-any.whl": "6df0ec430f9a831772c23ca5a224cba36517a58a84bb32c32bb59a9fa67c47f6"
+ },
+ "frozenlist==1.8.0": {
+  "frozenlist-1.8.0-cp311-cp311-win32.whl": "27c6e8077956cf73eadd514be8fb04d77fc946a7fe9f7fe167648b0b9085cc25",
+  "frozenlist-1.8.0-cp311-cp311-win_amd64.whl": "ac913f8403b36a2c8610bbfd25b8013488533e71e62b4b4adce9c86c8cea905b",
+  "frozenlist-1.8.0-cp313-cp313-win32.whl": "8b7b94a067d1c504ee0b16def57ad5738701e4ba10cec90529f13fa03c833496",
+  "frozenlist-1.8.0-cp313-cp313-win_amd64.whl": "878be833caa6a3821caf85eb39c5ba92d28e85df26d57afb06b35b2efd937231",
+  "frozenlist-1.8.0-cp313-cp313t-win32.whl": "0f96534f8bfebc1a394209427d0f8a63d343c9779cda6fc25e8e121b5fd8555b",
+  "frozenlist-1.8.0-cp313-cp313t-win_amd64.whl": "5d63a068f978fc69421fb0e6eb91a9603187527c86b7cd3f534a5b77a592b888",
+  "frozenlist-1.8.0-py3-none-any.whl": "0c18a16eab41e82c295618a77502e17b195883241c563b00f0aa5106fc4eaa0d"
+ },
+ "idna==3.20": {
+  "idna-3.20-py3-none-any.whl": "ab7ae7122974553370f0bdb919e1a960b2cd1bc1ef0276416d896db81c14582c"
+ },
+ "meross_iot==0.4.10.4": {
+  "meross_iot-0.4.10.4-py2.py3-none-any.whl": "deed04bb46ccee992eb8bd6dcda76f74c1e892a2e9c1d3554bd7a7ca37666e84"
+ },
+ "multidict==6.9.1": {
+  "multidict-6.9.1-cp311-cp311-win32.whl": "2c1aeb92eea59d824f004341b26d5e4b47a8a441cf9726769b9a90abf9d0e08f",
+  "multidict-6.9.1-cp311-cp311-win_amd64.whl": "5f89dad732280e7a10b74d40b91364f88e13c3f2c08c2ef83a8cd42f7a61af2e",
+  "multidict-6.9.1-cp313-cp313-win32.whl": "9c4880d017555d70dea367dd49271830842d48e3891c2da97da7ce8c4abcee40",
+  "multidict-6.9.1-cp313-cp313-win_amd64.whl": "ac51cd64bae51c462ea58ad2492c9b8209667a4ef60c45c4a304518b67598d5d",
+  "multidict-6.9.1-py3-none-any.whl": "7bf6478188f4e47bf5686e8a33da4ae28bf43b1b2528d9ee144d28492bfac60b"
+ },
+ "paho-mqtt==2.1.0": {
+  "paho_mqtt-2.1.0-py3-none-any.whl": "6db9ba9b34ed5bc6b6e3812718c7e06e2fd7444540df2455d2c51bd58808feee"
+ },
+ "propcache==0.5.4": {
+  "propcache-0.5.4-cp311-cp311-win32.whl": "9f86f7259efe2c951f43e57d471c9b41daa5bfc7db9f67189059cf1ae6d77fd9",
+  "propcache-0.5.4-cp311-cp311-win_amd64.whl": "e904d4d01f36bd6e197590be1533c44e06058771e0746dd073a8ebb3ef880858",
+  "propcache-0.5.4-cp313-cp313-win32.whl": "3e413d7a4a9b4866b7a761d6060d434b64d23cd35122eda3b026a0bbe8196b25",
+  "propcache-0.5.4-cp313-cp313-win_amd64.whl": "0c889f6fa84957bc7e8b4eab71fd16a0455068d5045e3aa40c733071d2b2fd77",
+  "propcache-0.5.4-py3-none-any.whl": "62c60aec739ed00124573cce1178138fd690c7676352d67a37328c1cf51d7468"
+ },
+ "pycparser==3.0": {
+  "pycparser-3.0-py3-none-any.whl": "b727414169a36b7d524c1c3e31839a521725078d7b2ff038656844266160a992"
+ },
+ "pycryptodomex==3.23.0": {
+  "pycryptodomex-3.23.0-cp313-cp313t-win32.whl": "a9d446e844f08299236780f2efa9898c818fe7e02f17263866b8550c7d5fb328",
+  "pycryptodomex-3.23.0-cp313-cp313t-win_amd64.whl": "bc65bdd9fc8de7a35a74cab1c898cab391a4add33a8fe740bda00f5976ca4708",
+  "pycryptodomex-3.23.0-cp37-abi3-win32.whl": "189afbc87f0b9f158386bf051f720e20fa6145975f1e76369303d0f31d1a8d7c",
+  "pycryptodomex-3.23.0-cp37-abi3-win_amd64.whl": "52e5ca58c3a0b0bd5e100a9fbc8015059b05cffc6c66ce9d98b4b45e023443b9"
+ },
+ "requests==2.34.2": {
+  "requests-2.34.2-py3-none-any.whl": "2a0d60c172f83ac6ab31e4554906c0f3b3588d37b5cb939b1c061f4907e278e0"
+ },
+ "typing_extensions==4.16.0": {
+  "typing_extensions-4.16.0-py3-none-any.whl": "481caa481374e813c1b176ada14e97f1f67a4539ce9cfeb3f350d78d6370c2e8"
+ },
+ "urllib3==2.8.0": {
+  "urllib3-2.8.0-py3-none-any.whl": "0cf3cae568d36aa9576b28dfb35f11328f1cb974ca7647d9475ebb86c75ac6e3"
+ },
+ "yarl==1.25.1": {
+  "yarl-1.25.1-cp311-cp311-win_amd64.whl": "d7306dee25b8a0e737363f347362b875094b4dc4e367311470656ae420fdbf8e",
+  "yarl-1.25.1-cp313-cp313-win_amd64.whl": "1f51020b2eb8a003c84925638ec63c21a750a4bddd3a22ec8eac6a742dadf1b9",
+  "yarl-1.25.1-py3-none-any.whl": "681c758b0490f9e96b78e5fa8e8dc6e648e9185bb6eaebe73183c33ea0c445f3"
+ }
+}

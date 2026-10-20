@@ -78,6 +78,9 @@ class MerossAPI:
         # Token bucket per device: {uuid: {'tokens': float, 'last': ts}}. Hard-
         # caps ALL cloud queries at MEROSS_HOURLY_BUDGET/hour.
         self._msg_budget = {}
+        # The bucket is read and written on the event loop thread (the
+        # polls) and on the caller's thread (the consumption queries).
+        self._budget_lock = threading.Lock()
         # Timestamp of the last power metric query per device (decoupled from
         # the status poll).
         self._last_metrics_fetch = {}
@@ -115,25 +118,28 @@ class MerossAPI:
         while user-initiated queries (consumption, switching) pass 0 and
         therefore always get through.
 
-        Runs exclusively on the event loop thread; since there is no
-        ``await`` between reading and writing, the access is atomic with
-        respect to the device coroutines running in parallel.
+        Runs on the event loop thread (the polls) and on the caller's thread
+        (get_daily_consumption and its bulk variant), so read and write
+        happen under ``_budget_lock``: without it two of them could both
+        read the same count and one deduction got lost. A plain lock is
+        fine on the event loop - nothing awaits while it is held.
         """
         if not uuid:
             return True
         now = time.time()
         rate = MEROSS_HOURLY_BUDGET / 3600.0  # tokens per second
-        st = self._msg_budget.get(uuid)
-        if st is None:
-            st = {'tokens': float(MEROSS_BUDGET_BURST), 'last': now}
-            self._msg_budget[uuid] = st
-        # Refill the tokens based on the elapsed time (capped at the burst)
-        st['tokens'] = min(MEROSS_BUDGET_BURST, st['tokens'] + (now - st['last']) * rate)
-        st['last'] = now
-        if st['tokens'] >= cost + reserve:
-            st['tokens'] -= cost
-            return True
-        return False
+        with self._budget_lock:
+            st = self._msg_budget.get(uuid)
+            if st is None:
+                st = {'tokens': float(MEROSS_BUDGET_BURST), 'last': now}
+                self._msg_budget[uuid] = st
+            # Refill the tokens based on the elapsed time (capped at the burst)
+            st['tokens'] = min(MEROSS_BUDGET_BURST, st['tokens'] + (now - st['last']) * rate)
+            st['last'] = now
+            if st['tokens'] >= cost + reserve:
+                st['tokens'] -= cost
+                return True
+            return False
 
     def _budget_exhausted(self, uuid, cost=1):
         """True when the bucket is REALLY empty, not merely down to the reserve.
@@ -141,8 +147,9 @@ class MerossAPI:
         Only then is the throttle announcement warranted: a poll stopped by the
         reserve is intended behaviour and must not be reported to the user.
         """
-        st = self._msg_budget.get(uuid)
-        return bool(st) and st['tokens'] < cost
+        with self._budget_lock:
+            st = self._msg_budget.get(uuid)
+            return bool(st) and st['tokens'] < cost
 
     def _notify_throttle(self, device_name=None):
         """Informs the user at most every MEROSS_THROTTLE_NOTIFY_COOLDOWN
@@ -1529,7 +1536,17 @@ class MerossAPI:
                                      "or connection lost"))
             
             device = devices[0]
-            
+
+            # Garage door openers and roller shutters are never switched -
+            # see meross_devices._is_opener. Checked here as well, at the
+            # last step before the cloud, so no path can get past it.
+            if _meross._is_opener(device, (getattr(device, 'type', '') or '').lower()):
+                # Translators: Error when a device is recognised but cannot be
+                # operated yet. {name} = device name, {type} = model designation.
+                raise ValueError(_("{name} is shown but cannot be operated yet "
+                                   "({type})").format(
+                    name=device.name, type=getattr(device, 'type', '?')))
+
             # SPECIAL: MOD150 diffusers use DiffuserSprayMixin instead of
             # ToggleMixin. Check for diffuser specifics first
             if hasattr(device, 'async_set_spray_mode'):

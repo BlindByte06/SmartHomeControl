@@ -2,6 +2,54 @@
 
 The GitHub release notes are built from the section of the released version.
 
+## 26.10.2 (October 2026)
+
+### Important notes
+
+- With "Save configuration when exiting NVDA" switched off, the settings of the add-on are saved with NVDA+Ctrl+C like all other settings.
+
+### Security Fixes
+
+- Credentials are no longer sent along when a cloud redirects to another host.
+- The VeSync account ID no longer appears in the NVDA log.
+- The rights of the credential file are set only with icacls from the Windows system folder.
+
+### Changes
+
+- The settings of the add-on are stored in the base configuration, not in the active profile.
+- Renewed sign-in tokens no longer write NVDA's whole configuration to disk.
+- A sign-in that keeps failing for a reason other than the network is no longer retried for good.
+- The settings open only once at a time.
+- Meross garage door openers and roller shutters are shown but not switched.
+- Shortcuts with Alt, Control or Windows end the favourites layer and work as usual.
+- The help of the favourites tab (F1) opens as a list.
+- Dates of the Cozytouch away mode follow the notation of the region.
+
+### Bug Fixes
+
+- NVDA no longer crashes when the device menu is closed after a device was switched from the favourites tab.
+- Enter or Space on a VeSync or Cozytouch device no longer freezes NVDA.
+- A leak sensor that already detects water when NVDA starts is now announced.
+- A Meross account with two-factor authentication is named as the reason the sign-in fails.
+- A wrong Meross password no longer plays NVDA's error sound.
+- Testing the Netatmo connection no longer invalidates the running sign-in.
+- Netatmo tokens are renewed only when Netatmo rejects the token itself.
+- A Cozytouch server fault at sign-in is retried.
+- Switching the Cozytouch away mode no longer signs in to Cozytouch again.
+- Cozytouch and Petlibro changes reach the history even when the device menu is closed first.
+- NVDA exits faster on a slow network.
+- Damaged data files are kept as "unreadable" instead of being overwritten.
+- The Meross connection test always closes its session.
+- A failed CSV export no longer plays NVDA's error sound twice.
+- Names that Netatmo does not report are no longer shown in German in other languages.
+
+### Changes for Developers
+
+- The build workflow runs with read access; only the release job may write.
+- Actions are pinned to commits, the build tools to hashes (`.github/requirements-ci.txt`).
+- `python build_addon.py lock` records the SHA-256 of every bundled wheel. `libs` refuses any other file, and `pack` fails when the lock is out of date.
+- Each release carries the SHA-256 checksum of the package.
+
 ## 26.10.1 (October 2026)
 
 ### Petlibro (new, experimental)

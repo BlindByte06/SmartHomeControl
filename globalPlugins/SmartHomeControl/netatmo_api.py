@@ -22,9 +22,6 @@ from http.server import HTTPServer, BaseHTTPRequestHandler
 from urllib.parse import urlparse, parse_qs, urlencode
 from logHandler import log
 
-# requests is already bundled in the add-on's lib/ folder
-import requests
-
 import addonHandler
 # Makes sure the gettext `_` builtin is available even when this module is
 # imported directly (e.g. without __init__.py having called initTranslation()
@@ -40,6 +37,7 @@ if "_" not in globals():  # fallback if initTranslation() fails
         return s
 
 from .formatting import fmt_decimal, fmt_number
+from .http_session import SafeSession
 
 from .constants import (
     NETATMO_AUTH_URL, NETATMO_TOKEN_URL, NETATMO_API_BASE,
@@ -65,7 +63,9 @@ class NetatmoDevice:
         self.name = module_data.get(
             'module_name',
             module_data.get('station_name',
-                            module_data.get('name', 'Unbekannt')))
+                            # Translators: Name of a Netatmo device whose
+                            # name the cloud does not report.
+                            module_data.get('name', _("Unknown device"))))
         self.type = module_data.get('type', 'Unknown')
         self.home_id = home_id
         self.room_id = module_data.get('room_id', None)
@@ -545,6 +545,10 @@ class NetatmoAPI:
     def __init__(self, client_id, client_secret, redirect_port=None):
         self.client_id = client_id
         self.client_secret = client_secret
+        # One session per instance: connections are reused, and a
+        # redirect to another host does not carry the refresh token or
+        # the client secret along (see http_session).
+        self._session = SafeSession()
         self.access_token = None
         self.refresh_token = None
         self.token_expiry = 0
@@ -860,7 +864,7 @@ class NetatmoAPI:
         if scopes:
             data['scope'] = ' '.join(scopes)
 
-        resp = requests.post(NETATMO_TOKEN_URL, data=data, timeout=30)
+        resp = self._session.post(NETATMO_TOKEN_URL, data=data, timeout=30)
 
         if resp.status_code != 200:
             try:
@@ -975,7 +979,7 @@ class NetatmoAPI:
           - Other status codes/network errors: return immediately.
         """
         kwargs.setdefault('timeout', 30)
-        func = requests.get if method == 'GET' else requests.post
+        func = self._session.get if method == 'GET' else self._session.post
 
         backoff_5xx = [2, 5]  # wait times in seconds before each retry
         attempt = 0
@@ -1029,6 +1033,33 @@ class NetatmoAPI:
         # JSON / plain text: only show the first 200 characters
         return f"Netatmo API ({code}): {body[:200]}"
 
+    # Netatmo's error codes that mean the access token itself: 1 missing,
+    # 2 invalid, 3 expired. Other 403 codes - 13 "the application does not
+    # have the good scope rights", 26 "user usage reached" - say nothing about
+    # the token, and renewing it for them rotated the refresh token on every
+    # such request for nothing.
+    _TOKEN_ERROR_CODES = (1, 2, 3)
+
+    @classmethod
+    def _token_rejected(cls, resp):
+        """True when the answer says the access token is no good.
+
+        Every 401, and a 403 whose error code names the token. A 403 whose
+        body cannot be read is taken as a token error, as before.
+        """
+        if resp.status_code == 401:
+            return True
+        if resp.status_code != 403:
+            return False
+        try:
+            error = (resp.json() or {}).get('error')
+            code = error.get('code') if isinstance(error, dict) else None
+        except Exception:
+            return True
+        if code is None:
+            return True
+        return code in cls._TOKEN_ERROR_CODES
+
     def _api_get(self, endpoint, params=None):
         """Authenticated GET request"""
         self._ensure_valid_token()
@@ -1039,8 +1070,8 @@ class NetatmoAPI:
         resp = self._http_with_retry('GET', url, headers=headers, params=params)
 
         # 403 is Netatmo's usual "token invalid"; some endpoints answer 401
-        # instead - both get exactly one refresh attempt.
-        if resp.status_code in (401, 403):
+        # instead - both get exactly one refresh attempt (see _token_rejected).
+        if self._token_rejected(resp):
             # Token possibly invalid - try one refresh
             self.refresh_access_token()
             headers = {"Authorization": f"Bearer {self.access_token}"}
@@ -1061,7 +1092,7 @@ class NetatmoAPI:
         resp = self._http_with_retry('POST', url, headers=headers, data=data)
 
         # 401/403: see _api_get
-        if resp.status_code in (401, 403):
+        if self._token_rejected(resp):
             self.refresh_access_token()
             headers = {"Authorization": f"Bearer {self.access_token}"}
             resp = self._http_with_retry('POST', url, headers=headers, data=data)
@@ -1200,7 +1231,9 @@ class NetatmoAPI:
                     for sched in raw_schedules:
                         schedules.append({
                             'id': sched.get('id', ''),
-                            'name': sched.get('name', 'Unbenannt'),
+                            # Translators: Name of a Netatmo heating
+                            # schedule that has no name in the Netatmo app.
+                            'name': sched.get('name', _("Unnamed schedule")),
                             'selected': sched.get('selected', False),
                         })
                     return schedules
@@ -1410,8 +1443,11 @@ class NetatmoAPI:
             body = stations_data.get('body', {})
 
             for station in body.get('devices', []):
-                station_name = station.get('station_name',
-                                           station.get('name', 'Wetterstation'))
+                station_name = station.get(
+                    'station_name',
+                    # Translators: Name of a Netatmo weather station whose
+                    # name the cloud does not report.
+                    station.get('name', _("Weather station")))
                 # Main module (NAMain)
                 main_dev = NetatmoDevice(station, station_name=station_name)
                 main_dev.name = station_name
@@ -1455,7 +1491,9 @@ class NetatmoAPI:
 
             for home in body.get('homes', []):
                 home_id = home.get('id', '')
-                home_name = home.get('name', 'Zuhause')
+                # Translators: Name of a Netatmo home that has no name in
+                # the Netatmo app (the place, as in "at home").
+                home_name = home.get('name', _("Home"))
                 modules = home.get('modules', [])
                 # Default duration for manual setpoints (in minutes)
                 default_duration = home.get('therm_setpoint_default_duration', None)
@@ -1733,4 +1771,8 @@ class NetatmoAPI:
         self.access_token = None
         self.refresh_token = None
         self.token_expiry = 0
+        try:
+            self._session.close()
+        except Exception as e:
+            log.debug(f"Ignored error while closing the session: {e}")
         log.info("Netatmo: logged out")

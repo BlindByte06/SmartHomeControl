@@ -41,6 +41,23 @@ FAVORITES_FILE = os.path.join(_ADDONS_DIR, "SmartHomeControl_favorites.json")
 _LEGACY_FAVORITES_FILE = os.path.join(_ADDON_DIR, "device_favorites.json")
 
 
+def _set_aside(path):
+    """Keeps a file that could not be read, instead of overwriting it.
+
+    The store starts empty after a failed load, and its next save used to
+    write over the damaged file. It is renamed to
+    "<name>.unreadable-<time>" instead, so it can still be looked at.
+    """
+    try:
+        if os.path.exists(path):
+            import time
+            target = f"{path}.unreadable-{time.strftime('%Y%m%d-%H%M%S')}"
+            os.replace(path, target)
+            log.warning(f"Unreadable file kept as {os.path.basename(target)}")
+    except Exception as e:
+        log.debug(f"Could not set the unreadable file aside: {e}")
+
+
 def _migrate_legacy_file():
     """Moves an old favorites file from the add-on folder to /addons/.
 
@@ -87,20 +104,36 @@ class DeviceFavorites:
         _migrate_legacy_file()
         self._load()
     
+    # True after a load that could not open the file (see _load).
+    _save_blocked = False
+
     def _load(self):
         """Loads favorites from the JSON file"""
         try:
             if os.path.exists(FAVORITES_FILE):
                 with open(FAVORITES_FILE, 'r', encoding='utf-8') as f:
-                    self._favorites = json.load(f)
+                    data = json.load(f)
+                if not isinstance(data, list) or not all(
+                        isinstance(fav, dict) for fav in data):
+                    raise ValueError("expected a list of favourites")
+                self._favorites = data
                 log.debug(f"Favourites loaded: {len(self._favorites)} devices")
                 self._migrate_platform_fields()
                 self._assign_slots()
             else:
                 self._favorites = []
-        except Exception as e:
+        except ValueError as e:
+            # Damaged content: kept aside rather than written over by the
+            # next change - the slots and names in it were the user's work.
             log.error(f"Could not load the favourites file: {e}")
             self._favorites = []
+            _set_aside(FAVORITES_FILE)
+        except Exception as e:
+            # The file could not be opened - it may well be intact, so
+            # nothing is saved over it in this session.
+            log.error(f"Could not load the favourites file: {e}")
+            self._favorites = []
+            self._save_blocked = True
     
     def _migrate_platform_fields(self):
         """Fixes misclassified legacy entries.
@@ -173,6 +206,10 @@ class DeviceFavorites:
         via ``os.replace`` – protects against half-written files on power
         loss/crash in the middle of writing.
         """
+        if self._save_blocked:
+            log.warning("Favourites not saved: the file could not be read at "
+                        "the start and is left as it is")
+            return
         try:
             tmp_path = FAVORITES_FILE + ".tmp"
             with open(tmp_path, 'w', encoding='utf-8') as f:

@@ -9,30 +9,38 @@ on:
   pull_request:
   workflow_dispatch:
 
-# Creating a release (softprops/action-gh-release) needs write access to
-# contents; depending on the repository setting the GITHUB_TOKEN is read-only.
+# Read-only for everything that builds and checks. Only the release job, which
+# runs for a tag and installs nothing, gets write access (see there). It used
+# to be write access for the whole workflow: every push ran PyPI packages and
+# the check scripts with a token that could push to the repository.
 permissions:
-  contents: write
+  contents: read
 
+# The actions are pinned to the commit of the release named beside them - a
+# tag like v4 can be moved to other code at any time, a commit cannot. To
+# update one, take the commit of the new release tag and adjust the comment.
 jobs:
   build:
     runs-on: windows-latest
 
     steps:
     - name: Checkout code
-      uses: actions/checkout@v4
+      uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      with:
+        # The token is not left in .git/config for the steps that follow.
+        persist-credentials: false
 
     - name: Set up Python
-      uses: actions/setup-python@v5
+      uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
       with:
         python-version: '3.11'
 
     # build_addon.py needs polib for the translation check. Without polib the
     # script skips that check silently - a broken translation would then only
     # show up in the finished add-on. pyflakes checks the add-on code (see the
-    # next step).
+    # next step). Both pinned with their hashes in .github/requirements-ci.txt.
     - name: Install build dependencies
-      run: python -m pip install --upgrade pip polib pyflakes
+      run: python -m pip install --require-hashes -r .github/requirements-ci.txt
 
     # The pack step only copies files - a syntax error or a dead import would
     # otherwise surface at runtime, at the user. compileall compiles every
@@ -68,26 +76,29 @@ jobs:
 
     # Looks every library pinned in requirements-bundle.txt up in the OSV
     # vulnerability database - the one pip-audit reads - and fails on a
-    # known vulnerability: raise the version there, then "libs" and "pack".
-    # It asks OSV directly and installs nothing. There is no NVDA on the
-    # runner, so NVDA's own copies of requests, urllib3 and certifi (the ones
-    # that actually run) are only covered when this runs on a machine with
-    # NVDA installed.
+    # known vulnerability: raise the version there, then "lock", "libs" and
+    # "pack". It asks OSV directly and installs nothing. There is no NVDA on
+    # the runner, so NVDA's own copies of requests, urllib3 and certifi (the
+    # ones that actually run) are only covered when this runs on a machine
+    # with NVDA installed.
     - name: Audit the bundled libraries
       run: python build_addon.py audit
 
     # Builds from manifest.ini, globalPlugins/, lib/, doc/ and locale/ - NOT
-    # from the whole repository. Checks translations and package integrity
-    # along the way and fails on any problem.
+    # from the whole repository. Checks translations, the hash lock of the
+    # bundled libraries and package integrity along the way and fails on any
+    # problem.
     - name: Build addon
       run: python build_addon.py pack
 
-    - name: Upload artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: SmartHomeControl
-        path: dist/*.nvda-addon
-        if-no-files-found: error
+    # The SHA-256 of the package goes into the release beside it, so a
+    # download can be checked against what this build produced.
+    - name: Checksum of the package
+      run: |
+        Get-ChildItem dist/*.nvda-addon | ForEach-Object {
+          $hash = (Get-FileHash $_.FullName -Algorithm SHA256).Hash.ToLower()
+          "$hash  $($_.Name)" | Out-File -Encoding ascii "$($_.FullName).sha256"
+        }
 
     # The release notes are the changelog section of the tagged version from
     # CHANGELOG.md (English - release pages are read internationally). If the
@@ -104,18 +115,46 @@ jobs:
           Write-Host "::error::Tag v$version does not match manifest.ini ($manifest)"
           exit 1
         }
-        python build_addon.py relnotes --version $version --out release-notes.md
-        Get-Content release-notes.md
+        python build_addon.py relnotes --version $version --out dist/release-notes.md
+        Get-Content dist/release-notes.md
+
+    - name: Upload artifact
+      uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+      with:
+        name: SmartHomeControl
+        path: |
+          dist/*.nvda-addon
+          dist/*.sha256
+          dist/release-notes.md
+        if-no-files-found: error
+
+  # Creating a release needs write access to the repository's contents. This
+  # job gets it, and only for a tag: it checks nothing out and installs
+  # nothing, it takes what the build job produced and publishes it.
+  release:
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+    - name: Download the build
+      uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+      with:
+        name: SmartHomeControl
+        path: dist
 
     # prerelease: a tag carrying "beta", "alpha" or "rc" must NOT become the
     # release that GitHub offers as the current one - testers would otherwise
     # be handed a beta as if it were the finished version.
-    - name: Create Release (on tag)
-      if: startsWith(github.ref, 'refs/tags/')
-      uses: softprops/action-gh-release@v2
+    - name: Create Release
+      uses: softprops/action-gh-release@3bb12739c298aeb8a4eeaf626c5b8d85266b0e65 # v2.6.2
       with:
-        files: dist/*.nvda-addon
-        body_path: release-notes.md
+        files: |
+          dist/*.nvda-addon
+          dist/*.sha256
+        body_path: dist/release-notes.md
         prerelease: ${{ contains(github.ref_name, 'beta') || contains(github.ref_name, 'alpha') || contains(github.ref_name, 'rc') }}
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

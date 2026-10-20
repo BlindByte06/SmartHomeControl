@@ -53,6 +53,7 @@ if "_" not in globals():  # fallback if initTranslation() fails
         return s
 
 from .errors import CredentialsRejected
+from .http_session import SafeSession
 from .petlibro_devices import wrap_device
 
 API_BASE = "https://api.us.petlibro.com"
@@ -112,7 +113,9 @@ class PetlibroAPI:
     """Petlibro cloud API handler."""
 
     def __init__(self):
-        self._session = requests.Session()
+        # SafeSession: a redirect to another host does not carry the
+        # credentials along (see http_session).
+        self._session = SafeSession()
         self._token = ""
         self._timezone = _local_timezone()
         self._reauth_callback = None

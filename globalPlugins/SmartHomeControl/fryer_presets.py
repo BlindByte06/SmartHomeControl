@@ -42,6 +42,21 @@ PRESETS_FILE = os.path.join(_ADDONS_DIR, "SmartHomeControl_fryer_presets.json")
 _FIELDS = ("recipe_id", "recipe_type", "cook_temp", "cook_set_time")
 
 
+def _set_aside(path):
+    """Keeps a file that could not be read, instead of overwriting it.
+
+    Renamed to "<name>.unreadable-<time>", so it can still be looked at.
+    """
+    try:
+        if os.path.exists(path):
+            import time
+            target = f"{path}.unreadable-{time.strftime('%Y%m%d-%H%M%S')}"
+            os.replace(path, target)
+            log.warning(f"Unreadable file kept as {os.path.basename(target)}")
+    except Exception as e:
+        log.debug(f"Could not set the unreadable file aside: {e}")
+
+
 class FryerPresets:
     """Programmes seen per device, keyed by the device's unique id.
 
@@ -54,23 +69,37 @@ class FryerPresets:
         self._load()
 
     # ------------------------------------------------------------ storage --
+    # True after a load that could not open the file (see _load).
+    _save_blocked = False
+
     def _load(self):
         try:
             if os.path.exists(PRESETS_FILE):
                 with open(PRESETS_FILE, 'r', encoding='utf-8') as fh:
                     data = json.load(fh)
-                if isinstance(data, dict):
-                    self._devices = data
-                    log.debug(f"Fryer programmes loaded for "
-                              f"{len(self._devices)} device(s)")
-        except Exception as e:
+                if not isinstance(data, dict):
+                    raise ValueError(f"expected an object, found {type(data).__name__}")
+                self._devices = data
+                log.debug(f"Fryer programmes loaded for "
+                          f"{len(self._devices)} device(s)")
+        except ValueError as e:
             # A damaged file must not stop the add-on: without programmes
-            # the fryer is merely back to being display-only.
+            # the fryer is merely back to being display-only. The file is
+            # kept aside rather than written over by the next programme.
             log.error(f"Could not load the fryer programmes: {e}")
             self._devices = {}
+            _set_aside(PRESETS_FILE)
+        except Exception as e:
+            # Could not be opened - it may well be intact, so nothing is
+            # saved over it in this session.
+            log.error(f"Could not load the fryer programmes: {e}")
+            self._devices = {}
+            self._save_blocked = True
 
     def _save(self):
         """Writes atomically, as the favourites do."""
+        if self._save_blocked:
+            return
         try:
             tmp = PRESETS_FILE + ".tmp"
             with open(tmp, 'w', encoding='utf-8') as fh:

@@ -41,6 +41,7 @@ from .vesync_devices import (
     VESYNC_FAN_TYPES, VESYNC_FRYER_TYPES, resolve_device_config,
 )
 from .errors import CredentialsRejected
+from .http_session import SafeSession
 
 
 # ============================================================
@@ -138,7 +139,9 @@ class VeSyncAPI:
         # requests.Session is safe in practice for parallel .post() calls
         # from several threads (the urllib3 pool below is thread-safe); the
         # pool is sized to the parallelism of the update tick.
-        self._session = requests.Session()
+        # SafeSession: a redirect to another host does not carry the
+        # credentials along (see http_session).
+        self._session = SafeSession()
         _adapter = requests.adapters.HTTPAdapter(
             pool_connections=2, pool_maxsize=max(4, BYPASS_CONCURRENCY))
         self._session.mount("https://", _adapter)
@@ -447,7 +450,13 @@ class VeSyncAPI:
         log.info("VeSync API: login successful")
         return True
 
-    def _exchange_authorize_code(self, authorize_code, biz_token=None):
+    # How often the second login step may follow the cloud to another region.
+    # One switch is what VeSync does; the limit only keeps an answer that
+    # names a new region every time from recursing until Python gives up.
+    _MAX_REGION_SWITCHES = 2
+
+    def _exchange_authorize_code(self, authorize_code, biz_token=None,
+                                 _switches=0):
         """Exchanges the authorizeCode for an access token"""
         login_body = {
             "acceptLanguage": DEFAULT_LANGUAGE,
@@ -482,12 +491,14 @@ class VeSyncAPI:
             cross_region_token = result.get("bizToken")
             new_country = result.get("countryCode")
             new_region = result.get("currentRegion")
-            if cross_region_token and new_region:
+            if (cross_region_token and new_region
+                    and _switches < self._MAX_REGION_SWITCHES):
                 log.info(f"VeSync: cross-region login - switching to {new_region}")
                 self.country_code = (new_country or self.country_code).upper()
                 self.region = new_region.upper()
                 self.base_url = _region_to_base_url(self.region)
-                return self._exchange_authorize_code(authorize_code, cross_region_token)
+                return self._exchange_authorize_code(
+                    authorize_code, cross_region_token, _switches=_switches + 1)
             msg = login_resp.get("msg") or _("Unknown error")
             # Translators: Error in the second step of the VeSync login.
             raise RuntimeError(_("VeSync login failed: {msg}").format(msg=msg))

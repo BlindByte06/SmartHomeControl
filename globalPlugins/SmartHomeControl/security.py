@@ -74,16 +74,33 @@ def _salt_path_candidates():
     return paths
 
 
+def _icacls_path():
+    """icacls.exe with its full path.
+
+    A bare "icacls" is looked up by CreateProcess in NVDA's own folder and in
+    the current directory before the system folder, so an icacls.exe placed
+    there would have run instead. On a 32-bit NVDA under 64-bit Windows
+    System32 is redirected to SysWOW64, which holds an icacls.exe too.
+    """
+    root = os.environ.get('SystemRoot') or os.environ.get('windir') or 'C:\\Windows'
+    candidate = os.path.join(root, 'System32', 'icacls.exe')
+    return candidate if os.path.isfile(candidate) else None
+
+
 def _restrict_file_acl(path):
     """Restrict the Windows ACL to the current user – best effort."""
     try:
         import subprocess
+        icacls = _icacls_path()
+        if icacls is None:
+            log.debug("icacls.exe not found in the system folder - ACL left as it is")
+            return
         # CREATE_NO_WINDOW: without this flag a console window flashes up
         # on Windows and steals the focus - NVDA then announces its title.
         # Windows-only, hence getattr with a default of 0.
         no_window = getattr(subprocess, 'CREATE_NO_WINDOW', 0)
         subprocess.run(
-            ['icacls', path, '/inheritance:r', '/grant:r',
+            [icacls, path, '/inheritance:r', '/grant:r',
              f'{getpass.getuser()}:F'],
             check=False, capture_output=True, timeout=5,
             creationflags=no_window,

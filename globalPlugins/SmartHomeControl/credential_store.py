@@ -93,9 +93,12 @@ def _restrict_permissions(path):
     log. Keeping them out of the log and then leaving the file readable
     to every account on the machine would only move the problem.
 
-    What this removes is the inherited access of other accounts.
-    SYSTEM and the administrators keep theirs - measured, and not
-    something a file in a user profile can change.
+    What this removes is every inherited entry: measured with icacls on
+    2026-10-17, the file carries one entry only, the user's own
+    ("<machine>\\<user>:(F)") - SYSTEM and the administrators are gone
+    from the list too. An administrator can still take ownership, and a
+    backup that runs with the backup privilege still reads it; a program
+    running as another ordinary account cannot.
 
     Best effort, and deliberately silent when it fails. A portable NVDA
     lives on a stick that is often FAT32 or exFAT, and those have no
@@ -134,6 +137,14 @@ def _write_file(values, keep_missing=False):
                 payload[key] = stored[key]
             else:
                 payload[key] = ""
+        # Nothing changed: no write, no fsync, no icacls. Most saves change
+        # only a setting in nvda.ini - the last portions of a feeder, a
+        # notification switch - and the file used to be rewritten, and its
+        # rights set by a child process, every time. The caller passes the
+        # stored ciphertexts for unchanged values (see read_stored).
+        if stored is not None and all(
+                stored.get(key, "") == payload[key] for key in SECRET_KEYS):
+            return True
         # The temporary name carries the thread, so two writers never share
         # one file even if something outside this lock ever writes as well.
         temporary = f"{CREDENTIALS_FILE}.{os.getpid()}.{threading.get_ident()}.tmp"
@@ -158,6 +169,16 @@ def _write_file(values, keep_missing=False):
             except OSError:
                 pass
             return False
+
+
+def read_stored():
+    """The values as they stand in the file now ({} without a file).
+
+    save_settings uses them to keep a ciphertext whose value did not change:
+    DPAPI gives a new ciphertext for the same text every time, so without
+    this every save looked like a change.
+    """
+    return _read_file() or {}
 
 
 def load(conf):

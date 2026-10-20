@@ -66,6 +66,7 @@ def test_budget():
 
         def __init__(self):
             self._msg_budget = {}
+            self._budget_lock = threading.Lock()
 
     api = Api()
     RESERVE = 5
@@ -128,6 +129,7 @@ def test_bulk():
 
         def __init__(self, devs):
             self._msg_budget = {}
+            self._budget_lock = threading.Lock()
             self._consumption_cache = {}
             self._running = True
             self.manager = Mgr(devs)

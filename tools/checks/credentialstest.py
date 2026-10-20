@@ -233,6 +233,30 @@ def main():
     finally:
         shutil.rmtree(tmp, ignore_errors=True)
 
+    print('== Ein Speichern ohne Aenderung schreibt die Datei nicht neu ==')
+    # Jedes save_settings schrieb die Datei neu und setzte ihre Rechte mit
+    # icacls - auch fuer die letzte Portionszahl eines Futterautomaten.
+    tmp = tempfile.mkdtemp()
+    try:
+        cs = fresh_module(tmp)
+        values = {k: 'DPAPI:abc' for k in cs.SECRET_KEYS}
+        cs.save(Conf(), values)
+        replaced = []
+        real_replace = cs.os.replace
+        cs.os.replace = lambda a, b: (replaced.append(b), real_replace(a, b))
+        try:
+            check('dieselben Werte noch einmal: kein Schreiben',
+                  cs.save(Conf(), dict(values)) and not replaced, str(replaced))
+            changed = dict(values, vesyncToken='DPAPI:neu')
+            check('ein geaenderter Wert wird geschrieben',
+                  cs.save(Conf(), changed) and len(replaced) == 1, str(replaced))
+        finally:
+            cs.os.replace = real_replace
+        check('read_stored liefert, was in der Datei steht',
+              cs.read_stored().get('vesyncToken') == 'DPAPI:neu')
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
+
     print('== Eine gescheiterte Schreibung raeumt hinter sich auf ==')
     tmp = tempfile.mkdtemp()
     try:
@@ -326,6 +350,12 @@ def main():
     import types as _types
     tmp = tempfile.mkdtemp()
     saved_handler = sys.modules.get('addonHandler')
+    # onUninstall also removes ~/.smarthomecontrol_salt.bin - with the real
+    # home folder that was the developer's own salt file. The home folder
+    # points into the temporary directory for as long as this runs
+    # (expanduser reads USERPROFILE on Windows, HOME elsewhere).
+    saved_home = {k: os.environ.get(k) for k in ('USERPROFILE', 'HOME')}
+    os.environ['USERPROFILE'] = os.environ['HOME'] = tmp
     try:
         addon = os.path.join(tmp, 'SmartHomeControl')
         os.makedirs(addon)
@@ -333,7 +363,8 @@ def main():
                                  'installTasks.py'), addon)
         cred = os.path.join(tmp, 'SmartHomeControl_credentials.json')
         hist = os.path.join(tmp, 'SmartHomeControl_history.json')
-        for path in (cred, hist):
+        salt = os.path.join(tmp, '.smarthomecontrol_salt.bin')
+        for path in (cred, hist, salt):
             with open(path, 'w') as f:
                 f.write('{}')
         pending = set()
@@ -357,7 +388,14 @@ def main():
         check('beim Entfernen werden sie geloescht', not os.path.exists(cred))
         check('der Verlauf bleibt - er gehoert dem Nutzer, kein Schluessel',
               os.path.exists(hist))
+        check('das Salz im (umgelenkten) Home-Ordner wird geloescht',
+              not os.path.exists(salt))
     finally:
+        for key, value in saved_home.items():
+            if value is None:
+                os.environ.pop(key, None)
+            else:
+                os.environ[key] = value
         if saved_handler is None:
             sys.modules.pop('addonHandler', None)
         else:
@@ -370,7 +408,7 @@ def main():
                       ('cozytouchEmail', 'cozytouch_email'),
                       ('petlibroEmail', 'petlibro_email')):
         check(f'{key} wird verschluesselt geschrieben',
-              f'secrets["{key}"] = encrypt_dpapi(self.{attr})' in src)
+              f'secrets["{key}"] = self._encrypted("{key}", self.{attr}, stored)' in src)
         check(f'{key} wird verschluesselt UND alt im Klartext gelesen',
               f'self.{attr} = _maybe_secret("{key}")' in src)
 

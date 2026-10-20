@@ -35,6 +35,7 @@ if "_" not in globals():  # fallback if initTranslation() fails
 
 from .cozytouch_devices import CozytouchWaterHeater
 from .errors import CredentialsRejected
+from .http_session import SafeSession
 
 API_BASE = "https://apis.groupe-atlantic.com"
 # Public Basic-Auth value hard-coded in the Cozytouch client (base64 of
@@ -49,7 +50,9 @@ class CozytouchAPI:
     """Atlantic Cozytouch cloud API handler."""
 
     def __init__(self):
-        self._session = requests.Session()
+        # SafeSession: a redirect to another host does not carry the
+        # credentials along (see http_session).
+        self._session = SafeSession()
         self._token = ""
         self._setup_id = None
         # Setup fields needed for the away-mode PUT (see set_away_mode).
@@ -92,11 +95,15 @@ class CozytouchAPI:
         return h
 
     def _request(self, method, path, headers=None, json_body=None, data=None,
-                 timeout=API_TIMEOUT, _is_retry=False):
+                 timeout=API_TIMEOUT, _is_retry=False, reauth=True):
         """Authenticated request with one network retry and token reauth.
 
         Returns (status_code, parsed_or_text). 401/403 triggers the reauth
         callback – once – and then retries with a fresh token.
+
+        ``reauth=False`` for a request whose 403 is an expected answer and
+        says nothing about the token - the away capabilities on some
+        accounts. Each of those used to cost a full password sign-in.
         """
         url = API_BASE + path
         if headers is None:
@@ -109,7 +116,7 @@ class CozytouchAPI:
         except (requests.ConnectionError, requests.Timeout) as e:
             if _is_retry:
                 raise
-            log.debug(f"Cozytouch: Netzwerkfehler ({type(e).__name__}), 1x Retry in 1s...")
+            log.debug(f"Cozytouch: network error ({type(e).__name__}), one retry in 1 s")
             time.sleep(1)
             resp = self._session.request(
                 method, url, headers=headers, json=json_body, data=data,
@@ -117,7 +124,8 @@ class CozytouchAPI:
             )
 
         # Token expired -> reauth once, then retry
-        if resp.status_code in (401, 403) and not _is_retry and self._reauth_callback:
+        if (resp.status_code in (401, 403) and not _is_retry and reauth
+                and self._reauth_callback):
             if self._reauth_lock.acquire(blocking=False):
                 try:
                     log.info(f"Cozytouch: token expired (HTTP {resp.status_code}), re-auth...")
@@ -202,9 +210,25 @@ class CozytouchAPI:
     def get_devices(self):
         """Reads the device list (setupviewv2) and returns wrapper objects."""
         status, data = self._request("GET", "/magellan/cozytouch/setupviewv2")
-        if not isinstance(data, list) or not data:
-            log.warning(f"Cozytouch: unexpected device list (HTTP {status})")
+        if status == 200 and isinstance(data, list) and not data:
+            log.info("Cozytouch: the account has no setup")
             return []
+        if status != 200 or not isinstance(data, list):
+            # Raised, not answered with an empty list: the login counted a
+            # server fault as "0 devices" and was never tried again, and
+            # the scheduler does not poll a platform without devices - the
+            # heat pump was gone until the settings were saved again.
+            log.warning(f"Cozytouch: unexpected device list (HTTP {status})")
+            if status is None or status >= 500:
+                # Translators: Error when the Cozytouch cloud does not hand
+                # out the device list. {code} = HTTP status.
+                raise ConnectionError(_("Cozytouch: the device list could not "
+                                        "be read (HTTP {code})").format(
+                    code=status))
+            # Translators: Error when the Cozytouch cloud does not hand out
+            # the device list. {code} = HTTP status.
+            raise RuntimeError(_("Cozytouch: the device list could not be "
+                                 "read (HTTP {code})").format(code=status))
         setup = data[0]
         self._setup_id = setup.get("id")
         # Keep the setup fields required by the away-mode PUT
@@ -315,7 +339,8 @@ class CozytouchAPI:
 
         ``quiet`` downgrades the failure log to DEBUG - used for the
         best-effort away-mode capability writes, where an HTTP 403 is
-        expected on some accounts and must not alarm the user.
+        expected on some accounts and must not alarm the user. Such a 403
+        does not mean an expired token either, so it does not sign in again.
         """
         status, exec_resp = self._request(
             "POST", "/magellan/executions/writecapability",
@@ -324,6 +349,7 @@ class CozytouchAPI:
                 "deviceId": int(device_id),
                 "value": str(value),
             },
+            reauth=not quiet,
         )
         if status != 201:
             _log = log.debug if quiet else log.warning
@@ -475,8 +501,12 @@ class CozytouchAPI:
                 ts_value = "[0,0]"
             ok_ts, st_ts = self._set_capability_ex(
                 device_id, ts_capability_id, ts_value, quiet=True)
-            ok_mode, st_mode = self._set_capability_ex(
-                device_id, mode_capability_id, "1" if on else "0", quiet=True)
+            # A 403 on the first write answers for the second one as well.
+            if st_ts == 403:
+                ok_mode, st_mode = False, 403
+            else:
+                ok_mode, st_mode = self._set_capability_ex(
+                    device_id, mode_capability_id, "1" if on else "0", quiet=True)
             if 403 in (st_ts, st_mode):
                 log.info(
                     "Cozytouch: writecapability for absence not allowed (HTTP 403) - "

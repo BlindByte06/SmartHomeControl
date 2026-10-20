@@ -102,6 +102,25 @@ def has_power_meter_type(device_type):
     return _matches_any(device_type, POWER_METER_TYPES)
 
 
+# Garage door openers (MSG100, MSG200) and roller shutters (MRS100).
+OPENER_TYPE_PREFIXES = ('msg', 'mrs')
+
+
+def _is_opener(device, type_lower=''):
+    """True for a device that opens and closes something.
+
+    meross_iot builds its device classes from the abilities a device
+    reports, so an opener that also reports ToggleX gets async_turn_on and
+    looked like a plug to this add-on - one Enter or two digits of the
+    favourites layer away from moving a garage door. Recognised both by
+    the mixin (async_open, which only GarageOpenerMixin and
+    RollerShutterTimerMixin have) and by the model name.
+    """
+    if hasattr(device, 'async_open'):
+        return True
+    return (type_lower or '').startswith(OPENER_TYPE_PREFIXES)
+
+
 def fallback_outlet_count(device_type):
     """Known outlet count for a multi-outlet model, or 0 if not a known one."""
     t = (device_type or '').lower()
@@ -677,6 +696,7 @@ class MerossChannel:
 
         self.is_plug = parent_device.is_plug
         self.is_light = parent_device.is_light
+        self.is_opener = getattr(parent_device, 'is_opener', False)
         self.is_sensor = False
         self.is_temperature_sensor = False
         self.is_water_sensor = False
@@ -778,6 +798,10 @@ class MerossDevice:
     is_channel = False       # counterpart to MerossChannel.is_channel = True
     is_multi_channel = False
     is_offline = False
+    # A garage door opener or a roller shutter (see _is_opener). Shown, never
+    # switched: the add-on has no open/close with a confirmation, and an
+    # on/off guessed for a door is not one to send.
+    is_opener = False
 
     def __init__(self, device):
         self._device = device
@@ -816,6 +840,7 @@ class MerossDevice:
         # capability for a particular variant.
         self.has_power_meter = has_power_meter_type(type_lower)
         self.is_hub = "msh" in type_lower or hasattr(device, 'get_subdevices')
+        self.is_opener = _is_opener(device, type_lower)
 
         # Multi-channel devices
         self.is_multi_channel = False
@@ -1006,7 +1031,8 @@ class MerossDevice:
                     return _("Unknown ({mode})").format(mode=mode)
         except Exception as e:
             log.debug(f"Failed to read the spray mode: {e}")
-        return "Unbekannt"
+        # Translators: Spray mode of a diffuser that could not be read.
+        return _("Unknown")
 
     # ---- Power metering ----
 
@@ -1408,6 +1434,7 @@ class MerossOfflineChannel:
         self.parent_name = parent_device.name
         self.is_plug = parent_device.is_plug
         self.is_light = parent_device.is_light
+        self.is_opener = getattr(parent_device, 'is_opener', False)
         self.has_power_meter = parent_device.has_power_meter
 
     @property
@@ -1463,6 +1490,7 @@ class MerossOfflineDevice(MerossDevice):
         self.is_sensor = self.is_temperature_sensor or self.is_water_sensor
         self.has_power_meter = has_power_meter_type(type_lower)
         self.is_hub = "msh" in type_lower
+        self.is_opener = _is_opener(None, type_lower)
 
         self.is_multi_channel = False
         self._channels = []

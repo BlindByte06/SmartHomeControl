@@ -182,6 +182,26 @@ def test_single_sensor_still_works(cd):
     check('and does not repeat itself', not said, str(said))
 
 
+def test_wet_at_the_first_reading(cd):
+    print('== a sensor that is wet at the first reading ==')
+    # The leak began while NVDA was not running. The first reading used to
+    # be the silent baseline, and the alarm never came while it stayed wet.
+    host = make_host(cd)
+    cellar = HubSensor('Cellar', 'SUB-A')
+    bath = HubSensor('Bathroom', 'SUB-B')
+    cellar.wet = True
+    said, logged = sweep(host, [cellar, bath])
+    check('the wet one raises the alarm at once',
+          len(said) == 1 and 'Cellar' in said[0], str(said))
+    check('the dry one beside it says nothing',
+          not any('Bathroom' in m for m in said), str(said))
+    check('and the alarm is recorded',
+          logged == [('Cellar', 'water_detected')], str(logged))
+    said, logged = sweep(host, [cellar, bath])
+    check('the next pass does not repeat it', not said and not logged,
+          str(said))
+
+
 def test_non_sensors_are_skipped(cd):
     print('== anything that is not a leak sensor is passed over ==')
     host = make_host(cd)
@@ -232,6 +252,7 @@ def main():
     cd = load()
     test_two_sensors_on_one_hub(cd)
     test_single_sensor_still_works(cd)
+    test_wet_at_the_first_reading(cd)
     test_non_sensors_are_skipped(cd)
     test_the_source_says_which_identity_it_uses()
     test_refresh_keeps_sibling_sensors()

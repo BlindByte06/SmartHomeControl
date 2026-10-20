@@ -32,6 +32,11 @@ if "_" not in globals():  # fallback if initTranslation() fails
 _EMAIL_PATTERN = re.compile(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$')
 
 
+def _class_names(error):
+    """Lower-case names of the error's class and of all its bases."""
+    return [c.__name__.lower() for c in type(error).__mro__]
+
+
 def is_credentials_error(error):
     """Was the login rejected because of the credentials, not the network?
 
@@ -48,7 +53,10 @@ def is_credentials_error(error):
     """
     if isinstance(error, (ConnectionError, TimeoutError, OSError)):
         return False
-    if "badlogin" in type(error).__name__.lower():
+    # The whole class hierarchy, not the class alone: meross_iot raises
+    # MissingMFA and WrongMFA as subclasses of BadLoginException, and their
+    # own names do not contain "badlogin".
+    if any("badlogin" in name for name in _class_names(error)):
         return True
     # CredentialsRejected and the "email and password required" of the API
     # layers are both ValueErrors.
@@ -58,13 +66,30 @@ def is_credentials_error(error):
 def login_error_message(platform, error):
     """One line saying why the login failed, for status and speech."""
     label = PLATFORM_LABELS.get(platform, platform)
-    if "badlogin" in type(error).__name__.lower():
+    names = _class_names(error)
+    if "missingmfa" in names or "wrongmfa" in names:
+        # Translators: Login error when the account has two-factor
+        # authentication switched on, which the add-on cannot answer.
+        # {platform} = brand name (Meross).
+        return _("{platform}: the account uses two-factor authentication, "
+                 "which the add-on does not support").format(platform=label)
+    if "toomanytokensexception" in names:
+        # Translators: Login error when the cloud refuses another session
+        # because too many are open. {platform} = brand name (Meross).
+        return _("{platform}: too many open sessions - try again "
+                 "later").format(platform=label)
+    if any("badlogin" in name for name in names):
         # Translators: Login error for wrong credentials. {platform} = brand
         # name (Meross etc.). The library's own English message is replaced
         # here, since it is not translatable.
         return _("{platform}: email address or password not accepted").format(
             platform=label)
-    text = str(error)[:100]
+    # Some library errors carry no text at all (meross_iot's HttpApiError
+    # has only an error code) - the message used to end after the colon.
+    text = str(error)[:100] or type(error).__name__
+    code = getattr(error, 'error_code', None)
+    if code is not None and str(code) not in text:
+        text = f"{text} ({code})"
     if text.lower().startswith(label.lower()):
         # The platform names itself already ("VeSync login failed: ..."),
         # prefixing it again would stutter.
@@ -1285,9 +1310,14 @@ class SmartHomeSettingsDialog(wx.Dialog):
                 finally:
                     _password = None
 
-                self._safe_call_after(ui.message, _("Loading devices..."))
-                devices = api.get_devices()
-                api.logout()
+                # The test session is closed whatever the device list does:
+                # a get_devices() that raised used to leave its event loop
+                # thread and its MQTT connection running until NVDA ended.
+                try:
+                    self._safe_call_after(ui.message, _("Loading devices..."))
+                    devices = api.get_devices()
+                finally:
+                    api.logout()
 
                 self._safe_call_after(
                     self._set_status,
@@ -1445,19 +1475,35 @@ class SmartHomeSettingsDialog(wx.Dialog):
 
                 from .netatmo_api import NetatmoAPI
 
-                api = NetatmoAPI(client_id, client_secret)
-                api.set_tokens(
-                    self.plugin.netatmo_access_token,
-                    self.plugin.netatmo_refresh_token,
-                    getattr(self.plugin, 'netatmo_token_expiry', 0),
-                )
-                # The test can trigger a token renewal, and Netatmo rotates
-                # refresh tokens. Without this callback the new token would
-                # die with this throwaway API object while the stored one is
-                # already invalid - the test would break the connection it is
-                # supposed to check.
-                api.set_token_update_callback(
-                    self.plugin._on_netatmo_tokens_renewed)
+                # The test can renew the token, and Netatmo rotates refresh
+                # tokens. A second API object beside the running one renewed
+                # on its own: the stored token was updated, the running
+                # session kept the old refresh token, failed with it at its
+                # next renewal and discarded the authorisation - a new
+                # approval in the browser. With the stored client data the
+                # running session itself is tested: one object, one lock
+                # around the renewal.
+                same_app = (client_id == getattr(self.plugin, 'netatmo_client_id', '')
+                            and client_secret == getattr(
+                                self.plugin, 'netatmo_client_secret', ''))
+                running = self.plugin.netatmo_api
+                if (same_app and running is not None
+                        and getattr(running, 'client_id', None) == client_id):
+                    api = running
+                else:
+                    api = NetatmoAPI(client_id, client_secret)
+                    api.set_tokens(
+                        self.plugin.netatmo_access_token,
+                        self.plugin.netatmo_refresh_token,
+                        getattr(self.plugin, 'netatmo_token_expiry', 0),
+                    )
+                    # Only tokens of the stored app registration are kept. A
+                    # test with client data typed but not saved yet must not
+                    # write - least of all the empty tokens a refused renewal
+                    # leaves behind - over the ones that still work.
+                    if same_app:
+                        api.set_token_update_callback(
+                            self.plugin._on_netatmo_tokens_renewed)
 
                 devices = api.get_devices()
 
@@ -2221,7 +2267,8 @@ class SmartHomeSettingsDialog(wx.Dialog):
             except Exception as e:
                 log.debug(f"Ignored error in on_ok: {e}")
 
-        self.plugin.save_settings()
+        # flush: what was confirmed here survives a crash (see save_settings).
+        self.plugin.save_settings(flush=True)
         # The caller re-logs in exactly these platforms - a running session
         # would otherwise keep the old credentials.
         self.changed_platforms = set(pending['changed'])
@@ -2311,6 +2358,11 @@ def offer_credential_reentry(parent, plugin, platform, error, on_saved=None):
     if platform not in PASSWORD_PLATFORMS:
         # Netatmo: the way back is the browser authorisation, not a password
         # field. Its own message already says so.
+        return
+    names = _class_names(error)
+    if "missingmfa" in names or "wrongmfa" in names:
+        # Two-factor sign-in: typing the password again cannot help, and the
+        # message already said why.
         return
     ask = wx.MessageDialog(
         parent,

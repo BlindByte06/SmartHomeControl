@@ -14,6 +14,9 @@ Usage (run inside this folder):
     python build_addon.py mo       compile every .po under locale/ into its .mo
     python build_addon.py audit    look the pinned libraries up in the OSV
                                    vulnerability database (needs internet)
+    python build_addon.py lock     take the SHA-256 of the pinned wheels from
+                                   PyPI into requirements-bundle.lock (needs
+                                   internet; "libs" refuses any other file)
 
 Only these go into the package: manifest.ini, globalPlugins/, lib/, doc/,
 locale/ and LICENSE. Excluded are __pycache__, *.pyc/*.pyo, *.log, _old_*
@@ -199,6 +202,96 @@ def cmd_audit(nvda_zip=None):
           f"libraries")
 
 
+# ------------------------------------------------------------------- lock --
+# The SHA-256 of every wheel "libs" may download, taken from PyPI when a
+# version is pinned and checked in beside requirements-bundle.txt. "libs"
+# refuses a wheel whose hash is not in here before it unpacks anything, so a
+# file swapped on PyPI or on the way after the lock was taken never reaches
+# lib/ - and a change of the lock shows up in the diff of the commit that
+# raises a version.
+LOCK = os.path.join(ROOT, "requirements-bundle.lock")
+PYPI_JSON_URL = "https://pypi.org/pypi/{name}/{version}/json"
+
+
+def _wheel_fits(filename, arch):
+    """Whether pip may pick this wheel of a release for one of our targets."""
+    if not filename.endswith(".whl"):
+        return False
+    try:
+        python_tag, abi_tag, platform_tag = filename[:-len(".whl")].split("-")[-3:]
+    except ValueError:
+        return False
+    if not arch:
+        return platform_tag == "any"
+    platforms = set(platform_tag.split("."))
+    if not platforms & {"win32", "win_amd64", "any"}:
+        return False
+    pythons = set(python_tag.split("."))
+    return bool(pythons & {"cp311", "cp313", "py3", "py2.py3"}) or abi_tag == "abi3"
+
+
+def _read_lock():
+    import json
+    if not os.path.isfile(LOCK):
+        return {}
+    with open(LOCK, encoding="utf-8") as f:
+        return json.load(f)
+
+
+def cmd_lock():
+    """Writes requirements-bundle.lock from PyPI for every pinned version."""
+    import json
+    pure, arch = read_requirements()
+    lock = {}
+    for lines, is_arch in ((pure, False), (arch, True)):
+        for line in lines:
+            name, version = (part.strip() for part in line.split("==", 1))
+            data = _osv(PYPI_JSON_URL.format(name=name, version=version))
+            wheels = {entry["filename"]: entry["digests"]["sha256"]
+                      for entry in data.get("urls", [])
+                      if _wheel_fits(entry["filename"], is_arch)}
+            if not wheels:
+                raise SystemExit(f"[lock] PyPI offers no fitting wheel for {line}")
+            lock[f"{name}=={version}"] = dict(sorted(wheels.items()))
+            print(f"[lock] {line}: {len(wheels)} wheel(s)")
+    with open(LOCK, "w", encoding="utf-8", newline="\n") as f:
+        json.dump(lock, f, indent=1, sort_keys=True)
+        f.write("\n")
+    print(f"[lock] written: {LOCK} - review the diff before committing it")
+
+
+def check_lock_covers_requirements():
+    """Every pinned version has its hashes in the lock - checked by pack."""
+    lock = _read_lock()
+    pure, arch = read_requirements()
+    missing = [line for line in pure + arch
+               if "==".join(part.strip() for part in line.split("==", 1)) not in lock]
+    if missing:
+        raise SystemExit("[lock] no hashes for: " + ", ".join(missing)
+                         + " - run 'build_addon.py lock' and review the diff")
+    print(f"[lock] OK - hashes for all {len(pure) + len(arch)} pinned libraries")
+
+
+def verify_wheels(directory):
+    """Refuses every downloaded wheel whose hash is not in the lock."""
+    import hashlib
+    known = {}
+    for wheels in _read_lock().values():
+        for filename, digest in wheels.items():
+            known.setdefault(filename, set()).add(digest)
+    for name in sorted(os.listdir(directory)):
+        if not name.endswith(".whl"):
+            continue
+        with open(os.path.join(directory, name), "rb") as f:
+            digest = hashlib.sha256(f.read()).hexdigest()
+        if digest not in known.get(name, ()):
+            raise SystemExit(
+                f"[libs] {name}: hash {digest} is not in requirements-bundle.lock "
+                f"- nothing was unpacked. A new version needs 'build_addon.py lock' "
+                f"first; an unchanged one means the file is not the one locked.")
+        print(f"  hash OK: {name}")
+
+
 def pip_download(dest, packages, platform=None, python_version=None):
     """Downloads wheels for the given packages (without dependencies - the
     requirements file deliberately pins EVERY needed package explicitly)."""
@@ -243,7 +336,12 @@ def cmd_libs():
             pip_download(d, arch, platform=plat, python_version=pyver)
             arch_dls[arch_name] = d
 
-        # 3. Replace the old folders only AFTER a successful download, so a
+        # 3. Every wheel against the lock, before anything is unpacked.
+        verify_wheels(pure_dl)
+        for directory in arch_dls.values():
+            verify_wheels(directory)
+
+        # 4. Replace the old folders only AFTER a successful download, so a
         #    failed one leaves the bundle untouched.
         staging = os.path.join(tmp, "staging_lib")
         extract_wheels(pure_dl, staging)
@@ -895,6 +993,9 @@ def cmd_pack(out_dir=None):
     # catalogue answers is what the store will show.
     cmd_manifests()
     cmd_check_translations()
+    # A version raised in requirements-bundle.txt without its hashes would
+    # leave the next "libs" without a lock to check against.
+    check_lock_covers_requirements()
     sync_doc_titles(version)
     os.makedirs(DIST_DIR, exist_ok=True)
     out_path = os.path.join(DIST_DIR, f"SmartHomeControl-{version}.nvda-addon")
@@ -953,7 +1054,7 @@ def main():
     parser.add_argument("command",
                         choices=["libs", "pack", "all", "i18n", "licenses",
                                  "relnotes", "py311", "pot", "mo",
-                                 "manifests", "audit"])
+                                 "manifests", "audit", "lock"])
     parser.add_argument("--out", help="additional target folder for the "
                         "finished package; with 'relnotes': target file for "
                         "the text")
@@ -969,6 +1070,9 @@ def main():
 
     if args.command == "audit":
         cmd_audit(args.nvda)
+        return
+    if args.command == "lock":
+        cmd_lock()
         return
 
     if args.command == "py311":

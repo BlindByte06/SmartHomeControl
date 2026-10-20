@@ -8388,5 +8388,58 @@ msgstr "Geplante Mahlzeiten: heute keine - Enter öffnet die Liste des Fütterun
 #. Translators: What's new for this version, shown in the add-on store.
 #. Markdown: NVDA renders it and reads it line by line.
 #: manifest.ini:changelog:
-msgid "- New, experimental: Petlibro feeders and water fountains (Air Smart Feeder PLAF108, Dockstream 2 Cordless PLWF116).\n- New: platform status (Ctrl+P in the device menu).\n- New: the heating times of the Cozytouch heat pump can be changed.\n- NVDA+Ctrl+Shift+P announces a summary; pressed twice, it lists every device.\n- The platforms sign in at the same time, and a sign-in that failed because of the network is retried automatically.\n- A platform fault is announced only once it has lasted two minutes.\n- The history records changes made elsewhere for all platforms, and what a device does on its own as automatic.\n- Ctrl+F in the device menu now finds devices.\n- NVDA no longer freezes while a VeSync, Netatmo or Meross lamp command is sent.\n- Email addresses are stored encrypted, and removing the add-on deletes the stored credentials.\n- Settings of an early version, including the Netatmo password in plain text, are removed from nvda.ini.\n- NVDA starts faster, and Netatmo is polled with far fewer requests.\n- Decimal numbers use the separator of the interface language.\n- Network and server faults no longer play NVDA's error sound."
-msgstr "- Neu, experimentell: Petlibro-Futterautomaten und -Trinkbrunnen (Air Smart Feeder PLAF108, Dockstream 2 Cordless PLWF116).\n- Neu: Plattform-Status (Strg+P im Geräte-Menü).\n- Neu: Die Heizzeiten der Cozytouch-Wärmepumpe lassen sich ändern.\n- NVDA+Strg+Umschalt+P sagt eine Zusammenfassung an; zweimal gedrückt zeigt es alle Geräte in einer Liste.\n- Die Plattformen melden sich gleichzeitig an, und eine am Netz gescheiterte Anmeldung wird von selbst wiederholt.\n- Eine Störung einer Plattform wird erst angesagt, wenn sie zwei Minuten anhält.\n- Der Verlauf hält Änderungen von außen für alle Plattformen fest, und was ein Gerät von sich aus tut, als automatisch.\n- Strg+F im Geräte-Menü findet jetzt Geräte.\n- NVDA friert nicht mehr ein, während ein Befehl an VeSync, Netatmo oder eine Meross-Lampe geht.\n- E-Mail-Adressen werden verschlüsselt gespeichert, und beim Entfernen der Erweiterung werden die Zugangsdaten gelöscht.\n- Einstellungen einer frühen Version, darunter das Netatmo-Passwort im Klartext, werden aus der nvda.ini entfernt.\n- NVDA startet schneller, und Netatmo wird mit deutlich weniger Anfragen abgefragt.\n- Dezimalzahlen verwenden das Trennzeichen der Oberflächensprache.\n- Netzwerk- und Serverstörungen spielen nicht mehr den NVDA-Fehlerton."
+msgid "- NVDA no longer crashes when the device menu is closed after a device was switched from the favourites tab.\n- Enter or Space on a VeSync or Cozytouch device no longer freezes NVDA.\n- A leak sensor that already detects water when NVDA starts is now announced.\n- A Meross account with two-factor authentication is named as the reason the sign-in fails, and such a sign-in is no longer retried for good.\n- Testing the Netatmo connection no longer invalidates the running sign-in.\n- A Cozytouch server fault at sign-in is retried.\n- Renewed tokens no longer write NVDA's whole configuration to disk.\n- NVDA exits faster on a slow network.\n- Meross garage door openers and roller shutters are shown but not switched."
+msgstr "- NVDA stürzt nicht mehr ab, wenn das Geräte-Menü geschlossen wird, nachdem ein Gerät im Favoriten-Tab geschaltet wurde.\n- Enter oder Leertaste auf einem VeSync- oder Cozytouch-Gerät lässt NVDA nicht mehr einfrieren.\n- Ein Wassermelder, der beim Start von NVDA schon Wasser meldet, wird jetzt angesagt.\n- Bei einem Meross-Konto mit Zwei-Faktor-Anmeldung wird das als Grund genannt, und die Anmeldung wird nicht mehr endlos wiederholt.\n- Das Testen der Netatmo-Verbindung macht die laufende Anmeldung nicht mehr ungültig.\n- Eine Serverstörung bei der Cozytouch-Anmeldung wird wiederholt.\n- Erneuerte Tokens schreiben nicht mehr die gesamte NVDA-Konfiguration auf die Festplatte.\n- NVDA beendet sich bei langsamem Netz schneller.\n- Meross-Garagentoröffner und -Rollläden werden angezeigt, aber nicht geschaltet."
+
+#. Translators: Error when the Cozytouch cloud does not hand out the device
+#. list. {code} = HTTP status.
+#: cozytouch_api.py
+msgid "Cozytouch: the device list could not be read (HTTP {code})"
+msgstr "Cozytouch: Die Geräteliste konnte nicht gelesen werden (HTTP {code})"
+
+#. Translators: Spoken when the settings are opened while they are open
+#. already.
+#: __init__.py
+msgid "The settings are already open"
+msgstr "Die Einstellungen sind bereits geöffnet"
+
+#. Translators: Login error when the account has two-factor authentication
+#. switched on, which the add-on cannot answer. {platform} = brand name
+#. (Meross).
+#: settings_panel.py
+msgid "{platform}: the account uses two-factor authentication, which the add-on does not support"
+msgstr "{platform}: Das Konto nutzt die Zwei-Faktor-Anmeldung, die die Erweiterung nicht unterstützt"
+
+#. Translators: Login error when the cloud refuses another session because
+#. too many are open. {platform} = brand name (Meross).
+#: settings_panel.py
+msgid "{platform}: too many open sessions - try again later"
+msgstr "{platform}: zu viele offene Sitzungen - später erneut versuchen"
+
+#: dialog_favorites.py
+msgid "Arrow keys: navigate\nEnter or Space: execute action\nCtrl+B: remove favorite\nF5: refresh\nCtrl+H: show history\nCtrl+Tab: switch to devices tab\nCtrl+T: announce status\nEsc: close dialog"
+msgstr "Pfeiltasten: Navigation\nEnter oder Leertaste: Aktion ausführen\nStrg+B: Favorit entfernen\nF5: Aktualisieren\nStrg+H: Verlauf anzeigen\nStrg+Tab: Zum Geräte-Tab wechseln\nStrg+T: Status ansagen\nEsc: Dialog schließen"
+
+#: dialog_cozytouch.py
+msgid "Date and time as in the example: {example}"
+msgstr "Datum und Uhrzeit wie im Beispiel: {example}"
+
+#: dialog_favorites.py
+msgid "Device favorites - keyboard shortcuts"
+msgstr "Geräte-Favoriten - Tastaturkürzel"
+
+#: dialog_cozytouch.py
+msgid "Invalid date or time. Expected as in the example: {example}"
+msgstr "Ungültiges Datum oder ungültige Uhrzeit. Erwartet wie im Beispiel: {example}"
+
+#: netatmo_api.py
+msgid "Unnamed schedule"
+msgstr "Unbenannter Heizplan"
+
+#: netatmo_api.py
+msgid "Weather station"
+msgstr "Wetterstation"
+
+#: history.py
+msgid "{start} until {end}"
+msgstr "{start} bis {end}"

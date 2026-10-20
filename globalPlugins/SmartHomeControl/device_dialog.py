@@ -489,7 +489,43 @@ class SmartHomeControlDialog(_NetatmoDialogMixin, _VeSyncDialogMixin, _MerossDia
                 wx.CallAfter(lambda: func(*args, **kwargs) if not self._is_destroyed else None)
             else:
                 wx.CallAfter(lambda: func() if not self._is_destroyed else None)
-    
+
+    def _on_tree(self, tree, func, *args):
+        """Runs ``func`` with ``self.tree`` set to ``tree`` (on the wx thread).
+
+        The handlers work on ``self.tree``, and an action started in the
+        favourites tab sets it to the favourites tree only for as long as
+        _on_fav_item_activated runs. The answer of the cloud comes later, when
+        ``self.tree`` is the device tree again - and the callback then handed
+        an item of the favourites tree to the other control. NVDA crashed when
+        the menu was closed afterwards (nvda-old.log of 2026-10-17, 22:40:13,
+        after switching a plug from the favourites tab). The runners note the
+        tree when the action starts and run their callbacks through here.
+        """
+        previous, self.tree = self.tree, tree
+        try:
+            return func(*args)
+        finally:
+            self.tree = previous
+            # The action has reported back - the tree may be rebuilt again.
+            self._action_started_at = 0
+
+    # How long a started action holds back tree rebuilds at most. Longer than
+    # the slowest action (a Petlibro feeding waits 30 s for its record, a
+    # Cozytouch time program reads back for several days in a row), short
+    # enough that a lost callback does not freeze the tree for good.
+    _ACTION_CALLBACK_WAIT = 180
+
+    def _action_callback_pending(self):
+        """True while a started action has not reported back yet.
+
+        Its callback still holds the tree item the action was started from.
+        A live update or a refresh that rebuilt those rows in the meantime
+        left that item pointing at a deleted tree entry.
+        """
+        started = getattr(self, '_action_started_at', 0)
+        return bool(started) and (time.time() - started) < self._ACTION_CALLBACK_WAIT
+
     def _begin_cloud_action(self):
         """Guard for background cloud actions: only one at a time.
 
@@ -505,6 +541,7 @@ class SmartHomeControlDialog(_NetatmoDialogMixin, _VeSyncDialogMixin, _MerossDia
             ui.message(_("Please wait - the previous action is still running"))
             return False
         self._cloud_action_running = True
+        self._action_started_at = time.time()
         return True
 
     def _run_cloud_call(self, context, call, on_done, on_error=None,
@@ -529,6 +566,8 @@ class SmartHomeControlDialog(_NetatmoDialogMixin, _VeSyncDialogMixin, _MerossDia
         """
         if not self._begin_cloud_action():
             return False
+        # See _on_tree: the callbacks belong to the tree the action came from.
+        tree = self.tree
 
         def task():
             try:
@@ -538,10 +577,11 @@ class SmartHomeControlDialog(_NetatmoDialogMixin, _VeSyncDialogMixin, _MerossDia
                 _beep(BEEP_ERROR)
                 log_failure(context, e)
                 if on_error is not None:
-                    self._safe_call_after(on_error, e)
+                    self._safe_call_after(self._on_tree, tree, on_error, e)
                 else:
                     self._safe_call_after(
-                        ui.message, self._format_network_error(str(e)))
+                        self._on_tree, tree, ui.message,
+                        self._format_network_error(str(e)))
                 return
             self._cloud_action_running = False
             if worker_done is not None:
@@ -549,7 +589,7 @@ class SmartHomeControlDialog(_NetatmoDialogMixin, _VeSyncDialogMixin, _MerossDia
                     worker_done(result)
                 except Exception as e:
                     log.debug(f"{context}: bookkeeping after success failed: {e}")
-            self._safe_call_after(on_done, result)
+            self._safe_call_after(self._on_tree, tree, on_done, result)
 
         threading.Thread(target=task, daemon=True).start()
         return True
@@ -635,6 +675,14 @@ class SmartHomeControlDialog(_NetatmoDialogMixin, _VeSyncDialogMixin, _MerossDia
         # it (BrokenCommctrl5Item / "level 0").
         if getattr(self, '_suppress_live_updates', False):
             log.debug("Live update skipped: a child dialog is active")
+            return
+
+        # Nor while an action waits for the cloud: its callback rebuilds the
+        # rows of its device itself, from the item it was started on, and a
+        # rebuild in between would leave that item pointing at a deleted
+        # entry. The next poll brings the update.
+        if self._action_callback_pending():
+            log.debug("Live update skipped: an action has not reported back yet")
             return
 
         # Debounce: the polling scheduler can trigger this method in quick
@@ -2618,9 +2666,15 @@ class SmartHomeControlDialog(_NetatmoDialogMixin, _VeSyncDialogMixin, _MerossDia
                 if self.tree.IsExpanded(item):
                     self.tree.Collapse(item)
                 else:
+                    # Expand() normally raises EVT_TREE_ITEM_EXPANDING, and
+                    # _on_item_expanding refreshes the rows - with the
+                    # platform checks this spot used to skip. The rows are
+                    # only refreshed here when that event did not come, so
+                    # they are not rebuilt twice.
+                    self._expanding_handled = False
                     self.tree.Expand(item)
-                    # Lazy loading: update the status on expand
-                    if data and data.get('type') == 'device':
+                    if (data and data.get('type') == 'device'
+                            and not self._expanding_handled):
                         self._update_device_item(item, data)
         
         # Info: do nothing
@@ -2641,6 +2695,8 @@ class SmartHomeControlDialog(_NetatmoDialogMixin, _VeSyncDialogMixin, _MerossDia
 
         # For devices: update the status (lazy loading)
         if data and data.get('type') == 'device':
+            # Seen by _on_item_activated, which then does not refresh again.
+            self._expanding_handled = True
             device = data.get('device')
             # VeSync devices: the children are already built completely by
             # _fill_vesync_device_children when the tree is filled. The generic
@@ -2722,8 +2778,9 @@ class SmartHomeControlDialog(_NetatmoDialogMixin, _VeSyncDialogMixin, _MerossDia
                                                                 "{value} A").format(value=fmt_number(current)))
                     self.tree.SetItemData(current_item, {'type': 'info', 'device': device, 'channel': channel})
 
-            # Action only when online
-            if not offline:
+            # Action only when online - and never for a garage door or a
+            # roller shutter (see meross_devices._is_opener).
+            if not offline and not getattr(channel, 'is_opener', False):
                 action_text = (_("Turn {name} off") if channel.is_on else _("Turn "
                                                                                "{name} "
                                                                                "on")).format(name=channel.name)
@@ -2795,7 +2852,9 @@ class SmartHomeControlDialog(_NetatmoDialogMixin, _VeSyncDialogMixin, _MerossDia
                 self.tree.SetItemData(info_item, {'type': 'info', 'device': device})
 
             # Toggle only for switchable, online, non-sensor, non-hub devices
-            if not device.is_sensor and not getattr(device, 'is_hub', False) and not offline:
+            # - and not for a garage door or a roller shutter.
+            if (not device.is_sensor and not getattr(device, 'is_hub', False)
+                    and not getattr(device, 'is_opener', False) and not offline):
                 action_text = (_("Turn {name} off") if device.is_on else _("Turn "
                                                                               "{name} "
                                                                               "on")).format(name=device.name)
@@ -2946,6 +3005,20 @@ class SmartHomeControlDialog(_NetatmoDialogMixin, _VeSyncDialogMixin, _MerossDia
         # just wrong, it is a switch that must not exist.
         if getattr(device, 'is_petlibro', False):
             self._live_update_petlibro_children(item, device)
+            return
+
+        # VeSync and Cozytouch the same way: their mixins build and keep their
+        # rows, and the live update brings the values. The generic path below
+        # asked the cloud on the wx thread instead (device._update_status() -
+        # up to two timeouts of 12 or 15 seconds, with NVDA standing still)
+        # and then replaced the rows with Meross ones. Enter or Space on a
+        # collapsed device node came here, past the checks of
+        # _on_item_expanding.
+        if getattr(device, 'is_vesync', False):
+            self._live_update_vesync_children(item, device)
+            return
+        if getattr(device, 'is_cozytouch', False):
+            self._live_update_cozytouch_children(item, device)
             return
 
         # Do not update offline devices
@@ -3195,6 +3268,8 @@ class SmartHomeControlDialog(_NetatmoDialogMixin, _VeSyncDialogMixin, _MerossDia
             if not self._begin_cloud_action():
                 return
             mode_name = DIFFUSER_MODE_NAMES.get(action, action)
+            # See _on_tree: the callback belongs to the tree it came from.
+            tree = self.tree
 
             def diffuser_task():
                 try:
@@ -3207,15 +3282,16 @@ class SmartHomeControlDialog(_NetatmoDialogMixin, _VeSyncDialogMixin, _MerossDia
                     log_failure("Failed to set the diffuser mode", e)
                     # Translators: Error message on a diffuser mode change.
                     self._safe_call_after(
-                        ui.message,
+                        self._on_tree, tree, ui.message,
                         _("{name}: error while setting").format(name=device.name))
                     return
                 finally:
                     self._cloud_action_running = False
-                # Verlaufseintrag: siehe plugin.set_diffuser_mode()
+                # History entry: see plugin.set_diffuser_mode()
                 _beep(BEEP_ON)
                 self._safe_call_after(
-                    self._after_diffuser_mode_set, item, device, action, mode_name)
+                    self._on_tree, tree, self._after_diffuser_mode_set,
+                    item, device, action, mode_name)
 
             threading.Thread(target=diffuser_task, daemon=True).start()
             return
@@ -3231,6 +3307,8 @@ class SmartHomeControlDialog(_NetatmoDialogMixin, _VeSyncDialogMixin, _MerossDia
 
             if not self._begin_cloud_action():
                 return
+            # See _on_tree: the callbacks belong to the tree they came from.
+            tree = self.tree
 
             # The cloud call runs on a thread (Meross up to 10 s, VeSync
             # up to ~25 s including the retry) - on the wx thread the dialog
@@ -3276,7 +3354,7 @@ class SmartHomeControlDialog(_NetatmoDialogMixin, _VeSyncDialogMixin, _MerossDia
                     else:
                         # Translators: Error message on timeout.
                         msg = _("{name}: timeout").format(name=device_name)
-                    self._safe_call_after(ui.message, msg)
+                    self._safe_call_after(self._on_tree, tree, ui.message, msg)
                     # Do NOT change the status on error!
                     return
 
@@ -3293,7 +3371,7 @@ class SmartHomeControlDialog(_NetatmoDialogMixin, _VeSyncDialogMixin, _MerossDia
                         # Translators: Error message on a general connection
                         # error.
                         msg = _("{name}: connection error").format(name=device_name)
-                    self._safe_call_after(ui.message, msg)
+                    self._safe_call_after(self._on_tree, tree, ui.message, msg)
                     # Do NOT change the status on error!
                     return
 
@@ -3315,7 +3393,7 @@ class SmartHomeControlDialog(_NetatmoDialogMixin, _VeSyncDialogMixin, _MerossDia
                     else:
                         # Translators: Generic error message with detail text.
                         msg = _("{name}: error - {error}").format(name=device_name, error=str(e)[:40])
-                    self._safe_call_after(ui.message, msg)
+                    self._safe_call_after(self._on_tree, tree, ui.message, msg)
                     # Do NOT change the status on error!
                     return
 
@@ -3327,7 +3405,7 @@ class SmartHomeControlDialog(_NetatmoDialogMixin, _VeSyncDialogMixin, _MerossDia
                     # Translators: Error message when switching a device
                     # on/off fails (e.g. cloud unreachable, device offline).
                     self._safe_call_after(
-                        ui.message,
+                        self._on_tree, tree, ui.message,
                         _("{name}: switching error").format(name=device_name))
                     # Do NOT change the status on error!
                     return
@@ -3342,7 +3420,8 @@ class SmartHomeControlDialog(_NetatmoDialogMixin, _VeSyncDialogMixin, _MerossDia
                 # the shared bottleneck of dialog AND favorites gestures.
                 # Here it would be a duplicate and still miss the gestures.
                 self._safe_call_after(
-                    self._after_toggle_ok, item, device, channel, device_name, new_state)
+                    self._on_tree, tree, self._after_toggle_ok,
+                    item, device, channel, device_name, new_state)
 
             threading.Thread(target=toggle_task, daemon=True).start()
         
@@ -3558,6 +3637,14 @@ class SmartHomeControlDialog(_NetatmoDialogMixin, _VeSyncDialogMixin, _MerossDia
 
     def _on_refresh(self, event):
         """Refreshes the device list - OPTIMIZED for faster updates"""
+        # A refresh may rebuild the tree - not while an action still waits to
+        # report back on the item it was started from (see
+        # _action_callback_pending).
+        if self._action_callback_pending():
+            # Translators: Message when an action is triggered while the
+            # previous one is still running.
+            ui.message(_("Please wait - the previous action is still running"))
+            return
         # Disable the button and change its text
         # Translators: Temporary label of the refresh button while loading.
         self.refresh_btn.SetLabel(_("Loading..."))
@@ -3655,13 +3742,26 @@ class SmartHomeControlDialog(_NetatmoDialogMixin, _VeSyncDialogMixin, _MerossDia
         """Opens the settings dialog"""
         from .settings_panel import MerossSettingsDialog
 
-        dlg = MerossSettingsDialog(self, self.plugin)
+        # The same guard as plugin._show_settings: the global gesture reaches
+        # the add-on while this dialog is open, and two settings dialogs save
+        # over each other.
+        if getattr(self.plugin, '_settings_open', False):
+            # Translators: Spoken when the settings are opened while they are
+            # open already.
+            ui.message(_("The settings are already open"))
+            return
+        self.plugin._settings_open = True
         try:
-            saved = dlg.ShowModal() == wx.ID_OK
-            # Which platforms got new credentials - see _apply_settings_change.
-            changed = set(getattr(dlg, 'changed_platforms', ()))
+            dlg = MerossSettingsDialog(self, self.plugin)
+            try:
+                saved = dlg.ShowModal() == wx.ID_OK
+                # Which platforms got new credentials - see
+                # _apply_settings_change.
+                changed = set(getattr(dlg, 'changed_platforms', ()))
+            finally:
+                dlg.Destroy()
         finally:
-            dlg.Destroy()
+            self.plugin._settings_open = False
         if saved:
             self._apply_settings_change(changed)
 
@@ -3784,9 +3884,14 @@ class SmartHomeControlDialog(_NetatmoDialogMixin, _VeSyncDialogMixin, _MerossDia
         # happened and leave it at that.
         if (getattr(self, '_is_destroyed', False)
                 or platform not in PASSWORD_PLATFORMS
-                or not is_credentials_error(error)):
+                or not is_credentials_error(error)
+                or getattr(self.plugin, '_settings_open', False)):
             ui.message(login_error_message(platform, error))
             return
-        offer_credential_reentry(self, self.plugin, platform, error,
-                                 on_saved=self._apply_settings_change)
+        self.plugin._settings_open = True
+        try:
+            offer_credential_reentry(self, self.plugin, platform, error,
+                                     on_saved=self._apply_settings_change)
+        finally:
+            self.plugin._settings_open = False
 

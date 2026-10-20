@@ -168,12 +168,20 @@ class _SchedulerMixin:
         platforms behave predictably the same; the former VeSync-only
         thread is gone.
         """
-        t = self._background_refresh_thread
-        if self._background_refresh_running and t is not None and t.is_alive():
-            return  # already active
+        # Check and start under one lock: the login thread and the late logins
+        # of the device menu can call this at the same moment, and both saw
+        # no scheduler running and started one each.
+        lock = self.__dict__.setdefault('_scheduler_start_lock', threading.Lock())
+        with lock:
+            t = self._background_refresh_thread
+            if self._background_refresh_running and t is not None and t.is_alive():
+                return  # already active
+            self._background_refresh_running = True
+            self._stop_event.clear()  # reset the event
+            self._launch_scheduler_thread()
 
-        self._background_refresh_running = True
-        self._stop_event.clear()  # reset the event
+    def _launch_scheduler_thread(self):
+        """Builds and starts the scheduler thread (see _start_background_refresh)."""
 
         def scheduler_loop():
             try:

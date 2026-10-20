@@ -173,8 +173,14 @@ class _ChangeDetectionMixin:
             key = _device_key(device)
             previous = self._previous_water_states.get(key)
             self._previous_water_states[key] = wet
-            if previous is None or previous == wet:
-                continue  # first reading or unchanged - nothing to report
+            if previous == wet:
+                continue  # unchanged - nothing to report
+            if previous is None and not wet:
+                continue  # first reading and dry: only remembered
+            # A first reading that is wet is reported like a change. It used
+            # to become the silent baseline: a leak that began while NVDA was
+            # not running stayed unannounced for as long as the sensor stayed
+            # wet - the one outcome a leak sensor must not have.
 
             action = 'water_detected' if wet else 'water_cleared'
             try:

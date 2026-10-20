@@ -102,6 +102,7 @@ def make_plugin_class(spoken, asked, log):
         'wx': type('wx', (), {'CallAfter': staticmethod(
             lambda fn, *a, **k: fn(*a, **k))}),
         'is_credentials_error': lambda e: isinstance(e, CredentialsRejected),
+        'is_transient': lambda e: isinstance(e, (ConnectionError, TimeoutError)),
         'login_error_message': lambda p, e: f'{p} failed: {e}',
         '_safe_log_error': lambda msg, e: log.warning(msg, e),
         '_log_library_origins': lambda: None,
@@ -232,6 +233,78 @@ def main():
           sum('meross failed' in m for m in spoken) == 1, str(spoken))
     plugin._login_retry_stop.set()
     time.sleep(0.1)
+
+    print('== Ein Fehler ohne Netzbezug wird nicht endlos wiederholt ==')
+    # Ein Meross-Konto mit Zwei-Faktor-Anmeldung (MissingMFA) wurde alle fuenf
+    # Minuten neu versucht, fuer immer, mit einem ERROR und dem Fehlerton.
+    spoken.clear()
+    plugin = Plugin()
+    mfa_attempts = []
+
+    class MfaRequired(Exception):
+        pass
+
+    def needs_mfa(self):
+        mfa_attempts.append(time.time())
+        raise MfaRequired()
+
+    Plugin._LOGIN_STEPS = {'meross': needs_mfa, 'netatmo': slow('netatmo', 1)}
+    Plugin._LOGIN_RETRY_DELAYS = (0.05,)
+    plugin._do_login()
+    time.sleep(0.5)
+    check('so oft versucht, wie es Wartezeiten gibt, dann nicht mehr',
+          len(mfa_attempts) == 2, f'{len(mfa_attempts)} Versuche')
+    check('und im Log steht, dass es aufhoert',
+          any('keeps failing' in line for line in log.lines),
+          str(log.lines[-2:]))
+    check('nichts wartet mehr', not plugin._login_retry_pending)
+    plugin._login_retry_stop.set()
+
+    print('== Die Meross-Fehler werden richtig eingeordnet ==')
+    # meross_iot: MissingMFA und WrongMFA erben von BadLoginException, ihr
+    # eigener Name enthaelt aber kein "badlogin"; HttpApiError hat keinen Text.
+    sp = grab('settings_panel', ['_class_names', 'is_credentials_error',
+                                 'login_error_message'],
+              {'_': lambda s: s,
+               'PLATFORM_LABELS': {p: p.capitalize() for p in PLATFORMS}})
+
+    class BadLoginException(Exception):
+        pass
+
+    class MissingMFA(BadLoginException):
+        pass
+
+    class TooManyTokensException(Exception):
+        pass
+
+    class HttpApiError(Exception):
+        def __init__(self, error_code):
+            self._error_code = error_code
+
+        @property
+        def error_code(self):
+            return self._error_code
+
+    check('ein falsches Passwort ist ein Zugangsdatenfehler',
+          sp['is_credentials_error'](BadLoginException('x')))
+    check('MissingMFA ebenso - ueber die Klassenhierarchie',
+          sp['is_credentials_error'](MissingMFA()))
+    mfa_text = sp['login_error_message']('meross', MissingMFA())
+    check('und die Meldung nennt die Zwei-Faktor-Anmeldung',
+          'two-factor' in mfa_text, mfa_text)
+    check('zu viele Sitzungen haben eine eigene Meldung',
+          'too many open sessions' in sp['login_error_message'](
+              'meross', TooManyTokensException('x')))
+    api_text = sp['login_error_message']('meross', HttpApiError(1255))
+    check('ein Fehlercode wird genannt', '1255' in api_text, api_text)
+
+    class NoText(Exception):
+        pass
+
+    empty_text = sp['login_error_message']('meross', NoText())
+    check('ein Fehler ohne Text endet nicht nach dem Doppelpunkt',
+          not empty_text.rstrip().endswith(':') and 'NoText' in empty_text,
+          empty_text)
 
     print('== Netatmo ohne Netz ist gescheitert, nicht leer ==')
     # 03.10.2026, 18:09: NVDA ohne Netz gestartet. Der Token galt noch, also

@@ -29,6 +29,19 @@ if "_" not in globals():  # fallback outside of NVDA
 from .formatting import fmt_decimal
 
 
+# Fields of a payload that identify the account - masked before a payload
+# goes into the log (see _masked).
+_ACCOUNT_FIELDS = ("accountId", "accountID", "token")
+
+
+def _masked(data):
+    """A copy of a command payload fit for the log: account fields masked."""
+    if not isinstance(data, dict):
+        return data
+    return {key: ("***" if key in _ACCOUNT_FIELDS and value else value)
+            for key, value in data.items()}
+
+
 def _plausible_reading(value, minimum=0):
     """A sensor reading that can be believed, else None.
 
@@ -541,10 +554,11 @@ class _VeSyncBaseDevice:
 
         The response carries the cloud's own code and message, and the
         payload sent is repeated beside it so the two can be read
-        together. Neither contains credentials.
+        together. The account id in a startCook payload is masked: the
+        credential store keeps it encrypted, and a log goes to testers.
         """
         log.info(f"VeSync command {method} refused by {self.name}: {resp}")
-        log.info(f"VeSync command {method} payload was: {data}")
+        log.info(f"VeSync command {method} payload was: {_masked(data)}")
 
     def _log_accepted_command(self, method, data):
         """Writes down a command that went through.
@@ -555,7 +569,7 @@ class _VeSyncBaseDevice:
         had to be reconstructed from the dialogs the reader heard. Both
         halves of the comparison belong in the log.
         """
-        log.debug(f"VeSync command {method} accepted by {self.name}: {data}")
+        log.debug(f"VeSync command {method} accepted by {self.name}: {_masked(data)}")
 
     def _update_status(self):
         """Called by the plugin/dialog to fetch a fresh status"""
@@ -1396,12 +1410,16 @@ class VeSyncTowerFan(_VeSyncBaseDevice):
 
 
 class VeSyncAirFryer(_VeSyncBaseDevice):
-    """Wrapper for Cosori air fryers - display only.
+    """Wrapper for Cosori air fryers.
 
     Shows what the appliance reports: the switching state and whether it is
     online from the device list, and from getAirfryerStatus the cooking
     state, the selected programme, the set and the measured temperature and
-    the remaining time. Nothing is sent to it - see toggle_switch.
+    the remaining time. Three commands are sent, each after a confirmation
+    in the device menu: start a programme it has shown us (start_cook),
+    change the time or the temperature of a running one (set_time_or_temp)
+    and stop it (end_cook). Switching it on or off is refused - see toggle_switch - so
+    neither the favourites layer nor a toggle row can start it.
 
     Deliberately not a subclass of the purifier or fan wrapper: those bring
     modes, fan levels and a filter, none of which exist here, and code that
@@ -2036,11 +2054,11 @@ class VeSyncAirFryer(_VeSyncBaseDevice):
     def end_cook(self):
         """Stops the running programme.
 
-        The only command this class sends, and deliberately so: on an
+        The first command this class sent, and deliberately so: on an
         appliance that heats, stopping is the direction that cannot go
-        wrong, and it establishes that the command channel works at all
-        before anything is trusted to start a programme. Empty payload,
-        like resetFilter.
+        wrong, and it established that the command channel works at all
+        before anything was trusted to start a programme (start_cook came
+        later). Empty payload, like resetFilter.
         """
         resp = self._api.call_bypass_v2(self, "endCook", {})
         if not self._bypass_call_succeeded(resp):

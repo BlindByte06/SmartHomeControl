@@ -21,6 +21,7 @@ Storage format (JSON, in the NVDA addons folder like favourites/history):
 
 import os
 import json
+import threading
 import time
 import datetime
 
@@ -51,6 +52,22 @@ SAVE_DEBOUNCE_SECONDS = 300
 SAVE_DEBOUNCE_MAX_SAMPLES = 20
 
 
+def _set_aside(path):
+    """Keeps a file that could not be read, instead of overwriting it.
+
+    The store starts empty after a failed load, and its next save used to
+    write over the damaged file - whatever could still have been recovered
+    from it was gone. It is renamed to "<name>.unreadable-<time>" instead.
+    """
+    try:
+        if os.path.exists(path):
+            target = f"{path}.unreadable-{time.strftime('%Y%m%d-%H%M%S')}"
+            os.replace(path, target)
+            log.warning(f"Unreadable file kept as {os.path.basename(target)}")
+    except Exception as e:
+        log.debug(f"Could not set the unreadable file aside: {e}")
+
+
 def _local_midnight(ts):
     """Timestamp of the last local midnight before ``ts``.
 
@@ -74,6 +91,12 @@ class EnergyLog:
         self._last_save_time = 0.0
         self._unsaved_count = 0
         self._last_sample_time = {}  # device_uuid -> ts of the last sample
+        # The scheduler adds samples while the energy command reads the
+        # summary on a thread of its own, and terminate() flushes from the
+        # main thread. Without the lock a new device appearing during a
+        # summary raised "dictionary changed size during iteration", and its
+        # estimate was silently missing from the announcement.
+        self._lock = threading.RLock()
         self._load()
 
     # ---------------- Persistence ----------------
@@ -81,32 +104,49 @@ class EnergyLog:
         try:
             if os.path.exists(ENERGY_FILE):
                 with open(ENERGY_FILE, 'r', encoding='utf-8') as f:
-                    self._data = json.load(f)
+                    data = json.load(f)
+                if not isinstance(data, dict):
+                    raise ValueError(f"expected an object, found {type(data).__name__}")
+                self._data = data
                 total = sum(len(d.get('samples', [])) for d in self._data.values())
                 log.debug(f"Energy log loaded: {len(self._data)} devices, {total} samples")
-        except Exception as e:
+        except ValueError as e:
+            # Damaged content (JSONDecodeError and UnicodeDecodeError are
+            # ValueErrors): kept aside, and a fresh log starts.
             log.error(f"Could not load energy log: {e}")
             self._data = {}
+            _set_aside(ENERGY_FILE)
+        except Exception as e:
+            # The file could not be opened at all - it may well be intact.
+            # Nothing is saved over it in this session.
+            log.error(f"Could not load energy log: {e}")
+            self._data = {}
+            self._save_blocked = True
+
+    # True after a load that could not open the file (see _load).
+    _save_blocked = False
 
     def _save(self):
-        if not self._dirty:
-            return
-        try:
-            cutoff = time.time() - RETENTION_SECONDS
-            for dev in self._data.values():
-                dev['samples'] = [s for s in dev.get('samples', []) if s[0] >= cutoff]
-            tmp = ENERGY_FILE + ".tmp"
-            with open(tmp, 'w', encoding='utf-8') as f:
-                # dumps + write, not dump: json.dump writes in chunks through
-                # the pure-Python encoder - 57 ms for this file against 16 ms
-                # (measured on 646 KB), on NVDA's process, every few minutes.
-                f.write(json.dumps(self._data, ensure_ascii=False))
-            os.replace(tmp, ENERGY_FILE)
-            self._dirty = False
-            self._last_save_time = time.time()
-            self._unsaved_count = 0
-        except Exception as e:
-            log.error(f"Could not save energy log: {e}")
+        with self._lock:
+            if not self._dirty or self._save_blocked:
+                return
+            try:
+                cutoff = time.time() - RETENTION_SECONDS
+                for dev in self._data.values():
+                    dev['samples'] = [s for s in dev.get('samples', []) if s[0] >= cutoff]
+                tmp = ENERGY_FILE + ".tmp"
+                with open(tmp, 'w', encoding='utf-8') as f:
+                    # dumps + write, not dump: json.dump writes in chunks
+                    # through the pure-Python encoder - 57 ms for this file
+                    # against 16 ms (measured on 646 KB), on NVDA's process,
+                    # every few minutes.
+                    f.write(json.dumps(self._data, ensure_ascii=False))
+                os.replace(tmp, ENERGY_FILE)
+                self._dirty = False
+                self._last_save_time = time.time()
+                self._unsaved_count = 0
+            except Exception as e:
+                log.error(f"Could not save energy log: {e}")
 
     def flush(self):
         """Forces an immediate save (e.g. when NVDA shuts down)."""
@@ -118,17 +158,19 @@ class EnergyLog:
         if watts is None:
             return
         now = time.time()
-        last = self._last_sample_time.get(device_uuid, 0.0)
-        if (now - last) < SAMPLE_MIN_INTERVAL:
-            return
-        self._last_sample_time[device_uuid] = now
-        rec = self._data.setdefault(device_uuid, {'name': device_name, 'samples': []})
-        rec['name'] = device_name  # pick up renames
-        rec['samples'].append([round(now, 1), round(float(watts), 1)])
-        self._dirty = True
-        self._unsaved_count += 1
-        if (self._unsaved_count >= SAVE_DEBOUNCE_MAX_SAMPLES
-                or (now - self._last_save_time) >= SAVE_DEBOUNCE_SECONDS):
+        with self._lock:
+            last = self._last_sample_time.get(device_uuid, 0.0)
+            if (now - last) < SAMPLE_MIN_INTERVAL:
+                return
+            self._last_sample_time[device_uuid] = now
+            rec = self._data.setdefault(device_uuid, {'name': device_name, 'samples': []})
+            rec['name'] = device_name  # pick up renames
+            rec['samples'].append([round(now, 1), round(float(watts), 1)])
+            self._dirty = True
+            self._unsaved_count += 1
+            due = (self._unsaved_count >= SAVE_DEBOUNCE_MAX_SAMPLES
+                   or (now - self._last_save_time) >= SAVE_DEBOUNCE_SECONDS)
+        if due:
             self._save()
 
     # ---------------- Reporting ----------------
@@ -163,8 +205,12 @@ class EnergyLog:
         now = time.time()
         midnight = _local_midnight(now)
         week_start = now - 7 * 86400
+        # A copy taken under the lock; the arithmetic runs without it.
+        with self._lock:
+            snapshot = [(uuid, dict(rec, samples=list(rec.get('samples', []))))
+                        for uuid, rec in self._data.items()]
         out = []
-        for uuid, rec in self._data.items():
+        for uuid, rec in snapshot:
             samples = rec.get('samples', [])
             recent = [s for s in samples if s[0] >= week_start]
             if not recent:

@@ -163,7 +163,7 @@ def _addon_version():
         log.debug(f"Add-on version could not be read: {e}")
     return "unknown"
 from .dialog_helpers import _beep
-from .errors import log_failure
+from .errors import log_failure, is_transient
 from .formatting import fmt_decimal, fmt_number
 from .constants import (
     CONFSPEC, BEEP_ERROR, BEEP_SUCCESS, BEEP_LOADING, BEEP_ACTION,
@@ -184,6 +184,56 @@ def _safe_log_error(message, exception):
 
 # Config section for this add-on
 config.conf.spec["smartHomeControl"] = CONFSPEC
+
+
+class _AddonSettings:
+    """The add-on's section of NVDA's configuration - written to nvda.ini.
+
+    Reading goes through config.conf, as everywhere. Writing through it puts a
+    value into the profile activated last: saved while a triggered profile
+    was active (an application of its own, say all), the settings of the
+    add-on landed in that profile and overrode the base whenever it was
+    active again - a notification switched off in one place stayed on in
+    another. Platforms, notifications and the like are not meant to differ
+    from profile to profile, so a value written here goes to the base
+    configuration, and the same key is taken out of every other active
+    profile.
+
+    Falls back to the ordinary write if NVDA's configuration ever looks
+    different from what this expects.
+    """
+
+    SECTION = "smartHomeControl"
+
+    def __init__(self):
+        self._aggregated = config.conf[self.SECTION]
+
+    def get(self, key, default=None):
+        return self._aggregated.get(key, default)
+
+    def __getitem__(self, key):
+        return self._aggregated[key]
+
+    def __setitem__(self, key, value):
+        try:
+            profiles = config.conf.profiles
+            base = profiles[0]
+            if self.SECTION not in base:
+                base[self.SECTION] = {}
+            base[self.SECTION][key] = value
+            for profile in profiles[1:]:
+                section = profile.get(self.SECTION)
+                if section is not None and key in section:
+                    del section[key]
+            # The aggregated view caches what it read; without this it
+            # would go on answering with the value from before.
+            cache = getattr(self._aggregated, "_cache", None)
+            if isinstance(cache, dict):
+                cache.pop(key, None)
+        except Exception as e:
+            log.debug(f"Writing {key} to the base configuration failed "
+                      f"({type(e).__name__}: {e}) - written the ordinary way")
+            self._aggregated[key] = value
 
 
 class GlobalPlugin(_CredentialsMixin, _SchedulerMixin, _ChangeDetectionMixin,
@@ -415,37 +465,40 @@ class GlobalPlugin(_CredentialsMixin, _SchedulerMixin, _ChangeDetectionMixin,
             except Exception as e:
                 log.debug(f"Join of the scheduler thread failed: {e}")
 
-        if self.api:
-            try:
-                self.api.logout()
-            except Exception as e:
-                log.debug(f"Ignored error in terminate: {e}")
-        if self.netatmo_api:
-            try:
-                self.netatmo_api.logout()
-            except Exception as e:
-                log.debug(f"Ignored error in terminate: {e}")
-        if self.vesync_api:
-            try:
-                self.vesync_api.logout()
-            except Exception as e:
-                log.debug(f"Ignored error in terminate: {e}")
-        if self.cozytouch_api:
-            try:
-                self.cozytouch_api.logout()
-            except Exception as e:
-                log.debug(f"Ignored error in terminate: {e}")
-        if self.petlibro_api:
-            try:
-                self.petlibro_api.logout()
-            except Exception as e:
-                log.debug(f"Ignored error in terminate: {e}")
+        # The logouts run on a thread of their own, waited for a few seconds
+        # at most. On NVDA's main thread they added up to some seventeen
+        # seconds on a bad network - the Meross manager close, the HTTP
+        # logout and two joins of its event loop thread one after the other -
+        # and NVDA stood still while it was quitting.
+        apis = [a for a in (self.api, self.netatmo_api, self.vesync_api,
+                            self.cozytouch_api, self.petlibro_api) if a]
+
+        def _logout_all():
+            for api in apis:
+                try:
+                    api.logout()
+                except Exception as e:
+                    log.debug(f"Ignored error in terminate: {e}")
+
+        if apis:
+            worker = threading.Thread(target=_logout_all, daemon=True,
+                                      name="SmartHomeControl logout")
+            worker.start()
+            worker.join(timeout=self._LOGOUT_WAIT)
+            if worker.is_alive():
+                log.debug(f"Logout not finished after {self._LOGOUT_WAIT}s - "
+                          f"NVDA goes on shutting down")
         super().terminate()
+
+    # Seconds terminate() waits for the platforms to log out.
+    _LOGOUT_WAIT = 3.0
     
     def load_settings(self):
         """Load the settings from the NVDA config"""
         try:
-            conf = config.conf["smartHomeControl"]
+            # Read as usual; anything written while loading (the one-time
+            # move of the credentials) goes to nvda.ini itself.
+            conf = _AddonSettings()
             # Credentials do not live in nvda.ini: NVDA writes the whole
             # configuration into the log at startup, and the email address
             # stood there in plain text. credential_store keeps them in a
@@ -655,27 +708,85 @@ class GlobalPlugin(_CredentialsMixin, _SchedulerMixin, _ChangeDetectionMixin,
             self.notify_petlibro_connection = True
             self.notify_petlibro_settings = True
 
-    def save_settings(self):
+    def save_settings(self, flush=False):
         """Save the settings to the NVDA config (passwords encrypted with DPAPI)
 
         Serialised: the platforms log in in parallel, and three of them save
         a fresh token as soon as they have it.
+
+        ``flush`` writes nvda.ini to disk at once - the settings dialog asks
+        for it when its OK is pressed. Everything else only updates the
+        configuration in memory: the credentials and tokens go to their own
+        file, which is written at once anyway, and nvda.ini used to be
+        written out on every token renewal - every three hours for Netatmo -
+        with every change made in NVDA's own settings since, which defeated
+        "Save configuration when exiting NVDA" being switched off.
         """
         with self._save_lock:
-            self._save_settings_locked()
+            self._save_settings_locked(flush)
 
-    def _save_settings_locked(self):
+    @staticmethod
+    def _save_on_exit_wanted():
+        """Whether NVDA saves its configuration when it exits."""
         try:
-            conf = config.conf["smartHomeControl"]
+            return bool(config.conf["general"]["saveConfigurationOnExit"])
+        except Exception:
+            return True
+
+    @staticmethod
+    def _secrets_in_conf(conf):
+        """Whether a credential still stands in nvda.ini (before migration)."""
+        for key in credential_store.SECRET_KEYS:
+            try:
+                if conf.get(key, ""):
+                    return True
+            except Exception:
+                continue
+        return False
+
+    @staticmethod
+    def _encrypted(key, plaintext, stored):
+        """The ciphertext to store for ``plaintext`` under ``key``.
+
+        The stored one while it still decrypts to the same text, a fresh one
+        otherwise. DPAPI gives a different ciphertext for the same text on
+        every call, so encrypting afresh made every save a change, and the
+        credential file was rewritten - with an icacls child process for its
+        rights - for a feeder's last portion count.
+        """
+        if not plaintext:
+            return ""
+        old = stored.get(key, "")
+        if old and is_encrypted(old):
+            try:
+                if decrypt_dpapi_checked(old) == (plaintext, True):
+                    return old
+            except Exception:
+                pass
+        return encrypt_dpapi(plaintext)
+
+    def _save_settings_locked(self, flush=False):
+        try:
+            # Written to nvda.ini itself, never into the profile that happens
+            # to be active (see _AddonSettings).
+            conf = _AddonSettings()
+            # Checked before the save below clears them: a credential that
+            # was still in nvda.ini has to leave the disk too, not only the
+            # memory - NVDA writes nvda.ini into its log at every start.
+            secrets_were_in_conf = self._secrets_in_conf(conf)
             # The secrets go into the credential store, not into the
             # configuration - see load_settings. The dictionary is filled
             # here and written in one go further down.
             secrets = {}
+            # What the file holds now: an unchanged value keeps its
+            # ciphertext (see _encrypted), and a save that changes nothing
+            # does not rewrite the file.
+            stored = credential_store.read_stored()
             # The email addresses are encrypted too since 26.10.1. The file
             # is the user's alone (security._restrict_file_acl), but it
             # stays behind wherever NVDA's configuration is copied, and an
             # address says who owns the devices.
-            secrets["email"] = encrypt_dpapi(self.email) if self.email else ""
+            secrets["email"] = self._encrypted("email", self.email, stored)
             
             # Password (already encrypted in memory - store directly)
             secrets["password"] = self._encrypted_password if self._encrypted_password else ""
@@ -709,35 +820,35 @@ class GlobalPlugin(_CredentialsMixin, _SchedulerMixin, _ChangeDetectionMixin,
             conf["notifyVesyncCook"] = self.notify_vesync_cook
             
             # Netatmo credentials (all IDs/secrets/tokens encrypted)
-            secrets["netatmoClientId"] = encrypt_dpapi(self.netatmo_client_id) if self.netatmo_client_id else ""
-            secrets["netatmoClientSecret"] = encrypt_dpapi(self.netatmo_client_secret) if self.netatmo_client_secret else ""
-            secrets["netatmoAccessToken"] = encrypt_dpapi(self.netatmo_access_token) if self.netatmo_access_token else ""
-            secrets["netatmoRefreshToken"] = encrypt_dpapi(self.netatmo_refresh_token) if self.netatmo_refresh_token else ""
+            secrets["netatmoClientId"] = self._encrypted("netatmoClientId", self.netatmo_client_id, stored)
+            secrets["netatmoClientSecret"] = self._encrypted("netatmoClientSecret", self.netatmo_client_secret, stored)
+            secrets["netatmoAccessToken"] = self._encrypted("netatmoAccessToken", self.netatmo_access_token, stored)
+            secrets["netatmoRefreshToken"] = self._encrypted("netatmoRefreshToken", self.netatmo_refresh_token, stored)
             conf["netatmoTokenExpiry"] = self.netatmo_token_expiry
             conf["netatmoRedirectPort"] = self.netatmo_redirect_port
 
             # VeSync credentials (password and token encrypted)
-            secrets["vesyncEmail"] = encrypt_dpapi(self.vesync_email) if self.vesync_email else ""
+            secrets["vesyncEmail"] = self._encrypted("vesyncEmail", self.vesync_email, stored)
             secrets["vesyncPassword"] = self._encrypted_vesync_password if self._encrypted_vesync_password else ""
             conf["vesyncCountryCode"] = self.vesync_country_code or "DE"
-            secrets["vesyncToken"] = encrypt_dpapi(self.vesync_token) if self.vesync_token else ""
-            secrets["vesyncAccountId"] = encrypt_dpapi(self.vesync_account_id) if self.vesync_account_id else ""
+            secrets["vesyncToken"] = self._encrypted("vesyncToken", self.vesync_token, stored)
+            secrets["vesyncAccountId"] = self._encrypted("vesyncAccountId", self.vesync_account_id, stored)
             conf["vesyncRegion"] = self.vesync_region or ""
             conf["vesyncFilterThreshold"] = self.vesync_filter_threshold
             conf["favLayerSwitchWindow"] = self.fav_layer_switch_window
 
             # Cozytouch credentials (password and token encrypted)
             conf["useCozytouch"] = self.use_cozytouch
-            secrets["cozytouchEmail"] = encrypt_dpapi(self.cozytouch_email) if self.cozytouch_email else ""
+            secrets["cozytouchEmail"] = self._encrypted("cozytouchEmail", self.cozytouch_email, stored)
             secrets["cozytouchPassword"] = self._encrypted_cozytouch_password if self._encrypted_cozytouch_password else ""
-            secrets["cozytouchToken"] = encrypt_dpapi(self.cozytouch_token) if self.cozytouch_token else ""
+            secrets["cozytouchToken"] = self._encrypted("cozytouchToken", self.cozytouch_token, stored)
             conf["cozytouchCapacityLiters"] = self.cozytouch_capacity_liters
 
             # Petlibro credentials (password and token encrypted)
             conf["usePetlibro"] = self.use_petlibro
-            secrets["petlibroEmail"] = encrypt_dpapi(self.petlibro_email) if self.petlibro_email else ""
+            secrets["petlibroEmail"] = self._encrypted("petlibroEmail", self.petlibro_email, stored)
             secrets["petlibroPassword"] = self._encrypted_petlibro_password if self._encrypted_petlibro_password else ""
-            secrets["petlibroToken"] = encrypt_dpapi(self.petlibro_token) if self.petlibro_token else ""
+            secrets["petlibroToken"] = self._encrypted("petlibroToken", self.petlibro_token, stored)
             conf["petlibroLastPortions"] = int(self.petlibro_last_portions or 1)
             conf["notifyPetlibroFeedFailed"] = self.notify_petlibro_feed_failed
             conf["notifyPetlibroFeedExternal"] = self.notify_petlibro_feed_external
@@ -788,11 +899,15 @@ class GlobalPlugin(_CredentialsMixin, _SchedulerMixin, _ChangeDetectionMixin,
             conf["notifyCozytouchPower"] = self.notify_cozytouch_power
             conf["notifyCozytouchAway"] = self.notify_cozytouch_away
 
-            # Flush atomically to disk immediately. Without this call the
-            # config only lives in RAM and is only written on a clean shutdown
+            # Flush atomically to disk when the settings dialog was confirmed
             # - a crash with restartUnsafely (see the Vocalizer/WASAPI crash)
-            # then discards all credentials entered since.
-            self._flush_config_to_disk()
+            # would otherwise discard what was set there. Not when NVDA is
+            # told not to save its configuration on exit: then nothing is
+            # saved without NVDA+Ctrl+C, and writing nvda.ini here would save
+            # NVDA's own unsaved changes along with it. Credentials do not
+            # need it any more - they are in their own file, on disk already.
+            if secrets_were_in_conf or (flush and self._save_on_exit_wanted()):
+                self._flush_config_to_disk()
             log.debug("Settings saved (credentials DPAPI encrypted)")
         except Exception as e:
             log.error(f"Failed to save the settings: {e}")
@@ -1082,6 +1197,13 @@ class GlobalPlugin(_CredentialsMixin, _SchedulerMixin, _ChangeDetectionMixin,
 
             refused = []
             retry = []
+            # Retries already made. A failure of the network or a cloud is
+            # tried again for as long as it lasts; anything else only as many
+            # times as there are delays. Without the limit a Meross account
+            # with two-factor sign-in (MissingMFA), too many open sessions or
+            # an API error code was tried every five minutes for good, with
+            # an ERROR - and NVDA's error sound - each time.
+            tries = 0 if retry_attempt is None else retry_attempt + 1
             for p in PLATFORMS:
                 error = failures.get(p)
                 if error is None:
@@ -1090,8 +1212,12 @@ class GlobalPlugin(_CredentialsMixin, _SchedulerMixin, _ChangeDetectionMixin,
                                and is_credentials_error(error))
                 if credentials:
                     refused.append((p, error))
-                else:
+                elif is_transient(error) or tries < len(self._LOGIN_RETRY_DELAYS):
                     retry.append(p)
+                else:
+                    log.warning(f"{PLATFORM_LABELS[p]} login keeps failing "
+                                f"({type(error).__name__}) - not tried again "
+                                f"until the settings are saved or NVDA restarts")
                 if not quiet or credentials:
                     wx.CallAfter(ui.message, login_error_message(p, error))
             if retry:
@@ -1171,10 +1297,13 @@ class GlobalPlugin(_CredentialsMixin, _SchedulerMixin, _ChangeDetectionMixin,
         waiting.
         """
         pending = self._login_retry_pending
-        platforms = [p for p in platforms if p not in pending]
-        if not platforms:
-            return 0
-        pending.update(platforms)
+        # Under the login lock: two login threads failing at the same moment
+        # both saw the platform as not pending and scheduled two retries.
+        with self._login_lock:
+            platforms = [p for p in platforms if p not in pending]
+            if not platforms:
+                return 0
+            pending.update(platforms)
         delays = self._LOGIN_RETRY_DELAYS
         delay = delays[min(attempt, len(delays) - 1)]
         log.info(f"Login of {', '.join(platforms)} is tried again in {delay}s "
@@ -1183,7 +1312,8 @@ class GlobalPlugin(_CredentialsMixin, _SchedulerMixin, _ChangeDetectionMixin,
         def wait_and_retry():
             if self._login_retry_stop.wait(delay):
                 return  # NVDA is shutting down
-            pending.difference_update(platforms)
+            with self._login_lock:
+                pending.difference_update(platforms)
             # Still wanted, and still without a session? The settings or the
             # device menu may have logged in meanwhile, or switched it off.
             still = [p for p in self._platforms_to_login(platforms)
@@ -1387,8 +1517,13 @@ class GlobalPlugin(_CredentialsMixin, _SchedulerMixin, _ChangeDetectionMixin,
             if changed:
                 self._start_auto_login(interactive=True, platforms=changed)
 
+        if getattr(self, '_settings_open', False):
+            # The settings are open already - the reason is enough.
+            ui.message(login_error_message(platform, error))
+            return
         # prePopup/postPopup as for every dialog of this add-on: NVDA needs
         # them to hand the focus over and give it back afterwards.
+        self._settings_open = True
         gui.mainFrame.prePopup()
         try:
             offer_credential_reentry(
@@ -1396,6 +1531,7 @@ class GlobalPlugin(_CredentialsMixin, _SchedulerMixin, _ChangeDetectionMixin,
         except Exception as e:
             log.error(f"Credential re-entry failed: {type(e).__name__}: {e}")
         finally:
+            self._settings_open = False
             gui.mainFrame.postPopup()
 
 
@@ -1450,35 +1586,51 @@ class GlobalPlugin(_CredentialsMixin, _SchedulerMixin, _ChangeDetectionMixin,
             return
         # Translators: Spoken when the device menu opens.
         ui.message(_("Opening device overview..."))
+        # postPopup in a finally: a constructor that raised used to leave
+        # NVDA's popup count raised, and the focus was not handed back.
         gui.mainFrame.prePopup()
-        dlg = SmartHomeControlDialog(gui.mainFrame, self)
-        self._active_dialog = dlg  # store the reference for live updates
-        # Trigger an immediate poll at the foreground rate so external changes
-        # (Levoit app or physical controls) arrive in the dialog quickly. The
-        # scheduler detects the open dialog itself and polls at the shorter
-        # foreground interval from now on. request_immediate_poll() also
-        # wakes the scheduler: it sleeps until the next due poll and would
-        # otherwise see the flag only with a delay.
-        self.request_immediate_poll()
         try:
-            dlg.ShowModal()
+            dlg = SmartHomeControlDialog(gui.mainFrame, self)
+            self._active_dialog = dlg  # store the reference for live updates
+            # Trigger an immediate poll at the foreground rate so external
+            # changes (Levoit app or physical controls) arrive in the dialog
+            # quickly. The scheduler detects the open dialog itself and polls
+            # at the shorter foreground interval from now on.
+            # request_immediate_poll() also wakes the scheduler: it sleeps
+            # until the next due poll and would otherwise see the flag only
+            # with a delay.
+            self.request_immediate_poll()
+            try:
+                dlg.ShowModal()
+            finally:
+                self._active_dialog = None  # clear the reference when the dialog is closed
+                dlg.Destroy()
         finally:
-            self._active_dialog = None  # clear the reference when the dialog is closed
-        dlg.Destroy()
-        gui.mainFrame.postPopup()
+            gui.mainFrame.postPopup()
     
     def _show_settings(self):
         """Shows the settings dialog"""
+        # One at a time, like the device menu: two of them saved over each
+        # other, the second one with the values it was opened with.
+        if getattr(self, '_settings_open', False):
+            # Translators: Spoken when the settings are opened while they are
+            # open already.
+            ui.message(_("The settings are already open"))
+            return
+        self._settings_open = True
         gui.mainFrame.prePopup()
-        dlg = SmartHomeSettingsDialog(gui.mainFrame, self)
         try:
-            saved = dlg.ShowModal() == wx.ID_OK
-            changed = set(getattr(dlg, 'changed_platforms', ()))
+            dlg = SmartHomeSettingsDialog(gui.mainFrame, self)
+            try:
+                saved = dlg.ShowModal() == wx.ID_OK
+                changed = set(getattr(dlg, 'changed_platforms', ()))
+            finally:
+                dlg.Destroy()
+            if saved:
+                self._apply_saved_settings(changed)
         finally:
-            dlg.Destroy()
-        if saved:
-            self._apply_saved_settings(changed)
-        gui.mainFrame.postPopup()
+            self._settings_open = False
+            gui.mainFrame.postPopup()
 
     def _apply_saved_settings(self, changed):
         """Logs in what the saved settings call for - and nothing else.
@@ -1801,6 +1953,16 @@ class GlobalPlugin(_CredentialsMixin, _SchedulerMixin, _ChangeDetectionMixin,
                 # it on normally.
                 wx.CallAfter(self._fav_layer_exit)
                 return True
+            # A shortcut with Alt, Control, Windows or NVDA (Alt+Tab,
+            # Windows+D, Control+C ...) ends the layer and goes on to where it
+            # was meant for. It used to be swallowed with the error tone like
+            # a stray letter - the one Alt+Tab was lost. Shift alone does not
+            # count: Shift+letter is typing, and that stays swallowed.
+            held = {name.lower() for name in
+                    (getattr(gesture, 'modifierNames', None) or ())}
+            if held & {'alt', 'control', 'windows', 'nvda'}:
+                wx.CallAfter(self._fav_layer_exit)
+                return True
             key = gesture.mainKeyName
             # Treat numpad digits the same (desktop layout)
             if key.startswith('numpad') and key[6:].isdigit():
@@ -2000,6 +2162,15 @@ class GlobalPlugin(_CredentialsMixin, _SchedulerMixin, _ChangeDetectionMixin,
             ui.message(_("{name}: cannot be switched – adjustable in the "
                          "device menu").format(
                 name=device.name))
+            return
+        if getattr(device, 'is_opener', False):
+            # A garage door or a roller shutter: never from two digits.
+            _beep(BEEP_ERROR)
+            # Translators: Error when a device is recognised but cannot be
+            # operated yet. {name} = device name, {type} = model designation.
+            ui.message(_("{name} is shown but cannot be operated yet "
+                         "({type})").format(
+                name=device.name, type=getattr(device, 'type', '?')))
             return
         if getattr(device, 'is_offline', False):
             # Without this check the attempt would go to the cloud and come
@@ -2592,6 +2763,15 @@ class GlobalPlugin(_CredentialsMixin, _SchedulerMixin, _ChangeDetectionMixin,
                 self._record_local_cozytouch_action(device_uuid)
                 self._log_toggle(device, new_state)
                 return _("{name}: {status}").format(name=device.name, status=status)
+
+            # Garage door openers and roller shutters are shown, not
+            # switched (see meross_devices._is_opener).
+            if getattr(device, 'is_opener', False):
+                # Translators: Error when a device is recognised but cannot be
+                # operated yet. {name} = device name, {type} = model designation.
+                raise ValueError(_("{name} is shown but cannot be operated yet "
+                                   "({type})").format(
+                    name=device.name, type=getattr(device, 'type', '?')))
 
             # Determine the current status
             if channel is not None:

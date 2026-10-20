@@ -80,7 +80,20 @@ def log_failure(context, error):
         import logging
         log = logging.getLogger(__name__)
     message = f"{context}: {type(error).__name__}: {error}"
-    if isinstance(error, CredentialsRejected) or is_transient(error):
+    if is_refused(error) or is_transient(error):
         log.warning(message)
     else:
         log.error(message)
+
+
+def is_refused(error):
+    """True when the platform refused the sign-in itself.
+
+    Our own CredentialsRejected, and meross_iot's BadLoginException with its
+    subclasses MissingMFA and WrongMFA - recognised by the class names along
+    the hierarchy, since the library is not imported here. A wrong Meross
+    password used to be logged as an ERROR and played NVDA's error sound.
+    """
+    if isinstance(error, CredentialsRejected):
+        return True
+    return any("badlogin" in c.__name__.lower() for c in type(error).__mro__)

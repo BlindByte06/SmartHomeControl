@@ -34,6 +34,7 @@ import time
 import csv
 import io
 import locale
+import re
 import threading
 from datetime import datetime
 
@@ -313,6 +314,22 @@ def _migrate_legacy_file():
         log.warning(f"History migration failed: {e}")
 
 
+def _set_aside(path):
+    """Keeps a file that could not be read, instead of overwriting it.
+
+    The store starts empty after a failed load, and its next save used to
+    write over the damaged file. It is renamed to
+    "<name>.unreadable-<time>" instead, so it can still be looked at.
+    """
+    try:
+        if os.path.exists(path):
+            target = f"{path}.unreadable-{time.strftime('%Y%m%d-%H%M%S')}"
+            os.replace(path, target)
+            log.warning(f"Unreadable file kept as {os.path.basename(target)}")
+    except Exception as e:
+        log.debug(f"Could not set the unreadable file aside: {e}")
+
+
 def _atomic_write_json(path, data):
     """Writes JSON atomically: .tmp first, then os.replace.
 
@@ -355,12 +372,25 @@ class _EntryStore:
                 else:
                     log.warning(f"{self.label}: unexpected file format, starting empty")
                     self.entries = []
+                    _set_aside(self.path)
                 log.debug(f"{self.label} loaded: {len(self.entries)} entries")
             else:
                 self.entries = []
-        except Exception as e:
+        except ValueError as e:
+            # Damaged content: kept aside rather than written over by the
+            # next save - a year of events would otherwise go with it.
             log.error(f"{self.label} could not be loaded: {e}")
             self.entries = []
+            _set_aside(self.path)
+        except Exception as e:
+            # The file could not be opened - it may well be intact, so
+            # nothing is saved over it in this session.
+            log.error(f"{self.label} could not be loaded: {e}")
+            self.entries = []
+            self._save_blocked = True
+
+    # True after a load that could not open the file (see load).
+    _save_blocked = False
 
     def _trim(self):
         """Trims by age AND count. Returns the number of dropped entries."""
@@ -374,7 +404,7 @@ class _EntryStore:
         return before - len(self.entries)
 
     def save(self):
-        if not self._dirty:
+        if not self._dirty or self._save_blocked:
             return
         try:
             self._trim()
@@ -1065,8 +1095,9 @@ class DeviceHistory:
             else:
                 return output.getvalue()
 
-        except Exception as e:
-            log.error(f"CSV export failed: {e}")
+        except Exception:
+            # Logged by the caller - logging here as well wrote two ERROR
+            # lines, and played NVDA's error sound twice, for one failure.
             raise
         finally:
             # Only close real files (StringIO is read by the caller).
@@ -1407,6 +1438,26 @@ def _temperature_detail_text(value):
     return text
 
 
+def _away_detail_text(value):
+    """The absence of the heat pump, stored as "<start>-<end>" in seconds.
+
+    Rendered in the region's notation. Entries written before hold the
+    German date text itself ("19.10.2026 08:00 - 21.10.2026 08:00") and
+    are shown as they are - None tells the caller so.
+    """
+    match = re.fullmatch(r'(\d{9,11})-(\d{9,11})', value.strip())
+    if not match:
+        return None
+    try:
+        start, end = (datetime.fromtimestamp(int(g)) for g in match.groups())
+    except (OverflowError, OSError, ValueError):
+        return None
+    # Translators: The absence period of the heat pump in the history.
+    # {start}/{end} = date and time.
+    return _("{start} until {end}").format(
+        start=local_datetime(start), end=local_datetime(end))
+
+
 def _detail_text(action, details):
     """Renders a detail in the CURRENT language where that is possible.
 
@@ -1440,6 +1491,10 @@ def _detail_text(action, details):
             return _("Level {level}").format(level=digits)
     if action == 'set_schedule':
         rendered = _schedule_detail_text(value)
+        if rendered:
+            return rendered
+    if action == 'away_on':
+        rendered = _away_detail_text(value)
         if rendered:
             return rendered
     if action == 'set_boost_duration':

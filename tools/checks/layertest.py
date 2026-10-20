@@ -115,8 +115,9 @@ class IC:
 
 
 class KIG:
-    def __init__(self, key, modifier=False):
+    def __init__(self, key, modifier=False, held=()):
         self.mainKeyName, self.isModifier = key, modifier
+        self.modifierNames = list(held)
 
 
 FAVS = {1: {'name': 'Steckdose'}, 2: {'name': 'Ventilator'}, 3: {'name': 'Lampe'}}
@@ -193,11 +194,11 @@ def reset(p):
     in_main[0] = True
 
 
-def press(key, modifier=False):
+def press(key, modifier=False, held=()):
     """Tastendruck wie NVDA: Abfang-Funktion auf dem EINGABE-Thread."""
     in_main[0] = False
     try:
-        return mgr._captureFunc(KIG(key, modifier))
+        return mgr._captureFunc(KIG(key, modifier, held))
     finally:
         in_main[0] = True
         pump()
@@ -297,6 +298,20 @@ def main():
     p.script_favoritesLayer(None)
     check(press('shift', True) is True and mgr._captureFunc is not None, "Modifier passiert")
     check(press('x') is False and mgr._captureFunc is None, "fremde Taste beendet")
+    # Alt+Tab, Windows+D und Co. gehen weiter an Windows - sie wurden
+    # verschluckt wie ein verirrter Buchstabe.
+    reset(p)
+    p.script_favoritesLayer(None)
+    check(press('tab', held=['alt']) is True and mgr._captureFunc is None,
+          "Alt+Tab beendet die Ebene und geht weiter")
+    reset(p)
+    p.script_favoritesLayer(None)
+    check(press('1', held=['control']) is True and p.statused == [],
+          "Strg+1 ist keine Favoritenziffer")
+    reset(p)
+    p.script_favoritesLayer(None)
+    check(press('x', held=['shift']) is False,
+          "Umschalt+Buchstabe bleibt geschluckt (Tippen)")
 
     print("== 9: Nummernblock ==")
     reset(p)

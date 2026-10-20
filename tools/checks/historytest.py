@@ -170,7 +170,11 @@ def test_measurements():
     print('== Wassersensor: Zustandswechsel wird gemeldet ==')
     cd = io.open(os.path.join(BASE, 'change_detection.py'), encoding='utf-8').read()
     check('Erkennung vorhanden', 'def _detect_water_alarms' in cd)
-    check('nur bei Wechsel', 'previous is None or previous == wet' in cd)
+    check('nur bei Wechsel', 'if previous == wet:' in cd)
+    # Der erste Messwert ist nur dann still, wenn er trocken ist - ein Leck,
+    # das schon beim Start besteht, wird gemeldet (wateralarmtest.py).
+    check('ein erster trockener Wert bleibt still',
+          'if previous is None and not wet:' in cd)
     check('Verlaufseintrag als Ereignis', "'water_detected' if wet else 'water_cleared'" in cd)
     check('Alarm mit Fehlerton', 'wx.CallAfter(_beep, BEEP_ERROR)' in cd)
     check('abschaltbar ueber die Einstellungen',

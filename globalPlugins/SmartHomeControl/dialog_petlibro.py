@@ -171,7 +171,7 @@ class _PetlibroDialogMixin:
             dlg.Destroy()
 
     def _run_petlibro_action(self, device, action_call, on_result, pending=None,
-                             on_start=None):
+                             on_start=None, worker_done=None):
         """Runs a Petlibro call in the background.
 
         ``action_call`` returns whatever ``on_result`` needs; ``on_result``
@@ -189,9 +189,17 @@ class _PetlibroDialogMixin:
         running nothing was sent, yet "Feeding, waiting for the feeder" was
         spoken, and for ten minutes every feeding made elsewhere was taken
         for this one and reached neither the speech nor the history.
+
+        ``worker_done(result)`` runs on the worker thread, before
+        ``on_result``: the history entry and the marks of a change made here
+        belong there. In ``on_result`` they were lost whenever the menu was
+        closed before the cloud answered - the UI callback is dropped then.
         """
         if not self._begin_cloud_action():
             return
+        # See _on_tree in device_dialog.py: the callbacks belong to the tree
+        # the action was started from.
+        tree = self.tree
         if on_start is not None:
             on_start()
 
@@ -204,7 +212,8 @@ class _PetlibroDialogMixin:
                 if follow:
                     self.plugin._expect_petlibro(device, e.key, e.expected,
                                                  **pending)
-                self._safe_call_after(self._announce_petlibro_pending,
+                self._safe_call_after(self._on_tree, tree,
+                                      self._announce_petlibro_pending,
                                       device, follow)
                 return
             except Exception as e:
@@ -212,12 +221,19 @@ class _PetlibroDialogMixin:
                 log_failure(f"Petlibro action failed on {device.name}", e)
                 # Translators: A Petlibro action failed. {name} = device,
                 # {reason} = why.
-                self._safe_call_after(ui.message, _("{name}: not done - {reason}").format(
-                    name=device.name, reason=petlibro_error_text(e)))
+                self._safe_call_after(
+                    self._on_tree, tree, ui.message,
+                    _("{name}: not done - {reason}").format(
+                        name=device.name, reason=petlibro_error_text(e)))
                 return
             finally:
                 self._cloud_action_running = False
-            self._safe_call_after(on_result, result)
+            if worker_done is not None:
+                try:
+                    worker_done(result)
+                except Exception as e:
+                    log.debug(f"Petlibro bookkeeping after the action failed: {e}")
+            self._safe_call_after(self._on_tree, tree, on_result, result)
 
         threading.Thread(target=task, daemon=True).start()
 
@@ -251,12 +267,22 @@ class _PetlibroDialogMixin:
                          "the device menu shows the change once it "
                          "arrives.").format(name=device.name))
 
-    def _petlibro_done(self, device, item, history_action, detail=""):
-        """What every successful action does afterwards."""
+    def _petlibro_bookkeeping(self, device, history_action, detail=""):
+        """What every successful action records - on the worker thread."""
         self.plugin._record_local_petlibro_action(device.uuid)
         self.plugin._accept_local_petlibro_change(device)
         if history_action:
             get_history().log_action(device, history_action, detail)
+
+    def _petlibro_book_if_ok(self, device, history_action, detail=""):
+        """A ``worker_done`` for the actions that return ``(ok, actual)``."""
+        def bookkeeping(result):
+            if result and result[0]:
+                self._petlibro_bookkeeping(device, history_action, detail)
+        return bookkeeping
+
+    def _petlibro_done(self, device, item):
+        """What every successful action shows afterwards (wx thread)."""
         self._rebuild_petlibro_device_children(item, device)
 
     # ---------------- Feeder ----------------
@@ -295,10 +321,23 @@ class _PetlibroDialogMixin:
             ui.message(_("Feeding {amount}, waiting for the feeder...").format(
                 amount=portions_text(chosen)))
 
-        def on_result(result):
+        def bookkeeping(result):
+            # On the worker thread - the feeding is recorded and the wait for
+            # its record ended even when the menu is closed meanwhile.
             status = result.get("status")
             self.plugin._end_petlibro_feed(
                 device, confirmed=status in ("confirmed", "failed", "refused"))
+            if status in ("confirmed", "failed"):
+                self.plugin._mark_petlibro_records_seen(
+                    device, only=result.get("record_id"))
+            if status == "confirmed":
+                given = result.get("portions")
+                self._petlibro_bookkeeping(
+                    device, 'feed_manual',
+                    str(given if given is not None else chosen))
+
+        def on_result(result):
+            status = result.get("status")
             if status == "confirmed":
                 given = result.get("portions")
                 _beep(BEEP_ACTION)
@@ -307,10 +346,7 @@ class _PetlibroDialogMixin:
                 ui.message(_("{name}: {amount} given").format(
                     name=device.name,
                     amount=portions_text(given if given is not None else chosen)))
-                self.plugin._mark_petlibro_records_seen(
-                    device, only=result.get("record_id"))
-                self._petlibro_done(device, item, 'feed_manual',
-                                    str(given if given is not None else chosen))
+                self._petlibro_done(device, item)
                 return
             _beep(BEEP_ERROR)
             if status == "refused":
@@ -322,8 +358,6 @@ class _PetlibroDialogMixin:
                 ui.message(_("{name}: not fed - {reason}").format(
                     name=device.name, reason=reason))
             elif status == "failed":
-                self.plugin._mark_petlibro_records_seen(
-                    device, only=result.get("record_id"))
                 # Translators: The feeder reports that the feeding failed
                 # (blocked outlet, empty container ...).
                 ui.message(_("{name}: the feeder reports a failed feeding - "
@@ -352,7 +386,8 @@ class _PetlibroDialogMixin:
                 self.plugin._end_petlibro_feed(device, confirmed=False)
                 raise
 
-        self._run_petlibro_action(device, feed, on_result, on_start=started)
+        self._run_petlibro_action(device, feed, on_result, on_start=started,
+                                  worker_done=bookkeeping)
 
     def _handle_petlibro_plan_switch(self, device, item):
         """Switches the whole feeding plan on or off."""
@@ -365,9 +400,7 @@ class _PetlibroDialogMixin:
                 # Translators: Confirmation after switching the feeding plan.
                 ui.message(_("{name}: feeding plan {state}").format(
                     name=device.name, state=_("on") if new_state else _("off")))
-                self._petlibro_done(
-                    device, item,
-                    'feeding_plan_on' if new_state else 'feeding_plan_off')
+                self._petlibro_done(device, item)
             else:
                 _beep(BEEP_ERROR)
                 # Translators: The feeder did not take the change of the
@@ -379,6 +412,8 @@ class _PetlibroDialogMixin:
         state_text = _("on") if new_state else _("off")
         self._run_petlibro_action(
             device, lambda: device.set_feeding_plan(new_state), on_result,
+            worker_done=self._petlibro_book_if_ok(
+                device, 'feeding_plan_on' if new_state else 'feeding_plan_off'),
             pending={
                 'confirm': _("{name}: feeding plan {state}").format(
                     name=device.name, state=state_text),
@@ -468,13 +503,15 @@ class _PetlibroDialogMixin:
                 _beep(BEEP_ACTION)
                 ui.message(done_text.format(name=device.name,
                                             days=days_text(days)))
-                self._petlibro_done(device, item, history_action)
+                self._petlibro_done(device, item)
             else:
                 _beep(BEEP_ERROR)
                 ui.message(failed_text.format(name=device.name))
                 self._rebuild_petlibro_device_children(item, device)
 
-        self._run_petlibro_action(device, call, on_result)
+        self._run_petlibro_action(
+            device, call, on_result,
+            worker_done=self._petlibro_book_if_ok(device, history_action))
 
     def _handle_petlibro_water_mode(self, device, item):
         values = device.water_modes()
@@ -507,7 +544,7 @@ class _PetlibroDialogMixin:
                 ui.message(_("{name}: water mode {mode}").format(
                     name=device.name,
                     mode=PETLIBRO_WATER_MODE_NAMES.get(chosen, chosen)))
-                self._petlibro_done(device, item, 'set_water_mode', chosen)
+                self._petlibro_done(device, item)
             else:
                 _beep(BEEP_ERROR)
                 # Translators: The fountain kept another water mode than the
@@ -521,6 +558,7 @@ class _PetlibroDialogMixin:
         mode_text = PETLIBRO_WATER_MODE_NAMES.get(chosen, chosen)
         self._run_petlibro_action(
             device, lambda: device.set_water_mode(chosen), on_result,
+            worker_done=self._petlibro_book_if_ok(device, 'set_water_mode', chosen),
             pending={
                 'confirm': _("{name}: water mode {mode}").format(
                     name=device.name, mode=mode_text),
@@ -564,7 +602,7 @@ class _PetlibroDialogMixin:
                 # {duration} = e.g. "60 seconds".
                 ui.message(_("{name}: flow duration {duration}").format(
                     name=device.name, duration=duration))
-                self._petlibro_done(device, item, 'set_flow_duration', str(chosen))
+                self._petlibro_done(device, item)
             else:
                 _beep(BEEP_ERROR)
                 # Translators: The fountain kept another flow duration.
@@ -577,6 +615,8 @@ class _PetlibroDialogMixin:
 
         self._run_petlibro_action(
             device, lambda: device.set_sensing_duration(chosen), on_result,
+            worker_done=self._petlibro_book_if_ok(
+                device, 'set_flow_duration', str(chosen)),
             pending={
                 'confirm': _("{name}: flow duration {duration}").format(
                     name=device.name, duration=duration),
@@ -629,7 +669,7 @@ class _PetlibroDialogMixin:
                 # threshold. {ml} = e.g. "1100 ml".
                 ui.message(_("{name}: water warning below {ml}").format(
                     name=device.name, ml=ml_text(ml)))
-                self._petlibro_done(device, item, 'set_low_water', str(ml))
+                self._petlibro_done(device, item)
             else:
                 _beep(BEEP_ERROR)
                 # Translators: The fountain kept another threshold. {ml} =
@@ -642,6 +682,7 @@ class _PetlibroDialogMixin:
 
         self._run_petlibro_action(
             device, lambda: device.set_low_water(ml), on_result,
+            worker_done=self._petlibro_book_if_ok(device, 'set_low_water', str(ml)),
             pending={
                 'confirm': _("{name}: water warning below {ml}").format(
                     name=device.name, ml=ml_text(ml)),
@@ -671,8 +712,7 @@ class _PetlibroDialogMixin:
                 # Petlibro device.
                 ui.message(_("{name}: light {state}").format(
                     name=device.name, state=_("on") if new_state else _("off")))
-                self._petlibro_done(device, item,
-                                    'light_on' if new_state else 'light_off')
+                self._petlibro_done(device, item)
             else:
                 _beep(BEEP_ERROR)
                 # Translators: The device did not switch its light.
@@ -682,6 +722,8 @@ class _PetlibroDialogMixin:
 
         self._run_petlibro_action(
             device, lambda: device.set_light(new_state), on_result,
+            worker_done=self._petlibro_book_if_ok(
+                device, 'light_on' if new_state else 'light_off'),
             pending={
                 'confirm': _("{name}: light {state}").format(
                     name=device.name,

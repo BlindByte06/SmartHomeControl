@@ -593,22 +593,26 @@ class _FavoritesTreeMixin:
                 self._on_fav_item_activated(evt)
             return
         
-        # F1: help
+        # F1: help - one text, one line per key, in a window that is read
+        # line by line and on the braille display. It used to be ten pieces
+        # translated one by one and glued together (a translator could not
+        # reorder them) and spoken as a single utterance that could be
+        # neither navigated nor stopped at the key that mattered.
         if keycode == wx.WXK_F1:
-            # Translators: F1 help text of the favorites view (keyboard
-            # shortcuts).
-            ui.message(
-                _("Device favorites - keyboard shortcuts: ") +
-                _("Arrow keys: navigate, ") +
-                _("Enter or Space: execute action, ") +
-                _("Ctrl+B: remove favorite, ") +
-                _("F5: refresh, ") +
-                _("Ctrl+H: show history, ") +
-                _("Ctrl+Tab: switch to devices tab, ") +
-                _("Ctrl+T: announce status, ") +
-                _("F1: context help, ") +
-                _("Esc: close dialog")
-            )
+            ui.browseableMessage(
+                # Translators: F1 help of the favorites tab: one keyboard
+                # shortcut per line.
+                _("Arrow keys: navigate\n"
+                  "Enter or Space: execute action\n"
+                  "Ctrl+B: remove favorite\n"
+                  "F5: refresh\n"
+                  "Ctrl+H: show history\n"
+                  "Ctrl+Tab: switch to devices tab\n"
+                  "Ctrl+T: announce status\n"
+                  "Esc: close dialog"),
+                # Translators: Title of the window with the keyboard
+                # shortcuts of the favorites tab.
+                _("Device favorites - keyboard shortcuts"))
             return
         
         event.Skip()
