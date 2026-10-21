@@ -13,6 +13,7 @@ The GitHub release notes are built from the section of the released version.
 - Credentials are no longer sent along when a cloud redirects to another host.
 - A call of the local Netatmo sign-in address with a wrong state is turned away and no longer ends the sign-in.
 - The VeSync account ID no longer appears in the NVDA log.
+- The bundled aiohttp is updated to 3.14.5 (eight advisories fixed in 3.14.4) and certifi to 2026.10.19 (GHSA-6q48-6c7w-9gw2).
 - The rights of the credential file are set with icacls from the Windows system folder, for the account NVDA runs as.
 
 ### Changes

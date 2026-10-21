@@ -5,6 +5,7 @@ import socket
 import sys
 import traceback
 import warnings
+from asyncio.base_events import BaseEventLoop
 from collections import OrderedDict, defaultdict, deque
 from collections.abc import Awaitable, Callable, Iterator, Sequence
 from contextlib import suppress
@@ -254,7 +255,11 @@ class _TransportPlaceholder:
 class BaseConnector:
     """Base connector class.
 
-    keepalive_timeout - (optional) Keep-alive timeout.
+    keepalive_timeout - (optional) Keep-alive timeout. None means a
+        reusable connection never expires from idling alone (a
+        disconnected one is discarded the next time the pool is
+        consulted for that host, not proactively). This is different
+        from force_close=True, which disables reuse entirely.
     force_close - Set to True to force close and do reconnect
         after each request (and between redirects).
     limit - The total number of simultaneous connections.
@@ -277,7 +282,7 @@ class BaseConnector:
     def __init__(
         self,
         *,
-        keepalive_timeout: object | None | float = sentinel,
+        keepalive_timeout: _SENTINEL | None | float = sentinel,
         force_close: bool = False,
         limit: int = 100,
         limit_per_host: int = 0,
@@ -291,6 +296,7 @@ class BaseConnector:
                 raise ValueError(
                     "keepalive_timeout cannot be set if force_close is True"
                 )
+            keepalive_timeout = None
         else:
             if keepalive_timeout is sentinel:
                 keepalive_timeout = 15.0
@@ -314,7 +320,7 @@ class BaseConnector:
         self._acquired_per_host: defaultdict[ConnectionKey, set[ResponseHandler]] = (
             defaultdict(set)
         )
-        self._keepalive_timeout = cast(float, keepalive_timeout)
+        self._keepalive_timeout = keepalive_timeout
         self._force_close = force_close
 
         # {host_key: FIFO list of waiters}
@@ -427,6 +433,8 @@ class BaseConnector:
 
         now = monotonic()
         timeout = self._keepalive_timeout
+        # weakref_handle() never schedules this method for a None timeout
+        assert timeout is not None
 
         if self._conns:
             connections = defaultdict(deque)
@@ -736,7 +744,9 @@ class BaseConnector:
             proto, t0 = conns.popleft()
             # We will we reuse the connection if its connected and
             # the keepalive timeout has not been exceeded
-            if proto.is_connected() and t1 - t0 <= self._keepalive_timeout:
+            if proto.is_connected() and (
+                self._keepalive_timeout is None or t1 - t0 <= self._keepalive_timeout
+            ):
                 if not conns:
                     # The very last connection was reclaimed: drop the key
                     del self._conns[key]
@@ -934,7 +944,11 @@ class TCPConnector(BaseConnector):
     family - socket address family
     local_addr - local tuple of (host, port) to bind socket to
 
-    keepalive_timeout - (optional) Keep-alive timeout.
+    keepalive_timeout - (optional) Keep-alive timeout. None means a
+        reusable connection never expires from idling alone (a
+        disconnected one is discarded the next time the pool is
+        consulted for that host, not proactively). This is different
+        from force_close=True, which disables reuse entirely.
     force_close - Set to True to force close and do reconnect
         after each request (and between redirects).
     limit - The total number of simultaneous connections.
@@ -973,7 +987,7 @@ class TCPConnector(BaseConnector):
         ssl: bool | Fingerprint | SSLContext = True,
         local_addr: tuple[str, int] | None = None,
         resolver: AbstractResolver | None = None,
-        keepalive_timeout: None | float | object = sentinel,
+        keepalive_timeout: None | float | _SENTINEL = sentinel,
         force_close: bool = False,
         limit: int = 100,
         limit_per_host: int = 0,
@@ -1166,12 +1180,19 @@ class TCPConnector(BaseConnector):
         # all the waiters across all connections.
         #
         coro = self._resolve_host_with_throttle(key, host, port, futures, traces)
-        loop = asyncio.get_running_loop()
-        if sys.version_info >= (3, 12):
-            # Optimization for Python 3.12, try to send immediately
-            resolved_host_task = asyncio.Task(coro, loop=loop, eager_start=True)
+        if sys.version_info >= (3, 14):
+            # Try to send immediately to avoid having to schedule the task.
+            loop = asyncio.get_running_loop()
+            if isinstance(loop, BaseEventLoop):
+                resolved_host_task = asyncio.create_task(coro, eager_start=True)
+            else:
+                resolved_host_task = asyncio.Task(coro, loop=loop, eager_start=True)
+        elif sys.version_info >= (3, 12):
+            resolved_host_task = asyncio.Task(
+                coro, loop=asyncio.get_running_loop(), eager_start=True
+            )
         else:
-            resolved_host_task = loop.create_task(coro)
+            resolved_host_task = asyncio.create_task(coro)
 
         if not resolved_host_task.done():
             self._resolve_host_tasks.add(resolved_host_task)
@@ -1484,7 +1505,7 @@ class TCPConnector(BaseConnector):
                     else:
                         underlying_transport.close()
                     raise
-                if isinstance(tls_transport, asyncio.Transport):
+                if tls_transport is not None:
                     fingerprint = self._get_fingerprint(req)
                     if fingerprint:
                         try:
@@ -1650,7 +1671,11 @@ class TCPConnector(BaseConnector):
                 proxy=None, proxy_auth=None, proxy_headers_hash=None
             )
             conn = _ConnectTunnelConnection(self, key, proto, self._loop)
-            proxy_resp = await proxy_req.send(conn)
+            try:
+                proxy_resp = await proxy_req.send(conn)
+            except BaseException:
+                conn.close()
+                raise
             try:
                 protocol = conn._protocol
                 assert protocol is not None
@@ -1728,7 +1753,11 @@ class UnixConnector(BaseConnector):
     """Unix socket connector.
 
     path - Unix socket path.
-    keepalive_timeout - (optional) Keep-alive timeout.
+    keepalive_timeout - (optional) Keep-alive timeout. None means a
+        reusable connection never expires from idling alone (a
+        disconnected one is discarded the next time the pool is
+        consulted for that host, not proactively). This is different
+        from force_close=True, which disables reuse entirely.
     force_close - Set to True to force close and do reconnect
         after each request (and between redirects).
     limit - The total number of simultaneous connections.
@@ -1742,7 +1771,7 @@ class UnixConnector(BaseConnector):
         self,
         path: str,
         force_close: bool = False,
-        keepalive_timeout: object | float | None = sentinel,
+        keepalive_timeout: _SENTINEL | float | None = sentinel,
         limit: int = 100,
         limit_per_host: int = 0,
         loop: asyncio.AbstractEventLoop | None = None,
@@ -1786,7 +1815,11 @@ class NamedPipeConnector(BaseConnector):
     See also: https://docs.python.org/3/library/asyncio-eventloop.html
 
     path - Windows named pipe path.
-    keepalive_timeout - (optional) Keep-alive timeout.
+    keepalive_timeout - (optional) Keep-alive timeout. None means a
+        reusable connection never expires from idling alone (a
+        disconnected one is discarded the next time the pool is
+        consulted for that host, not proactively). This is different
+        from force_close=True, which disables reuse entirely.
     force_close - Set to True to force close and do reconnect
         after each request (and between redirects).
     limit - The total number of simultaneous connections.
@@ -1800,7 +1833,7 @@ class NamedPipeConnector(BaseConnector):
         self,
         path: str,
         force_close: bool = False,
-        keepalive_timeout: object | float | None = sentinel,
+        keepalive_timeout: _SENTINEL | float | None = sentinel,
         limit: int = 100,
         limit_per_host: int = 0,
         loop: asyncio.AbstractEventLoop | None = None,

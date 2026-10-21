@@ -13,7 +13,11 @@ from cpython.mem cimport PyMem_Free, PyMem_Malloc
 from libc.limits cimport ULLONG_MAX
 from libc.string cimport memcpy
 
-from multidict import CIMultiDict as _CIMultiDict, CIMultiDictProxy as _CIMultiDictProxy
+from multidict import (
+    CIMultiDict as _CIMultiDict,
+    CIMultiDictProxy as _CIMultiDictProxy,
+    istr as _istr,
+)
 from yarl import URL as _URL
 
 from aiohttp import hdrs
@@ -30,7 +34,7 @@ from .http_exceptions import (
     PayloadEncodingError,
     TransferEncodingError,
 )
-from .http_parser import DeflateBuffer as _DeflateBuffer
+from .http_parser import DeflateBuffer as _DeflateBuffer, _has_authority
 from .http_writer import (
     HttpVersion as _HttpVersion,
     HttpVersion10 as _HttpVersion10,
@@ -62,6 +66,7 @@ cdef object URL = _URL
 cdef object URL_build = URL.build
 cdef object CIMultiDict = _CIMultiDict
 cdef object CIMultiDictProxy = _CIMultiDictProxy
+cdef object istr = _istr
 cdef object HttpVersion = _HttpVersion
 cdef object HttpVersion10 = _HttpVersion10
 cdef object HttpVersion11 = _HttpVersion11
@@ -122,15 +127,31 @@ for i in range(METHODS_COUNT):
     _http_method.append(_aiohttp_method_names[i].decode('ascii'))
 
 
+# Header names missing from hdrs, as the istr that CIMultiDict would build
+# from them on every read otherwise. Bounded, and emptied when full, so a
+# peer sending many distinct names cannot grow it or keep it filled.
+cdef dict _unknown_names = {}
+cdef Py_ssize_t UNKNOWN_NAMES_MAX = 512
+cdef Py_ssize_t UNKNOWN_NAME_MAX_LEN = 64
+
+
 cdef inline object find_header(bytes raw_header):
     cdef Py_ssize_t size
     cdef char *buf
     cdef int idx
     PyBytes_AsStringAndSize(raw_header, &buf, &size)
     idx = _find_header.find_header(buf, size)
-    if idx == -1:
+    if idx != -1:
+        return headers[idx]
+    if size > UNKNOWN_NAME_MAX_LEN:
         return raw_header.decode('utf-8', 'surrogateescape')
-    return headers[idx]
+    name = _unknown_names.get(raw_header)
+    if name is None:
+        name = istr(raw_header.decode('utf-8', 'surrogateescape'))
+        if len(_unknown_names) >= UNKNOWN_NAMES_MAX:
+            _unknown_names.clear()
+        _unknown_names[raw_header] = name
+    return name
 
 
 @cython.freelist(DEFAULT_FREELIST_SIZE)
@@ -428,16 +449,20 @@ cdef class HttpParser:
 
     cdef _process_header(self):
         cdef str value
+        cdef bytes raw_value
         if self._raw_name != b"":
             name = find_header(self._raw_name)
-            value = self._raw_value.decode('utf-8', 'surrogateescape')
+            # llhttp strips the OWS before the field value but not after.
+            # https://www.rfc-editor.org/info/rfc9110/#section-5.5-3
+            raw_value = self._raw_value.rstrip(b" \t")
+            value = raw_value.decode('utf-8', 'surrogateescape')
 
             # reject null bytes in header values - matches the Python parser
             # check at http_parser.py. llhttp in lenient mode doesn't reject
             # these itself, so we need to catch them here.
             # ref: RFC 9110 section 5.5 (CTL chars forbidden in field values)
             if "\x00" in value:
-                raise InvalidHeader(self._raw_value)
+                raise InvalidHeader(raw_value)
 
             if not self._lax and name in SINGLETON_HEADERS:
                 if name in self._seen_singletons:
@@ -452,7 +477,7 @@ cdef class HttpParser:
 
             self._has_value = False
             self._header_name_size = 0
-            self._raw_headers.append((self._raw_name, self._raw_value))
+            self._raw_headers.append((self._raw_name, raw_value))
             self._raw_name = b""
             self._raw_value = b""
 
@@ -509,8 +534,10 @@ cdef class HttpParser:
         enc = self._content_encoding
         if enc is not None:
             self._content_encoding = None
-            if enc.isascii() and enc.lower() in {"gzip", "deflate", "br", "zstd"}:
-                encoding = enc
+            if enc.isascii():  # Must be checked before .lower()
+                enc = enc.lower()
+                if enc in {"gzip", "deflate", "br", "zstd"}:
+                    encoding = enc
 
         if self._cparser.type == cparser.HTTP_REQUEST:
             method = <str>_http_method[self._cparser.method]
@@ -548,8 +575,11 @@ cdef class HttpParser:
         self._messages.append((msg, payload))
 
     cdef _on_message_complete(self):
-        self._payload.feed_eof()
-        self._payload = None
+        # The payload is None when feed_eof() already completed a fully
+        # received content-length body.
+        if self._payload is not None:
+            self._payload.feed_eof()
+            self._payload = None
 
     cdef _on_chunk_header(self):
         self._payload.begin_http_chunk_receiving()
@@ -589,7 +619,8 @@ cdef class HttpParser:
             if self._cparser.flags & cparser.F_CHUNKED:
                 raise TransferEncodingError(
                     "Not enough data to satisfy transfer length header.")
-            elif self._cparser.flags & cparser.F_CONTENT_LENGTH:
+            elif (self._cparser.flags & cparser.F_CONTENT_LENGTH
+                  and self._cparser.content_length):
                 received = self._content_length_expected - self._cparser.content_length
                 raise ContentLengthError(
                     f"Not enough data to satisfy content length header "
@@ -598,6 +629,8 @@ cdef class HttpParser:
                 desc = cparser.llhttp_get_error_reason(self._cparser)
                 raise PayloadEncodingError(desc.decode('latin-1'))
             else:
+                # Reading until EOF, or a content-length body that was fully
+                # received but the parser paused.
                 self._eof_pending = True
                 while self._more_data_available:
                     if self._paused:
@@ -633,6 +666,9 @@ cdef class HttpParser:
 
         if self._more_data_available:
             result = cb_on_body(self._cparser, b"", 0)
+            if result == -1:
+                # Exception already delivered to the payload in cb_on_body.
+                return EMPTY_FEED_DATA_RESULT
             if result is cparser.HPE_PAUSED:
                 self._tail = data
                 return EMPTY_FEED_DATA_RESULT
@@ -722,12 +758,20 @@ cdef class HttpRequestParser(HttpParser):
             return
         self._path = self._buf.decode('utf-8', 'surrogateescape')
         try:
-            idx3 = len(self._path)
             if self._cparser.method == cparser.HTTP_CONNECT:
                 # authority-form,
                 # https://datatracker.ietf.org/doc/html/rfc7230#section-5.3.3
-                self._url = URL.build(authority=self._path, encoded=True)
-            elif idx3 > 1 and self._path[0] == '/':
+                try:
+                    self._url = URL.build(authority=self._path, encoded=True)
+                    host = self._url.raw_host
+                except ValueError:
+                    host = None
+                if host is None:
+                    raise InvalidURLError(
+                        self._path.encode(errors="surrogateescape")
+                        .decode("latin1")
+                    )
+            elif self._path[0] == '/':
                 # origin-form,
                 # https://datatracker.ietf.org/doc/html/rfc7230#section-5.3.1
                 idx1 = self._path.find("?")
@@ -758,10 +802,25 @@ cdef class HttpRequestParser(HttpParser):
                     fragment=fragment,
                     encoded=True,
                 )
+            elif self._path == '*' and self._cparser.method == cparser.HTTP_OPTIONS:
+                # asterisk-form,
+                self._url = URL(self._path, encoded=True)
             else:
                 # absolute-form for proxy maybe,
                 # https://datatracker.ietf.org/doc/html/rfc7230#section-5.3.2
-                self._url = URL(self._path, encoded=True)
+                host = None
+                if _has_authority(self._path):
+                    try:
+                        self._url = URL(self._path, encoded=True)
+                        host = self._url.raw_host
+                    except ValueError:
+                        pass
+                # https://www.rfc-editor.org/rfc/rfc9110#section-4.2.1-4
+                if host is None:
+                    raise InvalidURLError(
+                        self._path.encode(errors="surrogateescape")
+                        .decode("latin1")
+                    )
         finally:
             PyByteArray_Resize(self._buf, 0)
 
@@ -793,7 +852,7 @@ cdef class HttpResponseParser(HttpParser):
         else:
             self._reason = self._reason or ''
 
-cdef int cb_on_message_begin(cparser.llhttp_t* parser) except -1:
+cdef int cb_on_message_begin(cparser.llhttp_t* parser) except? -1:
     cdef HttpParser pyparser = <HttpParser>parser.data
 
     pyparser._started = True
@@ -807,7 +866,7 @@ cdef int cb_on_message_begin(cparser.llhttp_t* parser) except -1:
 
 
 cdef int cb_on_url(cparser.llhttp_t* parser,
-                   const char *at, size_t length) except -1:
+                   const char *at, size_t length) except? -1:
     cdef HttpParser pyparser = <HttpParser>parser.data
     try:
         if len(pyparser._buf) + length > pyparser._max_line_size:
@@ -822,7 +881,7 @@ cdef int cb_on_url(cparser.llhttp_t* parser,
 
 
 cdef int cb_on_status(cparser.llhttp_t* parser,
-                      const char *at, size_t length) except -1:
+                      const char *at, size_t length) except? -1:
     cdef HttpParser pyparser = <HttpParser>parser.data
     try:
         if len(pyparser._buf) + length > pyparser._max_line_size:
@@ -837,7 +896,7 @@ cdef int cb_on_status(cparser.llhttp_t* parser,
 
 
 cdef int cb_on_header_field(cparser.llhttp_t* parser,
-                            const char *at, size_t length) except -1:
+                            const char *at, size_t length) except? -1:
     cdef HttpParser pyparser = <HttpParser>parser.data
     cdef Py_ssize_t size
     try:
@@ -856,7 +915,7 @@ cdef int cb_on_header_field(cparser.llhttp_t* parser,
 
 
 cdef int cb_on_header_value(cparser.llhttp_t* parser,
-                            const char *at, size_t length) except -1:
+                            const char *at, size_t length) except? -1:
     cdef HttpParser pyparser = <HttpParser>parser.data
     cdef Py_ssize_t size
     try:
@@ -872,7 +931,7 @@ cdef int cb_on_header_value(cparser.llhttp_t* parser,
         return 0
 
 
-cdef int cb_on_headers_complete(cparser.llhttp_t* parser) except -1:
+cdef int cb_on_headers_complete(cparser.llhttp_t* parser) except? -1:
     cdef HttpParser pyparser = <HttpParser>parser.data
     try:
         pyparser._on_status_complete()
@@ -887,7 +946,7 @@ cdef int cb_on_headers_complete(cparser.llhttp_t* parser) except -1:
 
 
 cdef int cb_on_body(cparser.llhttp_t* parser,
-                    const char *at, size_t length) except -1:
+                    const char *at, size_t length) except? -1:
     cdef HttpParser pyparser = <HttpParser>parser.data
     cdef bytes body = at[:length]
     while body or pyparser._more_data_available:
@@ -902,6 +961,7 @@ cdef int cb_on_body(cparser.llhttp_t* parser,
 
             pyparser._payload_error = 1
             pyparser._paused = False
+            pyparser._more_data_available = False
             return -1
         body = b""
         length = 0
@@ -913,7 +973,7 @@ cdef int cb_on_body(cparser.llhttp_t* parser,
     return 0
 
 
-cdef int cb_on_message_complete(cparser.llhttp_t* parser) except -1:
+cdef int cb_on_message_complete(cparser.llhttp_t* parser) except? -1:
     cdef HttpParser pyparser = <HttpParser>parser.data
     try:
         pyparser._started = False
@@ -931,7 +991,7 @@ cdef int cb_on_message_complete(cparser.llhttp_t* parser) except -1:
         return 0
 
 
-cdef int cb_on_chunk_header(cparser.llhttp_t* parser) except -1:
+cdef int cb_on_chunk_header(cparser.llhttp_t* parser) except? -1:
     cdef HttpParser pyparser = <HttpParser>parser.data
     try:
         pyparser._on_chunk_header()
@@ -942,7 +1002,7 @@ cdef int cb_on_chunk_header(cparser.llhttp_t* parser) except -1:
         return 0
 
 
-cdef int cb_on_chunk_complete(cparser.llhttp_t* parser) except -1:
+cdef int cb_on_chunk_complete(cparser.llhttp_t* parser) except? -1:
     cdef HttpParser pyparser = <HttpParser>parser.data
     try:
         pyparser._on_chunk_complete()

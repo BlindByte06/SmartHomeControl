@@ -3,14 +3,13 @@ import datetime
 import io
 import re
 import string
-import tempfile
+import sys
 import types
 import warnings
 from collections.abc import Iterator, Mapping, MutableMapping
 from re import Pattern
 from types import MappingProxyType
-from typing import TYPE_CHECKING, Any, Final, Optional, TypeVar, cast, overload
-from urllib.parse import parse_qsl
+from typing import IO, TYPE_CHECKING, Any, Final, Optional, TypeVar, cast, overload
 
 import attr
 from multidict import (
@@ -20,7 +19,7 @@ from multidict import (
     MultiDictProxy,
     MultiMapping,
 )
-from yarl import URL
+from yarl import URL, query_to_pairs
 
 from . import hdrs
 from ._cookie_helpers import parse_cookie_header
@@ -54,6 +53,30 @@ from .typedefs import (
 from .web_exceptions import HTTPRequestEntityTooLarge, NotAppKeyWarning
 from .web_response import StreamResponse
 
+if sys.version_info >= (3, 11):
+    from tempfile import SpooledTemporaryFile
+else:
+    import tempfile
+
+    class SpooledTemporaryFile(tempfile.SpooledTemporaryFile[bytes], io.IOBase):
+        """Make the spooled file satisfy the documented `FileField.file` type.
+
+        `tempfile.SpooledTemporaryFile` only became an `io.IOBase` subclass in
+        3.11 (python/cpython#70363), and never grew the three capability
+        predicates before then. Both underlying files (`io.BytesIO` before
+        rollover, a `w+b` temp file after) are readable, writable and seekable.
+        """
+
+        def readable(self) -> bool:
+            return True
+
+        def writable(self) -> bool:
+            return True
+
+        def seekable(self) -> bool:
+            return True
+
+
 __all__ = ("BaseRequest", "FileField", "Request")
 
 
@@ -66,11 +89,18 @@ if TYPE_CHECKING:
 _T = TypeVar("_T")
 
 
+# Multipart file parts are buffered in memory and only spilled to a temporary
+# file once they outgrow this size. A temp file per part would let a body made
+# of many tiny parts exhaust the process's file descriptors; spooling bounds
+# that at ``client_max_size // _FILE_SPOOL_MAX_SIZE`` descriptors per request.
+_FILE_SPOOL_MAX_SIZE: Final[int] = 1024**2
+
+
 @attr.s(auto_attribs=True, frozen=True, slots=True)
 class FileField:
     name: str
     filename: str
-    file: io.BufferedReader
+    file: IO[bytes]
     content_type: str
     headers: CIMultiDictProxy[str]
 
@@ -104,6 +134,12 @@ _FORWARDED_PAIR_RE: Final[Pattern[str]] = re.compile(_FORWARDED_PAIR)
 ############################################################
 
 
+def _too_many_fields(max_fields: int) -> HTTPRequestEntityTooLarge:
+    return HTTPRequestEntityTooLarge(
+        max_fields, text=f"Maximum number of form fields {max_fields} exceeded."
+    )
+
+
 class BaseRequest(MutableMapping[str | RequestKey[Any], Any], HeadersMixin):
     POST_METHODS = {
         hdrs.METH_PATCH,
@@ -129,6 +165,7 @@ class BaseRequest(MutableMapping[str | RequestKey[Any], Any], HeadersMixin):
             "_cache",
             "_task",
             "_client_max_size",
+            "_client_max_fields",
             "_loop",
             "_transport_sslcontext",
             "_transport_peername",
@@ -149,6 +186,7 @@ class BaseRequest(MutableMapping[str | RequestKey[Any], Any], HeadersMixin):
         loop: asyncio.AbstractEventLoop,
         *,
         client_max_size: int = 1024**2,
+        client_max_fields: int = 1000,
         state: dict[RequestKey[Any] | str, Any] | None = None,
         scheme: str | None = None,
         host: str | None = None,
@@ -165,8 +203,14 @@ class BaseRequest(MutableMapping[str | RequestKey[Any], Any], HeadersMixin):
         self._cache: dict[str, Any] = {}
         url = message.url
         if url.absolute:
+            if scheme is None and url.scheme:
+                # Absolute URL is peer-controlled, use the protocol.
+                scheme = "https" if protocol.ssl_context else "http"
             if scheme is not None:
+                # Authority-form (CONNECT) has no scheme: leave the target
+                # unchanged unless clone(scheme=...) overrides it.
                 url = url.with_scheme(scheme)
+                self._cache["scheme"] = scheme
             if host is not None:
                 url = url.with_host(host)
             # absolute URL is given,
@@ -174,7 +218,6 @@ class BaseRequest(MutableMapping[str | RequestKey[Any], Any], HeadersMixin):
             # all other properties should be good
             self._cache["url"] = url
             self._cache["host"] = url.host
-            self._cache["scheme"] = url.scheme
             self._rel_url = url.relative()
         else:
             self._rel_url = url
@@ -186,6 +229,7 @@ class BaseRequest(MutableMapping[str | RequestKey[Any], Any], HeadersMixin):
         self._state = {} if state is None else state
         self._task = task
         self._client_max_size = client_max_size
+        self._client_max_fields = client_max_fields
         self._loop = loop
 
         self._transport_sslcontext = protocol.ssl_context
@@ -205,6 +249,7 @@ class BaseRequest(MutableMapping[str | RequestKey[Any], Any], HeadersMixin):
         host: str | _SENTINEL = sentinel,
         remote: str | _SENTINEL = sentinel,
         client_max_size: int | _SENTINEL = sentinel,
+        client_max_fields: int | _SENTINEL = sentinel,
     ) -> "BaseRequest":
         """Clone itself with replacement some attributes.
 
@@ -241,6 +286,8 @@ class BaseRequest(MutableMapping[str | RequestKey[Any], Any], HeadersMixin):
             kwargs["remote"] = remote
         if client_max_size is sentinel:
             client_max_size = self._client_max_size
+        if client_max_fields is sentinel:
+            client_max_fields = self._client_max_fields
 
         return self.__class__(
             message,
@@ -250,6 +297,7 @@ class BaseRequest(MutableMapping[str | RequestKey[Any], Any], HeadersMixin):
             self._task,
             self._loop,
             client_max_size=client_max_size,
+            client_max_fields=client_max_fields,
             state=self._state.copy(),
             **kwargs,
         )
@@ -275,6 +323,10 @@ class BaseRequest(MutableMapping[str | RequestKey[Any], Any], HeadersMixin):
     @property
     def client_max_size(self) -> int:
         return self._client_max_size
+
+    @property
+    def client_max_fields(self) -> int:
+        return self._client_max_fields
 
     @reify
     def message(self) -> RawRequestMessage:
@@ -631,7 +683,8 @@ class BaseRequest(MutableMapping[str | RequestKey[Any], Any], HeadersMixin):
         if rng is not None:
             try:
                 pattern = r"^bytes=(\d*)-(\d*)$"
-                start, end = re.findall(pattern, rng, re.ASCII)[0]
+                # https://www.rfc-editor.org/info/rfc9110/#section-14.1-4
+                start, end = re.findall(pattern, rng, re.ASCII | re.IGNORECASE)[0]
             except IndexError:  # pattern was not found in header
                 raise ValueError("range not in acceptable format")
 
@@ -748,14 +801,23 @@ class BaseRequest(MutableMapping[str | RequestKey[Any], Any], HeadersMixin):
             self._post = MultiDictProxy(MultiDict())
             return self._post
 
-        out: MultiDict[_Post] = MultiDict()
+        out: MultiDict[_Post]
 
         if content_type == "multipart/form-data":
+            out = MultiDict()
             multipart = await self.multipart()
             max_size = self._client_max_size
+            max_fields = self._client_max_fields
 
-            size = 0
+            payload = self._payload
             while (field := await multipart.next()) is not None:
+                # This check is needed for empty payloads, which still add
+                # overhead without entering the loop and the check below.
+                if 0 < max_size < payload.total_bytes:
+                    raise HTTPRequestEntityTooLarge(max_size)
+                if 0 < max_fields <= len(out):
+                    raise _too_many_fields(max_fields)
+
                 field_ct = field.headers.get(hdrs.CONTENT_TYPE)
 
                 if isinstance(field, BodyPartReader):
@@ -767,20 +829,35 @@ class BaseRequest(MutableMapping[str | RequestKey[Any], Any], HeadersMixin):
                     # present.
                     # https://tools.ietf.org/html/rfc7578#section-4.4
                     if field.filename:
-                        # store file in temp file
-                        tmp = await self._loop.run_in_executor(
-                            None, tempfile.TemporaryFile
-                        )
+                        tmp = SpooledTemporaryFile(_FILE_SPOOL_MAX_SIZE)
+                        # rolled means the temp file now uses the disk, at
+                        # which point we want to run in the executor.
+                        rolled = False
                         while chunk := await field.read_chunk(size=DEFAULT_CHUNK_SIZE):
-                            async for decoded_chunk in field.decode_iter(chunk):
-                                await self._loop.run_in_executor(
-                                    None, tmp.write, decoded_chunk
-                                )
-                                size += len(decoded_chunk)
-                                if 0 < max_size < size:
+                            # Bounds one part, mid-read.
+                            if 0 < max_size < payload.total_bytes:
+                                if rolled:
                                     await self._loop.run_in_executor(None, tmp.close)
-                                    raise HTTPRequestEntityTooLarge(max_size)
-                        await self._loop.run_in_executor(None, tmp.seek, 0)
+                                else:
+                                    tmp.close()
+                                raise HTTPRequestEntityTooLarge(max_size)
+                            async for decoded_chunk in field.decode_iter(chunk):
+                                # Update before writing, so we know if next
+                                # write is going to hit the disk.
+                                rolled = rolled or (
+                                    tmp.tell() + len(decoded_chunk)
+                                    > _FILE_SPOOL_MAX_SIZE
+                                )
+                                if rolled:
+                                    await self._loop.run_in_executor(
+                                        None, tmp.write, decoded_chunk
+                                    )
+                                else:
+                                    tmp.write(decoded_chunk)
+                        if rolled:
+                            await self._loop.run_in_executor(None, tmp.seek, 0)
+                        else:
+                            tmp.seek(0)
 
                         if field_ct is None:
                             field_ct = "application/octet-stream"
@@ -788,7 +865,7 @@ class BaseRequest(MutableMapping[str | RequestKey[Any], Any], HeadersMixin):
                         ff = FileField(
                             field.name,
                             field.filename,
-                            cast(io.BufferedReader, tmp),
+                            tmp,
                             field_ct,
                             field.headers,
                         )
@@ -797,8 +874,7 @@ class BaseRequest(MutableMapping[str | RequestKey[Any], Any], HeadersMixin):
                         # deal with ordinary data
                         raw_data = bytearray()
                         while chunk := await field.read_chunk():
-                            size += len(chunk)
-                            if 0 < max_size < size:
+                            if 0 < max_size < payload.total_bytes:
                                 raise HTTPRequestEntityTooLarge(max_size)
                             raw_data.extend(chunk)
 
@@ -816,17 +892,22 @@ class BaseRequest(MutableMapping[str | RequestKey[Any], Any], HeadersMixin):
                     raise ValueError(
                         "To decode nested multipart you need to use custom reader",
                     )
+        elif not (data := await self.read()):
+            out = MultiDict()
         else:
-            data = await self.read()
-            if data:
-                charset = self.charset or "utf-8"
-                out.extend(
-                    parse_qsl(
-                        data.rstrip().decode(charset),
-                        keep_blank_values=True,
+            charset = self.charset or "utf-8"
+            query = data.rstrip().decode(charset)
+            max_fields = self._client_max_fields
+            try:
+                out = MultiDict(
+                    query_to_pairs(
+                        query,
+                        max_fields=max_fields if max_fields > 0 else None,
                         encoding=charset,
                     )
                 )
+            except ValueError:
+                raise _too_many_fields(max_fields) from None
 
         self._post = MultiDictProxy(out)
         return self._post
@@ -865,10 +946,7 @@ class BaseRequest(MutableMapping[str | RequestKey[Any], Any], HeadersMixin):
         if self._post is None or self.content_type != "multipart/form-data":
             return
 
-        # NOTE: Release file descriptors for the
-        # NOTE: `tempfile.Temporaryfile`-created `_io.BufferedRandom`
-        # NOTE: instances of files sent within multipart request body
-        # NOTE: via HTTP POST request.
+        # Release the temp files created within multipart request body.
         for file_name, file_field_object in self._post.items():
             if isinstance(file_field_object, FileField):
                 file_field_object.file.close()
@@ -902,6 +980,7 @@ class Request(BaseRequest):
         host: str | _SENTINEL = sentinel,
         remote: str | _SENTINEL = sentinel,
         client_max_size: int | _SENTINEL = sentinel,
+        client_max_fields: int | _SENTINEL = sentinel,
     ) -> "Request":
         ret = super().clone(
             method=method,
@@ -911,6 +990,7 @@ class Request(BaseRequest):
             host=host,
             remote=remote,
             client_max_size=client_max_size,
+            client_max_fields=client_max_fields,
         )
         new_ret = cast(Request, ret)
         new_ret._match_info = self._match_info

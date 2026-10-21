@@ -5,10 +5,10 @@ Generated with `python build_addon.py licenses --write` from the `*.dist-info/ME
 | Package | Version | Licence |
 |---|---|---|
 | `aiohappyeyeballs` | 2.7.1 | PSF-2.0 |
-| `aiohttp` | 3.14.3 | Apache-2.0 AND MIT |
+| `aiohttp` | 3.14.5 | Apache-2.0 AND MIT |
 | `aiosignal` | 1.4.0 | Apache 2.0 |
 | `attrs` | 26.1.0 | MIT |
-| `certifi` | 2026.7.22 | MPL-2.0 |
+| `certifi` | 2026.10.19 | MPL-2.0 |
 | `charset-normalizer` | 3.5.1 | MIT |
 | `frozenlist` | 1.8.0 | Apache-2.0 |
 | `idna` | 3.20 | BSD-3-Clause |

@@ -1,4 +1,4 @@
-__version__ = "3.14.3"
+__version__ = "3.14.5"
 
 from typing import TYPE_CHECKING
 
@@ -43,6 +43,8 @@ from .client import (
     TCPConnector,
     TooManyRedirects,
     UnixConnector,
+    UploadAbortedError,
+    UploadTracker,
     WSMessageTypeError,
     WSServerHandshakeError,
     request,
@@ -174,6 +176,8 @@ __all__: tuple[str, ...] = (
     "TCPConnector",
     "TooManyRedirects",
     "UnixConnector",
+    "UploadAbortedError",
+    "UploadTracker",
     "NamedPipeConnector",
     "WSServerHandshakeError",
     "request",

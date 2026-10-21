@@ -2,11 +2,12 @@
  "aiohappyeyeballs==2.7.1": {
   "aiohappyeyeballs-2.7.1-py3-none-any.whl": "9243213661e29250eb41368e5daa826fc017156c3b8a11440826b2e3ed376472"
  },
- "aiohttp==3.14.3": {
-  "aiohttp-3.14.3-cp311-cp311-win32.whl": "a4af35c443e0b1a1bd6a8af3f3485d7fda15c142751a00f3ff8090f0b93346fa",
-  "aiohttp-3.14.3-cp311-cp311-win_amd64.whl": "e1e74298bab6ee0d6e749ed4fd1901c7e604bdda32c03d787a2cc71c46d0433d",
-  "aiohttp-3.14.3-cp313-cp313-win32.whl": "5f08ec777f35ee70720233b8b9811d3bb5d728137f30ac91b7457709c3261ac0",
-  "aiohttp-3.14.3-cp313-cp313-win_amd64.whl": "dff9461ec275f22135650d5ba4b4931a11f3958df7dfbb8db630000d4dee0883"
+ "aiohttp==3.14.5": {
+  "aiohttp-3.14.5-cp311-cp311-win32.whl": "e87046c8ff77a8decdb6a41d8ab25824b47531b2da933aeab0c1e21c7acff329",
+  "aiohttp-3.14.5-cp311-cp311-win_amd64.whl": "6f275c11d1aa6d4c458e05a68be084efe3c55a113d99e3f46a318098e52948fc",
+  "aiohttp-3.14.5-cp313-cp313-win32.whl": "3ae800a20947e2c2e53088047d021e6bf7d51560cc49f6a0737a1f79d2e3a13c",
+  "aiohttp-3.14.5-cp313-cp313-win_amd64.whl": "d05e94cdfe0d15d0206f970722d2554780ce562787b21b218b275447f8751319",
+  "aiohttp-3.14.5-py3-none-any.whl": "efc21a454892828368b11c2c780de0ff8bc991f73f6b99c6b66e56205470929b"
  },
  "aiosignal==1.4.0": {
   "aiosignal-1.4.0-py3-none-any.whl": "053243f8b92b990551949e63930a839ff0cf0b0ebbe0597b0f3fb19e1a0fe82e"
@@ -14,8 +15,8 @@
  "attrs==26.1.0": {
   "attrs-26.1.0-py3-none-any.whl": "c647aa4a12dfbad9333ca4e71fe62ddc36f4e63b2d260a37a8b83d2f043ac309"
  },
- "certifi==2026.7.22": {
-  "certifi-2026.7.22-py3-none-any.whl": "62f22742b58a1a33014a2b6b706588a8d7e2a88ae7bd1a6ebe8c992928483775"
+ "certifi==2026.10.19": {
+  "certifi-2026.10.19-py3-none-any.whl": "42d35340cc5b9ba78e818ddbff0c5b1c2b779de448a340fd1b989f5fa8670e1b"
  },
  "charset_normalizer==3.5.1": {
   "charset_normalizer-3.5.1-cp311-cp311-win32.whl": "ac00177c4831ffa650f8609e4bdddd5fe09c03b1c0c47acece7e6ea20421598b",
