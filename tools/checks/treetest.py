@@ -669,9 +669,179 @@ def test_netatmo_favorite_row():
           > first.rfind('netatmo_back_to_schedule'))
 
 
+def load_netatmo_package():
+    """netatmo_api als Paketmodul, mit NVDA-Attrappen.
+
+    Als Paket, damit seine relativen Importe (formatting, constants,
+    http_session) und die in device_dialog ("from .netatmo_api import")
+    aufgehen.
+    """
+    import sys
+    import types
+    for name in ('logHandler', 'addonHandler'):
+        if name not in sys.modules:
+            sys.modules[name] = types.ModuleType(name)
+    sys.modules['logHandler'].log = type('L', (), {
+        'debug': staticmethod(lambda *a, **k: None),
+        'info': staticmethod(lambda *a, **k: None),
+        'warning': staticmethod(lambda *a, **k: None),
+        'error': staticmethod(lambda *a, **k: None)})()
+    sys.modules['addonHandler'].initTranslation = lambda: None
+    # http_session importiert requests; der Build-Rechner hat keins, NVDA
+    # schon - wie in petlibrotest die Kopie aus lib/.
+    try:
+        import requests  # noqa: F401
+    except ImportError:
+        sys.path.append(os.path.join(os.path.dirname(os.path.dirname(
+            os.path.dirname(os.path.abspath(__file__)))), 'lib'))
+    if 'shcrelay' not in sys.modules:
+        pkg = types.ModuleType('shcrelay')
+        pkg.__path__ = [BASE]
+        sys.modules['shcrelay'] = pkg
+    return importlib.import_module('shcrelay.netatmo_api')
+
+
+RELAY_ID = '70:ee:50:00:00:01'
+THERM_ID = '04:00:00:00:00:01'
+
+
+def relay_home(boiler=True, setpoint=21.0, wifi=60, rf=95, bridged=True):
+    """homesdata und homestatus eines Hauses mit Relay und Thermostat im
+    selben Raum - so stand es am 21.10.2026 im Log: "Netatmo Relay
+    (Thermostat-Relay, Raum Wohnzimmer)" mit "Zieltemperatur: 21,0°C"."""
+    relay = {'id': RELAY_ID, 'type': 'NAPlug', 'name': 'Netatmo Relay',
+             'room_id': 'r1'}
+    therm = {'id': THERM_ID, 'type': 'NATherm1', 'name': 'Thermostat',
+             'room_id': 'r1'}
+    if bridged:
+        therm['bridge'] = RELAY_ID
+    homes = {'body': {'homes': [{
+        'id': 'h1', 'name': 'Zuhause',
+        'rooms': [{'id': 'r1', 'name': 'Wohnzimmer'}],
+        'modules': [relay, therm]}]}}
+    status = {'body': {'home': {
+        'rooms': [{'id': 'r1', 'therm_measured_temperature': 20.5,
+                   'therm_setpoint_temperature': setpoint,
+                   'therm_setpoint_mode': 'manual',
+                   'anticipating': False, 'open_window': False}],
+        'modules': [
+            {'id': RELAY_ID, 'type': 'NAPlug', 'wifi_strength': wifi,
+             'rf_strength': rf, 'firmware_revision': 222},
+            {'id': THERM_ID, 'type': 'NATherm1', 'boiler_status': boiler,
+             'reachable': True, 'battery_state': 'full',
+             'bridge': RELAY_ID if bridged else None}]}}}
+    return homes, status
+
+
+def make_netatmo_api(net, homes, status):
+    api = net.NetatmoAPI('client', 'secret')
+    api._no_weather_until = float('inf')  # kein Wetterteil in diesem Test
+    api.get_homes_data = lambda *a, **k: homes
+    api.get_home_status = lambda home_id: status
+    return api
+
+
+def test_netatmo_relay():
+    """Das Netatmo-Relay zeigt, was es selbst kann - nicht den Raum.
+
+    Am 21.10.2026 gefragt: warum zeigt das Relay dieselbe Zieltemperatur
+    wie das Thermostat? Weil jedes Geraet eines Raums die Werte des Raums
+    bekam, auch das Relay, das weder misst noch einen Sollwert hat. Seine
+    eigenen Werte - WLAN, Funk, Firmware - kamen nie an: gelesen wurden nur
+    die Feldnamen der Wetterstation. Und die Zeile "Heizung:" erschien nie,
+    weil Netatmo den Kesselzustand am Thermostat meldet.
+    """
+    print('== Netatmo: das Relay zeigt sich selbst, nicht den Raum ==')
+    import time
+    net = load_netatmo_package()
+
+    check('Stufen wie in Home Assistant (WLAN)',
+          [net.signal_level(v, net._WIFI_LEVELS) for v in (86, 85, 71, 70, 56, 55)]
+          == ['weak', 'medium', 'medium', 'good', 'good', 'very_good'])
+    check('Stufen wie in Home Assistant (Funk)',
+          [net.signal_level(v, net._RF_LEVELS) for v in (90, 89, 76, 75, 60, 59)]
+          == ['weak', 'medium', 'medium', 'good', 'good', 'very_good'])
+    station = net.NetatmoDevice({'_id': 's', 'type': 'NAMain', 'wifi_status': 50,
+                                 'firmware': 181})
+    check('die Wetterstation mit ihren eigenen Feldnamen',
+          station.get_wifi_level() == 'very_good' and station.get_firmware() == 181)
+    odd = net.NetatmoDevice({'id': 'x', 'type': 'NAPlug', 'wifi_strength': True})
+    check('ein Wahrheitswert ist kein Signal', odd.get_wifi_level() is None)
+
+    homes, status = relay_home()
+    api = make_netatmo_api(net, homes, status)
+    devices = api.get_devices()
+    relay = next(d for d in devices if d.is_relay)
+    therm = next(d for d in devices if d.is_thermostat)
+    check('das Relay hat keine Zieltemperatur und keinen Modus',
+          relay.get_setpoint_temp() is None and relay.get_setpoint_mode() is None,
+          f'{relay.get_setpoint_temp()} {relay.get_setpoint_mode()}')
+    check('und keine Temperatur', relay.get_temperature() is None)
+    check('das Thermostat behaelt die Werte des Raums',
+          therm.get_setpoint_temp() == 21.0 and therm.get_temperature() == 20.5)
+    check('der Kessel des Thermostats steht am Relay',
+          relay.get_boiler_status() is True)
+    check('WLAN, Funk und Firmware des Relays kommen an',
+          relay.get_wifi_level() == 'good' and relay.get_rf_level() == 'weak'
+          and relay.get_firmware() == 222,
+          f'{relay.get_wifi_level()} {relay.get_rf_level()} {relay.get_firmware()}')
+    summary = relay.get_status_summary()
+    check('die Ansage nennt Heizung und WLAN, keine Zieltemperatur',
+          'Heating: active' in summary and 'Wi-Fi signal: good' in summary
+          and 'Target' not in summary and 'Mode' not in summary, summary)
+
+    # Der leichte Weg (eine /homestatus je Haus) bringt dasselbe.
+    homes2, status2 = relay_home(boiler=False, setpoint=22.0, wifi=90)
+    api.get_homes_data = lambda *a, **k: homes2
+    api.get_home_status = lambda home_id: status2
+    api._last_full_status_refresh = time.time()
+    api.update_device_status([relay, therm])
+    check('leichter Weg: das Relay bleibt ohne Sollwert, das Thermostat folgt',
+          relay.get_setpoint_temp() is None and therm.get_setpoint_temp() == 22.0)
+    check('leichter Weg: Kessel und WLAN des Relays folgen',
+          relay.get_boiler_status() is False and relay.get_wifi_level() == 'weak')
+
+    homes3, status3 = relay_home(bridged=False)
+    homes3['body']['homes'][0]['modules'][0]['modules_bridged'] = [THERM_ID]
+    found = make_netatmo_api(net, homes3, status3).get_devices()
+    check('die Zuordnung geht auch ueber modules_bridged des Relays',
+          next(d for d in found if d.is_relay).get_boiler_status() is True)
+    homes4, status4 = relay_home(bridged=False)
+    found = make_netatmo_api(net, homes4, status4).get_devices()
+    check('ohne Zuordnung wird nichts angenommen',
+          next(d for d in found if d.is_relay).get_boiler_status() is None)
+
+    print('== Netatmo: die Zeilen des Relays im Baum ==')
+    env = {'_': lambda s: s, '__package__': 'shcrelay',
+           '__name__': 'shcrelay.device_dialog',
+           'fmt_decimal': lambda v, d=1: f'{v:.{d}f}',
+           'fmt_number': lambda v: str(v)}
+    grab(os.path.join(BASE, 'device_dialog.py'),
+         ['_get_device_info', '_get_updated_info_text'], env)
+    lines = env['_get_device_info'](None, relay)
+    check('Heizung, WLAN, Funk, Firmware - in dieser Reihenfolge',
+          lines == ['Heating: off', 'Wi-Fi signal: weak', 'Radio signal: weak',
+                    'Firmware version: 222'], str(lines))
+    check('keine Zieltemperatur-Zeile mehr',
+          not any(line.startswith('Target temperature') for line in lines))
+    status2['body']['home']['modules'][0]['wifi_strength'] = 50
+    api.update_device_status([relay, therm])
+    check('das Live-Update schreibt das neue WLAN-Signal',
+          env['_get_updated_info_text'](None, 'Wi-Fi signal: weak', relay, {})
+          == 'Wi-Fi signal: very good')
+
+    class Cozy:
+        is_netatmo = False
+
+    check('die dBm-Zeile von Cozytouch ruehrt es nicht an',
+          env['_get_updated_info_text'](None, 'Wi-Fi signal: -60 dBm', Cozy(), {})
+          is None)
+
+
 def main():
     test_identity()
     test_netatmo_favorite_row()
+    test_netatmo_relay()
     test_selection()
     test_search()
     test_signature()

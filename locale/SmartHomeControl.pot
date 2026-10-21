@@ -3,7 +3,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: SmartHomeControl\n"
 "Report-Msgid-Bugs-To: blindbyte06@gmail.com\n"
-"POT-Creation-Date: 2026-10-20 16:30+0000\n"
+"POT-Creation-Date: 2026-10-21 12:09+0000\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
@@ -29,7 +29,7 @@ msgstr ""
 
 #. Translators: Suffix after the heating mode: until when the manual
 #. temperature applies (HH:MM).
-#: netatmo_api.py:336
+#: netatmo_api.py:385
 msgid " (until {time})"
 msgstr ""
 
@@ -52,7 +52,7 @@ msgstr ""
 
 #. Translators: Relative age of the last refresh (Ctrl+T). {sec} = seconds
 #. since the last update.
-#: device_dialog.py:1438
+#: device_dialog.py:1461
 msgid " – last updated {sec} seconds ago"
 msgstr ""
 
@@ -260,7 +260,7 @@ msgstr ""
 
 #. Translators: Button that refreshes the device list. & marks the
 #. accelerator, F5 does the same.
-#: device_dialog.py:3744 device_dialog.py:293 dialog_platform_status.py:127
+#: device_dialog.py:3790 device_dialog.py:293 dialog_platform_status.py:127
 msgid "&Refresh (F5)"
 msgstr ""
 
@@ -338,7 +338,7 @@ msgid "&Yes, stop"
 msgstr ""
 
 #. Translators: Message when the search found no match.
-#: device_dialog.py:1879
+#: device_dialog.py:1902
 msgid "'{text}' not found"
 msgstr ""
 
@@ -360,6 +360,7 @@ msgid ""
 "- Enter or Space on a VeSync or Cozytouch device no longer freezes NVDA.\n"
 "- A leak sensor that already detects water when NVDA starts is now announced.\n"
 "- The Netatmo device menu offers \"Add to favorites\" again.\n"
+"- The Netatmo relay shows its heating state, Wi-Fi and radio signal instead of the thermostat's target temperature.\n"
 "- A setting changed in the VeSync or Cozytouch device menu is no longer also recorded as changed elsewhere.\n"
 "- A Meross device switched here is no longer taken for one switched elsewhere.\n"
 "- A Cozytouch command the appliance takes over late is announced as sent and confirmed once it arrives, instead of being reported as failed.\n"
@@ -410,7 +411,7 @@ msgid "AES encryption not available (PyCryptodome missing)"
 msgstr ""
 
 #. Translators: F1 help for the "Energy consumption" line in the device tree.
-#: dialog_help.py:150
+#: dialog_help.py:160
 msgid "Accumulated energy consumption of the device in kilowatt hours."
 msgstr ""
 
@@ -427,67 +428,67 @@ msgstr ""
 
 #. Translators: F1 help for any other line in the device tree: the fallback
 #. when none of the more specific texts fits.
-#: dialog_help.py:488
+#: dialog_help.py:498
 msgid "Action. Press Enter or Space to execute."
 msgstr ""
 
 #. Translators: One piece of the device help spoken with F1. The pieces are
 #. joined with ". ", so no full stop at the end.
-#: dialog_help.py:512
+#: dialog_help.py:522
 msgid "Action: turn on or off"
 msgstr ""
 
 #. Translators: One piece of the device help spoken with F1. The pieces are
 #. joined with ". ", so no full stop at the end.
-#: dialog_help.py:798
+#: dialog_help.py:808
 msgid "Action: turn on/off"
 msgstr ""
 
 #. Translators: One piece of the device help spoken with F1. The pieces are
 #. joined with ". ", so no full stop at the end.
-#: dialog_help.py:526
+#: dialog_help.py:536
 msgid "Actions: feed now, feeding plan, meals, desiccant reminder, light"
 msgstr ""
 
 #. Translators: One piece of the device help spoken with F1. The pieces are
 #. joined with ". ", so no full stop at the end.
-#: dialog_help.py:769
+#: dialog_help.py:779
 msgid "Actions: light spray, strong spray, off"
 msgstr ""
 
 #. Translators: One piece of the device help spoken with F1. The pieces are
 #. joined with ". ", so no full stop at the end.
-#: dialog_help.py:793
+#: dialog_help.py:803
 msgid "Actions: on/off, brightness, light color"
 msgstr ""
 
 #. Translators: One piece of the device help spoken with F1. The pieces are
 #. joined with ". ", so no full stop at the end.
-#: dialog_help.py:596
+#: dialog_help.py:606
 msgid "Actions: on/off, mode, fan speed"
 msgstr ""
 
 #. Translators: One piece of the device help spoken with F1. The pieces are
 #. joined with ". ", so no full stop at the end.
-#: dialog_help.py:613
+#: dialog_help.py:623
 msgid "Actions: on/off, mode, fan speed, oscillation"
 msgstr ""
 
 #. Translators: One piece of the device help spoken with F1. The pieces are
 #. joined with ". ", so no full stop at the end.
-#: dialog_help.py:701
+#: dialog_help.py:711
 msgid "Actions: target temperature, heating mode, heating schedule"
 msgstr ""
 
 #. Translators: One piece of the device help spoken with F1. The pieces are
 #. joined with ". ", so no full stop at the end.
-#: dialog_help.py:559
+#: dialog_help.py:569
 msgid "Actions: target temperature, mode, boost, on/off, away mode"
 msgstr ""
 
 #. Translators: One piece of the device help spoken with F1. The pieces are
 #. joined with ". ", so no full stop at the end.
-#: dialog_help.py:532
+#: dialog_help.py:542
 msgid ""
 "Actions: water mode, water warning, filter and cleaning reminders, light"
 msgstr ""
@@ -504,7 +505,7 @@ msgid "Add to favorites - Enter"
 msgstr ""
 
 #. Translators: Device type displays for Netatmo modules.
-#: netatmo_api.py:268
+#: netatmo_api.py:317
 msgid "Additional indoor module"
 msgstr ""
 
@@ -522,23 +523,23 @@ msgstr ""
 #. Translators: Beginning of the "Air pressure:" line in the device tree. F1
 #. picks its help by this text, so it has to be translated exactly like the
 #. line itself.
-#: dialog_help.py:185
+#: dialog_help.py:195
 msgid "Air pressure:"
 msgstr ""
 
 #. Translators: One piece of the device help spoken with F1. The pieces are
 #. joined with ". ", so no full stop at the end.
-#: device_dialog.py:2152 dialog_help.py:640
+#: device_dialog.py:2175 dialog_help.py:650
 msgid "Air pressure: {pressure} mbar"
 msgstr ""
 
 #. Translators: Category names in the device tree.
-#: device_dialog.py:2528 device_dialog.py:2535
+#: device_dialog.py:2574 device_dialog.py:2581
 msgid "Air purifiers"
 msgstr ""
 
 #. Translators: F1 help for the "Air quality:" line in the device tree.
-#: dialog_help.py:195
+#: dialog_help.py:205
 msgid ""
 "Air quality rating of the purifier from excellent to poor. Updates "
 "automatically."
@@ -553,7 +554,7 @@ msgstr ""
 #. Translators: Beginning of the "Air quality:" line in the device tree. F1
 #. picks its help by this text, so it has to be translated exactly like the
 #. line itself.
-#: dialog_help.py:192
+#: dialog_help.py:202
 msgid "Air quality:"
 msgstr ""
 
@@ -568,7 +569,7 @@ msgid "Air quality: {percent}%"
 msgstr ""
 
 #. Translators: Air quality rating in the device tree.
-#: dialog_help.py:585 dialog_vesync.py:1087
+#: dialog_help.py:595 dialog_vesync.py:1087
 msgid "Air quality: {value}"
 msgstr ""
 
@@ -611,21 +612,21 @@ msgstr ""
 #. Translators: Beginning of the "Amperage:" line in the device tree. F1 picks
 #. its help by this text, so it has to be translated exactly like the line
 #. itself.
-#: dialog_help.py:171
+#: dialog_help.py:181
 msgid "Amperage:"
 msgstr ""
 
 #. Translators: Line in the device tree. F1 finds its help by the beginning of
 #. this text, so it and the "Amperage:" in the help have to be translated the
 #. same way.
-#: device_dialog.py:2272
+#: device_dialog.py:2318
 msgid "Amperage: {current} A"
 msgstr ""
 
 #. Translators: Line in the device tree. F1 finds its help by the beginning of
 #. this text, so it and the "Amperage:" in the help have to be translated the
 #. same way.
-#: device_dialog.py:2777
+#: device_dialog.py:2823
 msgid "Amperage: {value} A"
 msgstr ""
 
@@ -863,7 +864,7 @@ msgid "Auto profile: {profile} - press Enter to change"
 msgstr ""
 
 #. Translators: F1 help for the "Hot water supply:" line in the device tree.
-#: dialog_help.py:116
+#: dialog_help.py:126
 msgid ""
 "Available hot water supply in percent, optionally with a liter estimate. "
 "Updates automatically."
@@ -880,7 +881,7 @@ msgid "Away"
 msgstr ""
 
 #. Translators: Cozytouch status announcement: away mode active.
-#: cozytouch_devices.py:602 dialog_help.py:556
+#: cozytouch_devices.py:602 dialog_help.py:566
 msgid "Away mode active"
 msgstr ""
 
@@ -937,13 +938,13 @@ msgid "Back to schedule"
 msgstr ""
 
 #. Translators: Action entry for returning to schedule mode.
-#: device_dialog.py:3144 dialog_netatmo.py:768 dialog_netatmo.py:1012
+#: device_dialog.py:3190 dialog_netatmo.py:768 dialog_netatmo.py:1012
 msgid "Back to schedule - press Enter to activate"
 msgstr ""
 
 #. Translators: F1 help for the action line "netatmo_back_to_schedule" in the
 #. device tree.
-#: dialog_help.py:276
+#: dialog_help.py:286
 msgid "Back to the automatic schedule. Press Enter to execute."
 msgstr ""
 
@@ -955,14 +956,14 @@ msgstr ""
 #. Translators: Beginning of the "Battery:" line in the device tree. The line
 #. is found again by this text when its value is refreshed, so it has to be
 #. translated exactly like the line itself.
-#: device_dialog.py:1081 dialog_help.py:175
+#: device_dialog.py:1104 dialog_help.py:185
 msgid "Battery:"
 msgstr ""
 
 #. Translators: Battery level of a hub sensor. {value} = percentage. The
 #. placeholder is shown until the first background battery poll has completed
 #. (battery is fetched separately and cached).
-#: device_dialog.py:2109
+#: device_dialog.py:2132
 msgid "Battery: checking"
 msgstr ""
 
@@ -974,19 +975,19 @@ msgstr ""
 
 #. Translators: One piece of the device help spoken with F1. The pieces are
 #. joined with ". ", so no full stop at the end.
-#: device_dialog.py:2175 device_dialog.py:2129 dialog_help.py:719
+#: device_dialog.py:2221 device_dialog.py:2152 dialog_help.py:729
 msgid "Battery: {percent}%"
 msgstr ""
 
 #. Translators: Battery level of a hub sensor. {value} = percentage. The
 #. placeholder is shown until the first background battery poll has completed
 #. (battery is fetched separately and cached).
-#: device_dialog.py:2108 device_dialog.py:1084 netatmo_api.py:395
+#: device_dialog.py:2131 device_dialog.py:1107 netatmo_api.py:454
 msgid "Battery: {value}%"
 msgstr ""
 
 #. Translators: F1 help for the low water line of a Petlibro fountain.
-#: dialog_help.py:470
+#: dialog_help.py:480
 msgid ""
 "Below this amount the fountain counts its water as low and warns. Enter asks"
 " for the new value in millilitres, 650 to 3000 as in the app."
@@ -1014,7 +1015,7 @@ msgid "Boiler status: shows whether the heating is currently active or off."
 msgstr ""
 
 #. Translators: Cozytouch status announcement: boost mode is running.
-#: cozytouch_devices.py:594 dialog_help.py:554
+#: cozytouch_devices.py:594 dialog_help.py:564
 msgid "Boost active"
 msgstr ""
 
@@ -1104,7 +1105,7 @@ msgid "Brightness changed"
 msgstr ""
 
 #. Translators: Title of the brightness dialog.
-#: device_dialog.py:3571
+#: device_dialog.py:3617
 msgid "Brightness for {name}"
 msgstr ""
 
@@ -1128,7 +1129,7 @@ msgstr ""
 
 #. Translators: Line in the device tree: brightness of a lamp. Enter opens the
 #. input dialog, hence the hint in the text itself.
-#: device_dialog.py:2873 device_dialog.py:832
+#: device_dialog.py:2919 device_dialog.py:832
 msgid "Brightness: {value}% - press Enter to change"
 msgstr ""
 
@@ -1171,7 +1172,7 @@ msgid "CO₂"
 msgstr ""
 
 #. Translators: F1 help for the "CO" line in the device tree.
-#: dialog_help.py:181
+#: dialog_help.py:191
 msgid "CO₂ concentration in the room air."
 msgstr ""
 
@@ -1192,12 +1193,12 @@ msgid "Cancelled"
 msgstr ""
 
 #. Translators: Message when the chosen category number does not exist.
-#: device_dialog.py:1903
+#: device_dialog.py:1926
 msgid "Category {number} does not exist"
 msgstr ""
 
 #. Translators: Announcement when jumping to a category via a number key.
-#: device_dialog.py:1895
+#: device_dialog.py:1918
 msgid "Category {number}: {name}"
 msgstr ""
 
@@ -1219,7 +1220,7 @@ msgstr ""
 
 #. Translators: F1 help for the action line "vesync_fan_speed" in the device
 #. tree.
-#: dialog_help.py:321
+#: dialog_help.py:331
 msgid ""
 "Change fan speed. Enter opens a list of available levels. Selecting a level "
 "automatically switches to manual mode."
@@ -1239,7 +1240,7 @@ msgstr ""
 #. Translators: Context help for the tree entry that changes the time of a
 #. loaded cooking programme. The temperature is deliberately not mentioned as
 #. changeable: the appliance does not accept one while it cooks.
-#: dialog_help.py:305
+#: dialog_help.py:315
 msgid ""
 "Change the cooking time of the loaded programme. Enter asks for the new "
 "value and confirms it before sending. The remaining time line then shows "
@@ -1256,7 +1257,7 @@ msgstr ""
 
 #. Translators: One piece of the device help spoken with F1. The pieces are
 #. joined with ". ", so no full stop at the end.
-#: dialog_help.py:501
+#: dialog_help.py:511
 msgid "Channel: {name}"
 msgstr ""
 
@@ -1340,13 +1341,13 @@ msgid "Choose a favorite: digit 1 to 9"
 msgstr ""
 
 #. Translators: Help text in the light color dialog.
-#: device_dialog.py:3453
+#: device_dialog.py:3499
 msgid "Choose a light color for {name}."
 msgstr ""
 
 #. Translators: F1 help for the action line "vesync_auto_preference" in the
 #. device tree.
-#: dialog_help.py:353
+#: dialog_help.py:363
 msgid ""
 "Choose auto profile: default, efficient or quiet. Determines behavior in "
 "auto mode. Enter opens a selection list."
@@ -1364,7 +1365,7 @@ msgstr ""
 
 #. Translators: F1 help for the action line "netatmo_therm_mode" in the device
 #. tree.
-#: dialog_help.py:266
+#: dialog_help.py:276
 msgid ""
 "Choose heating mode: schedule, away or frost guard. Press Enter to change."
 msgstr ""
@@ -1378,7 +1379,7 @@ msgid ""
 msgstr ""
 
 #. Translators: F1 help for the water mode line of a Petlibro fountain.
-#: dialog_help.py:450
+#: dialog_help.py:460
 msgid ""
 "Choose how the water flows: off, all the time, or when the sensor notices an"
 " animal near or further away. Enter opens a selection list. On its battery "
@@ -1389,13 +1390,13 @@ msgstr ""
 
 #. Translators: F1 help for the action line "vesync_nightlight" in the device
 #. tree.
-#: dialog_help.py:348
+#: dialog_help.py:358
 msgid ""
 "Choose night light mode: off, dimmed or on. Enter opens a selection list."
 msgstr ""
 
 #. Translators: F1 help for the action line "vesync_mode" in the device tree.
-#: dialog_help.py:315
+#: dialog_help.py:325
 msgid ""
 "Choose operating mode. Air purifiers: auto, manual or sleep. Fans: normal, "
 "turbo, auto or sleep mode. Enter opens a selection list."
@@ -1424,7 +1425,7 @@ msgstr ""
 
 #. Translators: F1 help for the action line "cozytouch_mode" in the device
 #. tree.
-#: dialog_help.py:371
+#: dialog_help.py:381
 msgid ""
 "Choose the operating mode of the hot water heat pump. Enter opens a "
 "selection list."
@@ -1495,7 +1496,7 @@ msgid "Color changed"
 msgstr ""
 
 #. Translators: Title of the light color dialog.
-#: device_dialog.py:3473
+#: device_dialog.py:3519
 msgid "Color temperature for {name}"
 msgstr ""
 
@@ -1534,13 +1535,13 @@ msgstr ""
 
 #. Translators: Line in the device tree: the colour set as an RGB value, where
 #. no name fits. Enter opens the colour picker.
-#: device_dialog.py:2944
+#: device_dialog.py:2990
 msgid "Color: RGB({r}, {g}, {b}) - press Enter to change"
 msgstr ""
 
 #. Translators: Line in the device tree: the colour set, by name and by RGB
 #. value. Enter opens the colour picker.
-#: device_dialog.py:2937
+#: device_dialog.py:2983
 msgid "Color: {color} (RGB {r},{g},{b}) - press Enter to change"
 msgstr ""
 
@@ -1573,7 +1574,7 @@ msgstr ""
 
 #. Translators: One piece of the device help spoken with F1. The pieces are
 #. joined with ". ", so no full stop at the end.
-#: device_dialog.py:2237 dialog_help.py:759
+#: device_dialog.py:2283 dialog_help.py:769
 msgid "Connected sensors: {count}"
 msgstr ""
 
@@ -1613,7 +1614,7 @@ msgstr ""
 
 #. Translators: Network error in plain words, spoken and shown in the status
 #. line.
-#: device_dialog.py:1312
+#: device_dialog.py:1335
 msgid "Connection interrupted"
 msgstr ""
 
@@ -1629,12 +1630,12 @@ msgid "Consumption last 7 days:"
 msgstr ""
 
 #. Translators: Placeholder while the consumption data is fetched.
-#: device_dialog.py:2319
+#: device_dialog.py:2365
 msgid "Consumption last 7 days: fetching..."
 msgstr ""
 
 #. Translators: Last 7 days' consumption from the device meter.
-#: device_dialog.py:2298 device_dialog.py:958
+#: device_dialog.py:2344 device_dialog.py:958
 msgid "Consumption last 7 days: {kwh} kWh"
 msgstr ""
 
@@ -1646,12 +1647,12 @@ msgid "Consumption today:"
 msgstr ""
 
 #. Translators: Placeholder while the consumption data is fetched.
-#: device_dialog.py:2317
+#: device_dialog.py:2363
 msgid "Consumption today: fetching..."
 msgstr ""
 
 #. Translators: Today's consumption from the device meter.
-#: device_dialog.py:2295 device_dialog.py:956
+#: device_dialog.py:2341 device_dialog.py:956
 msgid "Consumption today: {kwh} kWh"
 msgstr ""
 
@@ -1691,7 +1692,7 @@ msgid "Cool white"
 msgstr ""
 
 #. Translators: Choices for the light color (with description).
-#: device_dialog.py:3447
+#: device_dialog.py:3493
 msgid "Cool white - bright, bluish light for concentration (approx. 6500K)"
 msgstr ""
 
@@ -1724,7 +1725,7 @@ msgstr ""
 
 #. Translators: Platform main node. Brand name, do not translate; the
 #. parenthesis marks the platform as experimental.
-#: device_dialog.py:2559
+#: device_dialog.py:2605
 msgid "Cozytouch devices, experimental ({count})"
 msgstr ""
 
@@ -1801,23 +1802,23 @@ msgid "Ctrl+B on a device in the devices tab: add/remove favorite"
 msgstr ""
 
 #. Translators: F1 help for the "Air pressure:" line in the device tree.
-#: dialog_help.py:188
+#: dialog_help.py:198
 msgid "Current air pressure in millibars."
 msgstr ""
 
 #. Translators: F1 help for the "Amperage:" line in the device tree.
-#: dialog_help.py:174
+#: dialog_help.py:184
 msgid "Current amperage in amps."
 msgstr ""
 
 #. Translators: F1 help for the "Battery:" line in the device tree.
-#: dialog_help.py:178
+#: dialog_help.py:188
 msgid "Current battery level of the device."
 msgstr ""
 
 #. Translators: Shown in the dialog that sets the brightness: the value set at
 #. the moment.
-#: device_dialog.py:3565
+#: device_dialog.py:3611
 msgid "Current brightness: {value}%"
 msgstr ""
 
@@ -1837,7 +1838,7 @@ msgid "Current humidity. Updates automatically."
 msgstr ""
 
 #. Translators: F1 help for the "Voltage:" line in the device tree.
-#: dialog_help.py:167
+#: dialog_help.py:177
 msgid "Current mains voltage in volts."
 msgstr ""
 
@@ -1852,7 +1853,7 @@ msgid "Current mode: {mode}"
 msgstr ""
 
 #. Translators: F1 help for the "Power:" line in the device tree.
-#: dialog_help.py:159
+#: dialog_help.py:169
 msgid "Current power consumption in watts. Updates automatically."
 msgstr ""
 
@@ -1868,18 +1869,18 @@ msgstr ""
 
 #. Translators: Spoken in the dialog that sets the light colour: what is set
 #. at the moment.
-#: device_dialog.py:3465
+#: device_dialog.py:3511
 msgid "Current setting: cool white"
 msgstr ""
 
 #. Translators: Spoken in the dialog that sets the light colour: what is set
 #. at the moment.
-#: device_dialog.py:3461
+#: device_dialog.py:3507
 msgid "Current setting: daylight"
 msgstr ""
 
 #. Translators: Current light color in the help text.
-#: device_dialog.py:3457
+#: device_dialog.py:3503
 msgid "Current setting: warm white"
 msgstr ""
 
@@ -1897,7 +1898,7 @@ msgstr ""
 #. Translators: Cozytouch status announcement and line in the device tree: the
 #. water heater is heating right now - with the heat pump or the heating
 #. element, the cloud does not say which.
-#: cozytouch_devices.py:607 dialog_cozytouch.py:933 dialog_help.py:130
+#: cozytouch_devices.py:607 dialog_cozytouch.py:933 dialog_help.py:140
 msgid "Currently heating"
 msgstr ""
 
@@ -1944,7 +1945,7 @@ msgid "Daylight"
 msgstr ""
 
 #. Translators: Choices for the light color (with description).
-#: device_dialog.py:3445
+#: device_dialog.py:3491
 msgid "Daylight - neutral, natural light for working (approx. 4000K)"
 msgstr ""
 
@@ -2008,7 +2009,7 @@ msgid "Details"
 msgstr ""
 
 #. Translators: Column headers of the measurement view.
-#: device_dialog.py:1271 dialog_history.py:251 dialog_history.py:257
+#: device_dialog.py:1294 dialog_history.py:251 dialog_history.py:257
 #: dialog_platform_status.py:158
 msgid "Device"
 msgstr ""
@@ -2069,7 +2070,7 @@ msgid ""
 msgstr ""
 
 #. Translators: F1 help for the "Status:" line in the device tree.
-#: dialog_help.py:155
+#: dialog_help.py:165
 msgid "Device status. Updates automatically."
 msgstr ""
 
@@ -2105,7 +2106,7 @@ msgid "Device: {value}"
 msgstr ""
 
 #. Translators: Root node label of the device tree.
-#: device_dialog.py:395 device_dialog.py:1347 device_dialog.py:2370
+#: device_dialog.py:395 device_dialog.py:1370 device_dialog.py:2416
 msgid "Devices"
 msgstr ""
 
@@ -2115,12 +2116,12 @@ msgid "Devices that did not answer"
 msgstr ""
 
 #. Translators: Category names in the device tree.
-#: device_dialog.py:2407 device_dialog.py:2427
+#: device_dialog.py:2453 device_dialog.py:2473
 msgid "Diffuser"
 msgstr ""
 
 #. Translators: F1 help for the action line "diffuser" in the device tree.
-#: dialog_help.py:240
+#: dialog_help.py:250
 msgid "Diffuser action. Press Enter or Space to execute."
 msgstr ""
 
@@ -2260,7 +2261,7 @@ msgstr ""
 #. Translators: Beginning of the "Energy consumption" line in the device tree.
 #. F1 picks its help by this text, so it has to be translated exactly like the
 #. line itself.
-#: dialog_help.py:147
+#: dialog_help.py:157
 msgid "Energy consumption"
 msgstr ""
 
@@ -2284,7 +2285,7 @@ msgid "Enter both times, or leave both empty to delete the window"
 msgstr ""
 
 #. Translators: Prompt and title of the device search dialog.
-#: device_dialog.py:1807
+#: device_dialog.py:1830
 msgid "Enter device name:"
 msgstr ""
 
@@ -2294,7 +2295,7 @@ msgid "Enter target temperature for {name}.\n"
 msgstr ""
 
 #. Translators: Help texts in the brightness dialog.
-#: device_dialog.py:3557
+#: device_dialog.py:3603
 msgid "Enter the brightness for {name}."
 msgstr ""
 
@@ -2314,7 +2315,7 @@ msgstr ""
 
 #. Translators: Generic fallback when the status query for a single device
 #. fails.
-#: __init__.py:2551 device_dialog.py:2348
+#: __init__.py:2551 device_dialog.py:2394
 msgid "Error"
 msgstr ""
 
@@ -2339,7 +2340,7 @@ msgid "Error switching heating schedule: {error}"
 msgstr ""
 
 #. Translators: Error dialog when loading the device list.
-#: device_dialog.py:2347
+#: device_dialog.py:2393
 msgid "Error while loading: {error}"
 msgstr ""
 
@@ -2349,7 +2350,7 @@ msgid "Error: {error}"
 msgstr ""
 
 #. Translators: Short error line in the status bar of the device menu.
-#: device_dialog.py:1340
+#: device_dialog.py:1363
 msgid "Error: {msg}"
 msgstr ""
 
@@ -2389,7 +2390,7 @@ msgstr ""
 
 #. Translators: One piece of the device help spoken with F1. The pieces are
 #. joined with ". ", so no full stop at the end.
-#: dialog_help.py:779
+#: dialog_help.py:789
 msgid "Expand channels for individual control"
 msgstr ""
 
@@ -2430,7 +2431,7 @@ msgstr ""
 
 #. Translators: One piece of the device help spoken with F1. The pieces are
 #. joined with ". ", so no full stop at the end.
-#: dialog_help.py:579
+#: dialog_help.py:589
 msgid "Fan speed: {level}"
 msgstr ""
 
@@ -2440,7 +2441,7 @@ msgid "Fan speed: {level} - press Enter to change"
 msgstr ""
 
 #. Translators: Category names in the device tree.
-#: device_dialog.py:2529 device_dialog.py:2537
+#: device_dialog.py:2575 device_dialog.py:2583
 msgid "Fans"
 msgstr ""
 
@@ -2508,7 +2509,7 @@ msgid "Feed now - press Enter"
 msgstr ""
 
 #. Translators: Category names in the device tree.
-#: device_dialog.py:2583 device_dialog.py:2589
+#: device_dialog.py:2629 device_dialog.py:2635
 msgid "Feeders"
 msgstr ""
 
@@ -2557,7 +2558,7 @@ msgstr ""
 #. Translators: Beginning of the "Filter life:" line in the device tree. F1
 #. picks its help by this text, so it has to be translated exactly like the
 #. line itself.
-#: dialog_help.py:218
+#: dialog_help.py:228
 msgid "Filter life:"
 msgstr ""
 
@@ -2605,13 +2606,13 @@ msgid ""
 msgstr ""
 
 #. Translators: Announcement of the selected filter.
-#: device_dialog.py:1638
+#: device_dialog.py:1661
 msgid "Filter: {filter}"
 msgstr ""
 
 #. Translators: One piece of the device help spoken with F1. The pieces are
 #. joined with ". ", so no full stop at the end.
-#: dialog_help.py:592
+#: dialog_help.py:602
 msgid "Filter: {percent}%"
 msgstr ""
 
@@ -2621,7 +2622,7 @@ msgid "Filter: {value}%"
 msgstr ""
 
 #. Translators: Prompt and title of the device search dialog.
-#: device_dialog.py:1807
+#: device_dialog.py:1830
 msgid "Find device"
 msgstr ""
 
@@ -2631,7 +2632,7 @@ msgid "Find devices"
 msgstr ""
 
 #. Translators: Firmware version of the device.
-#: dialog_cozytouch.py:1060 dialog_petlibro.py:841
+#: device_dialog.py:2215 dialog_cozytouch.py:1060 dialog_petlibro.py:841
 msgid "Firmware version: {version}"
 msgstr ""
 
@@ -2671,7 +2672,7 @@ msgid "Food supply: sufficient"
 msgstr ""
 
 #. Translators: Announcement of a search hit.
-#: device_dialog.py:1875
+#: device_dialog.py:1898
 msgid "Found: {item}"
 msgstr ""
 
@@ -2701,7 +2702,7 @@ msgid "Frozen food"
 msgstr ""
 
 #. Translators: Category names in the device tree.
-#: device_dialog.py:2461 device_dialog.py:2482
+#: device_dialog.py:2507 device_dialog.py:2528
 msgid "Gateways"
 msgstr ""
 
@@ -2718,7 +2719,7 @@ msgid "Give &today"
 msgstr ""
 
 #. Translators: F1 help for the action line "Feed now" of a Petlibro feeder.
-#: dialog_help.py:403
+#: dialog_help.py:413
 msgid ""
 "Give food now. Enter opens a list of amounts; the last amount chosen is "
 "preselected. The command is sent once, never repeated, and the add-on waits "
@@ -2755,7 +2756,7 @@ msgid "Heating mode: {mode}"
 msgstr ""
 
 #. Translators: Combined info+action label in the device tree.
-#: device_dialog.py:3098 device_dialog.py:848 dialog_netatmo.py:745
+#: device_dialog.py:3144 device_dialog.py:848 dialog_netatmo.py:745
 #: dialog_netatmo.py:985 dialog_netatmo.py:494
 msgid "Heating mode: {mode} - press Enter to change"
 msgstr ""
@@ -2773,7 +2774,7 @@ msgstr ""
 
 #. Translators: Line in the device tree: the active heating schedule of a
 #. Netatmo thermostat. Enter switches to another one.
-#: device_dialog.py:3132
+#: device_dialog.py:3178
 msgid "Heating schedule: {name} - press Enter to switch"
 msgstr ""
 
@@ -2795,7 +2796,7 @@ msgstr ""
 
 #. Translators: F1 help for the action line "cozytouch_schedule" in the device
 #. tree.
-#: dialog_help.py:394
+#: dialog_help.py:404
 msgid ""
 "Heating times: the windows in which the appliance heats hot water. Enter "
 "opens the input for one window - day, start and end. Leaving both times "
@@ -2811,20 +2812,20 @@ msgid "Heating:"
 msgstr ""
 
 #. Translators: Boiler status in the device tree.
-#: device_dialog.py:1031 device_dialog.py:3052 dialog_netatmo.py:695
-#: dialog_netatmo.py:927 netatmo_api.py:351
+#: device_dialog.py:1031 device_dialog.py:3098 dialog_netatmo.py:695
+#: dialog_netatmo.py:927 netatmo_api.py:400
 msgid "Heating: active"
 msgstr ""
 
 #. Translators: Boiler status in the device tree.
-#: device_dialog.py:1031 device_dialog.py:3052 dialog_netatmo.py:695
-#: dialog_netatmo.py:927 netatmo_api.py:351
+#: device_dialog.py:1031 device_dialog.py:3098 dialog_netatmo.py:695
+#: dialog_netatmo.py:927 netatmo_api.py:400
 msgid "Heating: off"
 msgstr ""
 
 #. Translators: One piece of the device help spoken with F1. The pieces are
 #. joined with ". ", so no full stop at the end.
-#: device_dialog.py:2169 dialog_help.py:668 dialog_help.py:709
+#: device_dialog.py:2196 dialog_help.py:678 dialog_help.py:719
 msgid "Heating: {status}"
 msgstr ""
 
@@ -2868,7 +2869,7 @@ msgid "History refreshed"
 msgstr ""
 
 #. Translators: Netatmo heating mode (home).
-#: constants.py:37 netatmo_api.py:1525
+#: constants.py:37 netatmo_api.py:1584
 msgid "Home"
 msgstr ""
 
@@ -2888,7 +2889,7 @@ msgid "Hot water heat pump"
 msgstr ""
 
 #. Translators: Category name in the device tree.
-#: device_dialog.py:2567
+#: device_dialog.py:2613
 msgid "Hot water heat pumps ({count})"
 msgstr ""
 
@@ -2902,7 +2903,7 @@ msgstr ""
 #. Translators: Beginning of the "Hot water supply:" line in the device tree.
 #. F1 picks its help by this text, so it has to be translated exactly like the
 #. line itself.
-#: dialog_help.py:113
+#: dialog_help.py:123
 msgid "Hot water supply:"
 msgstr ""
 
@@ -2913,7 +2914,7 @@ msgstr ""
 
 #. Translators: One piece of the device help spoken with F1. The pieces are
 #. joined with ". ", so no full stop at the end.
-#: dialog_help.py:547
+#: dialog_help.py:557
 msgid "Hot water supply: {percent}%"
 msgstr ""
 
@@ -2929,7 +2930,7 @@ msgid "Hour until which the temperature should apply"
 msgstr ""
 
 #. Translators: F1 help for the flow duration line of a Petlibro fountain.
-#: dialog_help.py:461
+#: dialog_help.py:471
 msgid ""
 "How long the fountain gives water once its sensor noticed the pet: 45, 60, "
 "75 or 90 seconds, as in the Petlibro app. Longer gives more time to drink, "
@@ -2945,7 +2946,7 @@ msgid ""
 msgstr ""
 
 #. Translators: Category names in the device tree.
-#: device_dialog.py:2410 device_dialog.py:2421
+#: device_dialog.py:2456 device_dialog.py:2467
 msgid "Hubs"
 msgstr ""
 
@@ -2965,8 +2966,8 @@ msgstr ""
 #. Translators: Line in the device tree. F1 finds its help by the beginning of
 #. this text, so it and the "Humidity:" in the help have to be translated the
 #. same way.
-#: device_dialog.py:983 device_dialog.py:2144 device_dialog.py:2194
-#: dialog_help.py:631 dialog_help.py:735
+#: device_dialog.py:983 device_dialog.py:2167 device_dialog.py:2240
+#: dialog_help.py:641 dialog_help.py:745
 msgid "Humidity: {humidity}%"
 msgstr ""
 
@@ -2989,18 +2990,18 @@ msgid ""
 msgstr ""
 
 #. Translators: F1 help for the "Off-peak tariff" line in the device tree.
-#: dialog_help.py:125
+#: dialog_help.py:135
 msgid ""
 "Indicates that the heat pump is currently heating with off-peak electricity."
 msgstr ""
 
 #. Translators: Category names in the device tree.
-#: device_dialog.py:2462 device_dialog.py:2484
+#: device_dialog.py:2508 device_dialog.py:2530
 msgid "Indoor air"
 msgstr ""
 
 #. Translators: Device type displays for Netatmo modules.
-#: netatmo_api.py:272
+#: netatmo_api.py:321
 msgid "Indoor air quality monitor"
 msgstr ""
 
@@ -3011,7 +3012,7 @@ msgstr ""
 
 #. Translators: Network error in plain words, spoken and shown in the status
 #. line.
-#: device_dialog.py:1330
+#: device_dialog.py:1353
 msgid "Internal connection error - please try again"
 msgstr ""
 
@@ -3062,7 +3063,7 @@ msgid "Invalid input - please enter minutes between 1 and 1440"
 msgstr ""
 
 #. Translators: Error message on non-numeric brightness input.
-#: device_dialog.py:3627
+#: device_dialog.py:3673
 msgid "Invalid input. Allowed: a number from 0 to 100."
 msgstr ""
 
@@ -3082,7 +3083,7 @@ msgid "Invalid time. Expected HH:MM, for example 07:00"
 msgstr ""
 
 #. Translators: Error message for a brightness value out of range.
-#: device_dialog.py:3587
+#: device_dialog.py:3633
 msgid "Invalid value: {value}. Allowed: 0 to 100."
 msgstr ""
 
@@ -3107,7 +3108,7 @@ msgid "Lamp unreachable - possibly offline"
 msgstr ""
 
 #. Translators: Category names in the device tree.
-#: device_dialog.py:2406 device_dialog.py:2425
+#: device_dialog.py:2452 device_dialog.py:2471
 msgid "Lamps and LED strips"
 msgstr ""
 
@@ -3207,24 +3208,24 @@ msgstr ""
 
 #. Translators: Line in the device tree: the light colour set. Enter opens the
 #. selection.
-#: device_dialog.py:2907
+#: device_dialog.py:2953
 msgid "Light color: cool white (bright) - press Enter to change"
 msgstr ""
 
 #. Translators: Line in the device tree: the light colour set. Enter opens the
 #. selection.
-#: device_dialog.py:2900
+#: device_dialog.py:2946
 msgid "Light color: daylight (neutral) - press Enter to change"
 msgstr ""
 
 #. Translators: Line in the device tree: the light colour set. Enter opens the
 #. selection.
-#: device_dialog.py:2893
+#: device_dialog.py:2939
 msgid "Light color: warm white (cozy) - press Enter to change"
 msgstr ""
 
 #. Translators: Spray mode of a Meross diffuser (light).
-#: constants.py:69 device_dialog.py:2836 history.py:1237
+#: constants.py:69 device_dialog.py:2882 history.py:1237
 #: meross_devices.py:1025
 msgid "Light spray"
 msgstr ""
@@ -3278,7 +3279,7 @@ msgid "Loading heating schedules..."
 msgstr ""
 
 #. Translators: Short loading announcement on a filter/sort change.
-#: device_dialog.py:1629 device_dialog.py:1647 device_dialog.py:3656
+#: device_dialog.py:1652 device_dialog.py:1670 device_dialog.py:3702
 #: dialog_petlibro.py:1753
 msgid "Loading..."
 msgstr ""
@@ -3418,7 +3419,7 @@ msgid ""
 msgstr ""
 
 #. Translators: Platform main node. Brand name, do not translate.
-#: device_dialog.py:2398
+#: device_dialog.py:2444
 msgid "Meross devices ({count})"
 msgstr ""
 
@@ -3515,13 +3516,13 @@ msgid "Mode {mode}"
 msgstr ""
 
 #. Translators: Status announcement: heating mode manual (no mode reported).
-#: netatmo_api.py:345
+#: netatmo_api.py:394
 msgid "Mode: manual"
 msgstr ""
 
 #. Translators: VeSync announcement: new mode (auto/manual/sleep/turbo).
-#: change_detection.py:910 cozytouch_devices.py:587 dialog_help.py:552
-#: dialog_help.py:574 dialog_help.py:662 netatmo_api.py:340
+#: change_detection.py:910 cozytouch_devices.py:587 dialog_help.py:562
+#: dialog_help.py:584 dialog_help.py:672 netatmo_api.py:389
 #: vesync_devices.py:724 vesync_devices.py:1160
 msgid "Mode: {mode}"
 msgstr ""
@@ -3579,7 +3580,7 @@ msgid "Navigate with arrow keys, Enter to confirm, Escape to cancel."
 msgstr ""
 
 #. Translators: Usage hint in the light color dialog.
-#: device_dialog.py:3467
+#: device_dialog.py:3513
 msgid "Navigate with arrow keys, Enter to confirm."
 msgstr ""
 
@@ -3610,7 +3611,7 @@ msgstr ""
 
 #. Translators: Error message when the user declines the Netatmo authorization
 #. in the browser or Netatmo returns an error.
-#: netatmo_api.py:857
+#: netatmo_api.py:916
 msgid "Netatmo authorization denied: {error}"
 msgstr ""
 
@@ -3644,7 +3645,7 @@ msgid "Netatmo connection status"
 msgstr ""
 
 #. Translators: Platform main node. Brand name, do not translate.
-#: device_dialog.py:2452
+#: device_dialog.py:2498
 msgid "Netatmo devices ({count})"
 msgstr ""
 
@@ -3660,7 +3661,7 @@ msgid "Netatmo favorites ({count})"
 msgstr ""
 
 #. Translators: Error message: Netatmo authorization expired.
-#: __init__.py:1908 netatmo_api.py:967
+#: __init__.py:1908 netatmo_api.py:1026
 msgid "Netatmo login is no longer valid. Please reconnect in the settings."
 msgstr ""
 
@@ -3671,23 +3672,23 @@ msgid "Netatmo redirect port"
 msgstr ""
 
 #. Translators: Explanation for HTTP 429 from the Netatmo API.
-#: netatmo_api.py:691
+#: netatmo_api.py:750
 msgid "Netatmo request limit reached – the add-on will try again later"
 msgstr ""
 
 #. Translators: Short hint for HTTP 5xx errors of the Netatmo API.
-#: netatmo_api.py:1056
+#: netatmo_api.py:1115
 msgid "Netatmo server temporarily unreachable"
 msgstr ""
 
 #. Translators: Error message: Netatmo server unreachable.
-#: netatmo_api.py:973
+#: netatmo_api.py:1032
 msgid "Netatmo server temporarily unreachable (HTTP {code})"
 msgstr ""
 
 #. Translators: Explanation for HTTP 5xx from the Netatmo API. Shown/logged
 #. when Netatmo's own servers are unavailable.
-#: netatmo_api.py:696
+#: netatmo_api.py:755
 msgid ""
 "Netatmo servers temporarily unavailable – not a problem with the add-on or "
 "the settings; the next update will try again"
@@ -3760,13 +3761,13 @@ msgstr ""
 
 #. Translators: One piece of the device help spoken with F1. The pieces are
 #. joined with ". ", so no full stop at the end.
-#: dialog_help.py:690 netatmo_api.py:378
+#: dialog_help.py:700 netatmo_api.py:437
 msgid "Next change: {zone} ({temp}°C) at {time}"
 msgstr ""
 
 #. Translators: Status announcement: next schedule change without a known
 #. temperature (zone, time).
-#: dialog_help.py:694 netatmo_api.py:385
+#: dialog_help.py:704 netatmo_api.py:444
 msgid "Next change: {zone} at {time}"
 msgstr ""
 
@@ -3778,20 +3779,20 @@ msgstr ""
 #. Translators: Beginning of the "Next schedule change:" line in the device
 #. tree. The line is found again by this text when its value is refreshed, so
 #. it has to be translated exactly like the line itself.
-#: device_dialog.py:1057 dialog_help.py:104
+#: device_dialog.py:1080 dialog_help.py:114
 msgid "Next schedule change:"
 msgstr ""
 
 #. Translators: Line in the device tree. F1 finds its help by the beginning of
 #. this text, so it and the "Next schedule change:" in the help have to be
 #. translated the same way.
-#: device_dialog.py:1069 device_dialog.py:3081 dialog_netatmo.py:722
+#: device_dialog.py:1092 device_dialog.py:3127 dialog_netatmo.py:722
 #: dialog_netatmo.py:959
 msgid "Next schedule change: {zone} ({temp}°C) at {time}"
 msgstr ""
 
 #. Translators: Next schedule change without temperature.
-#: device_dialog.py:1072 device_dialog.py:3084 dialog_netatmo.py:727
+#: device_dialog.py:1095 device_dialog.py:3130 dialog_netatmo.py:727
 #: dialog_netatmo.py:965
 msgid "Next schedule change: {zone} at {time}"
 msgstr ""
@@ -3869,12 +3870,12 @@ msgstr ""
 
 #. Translators: Announced when the login succeeded but there are no devices in
 #. the account.
-#: __init__.py:1206 __init__.py:2447 device_dialog.py:2609
+#: __init__.py:1206 __init__.py:2447 device_dialog.py:2655
 msgid "No devices found"
 msgstr ""
 
 #. Translators: Status line text when no devices have been loaded yet.
-#: device_dialog.py:1989
+#: device_dialog.py:2012
 msgid "No devices loaded"
 msgstr ""
 
@@ -3910,19 +3911,19 @@ msgstr ""
 
 #. Translators: Network error in plain words, spoken and shown in the status
 #. line.
-#: device_dialog.py:1293
+#: device_dialog.py:1316
 msgid "No internet connection - DNS resolution failed"
 msgstr ""
 
 #. Translators: Network error in plain words, spoken and shown in the status
 #. line.
-#: device_dialog.py:1318
+#: device_dialog.py:1341
 msgid "No internet connection - server not responding"
 msgstr ""
 
 #. Translators: Network error in plain words, spoken and shown in the status
 #. line.
-#: device_dialog.py:1303
+#: device_dialog.py:1326
 msgid "No internet connection - server unreachable"
 msgstr ""
 
@@ -3950,13 +3951,13 @@ msgid ""
 msgstr ""
 
 #. Translators: Error message when no OAuth refresh token is stored.
-#: netatmo_api.py:940
+#: netatmo_api.py:999
 msgid "No refresh token available – please authorize again"
 msgstr ""
 
 #. Translators: Error message when the browser callback does not return within
 #. the timeout (e.g. browser window closed by the user).
-#: netatmo_api.py:865
+#: netatmo_api.py:924
 msgid "No response received from Netatmo. Timeout or browser window closed."
 msgstr ""
 
@@ -3966,13 +3967,13 @@ msgid "No selection available"
 msgstr ""
 
 #. Translators: Announced when the status line is empty.
-#: device_dialog.py:1443
+#: device_dialog.py:1466
 msgid "No status available"
 msgstr ""
 
 #. Translators: One piece of the device help spoken with F1. The pieces are
 #. joined with ". ", so no full stop at the end.
-#: dialog_help.py:743
+#: dialog_help.py:753
 msgid "No water detected"
 msgstr ""
 
@@ -3989,7 +3990,7 @@ msgstr ""
 
 #. Translators: Line in the device tree: the noise level measured by the
 #. Netatmo indoor module.
-#: device_dialog.py:2150
+#: device_dialog.py:2173
 msgid "Noise level: {noise} dB"
 msgstr ""
 
@@ -4004,7 +4005,7 @@ msgid "Not answering: {value}"
 msgstr ""
 
 #. Translators: Error message: no valid Netatmo access configured.
-#: netatmo_api.py:993
+#: netatmo_api.py:1052
 msgid "Not authorized – please connect to Netatmo in the settings"
 msgstr ""
 
@@ -4023,7 +4024,7 @@ msgstr ""
 
 #. Translators: Network error in plain words, shown when no platform is signed
 #. in.
-#: device_dialog.py:1336
+#: device_dialog.py:1359
 msgid "Not logged in - please check settings"
 msgstr ""
 
@@ -4066,12 +4067,12 @@ msgid "Nothing changed"
 msgstr ""
 
 #. Translators: Spray mode of a Meross diffuser (off).
-#: constants.py:73 constants.py:280 constants.py:576 device_dialog.py:2753
-#: device_dialog.py:1414 device_dialog.py:925 device_dialog.py:1220
-#: device_dialog.py:1104 device_dialog.py:1249 device_dialog.py:2810
-#: device_dialog.py:919 device_dialog.py:1191 dialog_cozytouch.py:1031
-#: dialog_cozytouch.py:982 dialog_help.py:502 dialog_help.py:541
-#: dialog_help.py:568 dialog_help.py:781 dialog_meross.py:58
+#: constants.py:73 constants.py:280 constants.py:576 device_dialog.py:2799
+#: device_dialog.py:1437 device_dialog.py:925 device_dialog.py:1243
+#: device_dialog.py:1127 device_dialog.py:1272 device_dialog.py:2856
+#: device_dialog.py:919 device_dialog.py:1214 dialog_cozytouch.py:1031
+#: dialog_cozytouch.py:982 dialog_help.py:512 dialog_help.py:551
+#: dialog_help.py:578 dialog_help.py:791 dialog_meross.py:58
 #: dialog_petlibro.py:835 dialog_petlibro.py:894 meross_devices.py:1022
 msgid "Off"
 msgstr ""
@@ -4086,7 +4087,7 @@ msgstr ""
 #. Translators: Beginning of the "Off-peak tariff" line in the device tree. F1
 #. picks its help by this text, so it has to be translated exactly like the
 #. line itself.
-#: dialog_help.py:122
+#: dialog_help.py:132
 msgid "Off-peak tariff"
 msgstr ""
 
@@ -4096,7 +4097,7 @@ msgid "Off-peak tariff active"
 msgstr ""
 
 #. Translators: State of a single sensor on a Meross hub.
-#: device_dialog.py:2093 device_dialog.py:2753 device_dialog.py:2808
+#: device_dialog.py:2116 device_dialog.py:2799 device_dialog.py:2854
 #: meross_devices.py:1564
 msgid "Offline"
 msgstr ""
@@ -4112,11 +4113,11 @@ msgid "Offline: {names}."
 msgstr ""
 
 #. Translators: Night light state (on).
-#: constants.py:278 device_dialog.py:2753 device_dialog.py:1414
-#: device_dialog.py:925 device_dialog.py:1220 device_dialog.py:1104
-#: device_dialog.py:1249 device_dialog.py:2810 device_dialog.py:919
-#: device_dialog.py:1191 dialog_cozytouch.py:1017 dialog_cozytouch.py:982
-#: dialog_help.py:502 dialog_help.py:541 dialog_help.py:568 dialog_help.py:781
+#: constants.py:278 device_dialog.py:2799 device_dialog.py:1437
+#: device_dialog.py:925 device_dialog.py:1243 device_dialog.py:1127
+#: device_dialog.py:1272 device_dialog.py:2856 device_dialog.py:919
+#: device_dialog.py:1214 dialog_cozytouch.py:1017 dialog_cozytouch.py:982
+#: dialog_help.py:512 dialog_help.py:551 dialog_help.py:578 dialog_help.py:791
 #: dialog_petlibro.py:835 dialog_petlibro.py:894
 msgid "On"
 msgstr ""
@@ -4128,7 +4129,7 @@ msgid "On (scheduled)"
 msgstr ""
 
 #. Translators: State of a single sensor on a Meross hub.
-#: device_dialog.py:2093
+#: device_dialog.py:2116
 msgid "Online"
 msgstr ""
 
@@ -4154,12 +4155,12 @@ msgstr ""
 
 #. Translators: Netatmo announcement: the thermostat detected an open window
 #. (sudden temperature drop).
-#: change_detection.py:626 dialog_help.py:679
+#: change_detection.py:626 dialog_help.py:689
 msgid "Open window detected"
 msgstr ""
 
 #. Translators: F1 help for the "Open window:" line in the device tree.
-#: dialog_help.py:102
+#: dialog_help.py:112
 msgid ""
 "Open window detected: heating is paused automatically to avoid wasting "
 "energy."
@@ -4168,12 +4169,12 @@ msgstr ""
 #. Translators: Beginning of the "Open window:" line in the device tree. The
 #. line is found again by this text when its value is refreshed, so it has to
 #. be translated exactly like the line itself.
-#: device_dialog.py:1047 dialog_help.py:99
+#: device_dialog.py:1070 dialog_help.py:109
 msgid "Open window:"
 msgstr ""
 
 #. Translators: Note about a detected open window.
-#: device_dialog.py:1050 device_dialog.py:3067 dialog_netatmo.py:709
+#: device_dialog.py:1073 device_dialog.py:3113 dialog_netatmo.py:709
 #: dialog_netatmo.py:944
 msgid "Open window: detected (heating paused)"
 msgstr ""
@@ -4283,19 +4284,19 @@ msgstr ""
 
 #. Translators: One piece of the device help spoken with F1. The pieces are
 #. joined with ". ", so no full stop at the end.
-#: dialog_help.py:602
+#: dialog_help.py:612
 msgid "Oscillation: {status}"
 msgstr ""
 
 #. Translators: Category names in the device tree.
-#: device_dialog.py:2411 device_dialog.py:2463 device_dialog.py:2530
-#: device_dialog.py:2585 device_dialog.py:2539 device_dialog.py:2593
-#: device_dialog.py:2488 device_dialog.py:2429
+#: device_dialog.py:2457 device_dialog.py:2509 device_dialog.py:2576
+#: device_dialog.py:2631 device_dialog.py:2585 device_dialog.py:2639
+#: device_dialog.py:2534 device_dialog.py:2475
 msgid "Other devices"
 msgstr ""
 
 #. Translators: Device type displays for Netatmo modules.
-#: netatmo_api.py:265
+#: netatmo_api.py:314
 msgid "Outdoor module"
 msgstr ""
 
@@ -4310,7 +4311,7 @@ msgid "PM2.5: {value} micrograms per cubic meter"
 msgstr ""
 
 #. Translators: F1 help for the "PM1.0:" line in the device tree.
-#: dialog_help.py:205
+#: dialog_help.py:215
 msgid ""
 "Particulate matter PM1.0: concentration of ultra-fine particles in "
 "micrograms per cubic meter."
@@ -4323,7 +4324,7 @@ msgid "Particulate matter PM10"
 msgstr ""
 
 #. Translators: F1 help for the "PM10:" line in the device tree.
-#: dialog_help.py:210
+#: dialog_help.py:220
 msgid ""
 "Particulate matter PM10: concentration of coarse particles in micrograms per"
 " cubic meter."
@@ -4336,7 +4337,7 @@ msgid "Particulate matter PM2.5"
 msgstr ""
 
 #. Translators: F1 help for the "PM2.5:" line in the device tree.
-#: dialog_help.py:200
+#: dialog_help.py:210
 msgid ""
 "Particulate matter PM2.5: concentration of very fine particles in micrograms"
 " per cubic meter."
@@ -4382,7 +4383,7 @@ msgstr ""
 
 #. Translators: Platform main node. Brand name, do not translate; the
 #. parenthesis marks the platform as experimental.
-#: device_dialog.py:2578
+#: device_dialog.py:2624
 msgid "Petlibro devices, experimental ({count})"
 msgstr ""
 
@@ -4558,12 +4559,12 @@ msgstr ""
 
 #. Translators: Message when an action is triggered while the previous one is
 #. still running.
-#: device_dialog.py:541 device_dialog.py:3652 dialog_petlibro.py:1370
+#: device_dialog.py:541 device_dialog.py:3698 dialog_petlibro.py:1370
 msgid "Please wait - the previous action is still running"
 msgstr ""
 
 #. Translators: Category names in the device tree.
-#: device_dialog.py:2405 device_dialog.py:2423
+#: device_dialog.py:2451 device_dialog.py:2469
 msgid "Plugs"
 msgstr ""
 
@@ -4574,7 +4575,7 @@ msgstr ""
 
 #. Translators: Error when starting the local OAuth callback server because
 #. the port is in use by another program. {port} = port number.
-#: netatmo_api.py:817
+#: netatmo_api.py:876
 msgid ""
 "Port {port} is in use. Choose a different Netatmo port in the settings (and "
 "register it at dev.netatmo.com as well), or close the program blocking it. "
@@ -4590,25 +4591,25 @@ msgstr ""
 #. Translators: Beginning of the "Power:" line in the device tree. The line is
 #. found again by this text when its value is refreshed, so it has to be
 #. translated exactly like the line itself.
-#: device_dialog.py:931 dialog_help.py:156
+#: device_dialog.py:931 dialog_help.py:166
 msgid "Power:"
 msgstr ""
 
 #. Translators: One piece of the device help spoken with F1. The pieces are
 #. joined with ". ", so no full stop at the end.
-#: device_dialog.py:2262 dialog_help.py:509 dialog_help.py:788
+#: device_dialog.py:2308 dialog_help.py:519 dialog_help.py:798
 msgid "Power: {power} W"
 msgstr ""
 
 #. Translators: Line in the device tree. F1 finds its help by the beginning of
 #. this text, so it and the "Power:" in the help have to be translated the
 #. same way.
-#: device_dialog.py:938 device_dialog.py:2761
+#: device_dialog.py:938 device_dialog.py:2807
 msgid "Power: {value} W"
 msgstr ""
 
 #. Translators: Status announcement: thermostat is pre-heating.
-#: dialog_help.py:676 netatmo_api.py:357
+#: dialog_help.py:686 netatmo_api.py:416
 msgid "Pre-heating active"
 msgstr ""
 
@@ -4626,18 +4627,18 @@ msgstr ""
 #. Translators: Beginning of the "Pre-heating:" line in the device tree. The
 #. line is found again by this text when its value is refreshed, so it has to
 #. be translated exactly like the line itself.
-#: device_dialog.py:1037 dialog_help.py:93
+#: device_dialog.py:1060 dialog_help.py:103
 msgid "Pre-heating:"
 msgstr ""
 
 #. Translators: Note that the thermostat is pre-heating.
-#: device_dialog.py:1040 device_dialog.py:3060 dialog_netatmo.py:702
+#: device_dialog.py:1063 device_dialog.py:3106 dialog_netatmo.py:702
 #: dialog_netatmo.py:936
 msgid "Pre-heating: active"
 msgstr ""
 
 #. Translators: F1 help for the "Pre-heating:" line in the device tree.
-#: dialog_help.py:96
+#: dialog_help.py:106
 msgid ""
 "Pre-heating: the heating starts early so the target temperature is already "
 "reached at the scheduled time."
@@ -4645,12 +4646,12 @@ msgstr ""
 
 #. Translators: One piece of the device help spoken with F1. The pieces are
 #. joined with ". ", so no full stop at the end.
-#: dialog_help.py:802
+#: dialog_help.py:812
 msgid "Press Enter to expand or collapse"
 msgstr ""
 
 #. Translators: Hint in the device tree how the user can retry after an error.
-#: device_dialog.py:1356
+#: device_dialog.py:1379
 msgid "Press F5 to retry"
 msgstr ""
 
@@ -4708,18 +4709,32 @@ msgid "RGB values must be between 0 and 255"
 msgstr ""
 
 #. Translators: Device type displays for Netatmo modules.
-#: netatmo_api.py:270
+#: netatmo_api.py:319
 msgid "Radiator valve"
 msgstr ""
 
+#. Translators: Beginning of the "Radio signal:" line in the device tree. The
+#. line is found again by this text when its value is refreshed, so it has to
+#. be translated exactly like the line itself.
+#: device_dialog.py:1050 dialog_help.py:98
+msgid "Radio signal:"
+msgstr ""
+
+#. Translators: Line in the device tree: radio signal of a Netatmo device.
+#. {level} = weak, medium, good or very good. F1 finds its help by the
+#. beginning of this text.
+#: device_dialog.py:1053 device_dialog.py:2210
+msgid "Radio signal: {level}"
+msgstr ""
+
 #. Translators: Device type displays for Netatmo modules.
-#: netatmo_api.py:267
+#: netatmo_api.py:316
 msgid "Rain gauge"
 msgstr ""
 
 #. Translators: One piece of the device help spoken with F1. The pieces are
 #. joined with ". ", so no full stop at the end.
-#: device_dialog.py:2154 dialog_help.py:646
+#: device_dialog.py:2177 dialog_help.py:656
 msgid "Rain: {rain} mm"
 msgstr ""
 
@@ -4785,17 +4800,17 @@ msgid "Refresh devices"
 msgstr ""
 
 #. Translators: Message after a manual refresh.
-#: device_dialog.py:3730
+#: device_dialog.py:3776
 msgid "Refreshed - {online} devices online"
 msgstr ""
 
 #. Translators: Message after a manual refresh with duration.
-#: device_dialog.py:3726
+#: device_dialog.py:3772
 msgid "Refreshed in {seconds}s - {online} devices online"
 msgstr ""
 
 #. Translators: Status while a manual refresh is running.
-#: device_dialog.py:3661
+#: device_dialog.py:3707
 msgid "Refreshing..."
 msgstr ""
 
@@ -4805,7 +4820,7 @@ msgid "Reheat"
 msgstr ""
 
 #. Translators: F1 help for the "Filter life:" line in the device tree.
-#: dialog_help.py:221
+#: dialog_help.py:231
 msgid ""
 "Remaining life of the HEPA filter in percent. At low values, replace the "
 "filter and then reset."
@@ -4831,7 +4846,7 @@ msgstr ""
 
 #. Translators: Warning banner at the top of the dialog: affected purifiers
 #. and remaining filter life. Prompt to replace the filter.
-#: device_dialog.py:1478
+#: device_dialog.py:1501
 msgid "Replace filter: {list}"
 msgstr ""
 
@@ -4852,7 +4867,7 @@ msgstr ""
 
 #. Translators: F1 help for the action line "vesync_reset_filter" in the
 #. device tree.
-#: dialog_help.py:359
+#: dialog_help.py:369
 msgid ""
 "Reset filter life to 100 percent. Only do this if the filter has actually "
 "been replaced. Enter opens a confirmation dialog."
@@ -4884,7 +4899,7 @@ msgstr ""
 
 #. Translators: Room category in the device tree. {room} = room name from the
 #. Netatmo app.
-#: device_dialog.py:2477
+#: device_dialog.py:2523
 msgid "Room {room}"
 msgstr ""
 
@@ -4927,7 +4942,7 @@ msgstr ""
 
 #. Translators: F1 help for the action line "cozytouch_away" in the device
 #. tree.
-#: dialog_help.py:387
+#: dialog_help.py:397
 msgid ""
 "Schedule or end away mode: reduces hot water production during longer "
 "absences. Enter opens the period input (start and end); when away mode is "
@@ -4964,25 +4979,25 @@ msgid "Sear&ch (Ctrl+F)"
 msgstr ""
 
 #. Translators: Message when the search is cancelled.
-#: device_dialog.py:1815
+#: device_dialog.py:1838
 msgid "Search cancelled"
 msgstr ""
 
 #. Translators: Security error message when the OAuth2 CSRF state parameter
 #. does not match. Should only happen on attack attempts.
-#: netatmo_api.py:875
+#: netatmo_api.py:934
 msgid "Security error: state parameter does not match (CSRF protection)"
 msgstr ""
 
 #. Translators: Stand-in name for a sensor on a Meross hub that reports no
 #. name of its own.
-#: device_dialog.py:2089
+#: device_dialog.py:2112
 msgid "Sensor"
 msgstr ""
 
 #. Translators: One piece of the device help spoken with F1. The pieces are
 #. joined with ". ", so no full stop at the end.
-#: dialog_help.py:738 dialog_help.py:747
+#: dialog_help.py:748 dialog_help.py:757
 msgid "Sensor - display only"
 msgstr ""
 
@@ -5020,7 +5035,7 @@ msgid ""
 msgstr ""
 
 #. Translators: F1 help for the action line "light_rgb" in the device tree.
-#: dialog_help.py:255
+#: dialog_help.py:265
 msgid ""
 "Set RGB color. Press Enter to open the color picker with presets or custom "
 "input."
@@ -5028,13 +5043,13 @@ msgstr ""
 
 #. Translators: Line in the device tree for a lamp whose brightness is not
 #. known yet. Enter opens the input dialog.
-#: device_dialog.py:2879
+#: device_dialog.py:2925
 msgid "Set brightness - press Enter to open"
 msgstr ""
 
 #. Translators: F1 help for the action line "light_luminance" in the device
 #. tree.
-#: dialog_help.py:245
+#: dialog_help.py:255
 msgid ""
 "Set brightness. Press Enter to open the input dialog. Value from 0 to 100 "
 "percent."
@@ -5042,7 +5057,7 @@ msgstr ""
 
 #. Translators: Line in the device tree for a lamp with no colour set yet.
 #. Enter opens the colour picker.
-#: device_dialog.py:2950
+#: device_dialog.py:2996
 msgid "Set color - press Enter to open"
 msgstr ""
 
@@ -5053,13 +5068,13 @@ msgstr ""
 
 #. Translators: Line in the device tree for a lamp in colour mode: Enter
 #. switches to white.
-#: device_dialog.py:2913
+#: device_dialog.py:2959
 msgid "Set light color (white) - press Enter to open"
 msgstr ""
 
 #. Translators: F1 help for the action line "light_temperature" in the device
 #. tree.
-#: dialog_help.py:250
+#: dialog_help.py:260
 msgid ""
 "Set light color. Press Enter to choose between warm white, daylight and cool"
 " white."
@@ -5072,7 +5087,7 @@ msgstr ""
 
 #. Translators: F1 help for the action line "netatmo_thermostat" in the device
 #. tree.
-#: dialog_help.py:260
+#: dialog_help.py:270
 msgid ""
 "Set target temperature. Press Enter to enter a temperature from 5 to 30 "
 "degrees in 0.5-degree steps with optional duration."
@@ -5101,7 +5116,7 @@ msgstr ""
 
 #. Translators: F1 help for the action line "cozytouch_temp" in the device
 #. tree.
-#: dialog_help.py:365
+#: dialog_help.py:375
 msgid ""
 "Set the target temperature of the hot water heat pump. Press Enter to enter "
 "a temperature within the allowed range."
@@ -5136,7 +5151,7 @@ msgstr ""
 
 #. Translators: F1 help for the "Next schedule change:" line in the device
 #. tree.
-#: dialog_help.py:107
+#: dialog_help.py:117
 msgid ""
 "Shows the next scheduled temperature change from the heating program: zone, "
 "target temperature and time."
@@ -5181,12 +5196,12 @@ msgid ""
 msgstr ""
 
 #. Translators: Title of the main window with the device overview.
-#: device_dialog.py:67 device_dialog.py:1970
+#: device_dialog.py:67 device_dialog.py:1993
 msgid "Smart home devices"
 msgstr ""
 
 #. Translators: Window title with online counter.
-#: device_dialog.py:1977
+#: device_dialog.py:2000
 msgid "Smart home devices ({online}/{total} online)"
 msgstr ""
 
@@ -5198,7 +5213,7 @@ msgstr ""
 
 #. Translators: One piece of the device help spoken with F1. The pieces are
 #. joined with ". ", so no full stop at the end.
-#: dialog_help.py:751
+#: dialog_help.py:761
 msgid "Smart hub - manages sensors"
 msgstr ""
 
@@ -5209,7 +5224,7 @@ msgid "Sort order"
 msgstr ""
 
 #. Translators: Announcement of the selected sort order.
-#: device_dialog.py:1656
+#: device_dialog.py:1679
 msgid "Sorted: {sort}"
 msgstr ""
 
@@ -5225,18 +5240,18 @@ msgstr ""
 
 #. Translators: One piece of the device help spoken with F1. The pieces are
 #. joined with ". ", so no full stop at the end.
-#: dialog_help.py:766
+#: dialog_help.py:776
 msgid "Spray mode: {mode}"
 msgstr ""
 
 #. Translators: The following texts describe actions in the device history.
-#: device_dialog.py:2844 history.py:1239
+#: device_dialog.py:2890 history.py:1239
 msgid "Spray off"
 msgstr ""
 
 #. Translators: Context help for the tree entry that starts a cooking
 #. programme.
-#: dialog_help.py:291
+#: dialog_help.py:301
 msgid ""
 "Start a cooking programme. Enter offers the programmes this appliance has "
 "reported. Temperature and time can be adjusted on the way, and everything is"
@@ -5282,41 +5297,41 @@ msgstr ""
 
 #. Translators: F1 help for any other line in the device tree: the fallback
 #. when none of the more specific texts fits.
-#: dialog_help.py:227
+#: dialog_help.py:237
 msgid "Status information. Display only."
 msgstr ""
 
 #. Translators: Beginning of the "Status:" line in the device tree. The line
 #. is found again by this text when its value is refreshed, so it has to be
 #. translated exactly like the line itself.
-#: device_dialog.py:908 device_dialog.py:1102 device_dialog.py:1187
-#: device_dialog.py:1219 device_dialog.py:1247 dialog_help.py:152
+#: device_dialog.py:908 device_dialog.py:1125 device_dialog.py:1210
+#: device_dialog.py:1242 device_dialog.py:1270 dialog_help.py:162
 msgid "Status:"
 msgstr ""
 
 #. Translators: Line in the device tree. F1 finds its help by the beginning of
 #. this text, so it and the "Status:" in the help have to be translated the
 #. same way.
-#: device_dialog.py:2207
+#: device_dialog.py:2253
 msgid "Status: WATER ALARM"
 msgstr ""
 
 #. Translators: Netatmo status display "Connected" / "Not connected".
-#: device_dialog.py:2177 settings_panel.py:749 settings_panel.py:1427
+#: device_dialog.py:2223 settings_panel.py:749 settings_panel.py:1427
 msgid "Status: connected"
 msgstr ""
 
 #. Translators: Line in the device tree. F1 finds its help by the beginning of
 #. this text, so it and the "Status:" in the help have to be translated the
 #. same way.
-#: device_dialog.py:2199
+#: device_dialog.py:2245
 msgid "Status: no data"
 msgstr ""
 
 #. Translators: Line in the device tree. F1 finds its help by the beginning of
 #. this text, so it and the "Status:" in the help have to be translated the
 #. same way.
-#: device_dialog.py:2207
+#: device_dialog.py:2253
 msgid "Status: no water"
 msgstr ""
 
@@ -5326,45 +5341,45 @@ msgid "Status: not connected"
 msgstr ""
 
 #. Translators: Operating state in the device tree.
-#: device_dialog.py:2252 dialog_vesync.py:1071 dialog_vesync.py:929
+#: device_dialog.py:2298 dialog_vesync.py:1071 dialog_vesync.py:929
 msgid "Status: off"
 msgstr ""
 
 #. Translators: Line in the device tree. F1 finds its help by the beginning of
 #. this text, so it and the "Status:" in the help have to be translated the
 #. same way.
-#: device_dialog.py:2181 device_dialog.py:2828 device_dialog.py:2126
-#: device_dialog.py:2228 dialog_cozytouch.py:901 dialog_help.py:517
-#: dialog_help.py:539 dialog_help.py:566 dialog_help.py:621 dialog_help.py:725
+#: device_dialog.py:2227 device_dialog.py:2874 device_dialog.py:2149
+#: device_dialog.py:2274 dialog_cozytouch.py:901 dialog_help.py:527
+#: dialog_help.py:549 dialog_help.py:576 dialog_help.py:631 dialog_help.py:735
 #: dialog_petlibro.py:799 dialog_vesync.py:897
 msgid "Status: offline"
 msgstr ""
 
 #. Translators: Operating state in the device tree.
-#: device_dialog.py:2252 dialog_vesync.py:1071 dialog_vesync.py:929
+#: device_dialog.py:2298 dialog_vesync.py:1071 dialog_vesync.py:929
 msgid "Status: on"
 msgstr ""
 
 #. Translators: Line in the device tree. F1 finds its help by the beginning of
 #. this text, so it and the "Status:" in the help have to be translated the
 #. same way.
-#: device_dialog.py:2228
+#: device_dialog.py:2274
 msgid "Status: online"
 msgstr ""
 
 #. Translators: Line in the device tree. F1 finds its help by the beginning of
 #. this text, so it and the "Status:" in the help have to be translated the
 #. same way.
-#: device_dialog.py:2246
+#: device_dialog.py:2292
 msgid "Status: unknown"
 msgstr ""
 
 #. Translators: Line in the device tree: whether the device is switched on. It
 #. has to keep the beginning it is found by.
-#: device_dialog.py:925 device_dialog.py:1220 device_dialog.py:2754
-#: device_dialog.py:2811 device_dialog.py:2831 device_dialog.py:920
-#: device_dialog.py:1104 device_dialog.py:1249 device_dialog.py:1192
-#: dialog_help.py:502 dialog_help.py:541 dialog_help.py:568 dialog_help.py:781
+#: device_dialog.py:925 device_dialog.py:1243 device_dialog.py:2800
+#: device_dialog.py:2857 device_dialog.py:2877 device_dialog.py:920
+#: device_dialog.py:1127 device_dialog.py:1272 device_dialog.py:1215
+#: dialog_help.py:512 dialog_help.py:551 dialog_help.py:578 dialog_help.py:791
 msgid "Status: {status}"
 msgstr ""
 
@@ -5401,7 +5416,7 @@ msgstr ""
 
 #. Translators: Context help for the tree entry that stops a cooking
 #. programme.
-#: dialog_help.py:286
+#: dialog_help.py:296
 msgid ""
 "Stop the running cooking programme of the air fryer. Enter asks for "
 "confirmation first."
@@ -5411,6 +5426,19 @@ msgstr ""
 #. device name.
 #: dialog_vesync.py:684
 msgid "Stop the running programme on {name}?"
+msgstr ""
+
+#. Translators: F1 help for the "Wi-Fi signal:" line in the device tree.
+#: dialog_help.py:96
+msgid "Strength of the device's Wi-Fi connection to the router."
+msgstr ""
+
+#. Translators: F1 help for the "Radio signal:" line in the device tree
+#. (Netatmo relay).
+#: dialog_help.py:101
+msgid ""
+"Strength of the radio connection over which the relay reaches the thermostat"
+" and the valves."
 msgstr ""
 
 #. Translators: Color names and descriptions in the color picker dialog.
@@ -5429,7 +5457,7 @@ msgid "Strong red"
 msgstr ""
 
 #. Translators: Spray mode of a Meross diffuser (strong).
-#: constants.py:71 device_dialog.py:2840 history.py:1238
+#: constants.py:71 device_dialog.py:2886 history.py:1238
 #: meross_devices.py:1028
 msgid "Strong spray"
 msgstr ""
@@ -5451,24 +5479,24 @@ msgid "Switch &on"
 msgstr ""
 
 #. Translators: F1 help for the action line "toggle" in the device tree.
-#: dialog_help.py:235
+#: dialog_help.py:245
 msgid "Switch action. Press Enter or Space to turn on or off."
 msgstr ""
 
 #. Translators: Action entry for switching the heating schedule.
-#: device_dialog.py:3119 dialog_netatmo.py:757 dialog_netatmo.py:996
+#: device_dialog.py:3165 dialog_netatmo.py:757 dialog_netatmo.py:996
 #: dialog_netatmo.py:581
 msgid "Switch heating schedule"
 msgstr ""
 
 #. Translators: F1 help for the action line "netatmo_switch_schedule" in the
 #. device tree.
-#: dialog_help.py:271
+#: dialog_help.py:281
 msgid "Switch heating schedule. Press Enter to select a saved heating plan."
 msgstr ""
 
 #. Translators: F1 help for the light line of a Petlibro device.
-#: dialog_help.py:483
+#: dialog_help.py:493
 msgid ""
 "Switch the indicator light of the device on or off. Press Enter or Space to "
 "toggle."
@@ -5476,7 +5504,7 @@ msgstr ""
 
 #. Translators: F1 help for the action line "Feeding plan" of a Petlibro
 #. feeder.
-#: dialog_help.py:413
+#: dialog_help.py:423
 msgid ""
 "Switch the whole feeding plan on or off. While it is off, the feeder gives "
 "no planned meals. Press Enter or Space to toggle."
@@ -5484,12 +5512,12 @@ msgstr ""
 
 #. Translators: Line in the device tree for a lamp in white mode: Enter
 #. switches to colour.
-#: device_dialog.py:2954
+#: device_dialog.py:3000
 msgid "Switch to color mode - press Enter to open"
 msgstr ""
 
 #. Translators: Line in the device tree: Enter puts the lamp into white mode.
-#: device_dialog.py:2921
+#: device_dialog.py:2967
 msgid "Switch to white mode - press Enter to open"
 msgstr ""
 
@@ -5539,14 +5567,14 @@ msgid "Target temperature: {temp} degrees - press Enter to change"
 msgstr ""
 
 #. Translators: Netatmo thermostat announcement: new target temperature in °C.
-#: change_detection.py:547 device_dialog.py:2163 dialog_help.py:550
+#: change_detection.py:547 device_dialog.py:2186 dialog_help.py:560
 #: dialog_netatmo.py:295
 msgid "Target temperature: {temp}°C"
 msgstr ""
 
 #. Translators: One piece of the device help spoken with F1. The pieces are
 #. joined with ". ", so no full stop at the end.
-#: dialog_help.py:660 netatmo_api.py:320
+#: dialog_help.py:670 netatmo_api.py:369
 msgid "Target: {temp}°C"
 msgstr ""
 
@@ -5577,7 +5605,7 @@ msgid ""
 msgstr ""
 
 #. Translators: Category names in the device tree.
-#: device_dialog.py:2408 device_dialog.py:2417
+#: device_dialog.py:2454 device_dialog.py:2463
 msgid "Temperature sensors"
 msgstr ""
 
@@ -5594,8 +5622,8 @@ msgid "Temperature:"
 msgstr ""
 
 #. Translators: Measured temperature in the device tree.
-#: device_dialog.py:970 device_dialog.py:2142 device_dialog.py:2192
-#: dialog_help.py:625 dialog_help.py:606 dialog_help.py:730
+#: device_dialog.py:970 device_dialog.py:2165 device_dialog.py:2238
+#: dialog_help.py:635 dialog_help.py:616 dialog_help.py:740
 #: dialog_vesync.py:1110 vesync_devices.py:1175
 msgid "Temperature: {temp}°C"
 msgstr ""
@@ -5700,7 +5728,7 @@ msgid ""
 msgstr ""
 
 #. Translators: F1 help for the "Currently heating" line in the device tree.
-#: dialog_help.py:133
+#: dialog_help.py:143
 msgid ""
 "The appliance is heating the water right now. Whether with the heat pump or "
 "the electric heating element, the cloud does not say."
@@ -5713,7 +5741,7 @@ msgid "The appliance stored {schedule} instead of {wanted}"
 msgstr ""
 
 #. Translators: F1 help for the cleaning line of a Petlibro fountain.
-#: dialog_help.py:444
+#: dialog_help.py:454
 msgid ""
 "The cleaning reminder of the fountain. After cleaning it, press Enter: a "
 "question follows, and the reminder starts again."
@@ -5726,7 +5754,7 @@ msgid "The cooking time can only be changed once the programme runs"
 msgstr ""
 
 #. Translators: F1 help for the desiccant line of a Petlibro feeder.
-#: dialog_help.py:429
+#: dialog_help.py:439
 msgid ""
 "The desiccant is a small sachet of silica gel in the holder under the lid of"
 " the food container; it keeps the dry food dry. The reminder only counts "
@@ -5745,7 +5773,7 @@ msgid "The end must be after the start and in the future"
 msgstr ""
 
 #. Translators: F1 help for the filter line of a Petlibro fountain.
-#: dialog_help.py:438
+#: dialog_help.py:448
 msgid ""
 "The filter reminder of the fountain. After changing the filter, press Enter:"
 " a question follows, and the reminder starts again."
@@ -5758,7 +5786,7 @@ msgstr ""
 
 #. Translators: F1 help for the action line "Meals today" of a Petlibro
 #. feeder.
-#: dialog_help.py:419
+#: dialog_help.py:429
 msgid ""
 "The meals of the feeding plan; feedings by hand do not count here. Enter "
 "opens the list: one line per meal with name, time, portions and today's "
@@ -5768,7 +5796,7 @@ msgstr ""
 
 #. Translators: Spoken when the settings are opened while they are open
 #. already.
-#: __init__.py:1681 device_dialog.py:3757
+#: __init__.py:1681 device_dialog.py:3803
 msgid "The settings are already open"
 msgstr ""
 
@@ -5803,17 +5831,17 @@ msgid ""
 msgstr ""
 
 #. Translators: Device type displays for Netatmo modules.
-#: netatmo_api.py:269
+#: netatmo_api.py:318
 msgid "Thermostat"
 msgstr ""
 
 #. Translators: Device type displays for Netatmo modules.
-#: netatmo_api.py:271
+#: netatmo_api.py:320
 msgid "Thermostat relay"
 msgstr ""
 
 #. Translators: Category names in the device tree.
-#: device_dialog.py:2460 device_dialog.py:2480
+#: device_dialog.py:2506 device_dialog.py:2526
 msgid "Thermostats"
 msgstr ""
 
@@ -5841,12 +5869,12 @@ msgstr ""
 
 #. Translators: Network error in plain words, spoken and shown in the status
 #. line.
-#: device_dialog.py:1324
+#: device_dialog.py:1347
 msgid "Timeout - please try again"
 msgstr ""
 
 #. Translators: Error message on a refresh timeout.
-#: device_dialog.py:3682
+#: device_dialog.py:3728
 msgid "Timeout – please try again"
 msgstr ""
 
@@ -5863,7 +5891,7 @@ msgstr ""
 #. Translators: Beginning of the "Today's heating times:" line in the device
 #. tree. F1 picks its help by this text, so it has to be translated exactly
 #. like the line itself.
-#: dialog_help.py:139
+#: dialog_help.py:149
 msgid "Today's heating times:"
 msgstr ""
 
@@ -5876,7 +5904,7 @@ msgstr ""
 
 #. Translators: F1 help for the "Today's heating times:" line in the device
 #. tree.
-#: dialog_help.py:142
+#: dialog_help.py:152
 msgid "Today's programmed heating time windows of the hot water heat pump."
 msgstr ""
 
@@ -5913,13 +5941,13 @@ msgstr ""
 
 #. Translators: F1 help for the action line "vesync_toggle" in the device
 #. tree.
-#: dialog_help.py:281
+#: dialog_help.py:291
 msgid "Turn VeSync device on or off. Press Enter or Space to execute."
 msgstr ""
 
 #. Translators: F1 help for the action line "cozytouch_boost" in the device
 #. tree.
-#: dialog_help.py:376
+#: dialog_help.py:386
 msgid ""
 "Turn boost mode on or off: quickly heats the water to maximum temperature. "
 "Press Enter or Space to toggle."
@@ -5927,7 +5955,7 @@ msgstr ""
 
 #. Translators: F1 help for the action line "vesync_child_lock" in the device
 #. tree.
-#: dialog_help.py:343
+#: dialog_help.py:353
 msgid ""
 "Turn child lock on or off. Locks the controls on the device. Press Enter or "
 "Space to toggle."
@@ -5935,7 +5963,7 @@ msgstr ""
 
 #. Translators: F1 help for the action line "cozytouch_toggle" in the device
 #. tree.
-#: dialog_help.py:382
+#: dialog_help.py:392
 msgid "Turn hot water production on or off. Press Enter or Space to execute."
 msgstr ""
 
@@ -5951,12 +5979,12 @@ msgstr ""
 
 #. Translators: F1 help for the action line "vesync_display" in the device
 #. tree.
-#: dialog_help.py:338
+#: dialog_help.py:348
 msgid "Turn the device's display on or off. Press Enter or Space to toggle."
 msgstr ""
 
 #. Translators: F1 help for the action line "vesync_mute" in the device tree.
-#: dialog_help.py:332
+#: dialog_help.py:342
 msgid ""
 "Turn tower fan mute on or off. When muted, the device does not play "
 "confirmation sounds. Press Enter or Space to toggle."
@@ -5964,20 +5992,20 @@ msgstr ""
 
 #. Translators: F1 help for the action line "vesync_oscillation" in the device
 #. tree.
-#: dialog_help.py:327
+#: dialog_help.py:337
 msgid "Turn tower fan oscillation on or off. Press Enter or Space to toggle."
 msgstr ""
 
 #. Translators: Action entry for switching on/off. {name} = device name.
-#: device_dialog.py:1110 device_dialog.py:1225 device_dialog.py:1272
-#: device_dialog.py:2784 device_dialog.py:2858 device_dialog.py:821
+#: device_dialog.py:1133 device_dialog.py:1248 device_dialog.py:1295
+#: device_dialog.py:2830 device_dialog.py:2904 device_dialog.py:821
 #: dialog_vesync.py:1118
 msgid "Turn {name} off"
 msgstr ""
 
 #. Translators: Action entry for switching on/off. {name} = device name.
-#: device_dialog.py:1110 device_dialog.py:1225 device_dialog.py:1272
-#: device_dialog.py:2784 device_dialog.py:2858 device_dialog.py:821
+#: device_dialog.py:1133 device_dialog.py:1248 device_dialog.py:1295
+#: device_dialog.py:2830 device_dialog.py:2904 device_dialog.py:821
 #: dialog_vesync.py:1118
 msgid "Turn {name} on"
 msgstr ""
@@ -6001,7 +6029,7 @@ msgid "Type"
 msgstr ""
 
 #. Translators: Short hint for an unexpected response of the Netatmo API.
-#: netatmo_api.py:1060
+#: netatmo_api.py:1119
 msgid "Unexpected response from the Netatmo server"
 msgstr ""
 
@@ -6018,7 +6046,7 @@ msgid "Unknown ({mode})"
 msgstr ""
 
 #. Translators: Placeholder when the device name cannot be determined.
-#: meross_api.py:275 meross_api.py:281 netatmo_api.py:68
+#: meross_api.py:275 meross_api.py:281 netatmo_api.py:96
 msgid "Unknown device"
 msgstr ""
 
@@ -6029,7 +6057,7 @@ msgstr ""
 
 #. Translators: Name of a Netatmo heating schedule that has no name in the
 #. Netatmo app.
-#: netatmo_api.py:1265
+#: netatmo_api.py:1324
 msgid "Unnamed schedule"
 msgstr ""
 
@@ -6083,7 +6111,7 @@ msgid "Valid: 5 to 30 degrees in 0.5°C steps.\n"
 msgstr ""
 
 #. Translators: Explanation in the dialog that sets the brightness.
-#: device_dialog.py:3560
+#: device_dialog.py:3606
 msgid "Value between 0 (off) and 100 (maximum brightness)."
 msgstr ""
 
@@ -6131,7 +6159,7 @@ msgid "VeSync device not found"
 msgstr ""
 
 #. Translators: Platform main node. Brand name, do not translate.
-#: device_dialog.py:2521
+#: device_dialog.py:2567
 msgid "VeSync devices ({count})"
 msgstr ""
 
@@ -6308,34 +6336,34 @@ msgid "View"
 msgstr ""
 
 #. Translators: F1 help for the "VOC:" line in the device tree.
-#: dialog_help.py:214
+#: dialog_help.py:224
 msgid "Volatile organic compounds in the room air."
 msgstr ""
 
 #. Translators: Beginning of the "Voltage:" line in the device tree. F1 picks
 #. its help by this text, so it has to be translated exactly like the line
 #. itself.
-#: dialog_help.py:164
+#: dialog_help.py:174
 msgid "Voltage:"
 msgstr ""
 
 #. Translators: Line in the device tree. F1 finds its help by the beginning of
 #. this text, so it and the "Voltage:" in the help have to be translated the
 #. same way.
-#: device_dialog.py:2769
+#: device_dialog.py:2815
 msgid "Voltage: {value} V"
 msgstr ""
 
 #. Translators: Line in the device tree. F1 finds its help by the beginning of
 #. this text, so it and the "Voltage:" in the help have to be translated the
 #. same way.
-#: device_dialog.py:2267
+#: device_dialog.py:2313
 msgid "Voltage: {voltage} V"
 msgstr ""
 
 #. Translators: One piece of the device help spoken with F1. The pieces are
 #. joined with ". ", so no full stop at the end.
-#: dialog_help.py:743
+#: dialog_help.py:753
 msgid "WATER ALARM!"
 msgstr ""
 
@@ -6356,7 +6384,7 @@ msgid "Warm white"
 msgstr ""
 
 #. Translators: Choices for the light color (with description).
-#: device_dialog.py:3443
+#: device_dialog.py:3489
 msgid "Warm white - cozy, warm light like candlelight (approx. 2700K)"
 msgstr ""
 
@@ -6382,7 +6410,7 @@ msgid "Water alarm: {name}"
 msgstr ""
 
 #. Translators: Category names in the device tree.
-#: device_dialog.py:2584 device_dialog.py:2591
+#: device_dialog.py:2630 device_dialog.py:2637
 msgid "Water fountains"
 msgstr ""
 
@@ -6425,7 +6453,7 @@ msgid "Water mode: {mode} - press Enter to change"
 msgstr ""
 
 #. Translators: Category names in the device tree.
-#: device_dialog.py:2409 device_dialog.py:2419
+#: device_dialog.py:2455 device_dialog.py:2465
 msgid "Water sensors"
 msgstr ""
 
@@ -6442,18 +6470,18 @@ msgstr ""
 
 #. Translators: Name of a Netatmo weather station whose name the cloud does
 #. not report.
-#: netatmo_api.py:1479
+#: netatmo_api.py:1538
 msgid "Weather station"
 msgstr ""
 
 #. Translators: Device type displays for Netatmo modules.
-#: netatmo_api.py:264
+#: netatmo_api.py:313
 msgid "Weather station (indoor)"
 msgstr ""
 
 #. Translators: Category names in the device tree.
-#: device_dialog.py:2459 device_dialog.py:2493 device_dialog.py:2493
-#: device_dialog.py:2486
+#: device_dialog.py:2505 device_dialog.py:2539 device_dialog.py:2539
+#: device_dialog.py:2532
 msgid "Weather stations"
 msgstr ""
 
@@ -6474,7 +6502,7 @@ msgid "What happened"
 msgstr ""
 
 #. Translators: F1 help for the drinking line of a Petlibro fountain.
-#: dialog_help.py:476
+#: dialog_help.py:486
 msgid ""
 "What the fountain registered as drunk today. Enter opens the list of the "
 "single drinks - time, amount and how long each lasted - for today and the "
@@ -6503,19 +6531,33 @@ msgstr ""
 msgid "Wi-Fi network: {ssid}"
 msgstr ""
 
+#. Translators: Beginning of the "Wi-Fi signal:" line in the device tree. The
+#. line is found again by this text when its value is refreshed, so it has to
+#. be translated exactly like the line itself.
+#: device_dialog.py:1041 dialog_help.py:93
+msgid "Wi-Fi signal:"
+msgstr ""
+
 #. Translators: Wi-Fi signal strength in dBm.
 #: dialog_cozytouch.py:1050 dialog_petlibro.py:839
 msgid "Wi-Fi signal: {dbm} dBm"
 msgstr ""
 
+#. Translators: Line in the device tree: Wi-Fi signal of a Netatmo device.
+#. {level} = weak, medium, good or very good. F1 finds its help by the
+#. beginning of this text.
+#: device_dialog.py:1044 device_dialog.py:2203 netatmo_api.py:409
+msgid "Wi-Fi signal: {level}"
+msgstr ""
+
 #. Translators: Device type displays for Netatmo modules.
-#: netatmo_api.py:266
+#: netatmo_api.py:315
 msgid "Wind gauge"
 msgstr ""
 
 #. Translators: One piece of the device help spoken with F1. The pieces are
 #. joined with ". ", so no full stop at the end.
-#: device_dialog.py:2156 dialog_help.py:652
+#: device_dialog.py:2179 dialog_help.py:662
 msgid "Wind: {wind} km/h"
 msgstr ""
 
@@ -6525,7 +6567,7 @@ msgid "Window closed"
 msgstr ""
 
 #. Translators: Status announcement: open window detected.
-#: netatmo_api.py:363
+#: netatmo_api.py:422
 msgid "Window open"
 msgstr ""
 
@@ -6560,7 +6602,7 @@ msgstr ""
 
 #. Translators: One piece of the device help spoken with F1. The pieces are
 #. joined with ". ", so no full stop at the end.
-#: device_dialog.py:2170 dialog_help.py:672 dialog_help.py:713
+#: device_dialog.py:2197 dialog_help.py:682 dialog_help.py:723
 msgid "active"
 msgstr ""
 
@@ -6727,7 +6769,7 @@ msgid "given today"
 msgstr ""
 
 #. Translators: Air quality level 2 of a VeSync air purifier.
-#: constants.py:268 vesync_devices.py:731
+#: constants.py:268 netatmo_api.py:76 vesync_devices.py:731
 msgid "good"
 msgstr ""
 
@@ -6760,6 +6802,12 @@ msgstr ""
 msgid "light on"
 msgstr ""
 
+#. Translators: Signal strength levels of a Netatmo device, as in "Wi-Fi
+#. signal: good".
+#: netatmo_api.py:75
+msgid "medium"
+msgstr ""
+
 #. Translators: Air quality level 3 of a VeSync air purifier.
 #: constants.py:270 vesync_devices.py:731
 msgid "moderate"
@@ -6789,7 +6837,7 @@ msgid "no connection to the cloud"
 msgstr ""
 
 #. Translators: Status announcement without data or device offline.
-#: netatmo_api.py:399
+#: netatmo_api.py:458
 msgid "no data"
 msgstr ""
 
@@ -6815,15 +6863,15 @@ msgid "not polled yet"
 msgstr ""
 
 #. Translators: Status line hint while no refresh has happened yet.
-#: device_dialog.py:2014
+#: device_dialog.py:2037
 msgid "not yet updated"
 msgstr ""
 
 #. Translators: Status "switched on" for smart home devices (short).
 #: __init__.py:2926 __init__.py:2820 __init__.py:2846 __init__.py:2347
-#: change_detection.py:371 change_detection.py:892 device_dialog.py:2170
+#: change_detection.py:371 change_detection.py:892 device_dialog.py:2197
 #: dialog_cozytouch.py:341 dialog_cozytouch.py:370 dialog_cozytouch.py:411
-#: dialog_help.py:603 dialog_help.py:672 dialog_help.py:713
+#: dialog_help.py:613 dialog_help.py:682 dialog_help.py:723
 #: dialog_petlibro.py:412 dialog_petlibro.py:1465 dialog_petlibro.py:402
 #: dialog_petlibro.py:714 dialog_petlibro.py:730 dialog_vesync.py:78
 #: dialog_vesync.py:191 dialog_vesync.py:215 dialog_vesync.py:226
@@ -6834,7 +6882,7 @@ msgstr ""
 
 #. Translators: Announced when a device is currently unreachable.
 #: __init__.py:2531 __init__.py:2300 change_detection.py:1523
-#: cozytouch_devices.py:566 netatmo_api.py:399 petlibro_devices.py:428
+#: cozytouch_devices.py:566 netatmo_api.py:458 petlibro_devices.py:428
 #: petlibro_devices.py:610 petlibro_devices.py:945 vesync_devices.py:707
 #: vesync_devices.py:1144 vesync_devices.py:1603
 msgid "offline"
@@ -6843,7 +6891,7 @@ msgstr ""
 #. Translators: Status "switched on" for smart home devices (short).
 #: __init__.py:2926 __init__.py:2820 __init__.py:2846 __init__.py:2347
 #: change_detection.py:371 change_detection.py:892 dialog_cozytouch.py:341
-#: dialog_cozytouch.py:370 dialog_help.py:603 dialog_petlibro.py:412
+#: dialog_cozytouch.py:370 dialog_help.py:613 dialog_petlibro.py:412
 #: dialog_petlibro.py:1465 dialog_petlibro.py:402 dialog_petlibro.py:714
 #: dialog_petlibro.py:730 dialog_vesync.py:78 dialog_vesync.py:191
 #: dialog_vesync.py:215 dialog_vesync.py:226 dialog_vesync.py:872
@@ -6935,7 +6983,7 @@ msgid "the feeder is feeding right now"
 msgstr ""
 
 #. Translators: Placeholder for an unknown mode.
-#: device_dialog.py:2097 dialog_vesync.py:1076
+#: device_dialog.py:2120 dialog_vesync.py:1076
 msgid "unknown"
 msgstr ""
 
@@ -6955,6 +7003,12 @@ msgstr ""
 #. not been updated for a while. {time} = when they last arrived.
 #: platform_health.py:324
 msgid "values from {time}"
+msgstr ""
+
+#. Translators: Signal strength levels of a Netatmo device, as in "Wi-Fi
+#. signal: good".
+#: netatmo_api.py:77
+msgid "very good"
 msgstr ""
 
 #. Translators: Water leak sensor state in the status announcement.
@@ -6996,6 +7050,12 @@ msgstr ""
 #. 2100 ml".
 #: petlibro_devices.py:951
 msgid "water {level}"
+msgstr ""
+
+#. Translators: Signal strength levels of a Netatmo device, as in "Wi-Fi
+#. signal: good".
+#: netatmo_api.py:74
+msgid "weak"
 msgstr ""
 
 #. Translators: Part of the Netatmo cloud: the weather station service.
@@ -7060,7 +7120,7 @@ msgid "{count} devices loaded from cache"
 msgstr ""
 
 #. Translators: Message after loading the device list.
-#: device_dialog.py:1375
+#: device_dialog.py:1398
 msgid "{count} devices loaded, {online} online"
 msgstr ""
 
@@ -7268,7 +7328,7 @@ msgstr ""
 
 #. Translators: One purifier in the filter warning at the top of the device
 #. menu: name and remaining filter life.
-#: device_dialog.py:1474
+#: device_dialog.py:1497
 msgid "{name} {pct}%"
 msgstr ""
 
@@ -7336,12 +7396,12 @@ msgid "{name}: boost {status}"
 msgstr ""
 
 #. Translators: Error message when setting the brightness.
-#: device_dialog.py:3612
+#: device_dialog.py:3658
 msgid "{name}: brightness cannot be set"
 msgstr ""
 
 #. Translators: Confirmation after a brightness change.
-#: device_dialog.py:3596
+#: device_dialog.py:3642
 msgid "{name}: brightness set to {percent}%"
 msgstr ""
 
@@ -7383,7 +7443,7 @@ msgid "{name}: color set to RGB({r}, {g}, {b})"
 msgstr ""
 
 #. Translators: Error message when setting the color temperature.
-#: device_dialog.py:3527
+#: device_dialog.py:3573
 msgid "{name}: color temperature cannot be set"
 msgstr ""
 
@@ -7396,7 +7456,7 @@ msgid ""
 msgstr ""
 
 #. Translators: Error message on a general connection error.
-#: device_dialog.py:3379
+#: device_dialog.py:3425
 msgid "{name}: connection error"
 msgstr ""
 
@@ -7412,7 +7472,7 @@ msgid "{name}: device not available"
 msgstr ""
 
 #. Translators: Error message when opening the brightness dialog.
-#: device_dialog.py:3637
+#: device_dialog.py:3683
 msgid "{name}: dialog error"
 msgstr ""
 
@@ -7428,17 +7488,17 @@ msgid "{name}: drinks"
 msgstr ""
 
 #. Translators: Generic error message with detail text.
-#: device_dialog.py:3401
+#: device_dialog.py:3447
 msgid "{name}: error - {error}"
 msgstr ""
 
 #. Translators: Error message when opening a sub-dialog.
-#: device_dialog.py:3547
+#: device_dialog.py:3593
 msgid "{name}: error opening the dialog"
 msgstr ""
 
 #. Translators: Error message on a diffuser mode change.
-#: device_dialog.py:3292
+#: device_dialog.py:3338
 msgid "{name}: error while setting"
 msgstr ""
 
@@ -7602,7 +7662,7 @@ msgid "{name}: no connection"
 msgstr ""
 
 #. Translators: Error message when there is no internet connection.
-#: device_dialog.py:3375
+#: device_dialog.py:3421
 msgid "{name}: no internet connection"
 msgstr ""
 
@@ -7623,7 +7683,7 @@ msgid "{name}: not fed - {reason}"
 msgstr ""
 
 #. Translators: Message when the device is offline.
-#: __init__.py:2262 device_dialog.py:3258 dialog_meross.py:401
+#: __init__.py:2262 device_dialog.py:3304 dialog_meross.py:401
 msgid "{name}: offline"
 msgstr ""
 
@@ -7644,7 +7704,7 @@ msgid "{name}: programme stopped"
 msgstr ""
 
 #. Translators: Message when the connection is being re-established.
-#: device_dialog.py:3392
+#: device_dialog.py:3438
 msgid "{name}: reconnecting"
 msgstr ""
 
@@ -7687,7 +7747,7 @@ msgstr ""
 
 #. Translators: Error message when switching a device on/off fails (e.g. cloud
 #. unreachable, device offline).
-#: device_dialog.py:3415
+#: device_dialog.py:3461
 msgid "{name}: switching error"
 msgstr ""
 
@@ -7789,7 +7849,7 @@ msgid "{name}: the water warning was not taken over"
 msgstr ""
 
 #. Translators: Error message on timeout.
-#: device_dialog.py:3362 device_dialog.py:3523 device_dialog.py:3608
+#: device_dialog.py:3408 device_dialog.py:3569 device_dialog.py:3654
 msgid "{name}: timeout"
 msgstr ""
 
@@ -7822,7 +7882,7 @@ msgid ""
 msgstr ""
 
 #. Translators: Error message when the device is unreachable.
-#: device_dialog.py:3359 device_dialog.py:3398
+#: device_dialog.py:3405 device_dialog.py:3444
 msgid "{name}: unreachable"
 msgstr ""
 
@@ -7864,12 +7924,12 @@ msgid "{name}: {color} set"
 msgstr ""
 
 #. Translators: Confirmation after a diffuser mode change.
-#: device_dialog.py:3229
+#: device_dialog.py:3275
 msgid "{name}: {mode}"
 msgstr ""
 
 #. Translators: Confirmation after a light color change.
-#: device_dialog.py:3511
+#: device_dialog.py:3557
 msgid "{name}: {mode} set"
 msgstr ""
 
@@ -7880,31 +7940,31 @@ msgid "{name}: {programme} set"
 msgstr ""
 
 #. Translators: Announcement of an external switch state change.
-#: __init__.py:2932 __init__.py:2828 __init__.py:2875 device_dialog.py:1413
+#: __init__.py:2932 __init__.py:2828 __init__.py:2875 device_dialog.py:1436
 #: dialog_vesync.py:83 dialog_vesync.py:207
 msgid "{name}: {status}"
 msgstr ""
 
 #. Translators: One line per hub sensor. {name} = sensor name, {status} =
 #. Online/Offline, {type} = model (e.g. MS130), {battery} = battery text.
-#: device_dialog.py:2114
+#: device_dialog.py:2137
 msgid "{name}: {status}, {type}, {battery}"
 msgstr ""
 
 #. Translators: Short live announcement of the device online status.
-#: device_dialog.py:2040
+#: device_dialog.py:2063
 msgid "{online} devices online, {offline} offline"
 msgstr ""
 
 #. Translators: Format of the status line. {online}/{offline} = counts, {time}
 #. = time of the last refresh in HH:MM:SS format.
-#: device_dialog.py:2018
+#: device_dialog.py:2041
 msgid "{online} online, {offline} offline | Updated: {time}"
 msgstr ""
 
 #. Translators: One piece of the device help spoken with F1. The pieces are
 #. joined with ". ", so no full stop at the end.
-#: dialog_help.py:775
+#: dialog_help.py:785
 msgid "{on} of {total} channels switched on"
 msgstr ""
 
@@ -8082,22 +8142,22 @@ msgid "{total} devices ready ({detail})"
 msgstr ""
 
 #. Translators: Status announcement: gust speed.
-#: netatmo_api.py:314
+#: netatmo_api.py:363
 msgid "{value} km/h gusts"
 msgstr ""
 
 #. Translators: Status announcement: wind speed.
-#: netatmo_api.py:309
+#: netatmo_api.py:358
 msgid "{value} km/h wind"
 msgstr ""
 
 #. Translators: Status announcement: rain amount.
-#: netatmo_api.py:304
+#: netatmo_api.py:353
 msgid "{value} mm rain"
 msgstr ""
 
 #. Translators: Relative humidity in the status announcement.
-#: __init__.py:2332 netatmo_api.py:287
+#: __init__.py:2332 netatmo_api.py:336
 msgid "{value}% humidity"
 msgstr ""
 

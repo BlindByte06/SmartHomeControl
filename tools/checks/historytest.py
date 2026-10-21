@@ -161,9 +161,10 @@ def test_measurements():
 
     print('== Keine doppelte Messreihe durch Gateways ==')
     net = io.open(os.path.join(BASE, 'netatmo_api.py'), encoding='utf-8').read()
-    check('Relay bekommt keine Raumtemperatur',
-          net.count('if not device.is_relay:') == 2,
-          f'{net.count("if not device.is_relay:")} Stellen')
+    # Beide Wege, der volle und der leichte; das Verhalten prueft treetest.
+    check('Relay bekommt keine Raumwerte',
+          net.count('and not device.is_relay') == 2,
+          f'{net.count("and not device.is_relay")} Stellen')
     check('Rekorder ueberspringt Relays',
           "getattr(device, 'is_relay', False)" in sched)
 

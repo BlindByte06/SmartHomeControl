@@ -51,6 +51,34 @@ from .constants import (
 DEFAULT_SCOPES = NETATMO_DEFAULT_SCOPES.split()
 
 
+# Netatmo reports a signal as a loss: the smaller the number, the better the
+# signal. The thresholds are the ones Home Assistant's Netatmo integration
+# reads the same numbers with (process_wifi / process_rf in its sensor.py).
+_WIFI_LEVELS = ((86, 'weak'), (71, 'medium'), (56, 'good'))
+_RF_LEVELS = ((90, 'weak'), (76, 'medium'), (60, 'good'))
+
+
+def signal_level(value, levels):
+    """The level key of a signal value: 'weak', 'medium', 'good' or 'very_good'."""
+    for threshold, key in levels:
+        if value >= threshold:
+            return key
+    return 'very_good'
+
+
+def signal_level_text(key):
+    """A signal level key in the current language."""
+    # Translators: Signal strength levels of a Netatmo device, as in
+    # "Wi-Fi signal: good".
+    names = {
+        'weak': _("weak"),
+        'medium': _("medium"),
+        'good': _("good"),
+        'very_good': _("very good"),
+    }
+    return names.get(key, key)
+
+
 # ============================================================
 # Netatmo device wrapper
 # ============================================================
@@ -251,11 +279,32 @@ class NetatmoDevice:
         state_map = {'full': 100, 'high': 75, 'medium': 50, 'low': 25, 'very_low': 10}
         return state_map.get(self.raw_data.get('battery_state'))
 
-    def get_wifi_status(self):
-        return self.raw_data.get('wifi_status')
+    def _signal(self, energy_key, weather_key):
+        """A signal value as Netatmo reports it, or None.
 
-    def get_rf_status(self):
-        return self.raw_data.get('rf_status')
+        The heating devices name it ``wifi_strength``/``rf_strength``, the
+        weather station ``wifi_status``/``rf_status``. Only the weather names
+        were read, so the relay never had a signal value.
+        """
+        value = self.raw_data.get(energy_key, self.raw_data.get(weather_key))
+        if isinstance(value, bool) or not isinstance(value, int):
+            return None
+        return value
+
+    def get_wifi_level(self):
+        """The Wi-Fi signal as a level key (see signal_level), or None."""
+        value = self._signal('wifi_strength', 'wifi_status')
+        return None if value is None else signal_level(value, _WIFI_LEVELS)
+
+    def get_rf_level(self):
+        """The radio signal as a level key (see signal_level), or None."""
+        value = self._signal('rf_strength', 'rf_status')
+        return None if value is None else signal_level(value, _RF_LEVELS)
+
+    def get_firmware(self):
+        """The firmware version, or None (heating: firmware_revision)."""
+        value = self.raw_data.get('firmware_revision', self.raw_data.get('firmware'))
+        return None if value in (None, '') else value
 
     # ------ Display ------
     def get_type_display(self):
@@ -349,6 +398,16 @@ class NetatmoDevice:
         if boiler is not None:
             # Translators: Status announcement: boiler active/off.
             parts.append(_("Heating: active") if boiler else _("Heating: off"))
+
+        # The relay measures nothing - its connection is what it can tell.
+        if self.is_relay:
+            wifi = self.get_wifi_level()
+            if wifi is not None:
+                # Translators: Status announcement and line in the device
+                # tree: Wi-Fi signal of a Netatmo device. {level} = weak,
+                # medium, good or very good.
+                parts.append(_("Wi-Fi signal: {level}").format(
+                    level=signal_level_text(wifi)))
 
         # Pre-heating (anticipation)
         anticipating = self.is_anticipating()
@@ -1544,6 +1603,7 @@ class NetatmoAPI:
                 except Exception as e:
                     log.debug(f"Ignored error in get_devices: {e}")
 
+                home_devices = []
                 for module in modules:
                     mod_type = module.get('type', '')
                     if mod_type in ('NATherm1', 'NRV', 'NAPlug'):
@@ -1565,16 +1625,18 @@ class NetatmoAPI:
                         if default_duration is not None:
                             device._therm_setpoint_default_duration = default_duration
 
-                        # Temperature from the room status. NOT for the relay
-                        # (NAPlug): it is a gateway without a sensor of its
-                        # own and would otherwise report the temperature of
-                        # the thermostat in the same room - which showed up in
-                        # the history as a second, identical series.
-                        if room_id and room_id in status_rooms:
+                        # The values of the room. NOT for the relay (NAPlug):
+                        # it is a gateway without a sensor or a setpoint of
+                        # its own. With the room's values it reported the
+                        # temperature of the thermostat in the same room -
+                        # a second, identical series in the history - and
+                        # showed the thermostat's target temperature as if it
+                        # were its own.
+                        if (room_id and room_id in status_rooms
+                                and not device.is_relay):
                             room_status = status_rooms[room_id]
-                            if not device.is_relay:
-                                device._therm_measured = room_status.get(
-                                    'therm_measured_temperature')
+                            device._therm_measured = room_status.get(
+                                'therm_measured_temperature')
                             device._therm_setpoint = room_status.get(
                                 'therm_setpoint_temperature')
                             device._therm_setpoint_mode = room_status.get(
@@ -1596,7 +1658,10 @@ class NetatmoAPI:
                                 device._boiler_status = bool(boiler_val)
 
                         devices.append(device)
+                        home_devices.append(device)
                         energy_count += 1
+                self._apply_bridged_boiler_status(home_devices)
+                self._log_relay_fields(home_devices)
 
             if energy_count:
                 log.debug(f"Netatmo: {energy_count} energy device(s) found")
@@ -1673,6 +1738,47 @@ class NetatmoAPI:
         self._last_full_status_refresh = time.time()
         return devices
 
+    # Fields of /homestatus the light path copies into raw_data: the signal
+    # and the firmware the device tree shows. The full pass takes the whole
+    # module anyway.
+    _STATUS_DETAIL_KEYS = ('wifi_strength', 'rf_strength', 'firmware_revision')
+
+    @staticmethod
+    def _apply_bridged_boiler_status(devices):
+        """Gives each relay the heating state of the modules it bridges.
+
+        The relay switches the boiler, but the heating demand is reported by
+        the thermostat on it: boiler_status sits on NATherm1, not on NAPlug
+        (pyatmo gives only the thermostat a BoilerMixin). So the relay's own
+        "Heating:" line never appeared. A module names its relay in
+        ``bridge``; the relay lists them in ``modules_bridged``. Without
+        either, nothing is assumed.
+        """
+        for relay in devices:
+            if not getattr(relay, 'is_relay', False):
+                continue
+            bridged = set(relay.raw_data.get('modules_bridged') or ())
+            states = [d._boiler_status for d in devices
+                      if d is not relay and d._boiler_status is not None
+                      and (d.raw_data.get('bridge') == relay._id
+                           or d._id in bridged)]
+            if states:
+                relay._boiler_status = any(states)
+
+    def _log_relay_fields(self, devices):
+        """Logs once which fields a relay reports - names only, no values.
+
+        Netatmo documents little about the relay; the log then says what an
+        account's relay really sends.
+        """
+        if getattr(self, '_relay_fields_logged', False):
+            return
+        for device in devices:
+            if getattr(device, 'is_relay', False):
+                self._relay_fields_logged = True
+                log.debug(f"Netatmo relay reports: "
+                          f"{', '.join(sorted(device.raw_data))}")
+
     def update_device_status(self, devices, full=False):
         """Brings the Netatmo devices up to date, in place.
 
@@ -1735,11 +1841,14 @@ class NetatmoAPI:
                     boiler_val = mod.get('boiler_status')
                     if boiler_val is not None:
                         device._boiler_status = bool(boiler_val)
+                    # What the device tree shows of the connection.
+                    for key in self._STATUS_DETAIL_KEYS:
+                        if key in mod:
+                            device.raw_data[key] = mod[key]
                 room = status_rooms.get(device.room_id) if device.room_id else None
-                if room:
-                    # Not for the relay - see the note in get_devices().
-                    if not device.is_relay:
-                        device._therm_measured = room.get('therm_measured_temperature')
+                # Not for the relay - see the note in get_devices().
+                if room and not device.is_relay:
+                    device._therm_measured = room.get('therm_measured_temperature')
                     device._therm_setpoint = room.get('therm_setpoint_temperature')
                     device._therm_setpoint_mode = room.get('therm_setpoint_mode')
                     device._therm_setpoint_end_time = room.get('therm_setpoint_end_time')
@@ -1762,6 +1871,8 @@ class NetatmoAPI:
                             device._next_schedule_change = info['next_change']
                         if info.get('active_schedule_name'):
                             device._active_schedule_name = info['active_schedule_name']
+            self._apply_bridged_boiler_status(
+                [d for d in energy_devs if d.home_id == home_id])
 
         # Only the heating was asked; the weather half keeps what the last
         # full pass found.

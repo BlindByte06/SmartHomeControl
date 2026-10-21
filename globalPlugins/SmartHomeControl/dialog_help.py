@@ -90,6 +90,16 @@ class _ContextHelpMixin:
                 # tree.
                 ui.message(_("Boiler status: shows whether the heating is "
                              "currently active or off."))
+            elif current_text.startswith(_("Wi-Fi signal:")):
+                # Translators: F1 help for the "Wi-Fi signal:" line in the
+                # device tree.
+                ui.message(_("Strength of the device's Wi-Fi connection to "
+                             "the router."))
+            elif current_text.startswith(_("Radio signal:")):
+                # Translators: F1 help for the "Radio signal:" line in the
+                # device tree (Netatmo relay).
+                ui.message(_("Strength of the radio connection over which the "
+                             "relay reaches the thermostat and the valves."))
             elif current_text.startswith(_("Pre-heating:")):
                 # Translators: F1 help for the "Pre-heating:" line in the
                 # device tree.

@@ -1029,7 +1029,30 @@ class SmartHomeControlDialog(_NetatmoDialogMixin, _VeSyncDialogMixin, _MerossDia
             boiler = device.get_boiler_status() if hasattr(device, 'get_boiler_status') else None
             if boiler is not None:
                 return _("Heating: active") if boiler else _("Heating: off")
-        
+
+        # Netatmo relay: Wi-Fi and radio signal. Cozytouch and Petlibro have
+        # a "Wi-Fi signal:" line in dBm too, refreshed by their own paths.
+        if getattr(device, 'is_netatmo', False):
+            from .netatmo_api import signal_level_text
+            # Translators: Beginning of the "Wi-Fi signal:" line in the device
+            # tree. The line is found again by this text when its value is
+            # refreshed, so it has to be translated exactly like the line
+            # itself.
+            if current_text.startswith(_("Wi-Fi signal:")):
+                level = device.get_wifi_level()
+                if level is not None:
+                    return _("Wi-Fi signal: {level}").format(
+                        level=signal_level_text(level))
+            # Translators: Beginning of the "Radio signal:" line in the device
+            # tree. The line is found again by this text when its value is
+            # refreshed, so it has to be translated exactly like the line
+            # itself.
+            if current_text.startswith(_("Radio signal:")):
+                level = device.get_rf_level()
+                if level is not None:
+                    return _("Radio signal: {level}").format(
+                        level=signal_level_text(level))
+
         # Netatmo: pre-heating (anticipation)
         # Translators: Beginning of the "Pre-heating:" line in the device tree.
         # The line is found again by this text when its value is refreshed, so
@@ -2162,12 +2185,35 @@ class SmartHomeControlDialog(_NetatmoDialogMixin, _VeSyncDialogMixin, _MerossDia
                 if setpoint is not None:
                     info.append(_("Target temperature: {temp}°C").format(temp=fmt_decimal(setpoint, 1)))
 
-            # NAPlug (relay): show the boiler status
+            # NAPlug (relay): what it does and how it is connected - the
+            # boiler it switches, Wi-Fi to the cloud, radio to the thermostat.
+            # It has no target temperature of its own; the one it showed was
+            # the room's (see get_devices in netatmo_api).
             if getattr(device, 'is_relay', False):
+                from .netatmo_api import signal_level_text
                 boiler = device.get_boiler_status() if hasattr(device, 'get_boiler_status') else None
                 if boiler is not None:
                     info.append(_("Heating: {status}").format(
                         status=_("active") if boiler else _("off")))
+                wifi = device.get_wifi_level()
+                if wifi is not None:
+                    # Translators: Line in the device tree: Wi-Fi signal of a
+                    # Netatmo device. {level} = weak, medium, good or very
+                    # good. F1 finds its help by the beginning of this text.
+                    info.append(_("Wi-Fi signal: {level}").format(
+                        level=signal_level_text(wifi)))
+                radio = device.get_rf_level()
+                if radio is not None:
+                    # Translators: Line in the device tree: radio signal of a
+                    # Netatmo device. {level} = weak, medium, good or very
+                    # good. F1 finds its help by the beginning of this text.
+                    info.append(_("Radio signal: {level}").format(
+                        level=signal_level_text(radio)))
+                firmware = device.get_firmware()
+                if firmware is not None:
+                    # Translators: Firmware version of the device.
+                    info.append(_("Firmware version: {version}").format(
+                        version=firmware))
 
             # Battery
             battery = device.get_battery_percent() if hasattr(device, 'get_battery_percent') else None

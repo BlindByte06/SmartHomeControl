@@ -86,7 +86,11 @@ a rebuild reports a selection twice and NVDA reads the entry two and three
 times. And that a platform switched off really loses its devices, in the
 refresh as well as when the settings are saved. Also that a Netatmo device
 keeps its favorites row when it is expanded and when a thermostat is
-updated - it lost it both ways, and only Ctrl+B was left.
+updated - it lost it both ways, and only Ctrl+B was left. And that the Netatmo
+relay shows what it can tell itself - the heating of the thermostat it
+bridges, Wi-Fi, radio, firmware - instead of the room's target temperature it
+showed as its own, through the full and the light poll alike; its signal
+values were read under the weather station's field names and never arrived.
 
 **credentialstest.py** - the credential store. NVDA writes its complete
 configuration into the log at startup, so anything in `nvda.ini` travels with

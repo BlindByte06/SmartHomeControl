@@ -34,6 +34,7 @@ The GitHub release notes are built from the section of the released version.
 - Enter or Space on a VeSync or Cozytouch device no longer freezes NVDA.
 - A leak sensor that already detects water when NVDA starts is now announced.
 - The Netatmo device menu offers "Add to favorites" again.
+- The Netatmo relay no longer shows the target temperature of the thermostat. It shows the heating state, Wi-Fi and radio signal and firmware instead.
 - A setting changed in the VeSync or Cozytouch device menu is no longer recorded a second time as changed elsewhere.
 - A Meross device switched here is no longer recorded as switched elsewhere.
 - Cozytouch hot water switched from the favourites layer is no longer recorded as switched elsewhere.
