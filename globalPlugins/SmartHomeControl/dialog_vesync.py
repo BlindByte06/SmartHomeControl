@@ -3,7 +3,6 @@
 
 import wx
 import ui
-import threading
 from logHandler import log as _nvda_log
 
 import addonHandler
@@ -26,7 +25,6 @@ from .constants import (
 )
 from .history import get_history
 from .formatting import fmt_decimal
-from .errors import log_failure
 from .favorites import get_favorites
 from .dialog_helpers import _beep, _vesync_purifier_level_label
 
@@ -1367,107 +1365,3 @@ class _VeSyncDialogMixin:
                                           is_favorite_view=is_favorite_view)
 
         self.tree.Collapse(device_item)
-
-    def _init_vesync_in_background(self):
-        """Initializes the VeSync API in the background and loads devices afterwards.
-
-        Called from the settings dialog when VeSync has just been enabled or
-        its credentials changed - without blocking the UI.
-        """
-        plugin = self.plugin
-        if not plugin.begin_platform_login('vesync'):
-            log.info("VeSync login already running - not starting a second one")
-            return
-
-        def _login_and_refresh():
-            try:
-                from .vesync_api import VeSyncAPI
-                api = VeSyncAPI(country_code=plugin.vesync_country_code or "DE")
-                if hasattr(api, 'set_reauth_callback'):
-                    api.set_reauth_callback(plugin._vesync_reauth)
-
-                # Preferred: existing tokens, otherwise email/password
-                if plugin.vesync_token and plugin.vesync_account_id:
-                    api.set_credentials(
-                        token=plugin.vesync_token,
-                        account_id=plugin.vesync_account_id,
-                        country_code=plugin.vesync_country_code or "DE",
-                        region=plugin.vesync_region or None,
-                    )
-                else:
-                    _pw = plugin.vesync_password
-                    try:
-                        api.login(plugin.vesync_email, _pw)
-                    finally:
-                        _pw = None
-                        del _pw
-
-                try:
-                    devices = api.get_devices()
-                except RuntimeError:
-                    # Token possibly expired -> password login
-                    if plugin.vesync_email and plugin._encrypted_vesync_password:
-                        _pw = plugin.vesync_password
-                        try:
-                            api.login(plugin.vesync_email, _pw)
-                        finally:
-                            _pw = None
-                            del _pw
-                        devices = api.get_devices()
-                    else:
-                        raise
-
-                # Save the tokens (they can change due to cross-region)
-                creds = api.get_credentials()
-                if creds["token"] and creds["account_id"]:
-                    plugin.vesync_token = creds["token"]
-                    plugin.vesync_account_id = creds["account_id"]
-                    plugin.vesync_country_code = creds["country_code"]
-                    plugin.vesync_region = creds["region"]
-                    plugin.save_settings()
-
-                # Take over the new session only after the login worked; the
-                # old one is closed afterwards so its HTTP session does not
-                # stay open.
-                old_api, plugin.vesync_api = plugin.vesync_api, api
-                if old_api is not None and old_api is not api:
-                    try:
-                        old_api.logout()
-                    except Exception as e:
-                        log.debug(f"Logout of the old VeSync session failed: {e}")
-
-                # Replace the VeSync devices in the shared list - under the
-                # lock, since the scheduler thread reads and writes it in
-                # parallel.
-                count = plugin.replace_platform_devices('vesync', devices)
-                for dev in devices:
-                    plugin._previous_vesync_states.setdefault(
-                        dev.uuid, plugin._snapshot_vesync_state(dev))
-                log.info(f"VeSync initialised late: {count} devices")
-
-                # Update the dialog on the UI thread
-                wx.CallAfter(self._refresh_after_vesync_init, len(devices))
-            except Exception as e:
-                log_failure("Late VeSync initialisation failed", e)
-                wx.CallAfter(self._offer_login_reentry, 'vesync', e)
-            finally:
-                plugin.end_platform_login('vesync')
-
-        threading.Thread(target=_login_and_refresh, daemon=True).start()
-        # Translators: Note that the VeSync connection is being established in
-        # the background.
-        ui.message(_("Connecting to VeSync..."))
-
-    def _refresh_after_vesync_init(self, count):
-        """Updates the tree after VeSync was connected afterwards."""
-        if self._is_destroyed:
-            return
-        try:
-            self._load_devices_internal(self.plugin.devices)
-            self._refresh_favorites_tree()
-            # Translators: Confirmation after loading the VeSync devices
-            # afterwards.
-            ui.message(_("VeSync: {count} device(s) loaded").format(count=count))
-        except Exception as e:
-            log.debug(f"Refresh after the VeSync init failed: {e}")
-

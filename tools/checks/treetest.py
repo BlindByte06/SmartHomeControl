@@ -418,10 +418,16 @@ def test_disabled_platforms():
     check('auch der Refresh filtert die abgeschalteten heraus',
           '_platform_enabled(platform_of(d))' in impl)
 
+    apply = src[src.index('    def _apply_saved_settings'):]
+    apply = apply[:apply.index('\n    def ', 10)]
+    check('der Einstellungsdialog raeumt beim Speichern auf',
+          'dropped = self.drop_disabled_platform_devices()' in apply
+          and 'return dropped' in apply)
     dialog = io.open(os.path.join(BASE, 'device_dialog.py'),
                      encoding='utf-8').read()
-    check('der Einstellungsdialog raeumt beim Speichern auf',
-          'drop_disabled_platform_devices()' in dialog)
+    check('auch aus dem Geraetemenue - und der Baum folgt',
+          'dropped = self.plugin._apply_saved_settings(changed)' in dialog
+          and 'if dropped:\n            self._rebuild_after_login()' in dialog)
 
 
 # --------------------------------------------------- keine Doppelansagen ----

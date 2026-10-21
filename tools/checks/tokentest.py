@@ -187,7 +187,6 @@ def test_callback_registered():
     print('== Callback ueberall registriert ==')
     for fname, path in (
             ('__init__.py', os.path.join(BASE, '__init__.py')),
-            ('device_dialog.py', os.path.join(BASE, 'device_dialog.py')),
             ('settings_panel.py', os.path.join(BASE, 'settings_panel.py'))):
         src = io.open(path, encoding='utf-8').read()
         n_create = src.count('NetatmoAPI(')
@@ -196,6 +195,13 @@ def test_callback_registered():
         # erzeugt die Tokens selbst und speichert sie direkt -> dort 2 zu 1.
         check(f'{fname}: jede dauerhafte Instanz registriert den Callback',
               n_cb >= 1 and n_create >= 1, f'{n_create} Instanzen, {n_cb} Callbacks')
+    # Das Geraetemenue baute nach dem Speichern eine eigene Netatmo-Sitzung,
+    # ohne die Cloud zu fragen. Es meldet jetzt ueber das Plugin an
+    # (_apply_saved_settings) - eine Instanz weniger, die den Callback
+    # vergessen koennte.
+    src = io.open(os.path.join(BASE, 'device_dialog.py'), encoding='utf-8').read()
+    check('device_dialog.py: baut keine eigene Netatmo-Sitzung mehr',
+          'NetatmoAPI(' not in src)
 
 
 def test_oauth_callback():

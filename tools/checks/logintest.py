@@ -88,7 +88,8 @@ METHODS = ('_platform_has_credentials', '_platforms_to_login', '_platform_api',
            '_do_login', '_login_one', '_take_platform_devices',
            '_schedule_login_retry', 'replace_platform_devices',
            'begin_platform_login', 'end_platform_login', '_platform_enabled',
-           '_apply_saved_settings', 'drop_disabled_platform_devices')
+           '_apply_saved_settings', 'drop_disabled_platform_devices',
+           '_close_replaced_session', '_notify_menu_of_login')
 
 
 def make_plugin_class(spoken, asked, log):
@@ -115,8 +116,10 @@ def make_plugin_class(spoken, asked, log):
 
     class Plugin:
         _LOGIN_RETRY_DELAYS = (0.05,)
+        _CLOSE_REPLACED_SESSIONS = ('vesync', 'cozytouch', 'petlibro')
 
         def __init__(self):
+            self._active_dialog = None
             self.devices = []
             self._devices_lock = threading.RLock()
             self._login_lock = threading.Lock()
@@ -129,6 +132,7 @@ def make_plugin_class(spoken, asked, log):
             self.cozytouch_api = self.petlibro_api = None
             self.email, self._encrypted_password = 'a@b.c', 'ENC'
             self.netatmo_client_id, self.netatmo_refresh_token = 'id', 'rt'
+            self.netatmo_access_token, self.netatmo_token_expiry = 'at', 0
             self.vesync_email = self._encrypted_vesync_password = ''
             self.vesync_token = self.vesync_account_id = ''
             self.cozytouch_email = self._encrypted_cozytouch_password = ''
@@ -141,6 +145,15 @@ def make_plugin_class(spoken, asked, log):
 
         def _start_background_refresh(self):
             self.scheduler_started += 1
+
+        def _snapshot_vesync_state(self, device):
+            return {}
+
+        def _snapshot_cozytouch_state(self, device):
+            return {}
+
+        def _seed_petlibro_state(self, device):
+            pass
 
         def _ask_credential_reentry(self, platform, error):
             asked.append(platform)
@@ -394,6 +407,304 @@ def main():
     plugin._apply_saved_settings(set())
     check('ohne Sitzung meldet es alle an', plugin.started_with == (True, None),
           str(plugin.started_with))
+
+    print('== Das offene Geraetemenue baut nach einer Anmeldung neu auf ==')
+    # Der Baum haelt die Geraeteobjekte, aus denen er gebaut wurde. Nach einer
+    # Anmeldung sind die der Plattform neue - die alten werden nicht mehr
+    # abgefragt, und ihre Sitzung ist zu.
+    class Menu:
+        def __init__(self):
+            self._is_destroyed = False
+            self.rebuilt = 0
+            self.offered = []
+
+        def _rebuild_after_login(self):
+            self.rebuilt += 1
+            spoken.append('<neu aufgebaut>')
+
+        def _offer_login_reentry(self, platform, error):
+            self.offered.append(platform)
+
+    spoken.clear()
+    plugin = Plugin()
+    menu = Menu()
+    plugin._active_dialog = menu
+    Plugin._LOGIN_STEPS = {'meross': slow('meross', 1),
+                           'netatmo': slow('netatmo', 1)}
+    plugin._do_login()
+    check('das Menue baut einmal neu auf', menu.rebuilt == 1, str(menu.rebuilt))
+    ready = [i for i, m in enumerate(spoken) if 'devices ready' in m]
+    check('vor der Ansage, wie die eigenen Anmeldungen des Menues',
+          ready and spoken.index('<neu aufgebaut>') < ready[0], str(spoken))
+
+    menu = Menu()
+    plugin = Plugin()
+    plugin._active_dialog = menu
+    Plugin._LOGIN_STEPS = {'meross': network_down, 'netatmo': network_down}
+    Plugin._LOGIN_RETRY_DELAYS = (30,)
+    plugin._do_login()
+    check('ohne erfolgreiche Anmeldung kein Neuaufbau', menu.rebuilt == 0)
+    plugin._login_retry_stop.set()
+
+    menu = Menu()
+    menu._is_destroyed = True
+    plugin = Plugin()
+    plugin._active_dialog = menu
+    Plugin._LOGIN_STEPS = {'meross': slow('meross', 1),
+                           'netatmo': slow('netatmo', 1)}
+    plugin._do_login()
+    check('ein geschlossenes Menue wird nicht angefasst', menu.rebuilt == 0)
+
+    print('== Die ersetzte Sitzung wird geschlossen ==')
+    # Die Anmeldungen des Menues schlossen die alte VeSync-, Cozytouch- und
+    # Petlibro-Sitzung, die des Plugins nicht.
+    class Session:
+        def __init__(self, name):
+            self.name = name
+            self.closed = 0
+
+        def logout(self):
+            self.closed += 1
+
+    def fresh(platform, count=1):
+        def step(self):
+            setattr(self, 'api' if platform == 'meross' else f'{platform}_api',
+                    Session(f'{platform}-neu'))
+            return [Dev(f'{platform}-{i}', platform) for i in range(count)]
+        return step
+
+    def empty(platform):
+        def step(self):
+            setattr(self, f'{platform}_api', Session(f'{platform}-neu'))
+            return []
+        return step
+
+    plugin = Plugin()
+    plugin.use_vesync = plugin.use_cozytouch = plugin.use_petlibro = True
+    plugin.vesync_token, plugin.vesync_account_id = 't', 'a'
+    plugin.cozytouch_email, plugin._encrypted_cozytouch_password = 'c', 'ENC'
+    plugin.petlibro_email, plugin._encrypted_petlibro_password = 'p', 'ENC'
+    old = {p: Session(f'{p}-alt') for p in PLATFORMS}
+    plugin.api = old['meross']
+    for p in PLATFORMS[1:]:
+        setattr(plugin, f'{p}_api', old[p])
+    plugin.devices = [Dev('petlibro-x', 'petlibro')]
+    Plugin._LOGIN_STEPS = {'meross': fresh('meross'), 'netatmo': fresh('netatmo'),
+                           'vesync': fresh('vesync'),
+                           'cozytouch': lambda self: network_down(self),
+                           'petlibro': empty('petlibro')}
+    plugin._do_login()
+    plugin._login_retry_stop.set()
+    check('die alte VeSync-Sitzung ist zu', old['vesync'].closed == 1)
+    check('die neue bleibt offen', plugin.vesync_api.closed == 0)
+    check('Meross schliesst die eigene selbst - hier nicht ein zweites Mal',
+          old['meross'].closed == 0)
+    check('Netatmo bleibt, wie es immer war', old['netatmo'].closed == 0)
+    check('eine gescheiterte Anmeldung laesst die laufende Sitzung offen',
+          old['cozytouch'].closed == 0 and plugin.cozytouch_api is old['cozytouch'])
+    check('eine leere Antwort behaelt die Geraete - und deren Sitzung',
+          old['petlibro'].closed == 0
+          and [d.uuid for d in plugin.devices if d.is_petlibro] == ['petlibro-x'])
+
+    print('== Die abgelehnte Anmeldung wird einmal gesagt ==')
+    # Das Angebot, die Zugangsdaten neu einzugeben, sagt den Grund selbst
+    # (offer_credential_reentry). _do_login sagte ihn vorher auch.
+    def refused_too(self):
+        raise CredentialsRejected('wrong password')
+
+    spoken.clear()
+    asked.clear()
+    plugin = Plugin()
+    plugin.use_vesync = True
+    plugin.vesync_token, plugin.vesync_account_id = 't', 'a'
+    Plugin._LOGIN_STEPS = {'meross': refused, 'netatmo': slow('netatmo', 1),
+                           'vesync': refused_too}
+    plugin._do_login(interactive=True)
+    check('nach dem Speichern sagt es das Angebot, nicht die Anmeldung',
+          not any('meross failed' in m for m in spoken) and asked == ['meross'],
+          f'{spoken} {asked}')
+    check('eine zweite Ablehnung, die nicht angeboten wird, wird gesagt',
+          sum('vesync failed' in m for m in spoken) == 1, str(spoken))
+    spoken.clear()
+    asked.clear()
+    plugin = Plugin()
+    Plugin._LOGIN_STEPS = {'meross': refused, 'netatmo': slow('netatmo', 1)}
+    plugin._do_login(interactive=False)
+    check('beim NVDA-Start wird sie gesagt - einmal, ohne Angebot',
+          sum('meross failed' in m for m in spoken) == 1 and asked == [],
+          f'{spoken} {asked}')
+
+    print('== Bei offenem Menue fragt das Menue nach den Zugangsdaten ==')
+    offers = []
+    reentry = grab('__init__', ['_ask_credential_reentry'], {
+        'ui': type('ui', (), {'message': staticmethod(spoken.append)}),
+        'log': log, 'login_error_message': lambda p, e: f'{p} failed: {e}',
+        'gui': type('gui', (), {'mainFrame': type('frame', (), {
+            'prePopup': staticmethod(lambda: None),
+            'postPopup': staticmethod(lambda: None)})}),
+        'offer_credential_reentry': lambda parent, plugin, platform, error,
+        on_saved=None: offers.append((parent, platform)),
+    })['_ask_credential_reentry']
+
+    class Owner:
+        _settings_open = False
+
+    owner = Owner()
+    owner._active_dialog = Menu()
+    reentry(owner, 'meross', CredentialsRejected('x'))
+    check('das Menue macht das Angebot', owner._active_dialog.offered == ['meross']
+          and offers == [], str(offers))
+    owner._active_dialog._is_destroyed = True
+    reentry(owner, 'meross', CredentialsRejected('x'))
+    check('ein geschlossenes Menue nicht - dann NVDA selbst',
+          len(offers) == 1 and owner._active_dialog.offered == ['meross'])
+    owner._active_dialog = None
+    reentry(owner, 'vesync', CredentialsRejected('x'))
+    check('ohne Menue ebenso', len(offers) == 2 and offers[-1][1] == 'vesync')
+
+    print('== Speichern: abgeschaltete Plattformen und der Netatmo-Hinweis ==')
+    spoken.clear()
+    plugin = Plugin()
+    plugin.is_logged_in = True
+    plugin.api = object()
+    plugin.netatmo_api = object()
+    plugin.devices = [Dev('meross-1', 'meross'), Dev('netatmo-1', 'netatmo')]
+    plugin.use_netatmo = False
+    dropped = plugin._apply_saved_settings(set())
+    check('sagt, wie viele Geraete wegfielen - das Menue baut dafuer neu auf',
+          dropped == 1 and [d.uuid for d in plugin.devices] == ['meross-1'],
+          repr(dropped))
+    plugin.use_netatmo = True
+    plugin.netatmo_refresh_token = ''
+    plugin._apply_saved_settings({'netatmo'})
+    check('neue Netatmo-Daten ohne Freigabe: der Hinweis auf "Connect"',
+          any('authorise again' in m for m in spoken), str(spoken))
+
+    print('== Das Menue speichert ueber denselben Weg ==')
+
+    class Later:
+        calls = []
+
+        def __init__(self, ms, fn, *args):
+            Later.calls.append((ms, fn, args))
+
+    menu_env = grab('device_dialog', ['_apply_settings_change',
+                                      '_rebuild_after_login'], {
+        'log': log, 'wx': type('wx', (), {'CallLater': Later})})
+
+    class Saved:
+        """The plugin as far as the menu's save sees it."""
+
+        def __init__(self, dropped=0, raises=False):
+            self.dropped, self.raises = dropped, raises
+            self.saved_with = None
+            self.is_logged_in = True
+            self.devices = ['d']
+
+        def _apply_saved_settings(self, changed):
+            self.saved_with = changed
+            if self.raises:
+                raise RuntimeError('kaputt')
+            return self.dropped
+
+    class Tree:
+        _apply_settings_change = menu_env['_apply_settings_change']
+        _rebuild_after_login = menu_env['_rebuild_after_login']
+
+        def __init__(self, plugin):
+            self.plugin = plugin
+            self._is_destroyed = False
+            self._suppress_live_updates = False
+            self.pending = False
+            self.loaded = 0
+            self.favorites = 0
+            self.refreshed = 0
+
+        def _action_callback_pending(self):
+            return self.pending
+
+        def _load_devices_internal(self, devices):
+            self.loaded += 1
+
+        def _refresh_favorites_tree(self):
+            self.favorites += 1
+
+        def _on_refresh(self, event):
+            self.refreshed += 1
+
+    tree = Tree(Saved())
+    tree._apply_settings_change({'vesync'})
+    check('die geaenderten Plattformen gehen an das Plugin',
+          tree.plugin.saved_with == {'vesync'})
+    check('ohne weggefallene Geraete kein Neuaufbau, aber die Aktualisierung',
+          tree.loaded == 0 and tree.refreshed == 1)
+    tree = Tree(Saved(dropped=2))
+    tree._apply_settings_change(set())
+    check('fallen Geraete weg, werden beide Baeume neu gebaut',
+          tree.loaded == 1 and tree.favorites == 1)
+    tree = Tree(Saved(raises=True))
+    try:
+        tree._apply_settings_change({'meross'})
+        escaped = None
+    except Exception as e:
+        escaped = e
+    check('ein Fehler beim Anwenden bricht das Menue nicht ab',
+          escaped is None and tree.refreshed == 1, repr(escaped))
+
+    print('== Der Neuaufbau wartet, bis nichts mehr am Baum haengt ==')
+    Later.calls.clear()
+    tree = Tree(Saved())
+    tree.pending = True
+    tree._rebuild_after_login()
+    tree._rebuild_after_login()
+    check('waehrend eine Aktion wartet: nicht jetzt, einmal vorgemerkt',
+          tree.loaded == 0 and len(Later.calls) == 1, str(len(Later.calls)))
+    ms, fn, args = Later.calls[-1]
+    fn(*args)
+    check('noch immer belegt: wieder vorgemerkt', tree.loaded == 0
+          and len(Later.calls) == 2)
+    tree.pending = False
+    ms, fn, args = Later.calls[-1]
+    fn(*args)
+    check('dann genau ein Neuaufbau', tree.loaded == 1 and tree.favorites == 1
+          and len(Later.calls) == 2)
+    tree._rebuild_after_login()
+    check('und danach wieder sofort', tree.loaded == 2)
+    tree._suppress_live_updates = True
+    tree._rebuild_after_login()
+    check('ueber einem Unterdialog ebenso nicht', tree.loaded == 2
+          and len(Later.calls) == 3)
+    tree._is_destroyed = True
+    ms, fn, args = Later.calls[-1]
+    fn(*args)
+    check('ein inzwischen geschlossenes Menue wird nicht angefasst',
+          tree.loaded == 2 and len(Later.calls) == 3)
+
+    print('== Eine Anmeldung, nicht sechs ==')
+    for name in ('device_dialog', 'dialog_meross', 'dialog_netatmo',
+                 'dialog_vesync', 'dialog_cozytouch', 'dialog_petlibro',
+                 'dialog_favorites'):
+        src = source(name)
+        built = [api for api in ('MerossAPI(', 'NetatmoAPI(', 'VeSyncAPI(',
+                                 'CozytouchAPI(', 'PetlibroAPI(')
+                 if api in src]
+        check(f'{name}: baut keine eigene Sitzung', not built, str(built))
+        check(f'{name}: meldet sich nicht selbst an',
+              'begin_platform_login(' not in src and '.login(' not in src)
+    dialog = source('device_dialog')
+    check('der Einstellungsknopf des Menues speichert ueber das Plugin',
+          'self._apply_settings_change(changed)' in dialog
+          and 'self.plugin._apply_saved_settings(changed)' in dialog)
+    check('die erneute Eingabe ebenso',
+          'on_saved=self._apply_settings_change' in dialog)
+    init = source('__init__')
+    check('das Plugin schliesst die ersetzten Sitzungen dieser drei',
+          "_CLOSE_REPLACED_SESSIONS = ('vesync', 'cozytouch', 'petlibro')" in init)
+    login = init[init.index('    def _do_login'):]
+    login = login[:login.index('\n    def ', 10)]
+    check('erst die Geraete, dann die alte Sitzung',
+          login.index('self._take_platform_devices(p, results[p])')
+          < login.index('self._close_replaced_session(p, before.get(p))'))
 
     print('== Die Statusansage: kurz, und zweimal gedrueckt eine Liste ==')
     # Sie sprach jedes Geraet nacheinander als EINE Ansage - bei fuenfzig

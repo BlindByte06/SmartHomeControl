@@ -3772,106 +3772,65 @@ class SmartHomeControlDialog(_NetatmoDialogMixin, _VeSyncDialogMixin, _MerossDia
             self._apply_settings_change(changed)
 
     def _apply_settings_change(self, changed):
-        """Connects platforms after a save: newly enabled and newly credentialed.
+        """Applies a save of the settings: the plugin's login, then the tree.
 
-        Two reasons to (re)connect exist, and only the first one used to be
-        handled: a platform that has no API yet, and a platform whose
-        credentials changed. The second one matters because a running session
-        does not care what is stored - it keeps working with the credentials it
-        logged in with. A new password therefore reached the configuration but
-        never the platform, and a wrong one stayed unnoticed until the next
-        NVDA start.
+        The plugin decides what logs in (_apply_saved_settings): platforms
+        whose credentials changed and switched-on ones without a session. A
+        running session does not care what is stored - it keeps working with
+        the credentials it logged in with - so a new password has to log in
+        again to count. The menu used to do that with a login of its own per
+        platform; the tree follows now through _rebuild_after_login, which
+        the plugin calls after every login while the menu is open.
 
         Args:
             changed: platform keys whose credentials the dialog changed.
         """
-        # The settings clear the Netatmo tokens when the client ID changes -
-        # the authorisation belongs to the old app registration then.
-        if (self.plugin.use_netatmo and 'netatmo' in changed
-                and self.plugin.netatmo_client_id
-                and not self.plugin.netatmo_refresh_token):
-            # Translators: Note after new Netatmo client data: the OAuth2
-            # authorisation in the browser has to be granted again.
-            ui.message(_("Netatmo: authorise again with the Connect button in "
-                         "the settings"))
-
-        # Check whether Netatmo was newly connected (tokens present, but the
-        # API not initialized), or whether the client data changed - the API
-        # holds the client ID and secret, so it has to be rebuilt then.
-        if (self.plugin.use_netatmo and
-            self.plugin.netatmo_client_id and
-            self.plugin.netatmo_refresh_token and
-                (not self.plugin.netatmo_api or 'netatmo' in changed)):
-            # Initialize the Netatmo API
-            try:
-                from .netatmo_api import NetatmoAPI
-                self.plugin.netatmo_api = NetatmoAPI(
-                    self.plugin.netatmo_client_id,
-                    self.plugin.netatmo_client_secret,
-                    redirect_port=getattr(self.plugin, 'netatmo_redirect_port', 8474),
-                )
-                self.plugin.netatmo_api.set_tokens(
-                    self.plugin.netatmo_access_token,
-                    self.plugin.netatmo_refresh_token,
-                    self.plugin.netatmo_token_expiry
-                )
-                # Same as after the login: renewed tokens must be
-                # persisted, since Netatmo rotates refresh tokens.
-                self.plugin.netatmo_api.set_token_update_callback(
-                    self.plugin._on_netatmo_tokens_renewed)
-                log.info("Netatmo API initialised from the settings dialog")
-            except Exception as e:
-                log.error(f"Netatmo API initialisation failed: {e}")
-
-        # Reinitialize VeSync when enabled and credentials are present but
-        # the API is not built yet (e.g. after enabling it in the
-        # settings), or when the credentials changed. The login runs in the
-        # background so the dialog does not block; after a successful login
-        # the devices are loaded.
-        if (self.plugin.use_vesync
-                and (self.plugin.vesync_email
-                     and self.plugin._encrypted_vesync_password)
-                and (not self.plugin.vesync_api or 'vesync' in changed)):
-            self._init_vesync_in_background()
-
-        # Connect Cozytouch afterwards when freshly enabled and no API is
-        # built yet (avoids the forced NVDA restart), or with new credentials.
-        if (self.plugin.use_cozytouch
-                and self.plugin.cozytouch_email
-                and self.plugin._encrypted_cozytouch_password
-                and (not self.plugin.cozytouch_api or 'cozytouch' in changed)):
-            self._init_cozytouch_in_background()
-
-        # Petlibro the same way.
-        if (self.plugin.use_petlibro
-                and self.plugin.petlibro_email
-                and self.plugin._encrypted_petlibro_password
-                and (not self.plugin.petlibro_api or 'petlibro' in changed)):
-            self._init_petlibro_in_background()
-
-        # Connect Meross afterwards when freshly (re-)enabled and no API is
-        # built yet - otherwise the Meross devices would only appear after
-        # an NVDA restart - or when the credentials changed.
-        if (self.plugin.use_meross
-                and self.plugin.email
-                and self.plugin._encrypted_password
-                and (not self.plugin.api or 'meross' in changed)):
-            self._init_meross_in_background()
+        try:
+            dropped = self.plugin._apply_saved_settings(changed)
+        except Exception as e:
+            log.error(f"Applying the saved settings failed: {type(e).__name__}: {e}")
+            dropped = 0
 
         # A platform switched off keeps its devices otherwise: the polling
         # stops at once, but a plug that answers nothing any more was still
         # offered for switching until NVDA was restarted. Dropping them
         # changes the list, so the tree is rebuilt for it.
-        try:
-            if self.plugin.drop_disabled_platform_devices():
-                self._load_devices_internal(self.plugin.devices)
-                self._refresh_favorites_tree()
-        except Exception as e:
-            log.debug(f"Dropping the switched-off platforms failed: {e}")
+        if dropped:
+            self._rebuild_after_login()
 
         # Update the dialog
         if self.plugin.is_logged_in:
             self._on_refresh(None)
+
+    def _rebuild_after_login(self, _waited=False):
+        """Rebuilds both trees from the device list (wx thread).
+
+        Called by the plugin after a login while the menu is open - the
+        device objects of that platform are new then - and after a save that
+        dropped the devices of a switched-off platform.
+
+        Not while an action still waits for the cloud (its callback holds an
+        item of this tree, see _action_callback_pending) or a child dialog
+        sits on top of the tree (see _suppress_live_updates): then once more
+        a second later. Further calls in the meantime are covered by the one
+        waiting.
+        """
+        if _waited:
+            self._login_rebuild_waiting = False
+        elif getattr(self, '_login_rebuild_waiting', False):
+            return
+        if getattr(self, '_is_destroyed', False):
+            return
+        if (self._action_callback_pending()
+                or getattr(self, '_suppress_live_updates', False)):
+            self._login_rebuild_waiting = True
+            wx.CallLater(1000, self._rebuild_after_login, True)
+            return
+        try:
+            self._load_devices_internal(self.plugin.devices)
+            self._refresh_favorites_tree()
+        except Exception as e:
+            log.debug(f"Rebuilding the tree after a login failed: {e}")
 
     def _offer_login_reentry(self, platform, error):
         """After a failed login: offers to enter the credentials again.
@@ -3880,8 +3839,8 @@ class SmartHomeControlDialog(_NetatmoDialogMixin, _VeSyncDialogMixin, _MerossDia
         is announced and nothing more - a password dialog would be the wrong
         answer to it.
 
-        Called from the login threads of the platform mixins via
-        wx.CallAfter.
+        Called on the wx thread by the plugin's _ask_credential_reentry while
+        the menu is open.
         """
         from .settings_panel import (
             is_credentials_error, login_error_message, offer_credential_reentry)

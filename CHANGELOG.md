@@ -21,6 +21,7 @@ The GitHub release notes are built from the section of the released version.
 - Renewed sign-in tokens no longer write NVDA's whole configuration to disk.
 - A sign-in that keeps failing for a reason other than the network is no longer retried for good.
 - The settings open only once at a time.
+- Saving the settings in the device menu signs in the same way as at NVDA start, including the new attempt after a network error.
 - Meross garage door openers and roller shutters are shown but not switched.
 - Shortcuts with Alt, Control or Windows end the favourites layer and work as usual.
 - The help of the favourites tab (F1) opens as a list.
@@ -43,6 +44,8 @@ The GitHub release notes are built from the section of the released version.
 - A Cozytouch boost duration that was just set is no longer overwritten by the next update.
 - Cozytouch and Petlibro changes, the start of a boost included, reach the history even when the device menu is closed first.
 - A Meross account with two-factor authentication is named as the reason the sign-in fails.
+- A refused password after saving the settings is announced once, not twice.
+- The device menu shows the devices of a platform that signed in again while it was open, instead of their state from before.
 - A wrong Meross password no longer plays NVDA's error sound.
 - Testing the Netatmo connection no longer invalidates the running sign-in.
 - Netatmo tokens are renewed only when Netatmo rejects the token itself.
@@ -60,6 +63,7 @@ The GitHub release notes are built from the section of the released version.
 - Actions are pinned to commits, the build tools to hashes (`.github/requirements-ci.txt`).
 - `python build_addon.py lock` records the SHA-256 of every bundled wheel. `libs` refuses any other file, and `pack` fails when the lock is out of date.
 - Each release carries the SHA-256 checksum of the package.
+- Every sign-in goes through `_do_login`; the device menu no longer has sign-in code of its own.
 
 ## 26.10.1 (October 2026)
 

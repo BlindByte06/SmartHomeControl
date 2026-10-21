@@ -1563,6 +1563,7 @@ class SmartHomeSettingsDialog(wx.Dialog):
                 self._safe_call_after(self._set_status, _("Testing VeSync "
                                                           "connection..."))
                 self._safe_call_after(self._safe_button_disable, self.vesyncTestBtn)
+                # Translators: Speech output during the connection test.
                 self._safe_call_after(ui.message, _("Connecting to VeSync..."))
 
                 from .vesync_api import VeSyncAPI
@@ -1667,6 +1668,7 @@ class SmartHomeSettingsDialog(wx.Dialog):
                 self._safe_call_after(self._set_status, _("Testing Cozytouch "
                                                           "connection..."))
                 self._safe_call_after(self._safe_button_disable, self.cozytouchTestBtn)
+                # Translators: Speech output during the connection test.
                 self._safe_call_after(ui.message, _("Connecting to "
                                                     "Cozytouch..."))
 

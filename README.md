@@ -124,7 +124,10 @@ translations along the way (`.po` and `.mo` in agreement) and the package
 integrity (no `__pycache__`, manifest present, `.mo` included), and
 synchronises the version number into the documentation titles.
 `python build_addon.py libs` rebuilds `lib/` reproducibly from
-`requirements-bundle.txt`. The GitHub Actions pipeline
+`requirements-bundle.txt` and takes only wheels whose SHA-256 is recorded in
+`requirements-bundle.lock`; `python build_addon.py lock` records them after a
+version change, and `pack` fails while the lock is out of date. The GitHub
+Actions pipeline
 (`.github/workflows/build.yml`) builds on every push to `main` and, for tags
 (`v*`), attaches the package to a GitHub release together with the changelog
 section of that version.

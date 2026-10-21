@@ -168,9 +168,9 @@ class _SchedulerMixin:
         platforms behave predictably the same; the former VeSync-only
         thread is gone.
         """
-        # Check and start under one lock: the login thread and the late logins
-        # of the device menu can call this at the same moment, and both saw
-        # no scheduler running and started one each.
+        # Check and start under one lock: two logins - a retry and a save of
+        # the settings - can call this at the same moment, and both saw no
+        # scheduler running and started one each.
         lock = self.__dict__.setdefault('_scheduler_start_lock', threading.Lock())
         with lock:
             t = self._background_refresh_thread

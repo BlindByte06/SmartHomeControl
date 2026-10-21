@@ -248,6 +248,16 @@ as an account without devices: with a valid token the login itself needs
 no network, so on 2026-10-03 a start without Wi-Fi left Netatmo out of the
 retry the other four platforms got.
 
+The device menu used to sign in by itself after a save of the settings -
+one copy of each login per platform, without the retry, and with Netatmo
+taken without asking the cloud. It saves through the plugin now. The checks
+cover that no dialog module builds a session or signs in on its own, that
+the open menu rebuilds its tree after every login (before the announcement,
+and not while an action still waits for the cloud or a child dialog is
+open), that the replaced VeSync, Cozytouch and Petlibro sessions are closed
+only once their devices are replaced, that the menu makes the offer to enter
+a refused password again, and that the refusal is spoken once.
+
 ## Why these and not a test framework
 
 They assert the things that actually went wrong in this add-on, and they do

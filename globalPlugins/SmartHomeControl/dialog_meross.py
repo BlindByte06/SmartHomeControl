@@ -3,7 +3,6 @@
 
 import wx
 import ui
-import threading
 import tones
 from logHandler import log as _nvda_log
 
@@ -18,7 +17,6 @@ if "_" not in globals():  # fallback if initTranslation() fails
     def _(s):
         return s
 
-from .errors import log_failure
 from .constants import (
     BEEP_ON,
 )
@@ -407,76 +405,3 @@ class _MerossDialogMixin:
         else:
             # Translators: Error message when the RGB color cannot be set.
             ui.message(_("{name}: color cannot be set").format(name=device.name))
-
-    def _init_meross_in_background(self):
-        """Initializes the Meross API in the background and loads devices afterwards.
-
-        Called from the settings dialog when Meross has just been (re-)enabled
-        or its credentials changed - without blocking the UI and without the
-        former forced NVDA restart (analogous to VeSync/Cozytouch).
-        """
-        plugin = self.plugin
-        if not plugin.begin_platform_login('meross'):
-            log.info("Meross login already running - not starting a second one")
-            return
-
-        def _login_and_refresh():
-            try:
-                from .meross_api import MerossAPI
-                api_obj = MerossAPI()
-                api_obj.set_device_state_changed_callback(plugin._on_external_device_change)
-                api_obj.set_throttle_callback(plugin._on_meross_throttled)
-
-                # Decrypt the password only at login time and delete it
-                # immediately.
-                _pw = plugin.password
-                try:
-                    api_obj.login(plugin.email, _pw)
-                finally:
-                    _pw = None
-                    del _pw
-
-                devices = api_obj.get_devices()
-                api_obj.set_wrapped_devices(devices)
-                # Take over the new session only after the login worked, and
-                # only then close the old one: a failed re-login leaves the
-                # working session (including its MQTT push) untouched.
-                old_api, plugin.api = plugin.api, api_obj
-                if old_api is not None and old_api is not api_obj:
-                    # Unconditionally, not just on a credential change: an
-                    # abandoned session keeps its MQTT connection, polls the
-                    # cloud on its own and delivers every push a second time.
-                    try:
-                        old_api.logout()
-                    except Exception as e:
-                        log.debug(f"Logout of the old Meross session failed: {e}")
-
-                count = plugin.replace_platform_devices('meross', devices)
-                log.info(f"Meross initialised late: {count} devices")
-
-                # Update the dialog on the UI thread
-                wx.CallAfter(self._refresh_after_meross_init, len(devices))
-            except Exception as e:
-                log_failure("Late Meross initialisation failed", e)
-                wx.CallAfter(self._offer_login_reentry, 'meross', e)
-            finally:
-                plugin.end_platform_login('meross')
-
-        threading.Thread(target=_login_and_refresh, daemon=True).start()
-        # Translators: Note that the Meross connection is being established in
-        # the background.
-        ui.message(_("Connecting to Meross..."))
-
-    def _refresh_after_meross_init(self, count):
-        """Updates the tree after Meross was connected afterwards."""
-        if getattr(self, '_is_destroyed', False):
-            return
-        try:
-            self._load_devices_internal(self.plugin.devices)
-            self._refresh_favorites_tree()
-            # Translators: Confirmation after loading the Meross devices
-            # afterwards.
-            ui.message(_("Meross: {count} device(s) loaded").format(count=count))
-        except Exception as e:
-            log.debug(f"Refresh after the Meross init failed: {e}")
-

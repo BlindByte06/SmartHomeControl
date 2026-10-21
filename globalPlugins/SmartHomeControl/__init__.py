@@ -1162,6 +1162,8 @@ class GlobalPlugin(_CredentialsMixin, _SchedulerMixin, _ChangeDetectionMixin,
             for p in set(platforms) - set(claimed):
                 log.info(f"{PLATFORM_LABELS[p]} login already running - not "
                          f"starting a second one")
+            # The sessions running now - see _close_replaced_session.
+            before = {p: self._platform_api(p) for p in claimed}
             threads = [threading.Thread(
                 target=self._login_one, args=(p, results, failures),
                 daemon=True, name=f"SmartHomeControl login {p}")
@@ -1173,7 +1175,8 @@ class GlobalPlugin(_CredentialsMixin, _SchedulerMixin, _ChangeDetectionMixin,
 
             for p in PLATFORMS:
                 if p in results:
-                    self._take_platform_devices(p, results[p])
+                    if self._take_platform_devices(p, results[p]):
+                        self._close_replaced_session(p, before.get(p))
 
             with self._devices_lock:
                 have_devices = bool(self.devices)
@@ -1181,6 +1184,10 @@ class GlobalPlugin(_CredentialsMixin, _SchedulerMixin, _ChangeDetectionMixin,
                 self.is_logged_in = True
                 self._last_refresh_time = time.time()
                 self._start_background_refresh()
+            if results:
+                # Before the announcement below: the menu's own logins
+                # rebuilt their tree first and spoke afterwards.
+                self._notify_menu_of_login()
 
             # Platform names are brand names -> do not translate.
             parts = [f"{len(results[p])} {PLATFORM_LABELS[p]}"
@@ -1221,7 +1228,11 @@ class GlobalPlugin(_CredentialsMixin, _SchedulerMixin, _ChangeDetectionMixin,
                     log.warning(f"{PLATFORM_LABELS[p]} login keeps failing "
                                 f"({type(error).__name__}) - not tried again "
                                 f"until the settings are saved or NVDA restarts")
-                if not quiet or credentials:
+                # The first refusal after a save is spoken by the offer to
+                # enter it again (_ask_credential_reentry) - said here as
+                # well, it came twice.
+                offered = interactive and credentials and len(refused) == 1
+                if (not quiet or credentials) and not offered:
                     wx.CallAfter(ui.message, login_error_message(p, error))
             if retry:
                 attempt = 0 if retry_attempt is None else retry_attempt
@@ -1261,6 +1272,9 @@ class GlobalPlugin(_CredentialsMixin, _SchedulerMixin, _ChangeDetectionMixin,
         An empty answer from a platform that has devices in the list keeps
         them: a short network outage during the login is likelier than an
         account that was emptied in the meantime.
+
+        Returns True when the list now holds the new devices, False when the
+        known ones stayed.
         """
         devices = list(devices)
         with self._devices_lock:
@@ -1268,7 +1282,7 @@ class GlobalPlugin(_CredentialsMixin, _SchedulerMixin, _ChangeDetectionMixin,
         if not devices and previous:
             log.warning(f"{PLATFORM_LABELS[platform]} login returned no devices "
                         f"- the {len(previous)} known ones stay")
-            return
+            return False
         if platform == 'meross':
             # A hub that did not answer lists no sensors - without this its
             # sensors were gone for the rest of the session, and their
@@ -1292,6 +1306,42 @@ class GlobalPlugin(_CredentialsMixin, _SchedulerMixin, _ChangeDetectionMixin,
         elif platform == 'petlibro':
             for pd in devices:
                 self._seed_petlibro_state(pd)
+        return True
+
+    # Platforms whose session of before _do_login closes once the new devices
+    # are in the list. Meross closes its own in _login_meross; Netatmo's was
+    # closed by neither of the two login paths and still is not.
+    _CLOSE_REPLACED_SESSIONS = ('vesync', 'cozytouch', 'petlibro')
+
+    def _close_replaced_session(self, platform, old_api):
+        """Closes the session a fresh login of ``platform`` replaced.
+
+        The device menu's own logins did that, the login here did not: every
+        save of the settings left a VeSync, Cozytouch or Petlibro session
+        open behind it. Only after the devices are replaced - until then the
+        devices in the list still work through the old session.
+        """
+        if (platform not in self._CLOSE_REPLACED_SESSIONS or old_api is None
+                or old_api is self._platform_api(platform)):
+            return
+        try:
+            old_api.logout()
+        except Exception as e:
+            log.debug(f"Closing the old {PLATFORM_LABELS[platform]} session "
+                      f"failed: {e}")
+
+    def _notify_menu_of_login(self):
+        """Lets an open device menu rebuild its tree after a login.
+
+        The tree holds the device objects it was built from. After a login
+        those of that platform are no longer the ones in the list: they are
+        not polled any more, and their session may be closed. A retry that
+        logged in while the menu was open used to leave them there.
+        """
+        dialog = getattr(self, '_active_dialog', None)
+        if dialog is None or getattr(dialog, '_is_destroyed', False):
+            return
+        wx.CallAfter(dialog._rebuild_after_login)
 
     def _schedule_login_retry(self, platforms, attempt):
         """Tries the login of ``platforms`` again after a while.
@@ -1515,7 +1565,17 @@ class GlobalPlugin(_CredentialsMixin, _SchedulerMixin, _ChangeDetectionMixin,
     }
 
     def _ask_credential_reentry(self, platform, error):
-        """Offers to enter the refused credentials again (main thread)."""
+        """Offers to enter the refused credentials again (main thread).
+
+        With the device menu open, the menu makes the offer, as it did when
+        it ran logins of its own: the dialogs belong to the menu, and a save
+        there goes through its _apply_settings_change.
+        """
+        dialog = getattr(self, '_active_dialog', None)
+        if dialog is not None and not getattr(dialog, '_is_destroyed', False):
+            dialog._offer_login_reentry(platform, error)
+            return
+
         def _after_save(changed):
             if changed:
                 self._start_auto_login(interactive=True, platforms=changed)
@@ -1643,9 +1703,25 @@ class GlobalPlugin(_CredentialsMixin, _SchedulerMixin, _ChangeDetectionMixin,
         switch, and a platform whose re-login hit a network error lost its
         devices. Now only platforms with new credentials, and switched-on
         platforms without a session, log in; a switched-off one loses its
-        devices, as in the device menu.
+        devices.
+
+        The device menu saves through here as well. It used to run a login
+        of its own per platform - five copies of the ones below, without the
+        retry after a network error, and Netatmo there was taken without
+        asking the cloud at all.
+
+        Returns how many devices of switched-off platforms were dropped -
+        the device menu rebuilds its tree for that.
         """
-        self.drop_disabled_platform_devices()
+        dropped = self.drop_disabled_platform_devices()
+        # The settings clear the Netatmo tokens when the client ID changes -
+        # the authorisation belongs to the old app registration then.
+        if (self.use_netatmo and 'netatmo' in changed
+                and self.netatmo_client_id and not self.netatmo_refresh_token):
+            # Translators: Note after new Netatmo client data: the OAuth2
+            # authorisation in the browser has to be granted again.
+            ui.message(_("Netatmo: authorise again with the Connect button in "
+                         "the settings"))
         if self.is_logged_in:
             platforms = [p for p in PLATFORMS if self._platform_enabled(p)
                          and (p in changed or self._platform_api(p) is None)]
@@ -1654,7 +1730,8 @@ class GlobalPlugin(_CredentialsMixin, _SchedulerMixin, _ChangeDetectionMixin,
         # interactive: the login follows the save, so a refused password may
         # ask to be entered again.
         self._start_auto_login(interactive=True, platforms=platforms)
-    
+        return dropped
+
     @scriptHandler.script(
         # Translators: Description of the script in the NVDA input gestures
         # dialog.
