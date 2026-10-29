@@ -166,6 +166,81 @@ def make_plugin_class(spoken, asked, log):
     return Plugin
 
 
+def test_vesync_relogin():
+    """Die Neuanmeldung von VeSync darf nicht auf ihre eigene Sperre warten.
+
+    Ein abgelaufenes Token startet die Neuanmeldung; der Thread haelt dabei
+    _reauth_lock. Die Anmeldung schickte ihre Anfragen durch dasselbe _post,
+    und kam darin ein Code aus _AUTH_EXPIRED_CODES zurueck - die -11201xxx
+    fuehrt pyvesync unter "falsches Passwort" -, wartete der Thread auf die
+    Sperre, die er selbst hielt. Fuer immer, und meist war es der Thread,
+    der alle Plattformen abfragt.
+    """
+    import importlib
+    import types
+    print('== Eine VeSync-Neuanmeldung wartet nicht auf sich selbst ==')
+
+    class _Quiet:
+        def __getattr__(self, name):
+            return lambda *a, **k: None
+
+    if 'logHandler' not in sys.modules:
+        mod = types.ModuleType('logHandler')
+        mod.log = _Quiet()
+        sys.modules['logHandler'] = mod
+    if 'addonHandler' not in sys.modules:
+        mod = types.ModuleType('addonHandler')
+        mod.initTranslation = lambda: None
+        sys.modules['addonHandler'] = mod
+    try:
+        import requests  # noqa: F401
+    except ImportError:
+        sys.path.append(os.path.join(os.path.dirname(os.path.dirname(
+            os.path.dirname(os.path.abspath(__file__)))), 'lib'))
+    pkg = types.ModuleType('shcvesync')
+    pkg.__path__ = [BASE]
+    sys.modules['shcvesync'] = pkg
+    api_mod = importlib.import_module('shcvesync.vesync_api')
+
+    code = sorted(api_mod.VeSyncAPI._AUTH_EXPIRED_CODES)[0]
+
+    class Answer:
+        status_code = 200
+
+        def json(self):
+            return {'code': code, 'msg': 'refused'}
+
+    class Session:
+        def post(self, *args, **kwargs):
+            return Answer()
+
+        def close(self):
+            pass
+
+    api = api_mod.VeSyncAPI(country_code='DE')
+    api._session = Session()
+    tried = []
+
+    def relogin(target):
+        tried.append(1)
+        target.login('someone@example.com', 'secret')
+        return True
+
+    api.set_reauth_callback(relogin)
+    worker = threading.Thread(
+        target=lambda: api._post('/cloud/v1/deviceManaged/devices', {'token': 't'}),
+        daemon=True)
+    worker.start()
+    worker.join(5)
+    check('die Anfrage kehrt zurueck, statt zu haengen', not worker.is_alive())
+    check('die Neuanmeldung wurde genau einmal versucht', len(tried) == 1,
+          f'{len(tried)} Versuche')
+    free = api._reauth_lock.acquire(blocking=False)
+    if free:
+        api._reauth_lock.release()
+    check('die Sperre ist danach frei', free)
+
+
 def main():
     spoken, asked, log = [], [], Log()
     Plugin = make_plugin_class(spoken, asked, log)
@@ -819,6 +894,13 @@ def main():
           'self._login_retry_stop.set()' in init)
     check('save_settings ist gegen gleichzeitige Aufrufe gesperrt',
           'with self._save_lock:' in init)
+    energy = init.partition('    def script_announceEnergy')[2].partition(
+        '\n    def ')[0]
+    check('die Energieansage verstummt nicht bei einem Fehler',
+          'text = collect()' in energy
+          and 'except Exception' in energy.partition('def task():')[2])
+
+    test_vesync_relogin()
 
     print()
     if FAILED:

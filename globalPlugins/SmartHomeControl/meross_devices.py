@@ -359,14 +359,21 @@ def _apply_ssl_fix():
     NVDA (Python 3.11/win32 and Python 3.13/win-amd64) gives aiohttp no
     system trust store, so without this the Meross certificates could not
     be verified.
+
+    The add-on's own bundle, not certifi.where(): that names NVDA's copy
+    (see http_session.bundled_ca_bundle).
     """
     try:
         import ssl
-        import certifi
         import aiohttp
         import meross_iot.http_api as _meross_http_api
+        from .http_session import bundled_ca_bundle
 
-        ssl_context = ssl.create_default_context(cafile=certifi.where())
+        cafile = bundled_ca_bundle()
+        if cafile is None:
+            import certifi
+            cafile = certifi.where()
+        ssl_context = ssl.create_default_context(cafile=cafile)
 
         with warnings.catch_warnings():
             warnings.simplefilter("ignore", DeprecationWarning)
@@ -379,7 +386,7 @@ def _apply_ssl_fix():
                     super().__init__(*args, **kwargs)
 
         _meross_http_api.ClientSession = _CertifiClientSession
-        log.info(f"SSL fix active: meross_iot uses the certifi CA bundle ({certifi.where()})")
+        log.info(f"SSL fix active: meross_iot uses the CA bundle {cafile}")
     except Exception as e:
         log.warning(f"SSL fix could not be applied: {e}")
 
@@ -1079,9 +1086,8 @@ class MerossDevice:
             # MS100 (and MS130 without push data yet): default method
             if hasattr(self._device, 'get_subdevices'):
                 try:
-                    subdevices = list(self._device.get_subdevices())
-                    if subdevices:
-                        subdev = subdevices[0]
+                    subdev = self._own_subdevice()
+                    if subdev is not None:
                         if hasattr(subdev, 'last_sampled_temperature'):
                             temp = subdev.last_sampled_temperature
                             if temp is not None:
@@ -1124,9 +1130,8 @@ class MerossDevice:
 
             if hasattr(self._device, 'get_subdevices'):
                 try:
-                    subdevices = list(self._device.get_subdevices())
-                    if subdevices:
-                        subdev = subdevices[0]
+                    subdev = self._own_subdevice()
+                    if subdev is not None:
                         if hasattr(subdev, 'last_sampled_humidity'):
                             humidity = subdev.last_sampled_humidity
                             if humidity is not None:
@@ -1176,6 +1181,27 @@ class MerossDevice:
                 f"(known event data: {get_sensor_data_keys()})")
         return None
 
+    def _own_subdevice(self):
+        """This sensor among the subdevices of ``self._device``, or None.
+
+        For a sensor whose device object is its hub. Reading the FIRST
+        subdevice of the hub, as this used to, gave every sensor on it the
+        values of one of them - or none, when the first was a leak sensor.
+        """
+        try:
+            subdevices = list(self._device.get_subdevices())
+        except Exception as e:
+            log.debug(f"Could not read the subdevices of {self.name}: {e}")
+            return None
+        sub_id = self._resolve_subdevice_id()
+        if sub_id:
+            for subdev in subdevices:
+                if getattr(subdev, 'subdevice_id', None) == sub_id:
+                    return subdev
+            return None
+        # Without an id only an unambiguous answer is one.
+        return subdevices[0] if len(subdevices) == 1 else None
+
     def _resolve_subdevice_id(self):
         """Determines the subdevice ID for hub-based devices."""
         if self._subdevice_id:
@@ -1189,15 +1215,21 @@ class MerossDevice:
         return None
 
     def is_water_detected(self):
-        """Checks whether water was detected (water sensors only)"""
+        """Whether the sensor detects water (water sensors only).
+
+        True or False, or None while the sensor has not reported a state.
+
+        meross_iot calls the state ``is_leaking`` (Ms405Sensor, which serves
+        the MS400 as well). This used to ask for ``is_triggered``, which no
+        version of the library has: the answer was None for every sensor,
+        so a leak was never announced, never written to the history, and
+        the device tree said "no water" while the sensor reported one.
+        """
         if not self.is_water_sensor:
             return None
         try:
-            if hasattr(self._device, 'is_triggered'):
-                if callable(self._device.is_triggered):
-                    return self._device.is_triggered()
-                return self._device.is_triggered
-            return None
+            value = getattr(self._device, 'is_leaking', None)
+            return None if value is None else bool(value)
         except Exception as e:
             log.debug(f"Could not fetch the water status: {e}")
             return None

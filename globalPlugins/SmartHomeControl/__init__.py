@@ -103,6 +103,13 @@ def _log_library_origins():
         where = os.path.normcase(getattr(module, "__file__", "") or "")
         origin = "add-on" if where.startswith(own) else "NVDA"
         parts.append(f"{name} {getattr(module, '__version__', '?')} ({origin})")
+    # The certificates come from the add-on's file whichever certifi runs.
+    try:
+        from .http_session import bundled_ca_bundle
+        parts.append("CA bundle (add-on)" if bundled_ca_bundle()
+                     else "CA bundle (certifi)")
+    except Exception as e:
+        log.debug(f"CA bundle not determined: {e}")
     if parts:
         log.info("Libraries in use: " + ", ".join(parts))
 
@@ -215,6 +222,21 @@ class _AddonSettings:
     def __getitem__(self, key):
         return self._aggregated[key]
 
+    @staticmethod
+    def _mark_profile_changed(profile):
+        """Has NVDA write ``profile`` at the next save.
+
+        Through the same set NVDA's own writes use (_dirtyProfiles). It is
+        private, so a configuration without it is only logged: the value is
+        removed for this session either way.
+        """
+        name = getattr(profile, 'name', None)
+        dirty = getattr(config.conf, '_dirtyProfiles', None)
+        if name and isinstance(dirty, set):
+            dirty.add(name)
+        else:
+            log.debug(f"Profile {name!r} could not be marked as changed")
+
     def __setitem__(self, key, value):
         try:
             profiles = config.conf.profiles
@@ -226,6 +248,11 @@ class _AddonSettings:
                 section = profile.get(self.SECTION)
                 if section is not None and key in section:
                     del section[key]
+                    # NVDA writes only the base and the profiles marked as
+                    # changed (ConfigManager.save). Unmarked, the removal
+                    # held until the next restart, and then the value in the
+                    # profile overrode the base again.
+                    self._mark_profile_changed(profile)
             # The aggregated view caches what it read; without this it
             # would go on answering with the value from before.
             cache = getattr(self._aggregated, "_cache", None)
@@ -1759,7 +1786,7 @@ class GlobalPlugin(_CredentialsMixin, _SchedulerMixin, _ChangeDetectionMixin,
         # Translators: Announced while the energy data is being fetched.
         ui.message(_("Fetching energy data..."))
 
-        def task():
+        def collect():
             parts = []
             covered_uuids = set()
             # 1. Device counter (complete, independent of NVDA's runtime).
@@ -1830,7 +1857,20 @@ class GlobalPlugin(_CredentialsMixin, _SchedulerMixin, _ChangeDetectionMixin,
                 # Alphabetically by device name (every entry starts with
                 # it) - the same order as the overview command.
                 parts.sort(key=str.casefold)
-            wx.CallAfter(ui.message, "; ".join(parts))
+            return "; ".join(parts)
+
+        def task():
+            # Guarded as a whole: an unexpected failure used to end the
+            # thread after "Fetching energy data..." with nothing more said.
+            try:
+                text = collect()
+            except Exception as e:
+                _safe_log_error("Energy announcement failed", e)
+                _beep(BEEP_ERROR)
+                # Translators: Spoken when the energy consumption could not be
+                # put together because of an error.
+                text = _("Energy data could not be fetched")
+            wx.CallAfter(ui.message, text)
 
         threading.Thread(target=task, daemon=True).start()
 
@@ -2201,12 +2241,24 @@ class GlobalPlugin(_CredentialsMixin, _SchedulerMixin, _ChangeDetectionMixin,
             return None, None
         uid = fav.get('uuid', '')
         with self._devices_lock:
-            for d in self.devices:
-                if getattr(d, 'unique_id', d.uuid) == uid or d.uuid == uid:
-                    return fav, d
-                for ch in (d.get_channels() or []):
-                    if ch.unique_id == uid or ch.uuid == uid:
-                        return fav, ch
+            devices = list(self.devices)
+        # The exact identity first, across devices and outlets. Matching the
+        # plain uuid in the same pass let a hub's favourite land on whichever
+        # of its sensors came first in the list - they all carry its uuid.
+        for d in devices:
+            if getattr(d, 'unique_id', None) == uid:
+                return fav, d
+            for ch in (d.get_channels() or []):
+                if getattr(ch, 'unique_id', None) == uid:
+                    return fav, ch
+        # Favourites written before the unique id existed: the plain uuid,
+        # never a hub sensor for it.
+        for d in devices:
+            if d.uuid == uid and not getattr(d, '_subdevice_id', None):
+                return fav, d
+            for ch in (d.get_channels() or []):
+                if ch.uuid == uid:
+                    return fav, ch
         return fav, None
 
     def _favorite_toggle(self, number):
@@ -2226,10 +2278,13 @@ class GlobalPlugin(_CredentialsMixin, _SchedulerMixin, _ChangeDetectionMixin,
             return
         if (getattr(device, 'is_netatmo', False)
                 or getattr(device, 'is_sensor', False)
+                or getattr(device, 'is_hub', False)
                 or getattr(device, 'is_petlibro', False)):
             # Devices that cannot be switched: sensors (Meross MS100/MS400
-            # ...) and all Netatmo devices - thermostats can be adjusted but
-            # not switched on/off, weather stations only display. A Petlibro
+            # ...), hubs, and all Netatmo devices - thermostats can be
+            # adjusted but not switched on/off, weather stations only
+            # display. A hub only relays its sensors; it used to reach the
+            # cloud and came back as a technical error. A Petlibro
             # feeder has no on/off either, and a digit pressed twice must
             # never give a meal. This branch
             # used to simply announce the status again, which after the
@@ -2798,11 +2853,14 @@ class GlobalPlugin(_CredentialsMixin, _SchedulerMixin, _ChangeDetectionMixin,
                 # "_ch" - a device UUID can contain "_ch" itself.
                 parts = device_uuid.rsplit("_ch", 1) if channel is None else None
                 if parts and len(parts) == 2 and parts[1].isdigit():
-                    parent_uuid = parts[0]
+                    lookup_uuid = parts[0]
                     channel = int(parts[1])
-                    device = next((d for d in self.devices if d.uuid == parent_uuid), None)
                 else:
-                    device = next((d for d in self.devices if d.uuid == device_uuid), None)
+                    lookup_uuid = device_uuid
+                # Not a hub sensor: they all carry their hub's uuid, and
+                # the first of them used to stand in for the hub.
+                device = next((d for d in self.devices if d.uuid == lookup_uuid
+                               and not getattr(d, '_subdevice_id', None)), None)
 
             if not device:
                 # Translators: Error message when a device can no longer be
@@ -2873,6 +2931,14 @@ class GlobalPlugin(_CredentialsMixin, _SchedulerMixin, _ChangeDetectionMixin,
                 self._accept_local_change('cozytouch', device)
                 self._log_toggle(device, new_state)
                 return _("{name}: {status}").format(name=device.name, status=status)
+
+            # A hub has nothing to switch - refused here rather than by the
+            # cloud with a technical message.
+            if getattr(device, 'is_hub', False):
+                # Translators: Message when the user tries to switch a device
+                # that cannot be switched on/off (sensors, Netatmo devices).
+                raise ValueError(_("{name}: cannot be switched – adjustable in "
+                                   "the device menu").format(name=device.name))
 
             # Garage door openers and roller shutters are shown, not
             # switched (see meross_devices._is_opener).

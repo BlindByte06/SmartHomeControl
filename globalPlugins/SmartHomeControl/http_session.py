@@ -12,7 +12,12 @@ The clouds are reached over TLS on fixed host names, so this needs a
 compromised or misconfigured server to matter at all. It is cheap to rule
 out all the same: a redirect to another host drops the token header, and one
 that would carry a body there is refused.
+
+The certificates are checked against the add-on's own CA bundle as well
+(see bundled_ca_bundle).
 """
+
+import os
 
 import requests
 
@@ -20,6 +25,19 @@ import requests
 # checks under tools/checks replace it with a bare module).
 _SessionBase = getattr(requests, "Session", object)
 _RequestException = getattr(requests, "RequestException", Exception)
+
+# lib/certifi/cacert.pem of the add-on. NVDA ships certifi too and its copy
+# is the one imported, so certifi.where() named NVDA's bundle: a root that
+# certifi had withdrawn - the emSign ones of GHSA-6q48-6c7w-9gw2 - stayed
+# trusted until the next NVDA, while the bundled update never ran.
+_BUNDLED_CA = os.path.join(
+    os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
+    "lib", "certifi", "cacert.pem")
+
+
+def bundled_ca_bundle():
+    """Path of the add-on's own cacert.pem, or None when it is missing."""
+    return _BUNDLED_CA if os.path.isfile(_BUNDLED_CA) else None
 
 
 class CrossHostRedirect(_RequestException):
@@ -32,6 +50,12 @@ class SafeSession(_SessionBase):
     # Headers that hold a credential besides Authorization, which requests
     # removes by itself.
     SENSITIVE_HEADERS = ("token",)
+
+    def __init__(self):
+        super().__init__()
+        ca_bundle = bundled_ca_bundle()
+        if ca_bundle:
+            self.verify = ca_bundle
 
     def rebuild_auth(self, prepared_request, response):
         if self.should_strip_auth(response.request.url, prepared_request.url):

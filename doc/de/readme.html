@@ -603,15 +603,23 @@ benennt, woher die Aktion kam: „du" bei einer Aktion über diese Erweiterung,
 „extern" bei Hersteller-App, Sprachassistent oder Schalter am Gerät, und
 „automatisch" bei Einträgen, welche die Erweiterung selbst festhält, etwa einem
 Wasseralarm, und bei dem, was ein Gerät von sich aus tut: ein Netatmo-Heizplan,
-der um 22 Uhr in seine Nachtzone wechselt („Zeitplan-Zone gewechselt"), oder
-ein Boost der Wärmepumpe, der nach seiner Dauer abläuft („Boost beendet").</p>
+der um 22 Uhr in seine Nachtzone wechselt („Zeitplan-Zone gewechselt"), die
+Heizung eines Netatmo-Thermostats, die anspringt oder ausgeht („Heizung aktiv",
+„Heizung aus"), ein offenes Fenster, das der Thermostat erkennt, ein Boost der
+Wärmepumpe, der nach
+seiner Dauer abläuft („Boost beendet"), ein fälliger Filter oder eine fällige
+Reinigung, ein schwacher Akku oder ein Garprogramm der Heißluftfritteuse, das
+zu Ende läuft. Eine in der Netatmo-App von Hand gesetzte Temperatur ist eine
+Zeile mit ihrer Endzeit, wie eine hier gesetzte.</p>
 <p><strong>Messwerte</strong> – statt tausender Einzelwerte eine Zeile je Gerät
 und Größe: Gerät, Größe, letzter Wert und Zeitpunkt der letzten Messung. Die
 Eingabetaste auf einer Zeile öffnet die Einzelheiten – kleinster und größter
 Wert, der zeitgewichtete Mittelwert, der abgedeckte Zeitraum, die Anzahl
 gespeicherter Messungen und die jüngsten Änderungen. Das Detailfenster ist ein
 schreibgeschütztes Textfeld und lässt sich daher Zeile für Zeile lesen und mit
-Strg+C kopieren.</p>
+Strg+C kopieren. Bei der Heizung eines Netatmo-Thermostats nennen die
+Einzelheiten statt kleinstem, größtem und mittlerem Wert den Anteil der Zeit,
+in der sie aktiv war, und die Änderungen sind ihre Schaltvorgänge.</p>
 <p>Die Filter über der Liste grenzen nach Gerät, Plattform und Zeitraum ein
 (alles, letzte Stunde, letzte 24 Stunden, letzte 7 Tage, letzte 30 Tage); die
 Schaltfläche „Filtern" wendet sie an.</p>
@@ -624,11 +632,16 @@ Luftfeuchte, 50 ppm bei CO2, 1 mbar beim Luftdruck, 3 µg/m³ beim Feinstaub und
 damit eine unveränderte Messung nicht wie eine Lücke aussieht und die
 Mittelwerte stimmen. Aufgezeichnet werden Temperatur, Luftfeuchte, CO2,
 Luftdruck, Feinstaub PM2,5 und PM10 der Levoit-Luftreiniger, die Lautstärke des
-Netatmo-Innenmoduls und die vom Levoit-Turmventilator gemessene
-Temperatur.</p>
+Netatmo-Innenmoduls, die vom Levoit-Turmventilator gemessene Temperatur und
+die Heizung des Netatmo-Thermostats, aktiv oder aus, bei jedem Wechsel. Die
+Heizung steht damit an zwei Stellen: jeder Schaltvorgang als Ereignis, und als
+Messreihe, die sagt, wie lange sie lief.</p>
 <p>Ereignisse werden ein Jahr lang oder bis zu 2000 Einträge aufbewahrt,
 Messwerte 90 Tage oder bis zu 20000 Änderungspunkte – je nachdem, welche Grenze
-zuerst erreicht ist. Beide Dateien liegen im NVDA-Konfigurationsordner neben
+zuerst erreicht ist. Die Schaltvorgänge der Netatmo-Heizung haben eine eigene
+Grenze von 30 Tagen oder 3000 Einträgen: sie schaltet, während sie läuft, etwa
+zehnmal in der Stunde und würde sonst die übrigen Ereignisse binnen Wochen
+verdrängen. Beide Dateien liegen im NVDA-Konfigurationsordner neben
 der Erweiterung, als <code>SmartHomeControl_history.json</code> und
 <code>SmartHomeControl_measurements.json</code>. „Verlauf löschen" leert beide
 nach einer Rückfrage.</p>
@@ -679,7 +692,8 @@ am Automaten), knappes Futter, knappes Wasser, fälliges Trockenmittel, fällige
 Filter oder fällige Reinigung, schwacher Akku, ein Gerät geht offline oder
 kommt zurück, sowie anderswo geänderte Einstellungen (Fütterungsplan,
 Wassermodus, Licht). Voreingestellt aus: jede geplante Mahlzeit, denn das wären
-mehrere Ansagen am Tag. Fütterungen und fehlgeschlagene Fütterungen landen in
+mehrere Ansagen am Tag. Fütterungen, fehlgeschlagene Fütterungen, Störungen,
+knappes Futter oder Wasser, fällige Wartung und ein schwacher Akku landen in
 jedem Fall im Verlauf.</p>
 <hr />
 <h2 id="hinweise-zu-cloud-limits">Hinweise zu Cloud-Limits</h2>
@@ -754,10 +768,12 @@ vorübergehend ausfallen.</p>
   Rechner je ein NVDA-Protokoll oder die <code>nvda.ini</code> weitergegeben,
   sollte das Netatmo-Passwort geändert werden.</li>
 <li>Netatmo, VeSync, Cozytouch und Petlibro verbinden sich über die
-  Netzwerk-Bibliotheken, die NVDA selbst mitbringt (requests, urllib3,
-  certifi); deren Sicherheitsupdates kommen mit NVDA-Updates. Meross nutzt
-  eine mitgelieferte Bibliothek (aiohttp). Welche Versionen laufen, steht
-  nach jeder Anmeldung im NVDA-Protokoll.</li>
+  Netzwerk-Bibliotheken, die NVDA selbst mitbringt (requests, urllib3);
+  deren Sicherheitsupdates kommen mit NVDA-Updates. Meross nutzt eine
+  mitgelieferte Bibliothek (aiohttp). Die Zertifikate aller Plattformen
+  werden gegen die mitgelieferten Stammzertifikate des Add-ons (certifi)
+  geprüft, nicht gegen die von NVDA. Welche Versionen laufen, steht nach
+  jeder Anmeldung im NVDA-Protokoll.</li>
 </ul>
 <hr />
 <h2 id="fehlerbehebung">Fehlerbehebung</h2>

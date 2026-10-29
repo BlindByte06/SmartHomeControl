@@ -982,6 +982,31 @@ def test_expectations():
     check('eine echte Aenderung von anderswo wird weiter angesagt',
           any('water mode' in t for t in spoken), str(spoken))
 
+    print('== Wartung und Akku stehen im Verlauf, auch ohne Ansage ==')
+    # Angesagt wurden sie, geschrieben nie - anders als knappes Futter und
+    # Wasser, die schon im Verlauf standen.
+    spoken.clear()
+    logged.clear()
+    plugin.notify_petlibro_maintenance = False
+    plugin.notify_petlibro_battery = False
+    fountain = dev_mod.wrap_device(dict(FOUNTAIN_LIST), api=None)
+    fountain.apply_real(dict(FOUNTAIN_REAL))
+    plugin._seed_petlibro_state(fountain)
+    fountain.apply_real({"remainingCleaningDays": 0, "batteryState": "low"})
+    plugin._detect_petlibro_changes([fountain])
+    check('Reinigung faellig und Akku schwach stehen im Verlauf',
+          ('cleaning_due', '') in logged and ('battery_low', '') in logged,
+          str(logged))
+    check('und bleiben still, wie eingestellt',
+          not any('cleaning' in t or 'battery' in t for t in spoken),
+          str(spoken))
+    logged.clear()
+    plugin._detect_petlibro_changes([fountain])
+    check('der naechste Abruf schreibt sie nicht noch einmal',
+          logged == [], str(logged))
+    plugin.notify_petlibro_maintenance = True
+    plugin.notify_petlibro_battery = True
+
 
 def main():
     dev_mod, api_mod, errors_mod = load()

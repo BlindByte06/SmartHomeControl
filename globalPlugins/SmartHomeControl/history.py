@@ -89,6 +89,14 @@ MEASUREMENT_RETENTION_SECONDS = 90 * 86400   # 90 days
 # Backwards compatibility: old name that other code may read.
 MAX_HISTORY_ENTRIES = MAX_EVENT_ENTRIES
 
+# Switchings an appliance makes by itself many times a day: the Netatmo
+# boiler, some ten times an hour while the heating runs. They are announced,
+# so they are events - but under a quota of their own. In the shared one
+# they would push a year of switching actions out within weeks.
+FREQUENT_EVENT_ACTIONS = ('heating_on', 'heating_off')
+MAX_FREQUENT_EVENTS = 3000
+FREQUENT_EVENT_RETENTION_SECONDS = 30 * 86400   # 30 days
+
 # Debounced saving: every entry used to rewrite the WHOLE file at once.
 # Entries are now collected and only saved once enough time has passed OR
 # enough of them have piled up. save_due_pending() (called by the scheduler
@@ -119,7 +127,15 @@ MEASUREMENT_THRESHOLDS = {
     'pm25': 3.0,          # ug/m3 (Levoit air purifiers)
     'pm10': 3.0,          # ug/m3 (Levoit Sprout/V2)
     'noise': 5.0,         # dB (Netatmo indoor module)
+    'heating': 0.5,       # 1/0 (Netatmo boiler): every switching
 }
+
+# Quantities that are a state, stored as 1 or 0, not a measured value. Their
+# time-weighted average is the share of time they were on - for the boiler
+# how long the heating ran. The single switchings are events as well
+# (FREQUENT_EVENT_ACTIONS); the series answers "how much", which a list of
+# switchings does not.
+STATE_QUANTITIES = ('heating',)
 # Even without a change, a data point after this time at the latest, so a
 # flat line does not look like a gap and min/max/average stay correct over
 # long quiet phases.
@@ -127,7 +143,7 @@ MEASUREMENT_MAX_SILENCE = 3600.0
 
 # Order and labels of the quantities in the display and the CSV.
 MEASUREMENT_ORDER = ('temperature', 'humidity', 'co2', 'pressure',
-                     'pm25', 'pm10', 'noise')
+                     'pm25', 'pm10', 'noise', 'heating')
 
 
 def _measurement_labels():
@@ -153,6 +169,9 @@ def _measurement_labels():
         # Translators: Name of a measured quantity, in the history and as a CSV
         # column heading.
         'noise': _("Noise"),
+        # Translators: Name of a series in the history: whether the boiler
+        # was heating (Netatmo), and as a CSV column heading.
+        'heating': _("Heating"),
     }
 
 
@@ -164,6 +183,7 @@ MEASUREMENT_UNITS = {
     'pm25': 'µg/m³',
     'pm10': 'µg/m³',
     'noise': 'dB',
+    'heating': '',
 }
 
 # Decimal places per quantity for the display.
@@ -175,6 +195,7 @@ _MEASUREMENT_DIGITS = {
     'pm25': 0,
     'pm10': 0,
     'noise': 0,
+    'heating': 0,
 }
 
 
@@ -184,12 +205,25 @@ def format_measurement(quantity, value):
         return ''
     digits = _MEASUREMENT_DIGITS.get(quantity, 1)
     try:
-        float(value)
+        numeric = float(value)
     except (TypeError, ValueError):
         return str(value)
+    if quantity in STATE_QUANTITIES:
+        # Translators: State of the heating in the history (the boiler is
+        # heating / not heating).
+        return _("active") if numeric >= 0.5 else _("off")
     text = fmt_decimal(value, digits)
     unit = MEASUREMENT_UNITS.get(quantity, '')
     return f"{text} {unit}".strip()
+
+
+def format_share(value):
+    """Share of time a state was on, e.g. ``35 %`` - from its average."""
+    try:
+        share = float(value)
+    except (TypeError, ValueError):
+        return ''
+    return f"{fmt_decimal(share * 100, 0)} %"
 
 
 def local_date(dt):
@@ -246,6 +280,47 @@ def _csv_safe_text(value):
     if text and text[0] in ('=', '+', '-', '@', '\t', '\r'):
         return "'" + text
     return text
+
+
+# GetLocaleInfoEx: the decimal separator and the list separator of a locale.
+_LOCALE_SDECIMAL = 0x0E
+_LOCALE_SLIST = 0x0C
+
+
+def _region_separators():
+    """(decimal separator, list separator) of the Windows region.
+
+    What a spreadsheet reads a CSV with is the region set in Windows, not
+    the language NVDA speaks. Python's locale is the wrong source for it:
+    NVDA sets it to its interface language and never reads the region
+    (languageHandler.setLanguage / setLocale). With NVDA in English on a
+    German region the file got points and commas, and a German Excel put
+    every line into one cell. Deriving the list separator from the decimal
+    one was wrong as well: Switzerland writes a point and a semicolon.
+
+    Falls back to Python's locale when Windows cannot be asked.
+    """
+    try:
+        import ctypes
+        get_info = ctypes.windll.kernel32.GetLocaleInfoEx
+
+        def info(lctype):
+            buffer = ctypes.create_unicode_buffer(8)
+            # None = LOCALE_NAME_USER_DEFAULT, the region of this account.
+            if get_info(None, lctype, buffer, len(buffer)):
+                return buffer.value
+            return ''
+
+        decimal_point = info(_LOCALE_SDECIMAL)
+        delimiter = info(_LOCALE_SLIST)
+        # csv needs a single character, and the two must differ or no
+        # number could be read back.
+        if decimal_point and len(delimiter) == 1 and delimiter != decimal_point:
+            return decimal_point, delimiter
+    except Exception as e:
+        log.debug(f"Region separators not readable: {e}")
+    decimal_point = locale.localeconv().get('decimal_point') or '.'
+    return decimal_point, (';' if decimal_point == ',' else ',')
 
 
 def _csv_number(value, decimal_point):
@@ -351,11 +426,16 @@ class _EntryStore:
     rewrites the large readings file.
     """
 
-    def __init__(self, path, max_entries, retention_seconds, label):
+    def __init__(self, path, max_entries, retention_seconds, label,
+                 frequent=None):
         self.path = path
         self.max_entries = max_entries
         self.retention_seconds = retention_seconds
         self.label = label
+        # (actions, max entries, retention seconds): entries with these
+        # actions are trimmed by this quota and do not count against the
+        # store's own.
+        self.frequent = frequent
         self.entries = []
         self._dirty = False
         self._last_save_time = 0.0
@@ -394,12 +474,33 @@ class _EntryStore:
     def _trim(self):
         """Trims by age AND count. Returns the number of dropped entries."""
         before = len(self.entries)
+        now = time.time()
         if self.retention_seconds:
-            cutoff = time.time() - self.retention_seconds
+            cutoff = now - self.retention_seconds
             self.entries = [e for e in self.entries
                             if e.get('timestamp', 0) >= cutoff]
-        if self.max_entries and len(self.entries) > self.max_entries:
-            self.entries = self.entries[-self.max_entries:]
+        actions = ()
+        if self.frequent:
+            actions, limit, retention = self.frequent
+            cutoff = now - retention
+            recent = [e for e in self.entries
+                      if e.get('action') in actions
+                      and e.get('timestamp', 0) >= cutoff]
+            keep = {id(e) for e in recent[-limit:]}
+            self.entries = [e for e in self.entries
+                            if e.get('action') not in actions or id(e) in keep]
+        if self.max_entries:
+            # The oldest go first; the frequent ones have their quota above.
+            excess = sum(1 for e in self.entries
+                         if e.get('action') not in actions) - self.max_entries
+            if excess > 0:
+                kept = []
+                for entry in self.entries:
+                    if excess > 0 and entry.get('action') not in actions:
+                        excess -= 1
+                        continue
+                    kept.append(entry)
+                self.entries = kept
         return before - len(self.entries)
 
     def save(self):
@@ -480,7 +581,9 @@ class DeviceHistory:
         self._lock = threading.RLock()
         self._events = _EntryStore(
             HISTORY_FILE, MAX_EVENT_ENTRIES, EVENT_RETENTION_SECONDS,
-            "History (events)")
+            "History (events)",
+            frequent=(FREQUENT_EVENT_ACTIONS, MAX_FREQUENT_EVENTS,
+                      FREQUENT_EVENT_RETENTION_SECONDS))
         self._measurements = _EntryStore(
             MEASUREMENTS_FILE, MAX_MEASUREMENT_ENTRIES,
             MEASUREMENT_RETENTION_SECONDS, "History (readings)")
@@ -530,6 +633,12 @@ class DeviceHistory:
 
         The old key plus the device name identifies the entries exactly, so
         they can be repaired. Runs once as soon as the device list is known.
+
+        The outlets of a power strip are repaired the same way. An outlet
+        switched elsewhere was written under the strip's uuid with the
+        outlet's name, while the outlet switched here stands under its own
+        key - one outlet showed as two devices of the same name, and its own
+        entries lacked every switching made elsewhere.
         """
         mapping = {}
         for device in devices:
@@ -538,6 +647,15 @@ class DeviceHistory:
             name = getattr(device, 'name', None)
             if uuid and name and unique and unique != uuid:
                 mapping[(uuid, name)] = unique
+            try:
+                channels = device.get_channels() or []
+            except Exception:
+                channels = []
+            for channel in channels:
+                ch_unique = getattr(channel, 'unique_id', None)
+                ch_name = getattr(channel, 'name', None)
+                if uuid and ch_name and ch_unique and ch_unique != uuid:
+                    mapping[(uuid, ch_name)] = ch_unique
         if not mapping:
             return 0
 
@@ -785,6 +903,10 @@ class DeviceHistory:
         with self._lock:
             changed = {}
             for quantity, value in sensor_data.items():
+                if isinstance(value, bool):
+                    # A state: stored as 1/0, so the export carries a number
+                    # and the average becomes the share of time.
+                    value = int(value)
                 if self._is_change_point(self._last_written, uuid, quantity,
                                          value, now):
                     changed[quantity] = value
@@ -903,7 +1025,8 @@ class DeviceHistory:
             rec['max'] = max(values)
             rec['last'] = values[-1]
             rec['count'] = len(values)
-            rec['avg'] = _time_weighted_average(points)
+            rec['avg'] = _time_weighted_average(
+                points, step=rec['quantity'] in STATE_QUANTITIES)
             # Period of the series: without it a row of numbers says nothing
             # about WHEN it was measured - especially with the "all time"
             # filter, where the range is not obvious from the filter either.
@@ -986,7 +1109,8 @@ class DeviceHistory:
         """
         entries = self.get_entries(
             device_uuid=device_uuid,
-            max_entries=MAX_EVENT_ENTRIES + MAX_MEASUREMENT_ENTRIES,
+            max_entries=(MAX_EVENT_ENTRIES + MAX_FREQUENT_EVENTS
+                         + MAX_MEASUREMENT_ENTRIES),
             since_hours=since_hours,
             platform=platform,
             event_type=event_type,
@@ -1004,12 +1128,11 @@ class DeviceHistory:
             else:
                 f = output
 
-            # Both separators follow the locale, because that is what Excel
-            # expects: where the decimal separator is a comma, the list
-            # separator is a semicolon (and vice versa). A hard-coded ";"
-            # put every line of an English Excel into a single cell.
-            decimal_point = locale.localeconv().get('decimal_point') or '.'
-            delimiter = ';' if decimal_point == ',' else ','
+            # Both separators follow the Windows region, because that is
+            # what Excel reads the file with (see _region_separators). A
+            # hard-coded ";" put every line of an English Excel into a single
+            # cell.
+            decimal_point, delimiter = _region_separators()
             writer = csv.writer(f, delimiter=delimiter,
                                 quoting=csv.QUOTE_MINIMAL)
 
@@ -1143,11 +1266,16 @@ class DeviceHistory:
             time=time_abs, name=device_name)
 
 
-def _time_weighted_average(points):
+def _time_weighted_average(points, step=False):
     """Time-weighted average over (timestamp, value) points.
 
     Trapezoid rule over the data points divided by the total duration. With a
     single point or a total duration of 0 that value is returned.
+
+    ``step`` for a state: it holds its value until the next point instead of
+    sliding towards it. The trapezoid would count every stretch between an
+    on and an off as half on, and every heating share would come out near
+    50 %.
     """
     if not points:
         return None
@@ -1159,7 +1287,7 @@ def _time_weighted_average(points):
         dt = t2 - t1
         if dt <= 0:
             continue
-        area += (v1 + v2) / 2.0 * dt
+        area += (v1 if step else (v1 + v2) / 2.0) * dt
         duration += dt
     if duration <= 0:
         return sum(v for _t, v in points) / len(points)
@@ -1343,6 +1471,28 @@ def _format_action_text(action, details=""):
         # Translators: History entry: the water of a fountain is below the
         # warning threshold.
         'water_low': _("Water low"),
+        # Translators: History entry: the desiccant of a feeder should be
+        # replaced.
+        'desiccant_due': _("Desiccant due"),
+        # Translators: History entry: the cleaning of a fountain is due.
+        'cleaning_due': _("Cleaning due"),
+        # Translators: History entry: the filter of a fountain or an air
+        # purifier should be replaced.
+        'filter_due': _("Filter due"),
+        # Translators: History entry: the battery of a device is low.
+        'battery_low': _("Battery low"),
+        # Translators: History entry: a cooking programme of an air fryer
+        # ran to its end.
+        'cook_finished': _("Cooking programme finished"),
+        # Translators: History entry: a Netatmo thermostat detected an open
+        # window (sudden temperature drop) and paused the heating.
+        'window_open': _("Open window detected"),
+        # Translators: History entry: the open window was closed again.
+        'window_closed': _("Window closed"),
+        # Translators: History entry: the boiler started heating (Netatmo).
+        'heating_on': _("Heating active"),
+        # Translators: History entry: the boiler stopped heating (Netatmo).
+        'heating_off': _("Heating off"),
     }
     text = action_map.get(action, action)
     if details and not _detail_is_redundant(action):
@@ -1516,6 +1666,10 @@ def _detail_text(action, details):
     if action == 'set_low_water' and value.isdigit():
         # Translators: The low water warning in the history. {ml} = value.
         return _("below {ml} ml").format(ml=value)
+    if action == 'filter_due' and value.isdigit():
+        # Translators: Remaining filter life in the history. {percent} =
+        # number.
+        return _("{percent} % remaining").format(percent=value)
     if action in ('device_fault', 'feed_failed') and value:
         # Stored as the device sent it: a record type or the cloud's
         # English text. Named here, in the current language.

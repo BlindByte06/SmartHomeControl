@@ -1,10 +1,11 @@
 # Checks
 
-Seventeen scripts that verify invariants which are easy to break and expensive
+Eighteen scripts that verify invariants which are easy to break and expensive
 to notice late. They need no NVDA and no cloud account: most of them read the
 shipped source with `ast` and check properties of it, while `fryertest.py` and
-`sensortest.py` import a module with the two NVDA-only modules stubbed. Either way they
-run anywhere Python does.
+`sensortest.py` import a module with the two NVDA-only modules stubbed, and
+`merosslibtest.py` runs the Meross wrappers against the meross_iot bundled in
+`lib/`. Either way they run anywhere Python does.
 
 ```bash
 python tools/checks/historytest.py
@@ -24,6 +25,7 @@ python tools/checks/wateralarmtest.py
 python tools/checks/libstest.py
 python tools/checks/petlibrotest.py
 python tools/checks/logintest.py
+python tools/checks/merosslibtest.py
 ```
 
 Each prints one line per check and ends with `GESAMT: ALLE TESTS OK` or a
@@ -63,7 +65,10 @@ dialog down once, a day after the build, since the value only turns into text
 after the settings have been saved. Also that every notification setting is
 declared boolean, that every checkbox in the notifications tab has an
 attribute the plugin actually sets, and that the coercion underneath it reads
-the text "False" as False rather than as a non-empty string.
+the text "False" as False rather than as a non-empty string. And that a value
+written to the base configuration marks the profiles it was taken out of as
+changed: NVDA writes only those, so the removal used to last until the next
+restart, after which the profile's old value overrode the base again.
 
 **lighttest.py** - what the add-on believes about a lamp's white/colour mode.
 A mode set from here is cached and consulted before the lamp's own capacity
@@ -132,7 +137,10 @@ not ask the internet about CVEs - it has to pass offline. `build_addon.py
 audit` does, against the OSV database, and the build workflow runs it; this
 check asserts that the audit reads the same pins, that the workflow still
 runs it, and that the add-on logs which copy of requests and urllib3 ran
-(NVDA's own come first on sys.path).
+(NVDA's own come first on sys.path). Since 2026-10-29 also that HTTPS is
+verified against `lib/certifi/cacert.pem` - by `SafeSession` and by the
+Meross SSL context. certifi itself is NVDA's copy at runtime, so the
+bundled update of 2026.10.19 had never taken effect.
 
 **scheduletest.py** - the time program of the hot water heat pump, the
 only place where this add-on writes a schedule into a heating appliance. The
@@ -177,7 +185,10 @@ and they only came back on the next NVDA start, because a rediscovery runs
 only when no Meross device is left at all. In the favourites they then read
 "(not available)". These checks cover the carry-over - which must not
 resurrect a device that really left the account, nor anything from another
-account - and the three places it is wired into.
+account - and the three places it is wired into. Also that the favourite of
+a hub finds the hub and not the first of its sensors, that two presses of its
+digit do not reach the cloud, and that a sensor carried over as unreachable
+comes back as soon as its hub lists it again.
 
 **refreshtest.py** — the polling scheduler: that two refreshes of the same
 platform coalesce instead of queueing, and that the cache lifetime stays
@@ -261,6 +272,28 @@ and not while an action still waits for the cloud or a child dialog is
 open), that the replaced VeSync, Cozytouch and Petlibro sessions are closed
 only once their devices are replaced, that the menu makes the offer to enter
 a refused password again, and that the refusal is spoken once.
+
+The VeSync re-login is run for real against a stubbed HTTP session: the
+login sent its requests through the same `_post` that started the re-login,
+and an answer with one of the "expired" codes made the thread wait for the
+lock it held itself - for good, and usually on the thread that polls every
+platform.
+
+**merosslibtest.py** - the Meross wrappers against the real meross_iot from
+`lib/`, loaded without its C extensions so it runs on the workflow's Python
+too. The other checks use stand-ins, and a stand-in answers what the test
+expects of it; two faults lived in exactly that gap. The leak sensor asked
+meross_iot for `is_triggered`, which no version has (the state is
+`is_leaking`): no leak was ever announced, and the tree said "no water".
+And after the first poll every sensor on a hub pointed at the HUB, because a
+lookup by uuid returns the hub first - an MS100 then read another sensor or
+nothing. The script builds a hub with a leak sensor and two MS100 from the
+library's own classes, polls it through `update_device_status`, and checks
+each sensor's object and value afterwards. It also counts what one update
+sends: meross_iot builds a device class from mixins, each with an update of
+its own adds a message, and the hourly budget had counted one per poll
+whatever the device was. Switching is charged as well, and a push for one
+outlet of a power strip names that outlet.
 
 ## Why these and not a test framework
 

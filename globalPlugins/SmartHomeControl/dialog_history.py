@@ -13,7 +13,6 @@ Two views instead of one flat list:
 Split out of device_dialog.py.
 """
 
-import os
 from datetime import datetime, timedelta
 
 import wx
@@ -33,7 +32,8 @@ if "_" not in globals():  # fallback if initTranslation() fails
 
 from .history import (
     get_history, _format_action_text, _source_text, format_measurement,
-    relative_time, _measurement_labels, local_date, local_time, local_datetime,
+    format_share, relative_time, _measurement_labels, local_date, local_time,
+    local_datetime, STATE_QUANTITIES,
 )
 from .dialog_helpers import _beep
 from .constants import BEEP_ON, BEEP_OFF, BEEP_ERROR
@@ -343,10 +343,13 @@ class HistoryDialog(wx.Dialog):
             )
             self._populate_measurements(speak=speak)
         else:
+            # All of them: the boiler alone writes some hundred a day, and a
+            # cap of 500 made everything older than a few days vanish from
+            # the list while it was still in the file.
             self._current_entries = self.history.get_entries(
                 device_uuid=device_uuid,
                 event_type='action',
-                max_entries=500,
+                max_entries=None,
                 since_hours=since_hours,
                 platform=platform,
             )
@@ -355,13 +358,8 @@ class HistoryDialog(wx.Dialog):
     # ------------------------------------------------------------------
     # View: events
     # ------------------------------------------------------------------
-    def _populate_events(self, speak=True):
-        """Fills the list with events, grouped by day.
-
-        The day headings save the date on every single row - the biggest win
-        for speech output, which would otherwise repeat it before every
-        event.
-        """
+    def _fill_events(self):
+        """Writes the rows of ``_current_entries`` with their day headings."""
         self.list_ctrl.DeleteAllItems()
         self._row_data = []
 
@@ -396,6 +394,20 @@ class HistoryDialog(wx.Dialog):
             self.list_ctrl.SetItem(idx, 4, source)
             self._row_data.append(entry)
             row += 1
+
+    def _populate_events(self, speak=True):
+        """Fills the list with events, grouped by day.
+
+        The day headings save the date on every single row - the biggest win
+        for speech output, which would otherwise repeat it before every
+        event.
+        """
+        # Thousands of rows: without Freeze the list redraws after each one.
+        self.list_ctrl.Freeze()
+        try:
+            self._fill_events()
+        finally:
+            self.list_ctrl.Thaw()
 
         count = len(self._current_entries)
         total = self.history.get_event_count()
@@ -511,28 +523,55 @@ class HistoryDialog(wx.Dialog):
         quantity = rec['quantity']
         labels = _measurement_labels()
         _dev, _plat, since_hours = self._get_filter_values()
+        # Filtered by the quantity BEFORE the fifteen are taken: one entry
+        # holds only what changed, and a thermostat writes its heating far
+        # more often than its temperature - the temperature's list came out
+        # nearly empty.
         points = [
             e for e in self.history.get_entries(
                 device_uuid=rec['device_uuid'], event_type='sensor',
-                max_entries=15, since_hours=since_hours)
+                max_entries=None, since_hours=since_hours)
             if quantity in (e.get('sensor_data') or {})
         ]
+        if quantity in STATE_QUANTITIES:
+            # The hourly point of a state that stayed as it was is no change;
+            # listed, it read "active, active".
+            switchings = []
+            for entry in reversed(points):  # oldest first
+                value = entry['sensor_data'][quantity]
+                if not switchings or switchings[-1]['sensor_data'][quantity] != value:
+                    switchings.append(entry)
+            points = switchings[::-1]
+        points = points[:15]
+        if quantity in STATE_QUANTITIES:
+            # Lowest "off" and highest "active" say nothing; how long it was
+            # on does.
+            summary = [
+                # Translators: Detail of the heating series in the history.
+                # {share} = e.g. "35 %".
+                _("Active: {share} of the time").format(
+                    share=format_share(rec['avg'])),
+            ]
+        else:
+            summary = [
+                # Translators: Summary lines in the measurement detail dialog.
+                _("Lowest value: {value}").format(
+                    value=format_measurement(quantity, rec['min'])),
+                # Translators: Detail of a measurement series in the history,
+                # one line per figure.
+                _("Highest value: {value}").format(
+                    value=format_measurement(quantity, rec['max'])),
+                # Translators: Time-weighted mean of a measurement series.
+                _("Average (time-weighted): {value}").format(
+                    value=format_measurement(quantity, rec['avg'])),
+            ]
         lines = [
             # Translators: Header of the measurement detail dialog.
             _("{name} – {quantity}").format(
                 name=rec['device_name'],
                 quantity=labels.get(quantity, quantity)),
             "",
-            # Translators: Summary lines in the measurement detail dialog.
-            _("Lowest value: {value}").format(
-                value=format_measurement(quantity, rec['min'])),
-            # Translators: Detail of a measurement series in the history, one
-            # line per figure.
-            _("Highest value: {value}").format(
-                value=format_measurement(quantity, rec['max'])),
-            # Translators: Time-weighted mean of a measurement series.
-            _("Average (time-weighted): {value}").format(
-                value=format_measurement(quantity, rec['avg'])),
+        ] + summary + [
             # Translators: Detail of a measurement series in the history, one
             # line per figure.
             _("Current: {value}").format(
@@ -604,11 +643,9 @@ class HistoryDialog(wx.Dialog):
                     event_type=event_type,
                 )
                 _beep(BEEP_ON)  # formerly 800,80
-                # Translators: Confirmation after the CSV export of the
-                # history.
-                ui.message(_("History exported to {filename}").format(
-                    filename=os.path.basename(filepath)))
-
+                # One confirmation, the window below. A spoken one came first
+                # with nearly the same words and was cut off as soon as the
+                # window took the focus.
                 export_msg = wx.MessageDialog(
                     self,
                     # Translators: Success message in the export dialog.

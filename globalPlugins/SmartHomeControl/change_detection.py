@@ -35,9 +35,12 @@ from .constants import (
 # value belongs with it.
 #
 # Only settings someone can change are in here - the ones the add-on can set
-# itself. A boiler starting or a filter running low is the appliance's own
-# doing and belongs to the readings, not to the question the history is
-# opened for: "was that me or someone else?"
+# itself. What an appliance reports of its own accord is written where it is
+# detected, with the origin "automatic": a filter running low, a programme
+# finishing, an open window, the boiler switching on and off.
+#
+# Netatmo is not in here: one change in the app is one setting with its end
+# time, not one row per field (see _netatmo_history_rows).
 #
 # The action key and the detail are language-neutral on purpose. What the
 # history shows is translated when it is displayed; an entry written under a
@@ -68,16 +71,13 @@ _EXTERNAL_ACTIONS = {
         ('low_water', 'set_low_water', True),
         ('sensing_duration', 'set_flow_duration', True),
     ),
-    'netatmo': (
-        ('setpoint', 'set_temp', True),
-        ('mode', 'therm_mode', True),
-        # The zone WITHIN the heating schedule (comfort, night ...), stored
-        # under the name Netatmo gives it and translated when displayed. It
-        # used to be written as "Heating schedule switched" - every evening
-        # at 22:00, while the schedule itself had not changed at all.
-        ('zone_key', 'schedule_zone', True),
-    ),
 }
+
+# What a Netatmo thermostat does by itself. Written even right after a
+# change made here: the boiler answering a new setpoint is still the
+# appliance's doing, not a second entry of the change.
+_NETATMO_OWN_ACTIONS = ('window_open', 'window_closed',
+                        'heating_on', 'heating_off')
 
 # Within this many seconds before the end of its set duration, a boost that
 # goes off is taken to have run out rather than to have been switched off by
@@ -239,44 +239,62 @@ class _ChangeDetectionMixin:
         someone else?" for one platform out of four.
 
         ``system`` names the fields the appliance changed on its own - a
-        heating schedule moving to its night zone, a boost running out. They
-        are written with the origin "automatic" instead of "external", and a
-        field may bring an action key of its own ({'boost': 'boost_ended'});
-        None keeps the key of the table. Both happened every day and were
-        written as if somebody had done them.
+        boost running out. They are written with the origin "automatic"
+        instead of "external", and a field may bring an action key of its
+        own ({'boost': 'boost_ended'}); None keeps the key of the table. It
+        happened every day and was written as if somebody had done it.
 
         A value that was not known before (None) is no change: the first
         complete reading after a sign-in would otherwise be written as one.
-
-        Runs from the polling thread, so it is fully guarded: a history that
-        cannot be written must not cost the announcement.
         """
         system = system or {}
+        rows = []
+        for field, keys, with_value in _EXTERNAL_ACTIONS.get(platform, ()):
+            before, after = prev.get(field), new.get(field)
+            if before is None or after is None or before == after:
+                continue
+            if with_value:
+                action, detail = keys, str(after)
+            else:
+                # A pair: the first key for switched on, the second for off.
+                action, detail = keys[0] if after else keys[1], ""
+            if field in system:
+                rows.append((system[field] or action, detail, True))
+            else:
+                rows.append((action, detail, False))
+        self._write_history_rows(platform, device, rows)
+
+    def _write_history_rows(self, platform, device, rows):
+        """Writes (action, detail, automatic) rows of a device's change.
+
+        ``automatic`` rows get the origin "automatic", the others
+        "external". Fully guarded: a history that cannot be written must not
+        cost the announcement.
+        """
+        if not rows:
+            return
         try:
-            from .history import get_history
+            from .history import get_history, SOURCE_SYSTEM
             history = get_history()
-            for field, keys, with_value in _EXTERNAL_ACTIONS.get(platform, ()):
-                before, after = prev.get(field), new.get(field)
-                if before is None or after is None or before == after:
-                    continue
-                if with_value:
-                    action, detail = keys, str(after)
+            for action, detail, automatic in rows:
+                if automatic:
+                    history.log_action(device, action, detail,
+                                       source=SOURCE_SYSTEM)
                 else:
-                    # A pair: the first key for switched on, the second for off.
-                    action, detail = keys[0] if after else keys[1], ""
-                if field in system:
-                    from .history import SOURCE_SYSTEM
-                    history.log_action(device, system[field] or action,
-                                       detail, source=SOURCE_SYSTEM)
-                    continue
-                history.log_external_action(
-                    getattr(device, 'unique_id', None) or device.uuid,
-                    device.name, platform, action, detail)
+                    history.log_external_action(
+                        getattr(device, 'unique_id', None) or device.uuid,
+                        device.name, platform, action, detail)
         except Exception as e:
             log.debug(f"History entry (external, {platform}) failed: {e}")
 
-    def _log_external_change(self, device_uuid, device_name, new_state):
+    def _log_external_change(self, device_uuid, device_name, new_state,
+                             channel_index=None):
         """Writes an externally triggered switch to the history.
+
+        ``channel_index`` names the outlet of a power strip. The entry goes
+        under the outlet's own key then - the one a switching made here is
+        written under. It used to go under the strip, with the outlet's
+        name, so the history listed the outlet twice.
 
         Runs on the MQTT push thread, hence fully guarded: a logging error
         must not prevent the announcement.
@@ -290,15 +308,19 @@ class _ChangeDetectionMixin:
                     if device.uuid == device_uuid:
                         platform = platform_of(device)
                         break
+            # The same key as MerossChannel.uuid / unique_id.
+            key = (f"{device_uuid}_ch{channel_index}"
+                   if channel_index is not None else device_uuid)
             get_history().log_external_action(
-                device_uuid, device_name, platform,
+                key, device_name, platform,
                 # No detail: the action already says on/off (see
                 # _detail_is_redundant in history.py).
                 'toggle_on' if new_state else 'toggle_off', "")
         except Exception as e:
             log.debug(f"History entry (external) failed: {e}")
 
-    def _on_external_device_change(self, device_name, new_state, device_uuid, channel_name=None):
+    def _on_external_device_change(self, device_name, new_state, device_uuid,
+                                   channel_name=None, channel_index=None):
         """
         Callback for external device status changes (Alexa, Meross app, etc.)
 
@@ -310,6 +332,7 @@ class _ChangeDetectionMixin:
             new_state: True = switched on, False = switched off
             device_uuid: UUID of the device
             channel_name: optional - name of the channel for multi-channel devices
+            channel_index: optional - index of that outlet (for the history)
         """
         # Do not announce the user's own recent actions twice
         if self._is_recent_local_toggle(device_uuid, new_state):
@@ -337,7 +360,8 @@ class _ChangeDetectionMixin:
         # History: the origin is simply "external" - the cloud notification
         # does not say whether it was the vendor app, a voice assistant or
         # the button on the device.
-        self._log_external_change(device_uuid, device_name, new_state)
+        self._log_external_change(device_uuid, device_name, new_state,
+                                  channel_index)
 
         # Update the internal cache (under the lock, since called from the push
         # thread)
@@ -491,6 +515,68 @@ class _ChangeDetectionMixin:
         old_end = old_state.get('end_time')
         return bool(old_end) and old_end <= time.time() + 60
 
+    @staticmethod
+    def _netatmo_history_rows(old_state, new_state, by_schedule):
+        """What a change of a thermostat goes into the history as.
+
+        Returns (action, detail, automatic) rows, the detail
+        language-neutral as everywhere in the history:
+
+        - A manual setting is ONE row with its end time ("22.5|00:45"), the
+          row a temperature set here makes. Set in the app it used to be two
+          rows, "Temperature set" and "Mode changed: Manual", and the end
+          time was lost. Only extending it in the app is a row as well; that
+          was announced and not written.
+        - Otherwise the setpoint and the mode, and the zone of the heating
+          schedule while the schedule runs on both sides. The zone is stored
+          under the name Netatmo gives it and translated when displayed.
+        - An open window is the thermostat's own detection, and so is the
+          boiler switching on and off - every switching, not only the ones
+          the cooldown lets through to the announcement. The history keeps
+          them under a quota of their own (history.FREQUENT_EVENT_ACTIONS).
+          Pre-heating is the boiler running early and has no row.
+
+        A value that was not known before (None) is no change.
+        """
+        rows = []
+        old_mode, new_mode = old_state.get('mode'), new_state.get('mode')
+        old_sp, new_sp = old_state.get('setpoint'), new_state.get('setpoint')
+        mode_changed = (old_mode is not None and new_mode is not None
+                        and old_mode != new_mode)
+        sp_changed = (old_sp is not None and new_sp is not None
+                      and abs(old_sp - new_sp) >= 0.05)
+        if new_mode == 'manual' and new_sp is not None:
+            # The snapshot keeps an end time the API leaves out, so an
+            # expired one can still stand there.
+            end = new_state.get('end_time')
+            end = end if end and end > time.time() else None
+            extended = (old_mode == 'manual' and end is not None
+                        and end != old_state.get('end_time'))
+            if mode_changed or sp_changed or extended:
+                detail = f"{new_sp:.1f}"
+                if end:
+                    detail += "|" + time.strftime('%H:%M', time.localtime(end))
+                rows.append(('set_temp', detail, False))
+        else:
+            if sp_changed:
+                rows.append(('set_temp', f"{new_sp:.1f}", by_schedule))
+            if mode_changed:
+                rows.append(('therm_mode', str(new_mode), by_schedule))
+            # Netatmo works out the zone whatever the mode is. Moving to the
+            # night zone at 22:00 while set by hand was nobody's doing.
+            old_zone, new_zone = old_state.get('zone_key'), new_state.get('zone_key')
+            if (old_mode == new_mode == 'schedule' and old_zone and new_zone
+                    and old_zone != new_zone):
+                rows.append(('schedule_zone', str(new_zone), True))
+        old_ow, new_ow = old_state.get('open_window'), new_state.get('open_window')
+        if old_ow is not None and new_ow is not None and old_ow != new_ow:
+            rows.append(('window_open' if new_ow else 'window_closed', "", True))
+        old_boiler, new_boiler = old_state.get('boiler'), new_state.get('boiler')
+        if (old_boiler is not None and new_boiler is not None
+                and old_boiler != new_boiler):
+            rows.append(('heating_on' if new_boiler else 'heating_off', "", True))
+        return rows
+
     def _detect_netatmo_changes(self, new_devices):
         """Detects external changes on Netatmo thermostats and announces them.
 
@@ -514,16 +600,24 @@ class _ChangeDetectionMixin:
             if old_state is None:
                 continue  # first observation: remember, do not announce
 
-            if self._is_recent_local_netatmo_action(uid):
-                log.debug(f"Netatmo change suppressed (local action): {dev.name}")
-                continue
-
             # The history first, independent of the announcement switches.
             by_schedule = self._netatmo_change_by_schedule(old_state, new_state)
-            system = ({'setpoint': None, 'zone_key': None, 'mode': None}
-                      if by_schedule else None)
-            self._log_external_state_changes(
-                'netatmo', dev, old_state, new_state, system=system)
+            try:
+                rows = self._netatmo_history_rows(old_state, new_state,
+                                                  by_schedule)
+            except Exception as e:
+                # The announcement below must not depend on the history.
+                log.debug(f"History rows (netatmo) failed: {e}")
+                rows = []
+            local = self._is_recent_local_netatmo_action(uid)
+            if local:
+                # A change made here is in the history already.
+                rows = [row for row in rows if row[0] in _NETATMO_OWN_ACTIONS]
+            self._write_history_rows('netatmo', dev, rows)
+
+            if local:
+                log.debug(f"Netatmo change suppressed (local action): {dev.name}")
+                continue
 
             if not self.announce_external_changes:
                 continue
@@ -869,6 +963,22 @@ class _ChangeDetectionMixin:
             self._log_external_state_changes('vesync', dev, old_state,
                                              history_state)
 
+            # What the appliance reports by itself, written as it is
+            # announced below - both were announced and never written.
+            threshold = getattr(self, 'vesync_filter_threshold', VESYNC_FILTER_WARN_THRESHOLD)
+            old_filter = old_state.get('filter_life')
+            new_filter = new_state.get('filter_life')
+            filter_due = (old_filter is not None and new_filter is not None
+                          and old_filter > threshold and new_filter <= threshold)
+            old_cook = (old_state.get('cook_status') or "").lower()
+            new_cook = (new_state.get('cook_status') or "").lower()
+            own_rows = []
+            if filter_due:
+                own_rows.append(('filter_due', str(new_filter), True))
+            if old_cook and old_cook != new_cook == 'cookend':
+                own_rows.append(('cook_finished', "", True))
+            self._write_history_rows('vesync', dev, own_rows)
+
             if not self.announce_external_changes:
                 continue
 
@@ -1025,11 +1135,7 @@ class _ChangeDetectionMixin:
             # > threshold >= new) prevents repeated announcements on every
             # poll. The permanent hint is handled by the warning banner in the
             # dialog (for filters already below the threshold).
-            threshold = getattr(self, 'vesync_filter_threshold', VESYNC_FILTER_WARN_THRESHOLD)
-            old_filter = old_state.get('filter_life')
-            new_filter = new_state.get('filter_life')
-            if (wants_filter and old_filter is not None and new_filter is not None
-                    and old_filter > threshold and new_filter <= threshold):
+            if wants_filter and filter_due:
                 # Translators: VeSync purifier warning: remaining filter life
                 # low (in percent). Replace the filter soon.
                 changes.append(_("Replace filter soon, remaining life "
@@ -1046,8 +1152,6 @@ class _ChangeDetectionMixin:
             # into 'cooking', and announcing that would report an
             # appliance as having just started when it has been running
             # for eight minutes.
-            old_cook = (old_state.get('cook_status') or "").lower()
-            new_cook = (new_state.get('cook_status') or "").lower()
             if (wants_cook and old_cook and new_cook != old_cook
                     and new_cook in VESYNC_FRYER_COOK_ANNOUNCEMENTS):
                 changes.append(VESYNC_FRYER_COOK_ANNOUNCEMENTS[new_cook])
@@ -1545,20 +1649,27 @@ class _ChangeDetectionMixin:
                         # Translators: Petlibro announcement: the water of a
                         # fountain is below the warning threshold.
                         alerts.append(_("water low"))
+                # Maintenance and battery as well - they were announced and
+                # never written. The action key is the snapshot field.
+                due = [key for key in ('desiccant_due', 'filter_due',
+                                       'cleaning_due', 'battery_low')
+                       if new.get(key) and not prev.get(key)]
+                for key in due:
+                    self._log_petlibro_event(dev, key)
                 if getattr(self, 'notify_petlibro_maintenance', True):
-                    if new.get('desiccant_due') and not prev.get('desiccant_due'):
+                    if 'desiccant_due' in due:
                         # Translators: Petlibro announcement: the desiccant of
                         # a feeder should be replaced.
                         alerts.append(_("desiccant due"))
-                    if new.get('filter_due') and not prev.get('filter_due'):
+                    if 'filter_due' in due:
                         # Translators: Petlibro announcement: the filter of a
                         # fountain should be replaced.
                         alerts.append(_("filter due"))
-                    if new.get('cleaning_due') and not prev.get('cleaning_due'):
+                    if 'cleaning_due' in due:
                         # Translators: Petlibro announcement: a fountain should
                         # be cleaned.
                         alerts.append(_("cleaning due"))
-                if (new['battery_low'] and not prev['battery_low']
+                if ('battery_low' in due
                         and getattr(self, 'notify_petlibro_battery', True)):
                     # Translators: Petlibro announcement: the battery is low.
                     alerts.append(_("battery low"))

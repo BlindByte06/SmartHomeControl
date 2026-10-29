@@ -208,6 +208,46 @@ def main():
         check('nonsense falls back to the default',
               as_bool('lawnmower', True) is True)
 
+    print('== a value written to the base leaves the profiles for good ==')
+    # NVDA writes only the base and the profiles marked as changed. The key
+    # was taken out of the other profiles unmarked, so after a restart the
+    # profile's old value overrode the base again.
+    src = _source('__init__.py')
+    cls = next(n for n in ast.parse(src).body
+               if isinstance(n, ast.ClassDef) and n.name == '_AddonSettings')
+
+    class Profile(dict):
+        def __init__(self, name, data):
+            super().__init__(data)
+            self.name = name
+
+    base = Profile(None, {'smartHomeControl': {'notifyFaults': True}})
+    work = Profile('Work', {'smartHomeControl': {'notifyFaults': True}})
+
+    class Aggregated(dict):
+        _cache = {}
+
+    class Conf:
+        profiles = [base, work]
+        _dirtyProfiles = set()
+
+        def __getitem__(self, key):
+            return Aggregated()
+
+    noted = []
+    env = {'config': type('config', (), {'conf': Conf()}),
+           'log': type('log', (), {'debug': staticmethod(noted.append)})}
+    exec(compile(ast.Module([cls], []), '__init__.py', 'exec'), env)
+    settings = env['_AddonSettings']()
+    settings['notifyFaults'] = False
+    check('the base holds the new value',
+          base['smartHomeControl']['notifyFaults'] is False)
+    check('the profile no longer has the key',
+          'notifyFaults' not in work['smartHomeControl'])
+    check('and is marked, so NVDA writes it at the next save',
+          'Work' in Conf._dirtyProfiles, str(Conf._dirtyProfiles))
+    check('the base itself is not named', None not in Conf._dirtyProfiles)
+
     print()
     if FAILED:
         print('FEHLGESCHLAGEN: ' + str(len(FAILED)) + ' -> ' + str(FAILED))

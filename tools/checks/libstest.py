@@ -33,7 +33,11 @@ certifi, idna and charset_normalizer itself, its library.zip comes first
 on sys.path, and so NVDA's copies are the ones that run. A fix to those
 in lib/ takes effect only on an NVDA without them. The audit lists that
 overlap on a machine with NVDA installed, and the add-on logs which copy
-ran after each login.
+ran after each login. The exception is certifi's data: the certificates
+are checked against lib/certifi/cacert.pem by path, so a certifi update
+in lib/ does take effect - asserted below. The bundled 2026.10.19 had
+never run until that, with NVDA's older bundle still trusting the emSign
+roots it withdrew.
 """
 import base64
 import csv
@@ -222,6 +226,36 @@ def test_the_audit():
               os.path.join(BASE, '__init__.py'), encoding='utf-8').read())
 
 
+def test_the_bundled_ca_bundle_is_used():
+    print('== the certificates are checked against the bundled cacert.pem ==')
+    import importlib.util
+    import types
+    bundled = os.path.join(LIB, 'certifi', 'cacert.pem')
+    check('lib/certifi/cacert.pem exists', os.path.isfile(bundled))
+    # http_session imports requests; a bare stand-in is enough for the path,
+    # and SafeSession then derives from object.
+    try:
+        import requests  # noqa: F401
+    except ImportError:
+        sys.modules['requests'] = types.ModuleType('requests')
+    spec = importlib.util.spec_from_file_location(
+        'http_session_probe', os.path.join(BASE, 'http_session.py'))
+    session_mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(session_mod)
+    found = session_mod.bundled_ca_bundle()
+    check('bundled_ca_bundle() names that file',
+          found is not None and os.path.samefile(found, bundled), str(found))
+    check('SafeSession verifies against it',
+          getattr(session_mod.SafeSession(), 'verify', None) == found)
+    meross = io.open(os.path.join(BASE, 'meross_devices.py'),
+                     encoding='utf-8').read()
+    start = meross.find('def _apply_ssl_fix')
+    body = meross[start:meross.find('\ndef ', start + 1)]
+    check('the Meross SSL context takes it as well',
+          start >= 0 and 'bundled_ca_bundle()' in body
+          and 'cafile=cafile' in body)
+
+
 def main():
     if not os.path.isdir(LIB):
         print(f'  FEHL   lib/ not found at {LIB}')
@@ -231,6 +265,7 @@ def main():
     test_record_hashes()
     test_compiled_extensions_are_present()
     test_the_audit()
+    test_the_bundled_ca_bundle_is_used()
     print()
     if FAILED:
         print(f'FEHLGESCHLAGEN: {len(FAILED)} -> {FAILED}')

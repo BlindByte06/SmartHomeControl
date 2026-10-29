@@ -4,6 +4,10 @@ The GitHub release notes are built from the section of the released version.
 
 ## 26.10.2 (October 2026)
 
+### New Features
+
+- Every switching of the heating of a Netatmo thermostat is recorded in the history as an event, "Heating active" or "Heating off", under a limit of its own of 30 days so it does not push other events out. In the measurements it is a series whose details give the share of time it was active.
+
 ### Important notes
 
 - With "Save configuration when exiting NVDA" switched off, the settings of the add-on are saved with NVDA+Ctrl+C like all other settings.
@@ -14,6 +18,7 @@ The GitHub release notes are built from the section of the released version.
 - A call of the local Netatmo sign-in address with a wrong state is turned away and no longer ends the sign-in.
 - The VeSync account ID no longer appears in the NVDA log.
 - The bundled aiohttp is updated to 3.14.5 (eight advisories fixed in 3.14.4) and certifi to 2026.10.19 (GHSA-6q48-6c7w-9gw2).
+- Certificates are checked against the root certificates bundled with the add-on, on every platform, instead of the copy NVDA ships, which can be older. The emSign roots withdrawn for GHSA-6q48-6c7w-9gw2 are no longer trusted.
 - The rights of the credential file are set with icacls from the Windows system folder, for the account NVDA runs as.
 
 ### Changes
@@ -33,7 +38,9 @@ The GitHub release notes are built from the section of the released version.
 
 - NVDA no longer crashes when the device menu is closed after a device was switched from the favourites tab.
 - Enter or Space on a VeSync or Cozytouch device no longer freezes NVDA.
-- A leak sensor that already detects water when NVDA starts is now announced.
+- Meross leak sensors are read correctly: water is announced, written to the history and shown in the device menu, also when it is already there at NVDA start.
+- Several sensors on one Meross hub each keep their own values after the first update.
+- A Meross hub sensor taken over as unreachable at a new sign-in is shown again as soon as its hub reports it.
 - The Netatmo device menu offers "Add to favorites" again.
 - The Netatmo relay no longer shows the target temperature of the thermostat. It shows the heating state, Wi-Fi and radio signal and firmware instead.
 - A setting changed in the VeSync or Cozytouch device menu is no longer recorded a second time as changed elsewhere.
@@ -58,6 +65,20 @@ The GitHub release notes are built from the section of the released version.
 - The Meross connection test always closes its session.
 - A failed CSV export no longer plays NVDA's error sound twice.
 - Names that Netatmo does not report are no longer shown in German in other languages.
+- A VeSync sign-in renewed in the background can no longer stop the updates of all platforms.
+- A Meross outlet switched elsewhere appears in the history under the outlet, not under the power strip. Earlier entries are moved there once.
+- The CSV export of the history uses the decimal and list separator of the Windows region, whatever language NVDA speaks.
+- A setting of the add-on saved while a configuration profile is active no longer comes back from that profile after a restart.
+- Meross messages are counted as the cloud counts them, switching included, so a device stays below its hourly limit with the device menu open. A hub is asked once per update instead of twice.
+- A Meross hub in the favourites layer is not switched; the reason is announced.
+- The energy announcement reports an error instead of falling silent.
+- The CSV export is confirmed once instead of twice.
+- A temperature set by hand in the Netatmo app is one history entry with its end time, as one set here. Extending it in the app is recorded as well.
+- An open window detected by a Netatmo thermostat is recorded in the history, also right after a change made here.
+- A zone change of the Netatmo heating schedule while the temperature is set by hand is no longer recorded as changed elsewhere.
+- Petlibro maintenance falling due, a low Petlibro battery, a VeSync filter falling due and the end of an air fryer programme are recorded in the history, also with their announcement switched off.
+- The details of a measurement series list up to 15 changes of that quantity; changes of other quantities of the same device no longer take their place.
+- The event list of the history shows every stored event, not only the newest 500.
 
 ### Changes for Developers
 
@@ -66,6 +87,8 @@ The GitHub release notes are built from the section of the released version.
 - `python build_addon.py lock` records the SHA-256 of every bundled wheel. `libs` refuses any other file, and `pack` fails when the lock is out of date.
 - Each release carries the SHA-256 checksum of the package.
 - Every sign-in goes through `_do_login`; the device menu no longer has sign-in code of its own.
+- `tools/checks/merosslibtest.py` checks the Meross wrappers against the bundled meross_iot instead of stand-ins.
+- `tools/checks/libstest.py` checks that HTTPS is verified against `lib/certifi/cacert.pem`.
 
 ## 26.10.1 (October 2026)
 

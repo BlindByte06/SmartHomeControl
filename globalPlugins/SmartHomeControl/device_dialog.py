@@ -2246,6 +2246,10 @@ class SmartHomeControlDialog(_NetatmoDialogMixin, _VeSyncDialogMixin, _MerossDia
 
         # Water sensor (MS400, MS405)
         elif device.is_water_sensor:
+            # None (no state reported yet) reads as "no water" as well: "no
+            # data" is what an unreachable temperature sensor shows, and a
+            # leak sensor would sound offline. The state is there from the
+            # sign-in on - every hub update brings it.
             alarm = device.is_water_detected()
             # Translators: Line in the device tree. F1 finds its help by the
             # beginning of this text, so it and the "Status:" in the help have

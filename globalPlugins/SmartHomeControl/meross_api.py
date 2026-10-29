@@ -47,6 +47,54 @@ from .meross_devices import (
 )
 
 
+def _own_device(wrapper, candidates):
+    """The object among ``candidates`` that belongs to ``wrapper``.
+
+    A lookup by uuid is not enough: every sensor on a hub carries the hub's
+    uuid, so ``find_devices(device_uuids=[uuid])`` returns the hub and all
+    its sensors, the hub first. Taking the first one handed every sensor
+    the HUB as its device after the first poll - an MS100 then read the
+    first sensor of the hub instead of itself (two on one hub showed the
+    same temperature), and a leak sensor had no state at all. A sensor is
+    matched by its subdevice id, anything else by having none.
+    """
+    sub_id = getattr(wrapper, '_subdevice_id', None)
+    for candidate in candidates or ():
+        if getattr(candidate, 'subdevice_id', None) == sub_id:
+            return candidate
+    return None
+
+
+# What one async_update() of a class in meross_iot sends to the cloud, for the
+# classes that send something other than one message. meross_iot puts a
+# device's class together from mixins, and every mixin with an update of its
+# own adds its command and then calls the next one: a plug that reports
+# Appliance.System.Runtime sends System.All AND System.Runtime, a hub
+# System.All and its sensor query. BaseDevice and GenericSubDevice send
+# nothing themselves.
+_UPDATE_MESSAGES = {
+    'BaseDevice': 0,
+    'GenericSubDevice': 0,
+    'RollerShutterTimerMixin': 2,   # configuration and position
+}
+
+
+def _update_cost(device):
+    """Cloud messages one ``async_update()`` of ``device`` sends.
+
+    The hourly budget used to be charged one message per poll whatever the
+    device was. A plug with the runtime mixin sends two, a hub with its
+    sensors two or three, so with the device menu open (a poll every 30
+    seconds) a plug could reach some 270 messages an hour - over the 200
+    Meross allows - while the budget had counted 150.
+    """
+    cost = 0
+    for cls in type(device).__mro__:
+        if 'async_update' in vars(cls):
+            cost += _UPDATE_MESSAGES.get(cls.__name__, 1)
+    return max(1, cost)
+
+
 class MerossAPI:
     """Meross cloud API handler"""
     
@@ -141,6 +189,29 @@ class MerossAPI:
                 return True
             return False
 
+    def _charge_budget(self, uuid, cost=1):
+        """Deducts a message the user sent - switching, a colour, a mode.
+
+        Never refuses: what the user asked for always goes out. But the
+        cloud counts it like any other message, and the bucket did not, so
+        after a run of switching it still promised the polls a budget that
+        was already spent. The bucket may go below zero; the polls then
+        wait until it has refilled. Floored at minus the burst, so even a
+        long run of switching holds the polls back for ten minutes at most.
+        """
+        if not uuid:
+            return
+        now = time.time()
+        rate = MEROSS_HOURLY_BUDGET / 3600.0
+        with self._budget_lock:
+            st = self._msg_budget.get(uuid)
+            if st is None:
+                st = {'tokens': float(MEROSS_BUDGET_BURST), 'last': now}
+                self._msg_budget[uuid] = st
+            st['tokens'] = min(MEROSS_BUDGET_BURST, st['tokens'] + (now - st['last']) * rate)
+            st['last'] = now
+            st['tokens'] = max(-float(MEROSS_BUDGET_BURST), st['tokens'] - cost)
+
     def _budget_exhausted(self, uuid, cost=1):
         """True when the bucket is REALLY empty, not merely down to the reserve.
 
@@ -179,10 +250,14 @@ class MerossAPI:
         (Alexa, app, etc.).
 
         Args:
-            callback: function with signature callback(device_name, new_state, device_uuid)
+            callback: function with signature callback(device_name,
+                     new_state, device_uuid, channel_name=None,
+                     channel_index=None)
                      device_name: name of the device (str)
                      new_state: True = switched on, False = switched off
                      device_uuid: UUID of the device (str)
+                     channel_name: name of the outlet, multi-channel only
+                     channel_index: index of the outlet, multi-channel only
         """
         self._on_device_state_changed_callback = callback
         log.info("Push notification callback registered")
@@ -334,7 +409,9 @@ class MerossAPI:
 
             # Process each channel and find changes. Cache key for multi-
             # channel devices: uuid_channel (e.g. "abc123_1")
-            changed_channels = []  # list of (channel_name, new_state, channel_index)
+            # (channel name, new state, outlet index) - the index only for an
+            # outlet the wrapper knows, None otherwise.
+            changed_channels = []
 
             for ch_num, (ch_state, lm_time) in channel_states.items():
                 # Skip the master channel - recognised by membership in
@@ -355,10 +432,12 @@ class MerossAPI:
                 
                 # Find the channel name
                 ch_name = device_name  # fallback
+                outlet = None
                 if is_multi_channel and channels:
                     for ch in channels:
                         if getattr(ch, 'channel_index', None) == ch_num:
                             ch_name = ch.name
+                            outlet = ch_num
                             # Update the channel status in the wrapper. The
                             # channel opens a SHORT grace window in which a
                             # concurrent poll will not overwrite this fresher
@@ -368,14 +447,17 @@ class MerossAPI:
                                 ch.mark_push_update(ch_state)
                             break
                 
-                changed_channels.append((ch_name, ch_state, ch_num))
+                changed_channels.append((ch_name, ch_state, outlet))
             
             # Send a callback for each changed channel
-            for ch_name, ch_state, ch_num in changed_channels:
+            for ch_name, ch_state, outlet in changed_channels:
                 # channel_name_for_callback is the channel name for dialog
-                # updates
+                # updates; the outlet index lets the history file the change
+                # under the outlet instead of the strip.
                 channel_name_for_callback = ch_name if is_multi_channel else None
-                self._on_device_state_changed_callback(ch_name, ch_state, actual_uuid, channel_name_for_callback)
+                self._on_device_state_changed_callback(
+                    ch_name, ch_state, actual_uuid, channel_name_for_callback,
+                    outlet)
             
             # If there are no changes for multi-channel, but it is a single-
             # channel device
@@ -1120,19 +1202,39 @@ class MerossAPI:
                 from meross_iot.model.exception import CommandTimeoutError
             except ImportError:
                 CommandTimeoutError = Exception  # fallback
-            
+
+            # Hubs that answered as the representative of their group in this
+            # poll - see update_single_hub.
+            refreshed_hubs = set()
+
             # Parallel update function for a single device
             async def update_single_device(meross_device):
                 # Skip offline devices
                 if hasattr(meross_device, 'is_offline') and meross_device.is_offline:
                     return (False, None)  # do not update offline devices
 
-                # Rate limit protection: status poll (1 cloud message) only
-                # when the device's hourly budget allows it. Otherwise skip and
-                # inform the user (throttled) - prevents the 24-hour ban.
-                if not self._consume_budget(meross_device.uuid, 1,
+                # Find the original device first - this wrapper's own one,
+                # not merely the first with its uuid (see _own_device). A
+                # lookup in the local registry, no cloud message; it comes
+                # first so the budget is charged with what the update below
+                # really sends.
+                try:
+                    orig_device = _own_device(
+                        meross_device,
+                        self.manager.find_devices(device_uuids=[meross_device.uuid]))
+                except Exception as e:
+                    log.debug(f"Lookup failed for {meross_device.name}: {e}")
+                    orig_device = None
+                if orig_device is None:
+                    return (False, None)
+                cost = _update_cost(orig_device)
+
+                # Rate limit protection: status poll only when the device's
+                # hourly budget allows it. Otherwise skip and inform the user
+                # (throttled) - prevents the 24-hour ban.
+                if not self._consume_budget(meross_device.uuid, cost,
                                             reserve=MEROSS_BUDGET_RESERVE):
-                    if self._budget_exhausted(meross_device.uuid, 1):
+                    if self._budget_exhausted(meross_device.uuid, cost):
                         self._notify_throttle(getattr(meross_device, 'name', None))
                     # None, not False: nothing was asked, so nothing failed.
                     # Counted as a failure it would look like an unreachable
@@ -1142,10 +1244,7 @@ class MerossAPI:
                     return (None, None)
 
                 try:
-                    # Find the original device
-                    orig_devices = self.manager.find_devices(device_uuids=[meross_device.uuid])
-                    if orig_devices:
-                        orig_device = orig_devices[0]
+                    if orig_device is not None:
 
                         # async_update with timeout handling
                         try:
@@ -1187,11 +1286,14 @@ class MerossAPI:
                         meross_device._device = orig_device
                         meross_device._update_status()
                         
-                        # Collect hub info
+                        # Collect hub info - from any sensor, not only an
+                        # MS130: a group whose hub is not in the list is
+                        # represented by one of its sensors.
                         hub_device = None
                         if meross_device.is_hub:
                             hub_device = orig_device
-                        elif meross_device.type.lower() == 'ms130' and hasattr(orig_device, '_hub'):
+                            refreshed_hubs.add(orig_device.uuid)
+                        elif getattr(orig_device, '_hub', None) is not None:
                             hub_device = orig_device._hub
                         
                         return (True, hub_device)
@@ -1226,25 +1328,38 @@ class MerossAPI:
             #
             # Solution: per UUID only ONE representative is really queried (=
             # one cloud call, one budget token); the remaining wrappers of the
-            # same UUID are then refreshed from the same, already updated
-            # device object - without another cloud call.
+            # same UUID are then refreshed without another cloud call. The
+            # hub itself represents its group when it is in the list: its
+            # update brings the values of every sensor on it, a sensor's own
+            # update only its own.
             uuid_groups = {}
             for d in devices:
                 if getattr(d, 'is_offline', False):
                     continue
                 uuid_groups.setdefault(d.uuid, []).append(d)
+            for grp in uuid_groups.values():
+                grp.sort(key=lambda d: bool(getattr(d, '_subdevice_id', None)))
 
             update_tasks = [update_single_device(grp[0]) for grp in uuid_groups.values()]
             results = await asyncio.gather(*update_tasks, return_exceptions=True)
 
-            # Refresh sibling wrappers (other subdevices on the same hub) from
-            # the representative's device object.
+            # Refresh the sibling wrappers (the other sensors on the same hub),
+            # each from ITS OWN object in the registry - a local lookup, no
+            # cloud call. They used to be handed the representative's object,
+            # which is the hub (see _own_device).
             for grp in uuid_groups.values():
-                rep_dev = getattr(grp[0], '_device', None)
+                if len(grp) < 2:
+                    continue
+                try:
+                    candidates = self.manager.find_devices(device_uuids=[grp[0].uuid])
+                except Exception as e:
+                    log.debug(f"Sibling lookup failed for {grp[0].uuid}: {e}")
+                    candidates = []
                 for sibling in grp[1:]:
                     try:
-                        if rep_dev is not None:
-                            sibling._device = rep_dev
+                        own = _own_device(sibling, candidates)
+                        if own is not None:
+                            sibling._device = own
                         sibling._update_status()
                     except Exception as e:
                         log.debug(f"Ignored error in _update_status: {e}")
@@ -1258,6 +1373,7 @@ class MerossAPI:
             # update_single_hub.
             discovered = []
             known_ids = {d.unique_id for d in devices}
+            by_unique_id = {d.unique_id: d for d in devices}
             hubs = {}
             
             # zip: gather() keeps the order of the tasks, so a result still
@@ -1289,11 +1405,18 @@ class MerossAPI:
                 async def update_single_hub(hub_device):
                     updated_ok = False
                     try:
-                        # Hub update with its own timeout (hubs are often
-                        # slower)
-                        await asyncio.wait_for(hub_device.async_update(), timeout=8.0)
-                        log.debug(f"Hub {hub_device.name} updated")
-                        updated_ok = True
+                        if hub_device.uuid in refreshed_hubs:
+                            # The hub represented its group above and has
+                            # just answered. Asking again a second later sent
+                            # a second message per poll that the hourly
+                            # budget never counted.
+                            updated_ok = True
+                        else:
+                            # Hub update with its own timeout (hubs are
+                            # often slower)
+                            await asyncio.wait_for(hub_device.async_update(), timeout=8.0)
+                            log.debug(f"Hub {hub_device.name} updated")
+                            updated_ok = True
                     except asyncio.TimeoutError:
                         # A timeout is normal for slow hubs - no log
                         pass
@@ -1330,6 +1453,23 @@ class MerossAPI:
                             if not is_sensor_type(subdev_type):
                                 continue
                             wrapper = MerossDevice(subdev)
+                            known = by_unique_id.get(wrapper.unique_id)
+                            if (known is not None
+                                    and getattr(known, 'is_offline', False)
+                                    and getattr(known, '_subdevice_id', None)):
+                                # Kept from before a sign-in and marked
+                                # offline (carry_over_hub_subdevices). Its
+                                # hub lists it again: it is back, in place,
+                                # so tree and favourites keep the object.
+                                # Without this it stayed offline until the
+                                # next sign-in - the poll skips offline
+                                # devices, and its id was already known.
+                                known._device = subdev
+                                known.is_offline = False
+                                known._update_status()
+                                log.info(f"Hub sensor reachable again: "
+                                         f"{known.name} ({known.type})")
+                                continue
                             if wrapper.unique_id in known_ids:
                                 continue
                             known_ids.add(wrapper.unique_id)
@@ -1606,6 +1746,8 @@ class MerossAPI:
                 raise TimeoutError(_("Device unreachable - not responding to "
                                      "switch command"))
         
+        # The cloud counts the command whether or not it succeeds.
+        self._charge_budget(uuid, 1)
         try:
             self._run_async(_set_state())
         except Exception as e:
@@ -1652,6 +1794,7 @@ class MerossAPI:
                 raise TimeoutError(_("Diffuser unreachable - does not respond "
                                      "to the command"))
         
+        self._charge_budget(uuid, 1)
         try:
             self._run_async(_set_spray())
         except Exception as e:
@@ -1713,6 +1856,7 @@ class MerossAPI:
                 raise TimeoutError(_("Lamp unreachable - does not respond to "
                                      "the command"))
         
+        self._charge_budget(uuid, 1)
         try:
             self._run_async(_set_light())
         except Exception as e:

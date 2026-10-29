@@ -96,7 +96,7 @@ def test_measurements():
             if (isinstance(n, ast.Assign) and isinstance(n.value, (ast.Dict, ast.Tuple)))
             or (isinstance(n, ast.FunctionDef)
                 and n.name in ('_measurement_labels', 'format_measurement',
-                               '_time_weighted_average'))]
+                               'format_share', '_time_weighted_average'))]
     exec(compile(ast.Module(keep, []), 'history.py', 'exec'), env)
 
     print('== Alle Groessen in ALLEN Tabellen ==')
@@ -119,6 +119,26 @@ def test_measurements():
     fm = env['format_measurement']
     check('PM2.5', fm('pm25', 7.2) == '7 µg/m³', fm('pm25', 7.2))
     check('Lautstaerke', fm('noise', 42.4) == '42 dB', fm('noise', 42.4))
+
+    # 24.10.2026: zwischen 18:52 und 19:52 achtmal "Heizung aktiv/aus"
+    # angesagt, keinmal irgendwo festgehalten.
+    print('== Heizung: ein Zustand, kein Messwert ==')
+    check('heating ist ein Zustand', 'heating' in env['STATE_QUANTITIES'])
+    check('1 liest sich "active"', fm('heating', 1) == 'active', fm('heating', 1))
+    check('0 liest sich "off"', fm('heating', 0) == 'off', fm('heating', 0))
+    avg = env['_time_weighted_average']
+    # 5 Minuten an, 10 aus: ein Drittel der Zeit.
+    runs = [(0, 1), (300, 0), (900, 0)]
+    check('Anteil als Stufe gerechnet, nicht als Trapez',
+          abs(avg(runs, step=True) - 1 / 3) < 1e-9, str(avg(runs, step=True)))
+    check('das Trapez haette ein Sechstel ergeben',
+          abs(avg(runs) - 1 / 6) < 1e-9, str(avg(runs)))
+    check('Anteil in Prozent', env['format_share'](1 / 3) == '33 %',
+          env['format_share'](1 / 3))
+    check('summarize rechnet Zustaende als Stufe',
+          'step=rec[\'quantity\'] in STATE_QUANTITIES' in hist)
+    check('log_sensor legt True/False als 1/0 ab',
+          'if isinstance(value, bool):' in hist and 'value = int(value)' in hist)
 
     print('== Zeitraum: summarize_measurements liefert first_ts/last_ts ==')
     check('first_ts wird gesetzt', "rec['first_ts'] = points[0][0]" in hist)
@@ -144,6 +164,15 @@ def test_measurements():
     for moved in ('Lowest value: {value}', 'Highest value: {value}',
                   'Readings stored: {count}'):
         check(f'{moved!r} im Detail', f'_("{moved}")' in dlg)
+    check('Heizung: Anteil der Zeit im Detail',
+          '_("Active: {share} of the time")' in dlg)
+    # Ein Eintrag haelt nur, was sich geaendert hat; die Heizung schreibt
+    # viel oefter als die Temperatur desselben Thermostats.
+    check('Detail filtert nach der Groesse, bevor es 15 nimmt',
+          'max_entries=None, since_hours=since_hours)' in dlg
+          and 'points = points[:15]' in dlg)
+    check('Rekorder liest die Heizung',
+          "('heating', ('get_boiler_status',))" in sched)
 
     print('== Detailansicht zeilenweise navigierbar ==')
     # Kurze Meldungen (Export-Erfolg, Loeschabfrage) duerfen weiter
@@ -214,6 +243,61 @@ def test_measurements():
           "getattr(self, '_history_keys_migrated', False)" in sched
           and 'history.migrate_device_keys(devices)' in sched)
 
+    print('== Eine Steckdose der Leiste hat ihre Eintraege unter sich ==')
+    # Fremd geschaltet, stand sie unter der uuid der Leiste mit dem Namen der
+    # Steckdose; hier geschaltet unter ihrer eigenen. Die Chronik zeigte sie
+    # zweimal, und keine der beiden Zeilen war vollstaendig.
+    cd_src = io.open(os.path.join(BASE, 'change_detection.py'),
+                     encoding='utf-8').read()
+    meross_src = io.open(os.path.join(BASE, 'meross_api.py'),
+                         encoding='utf-8').read()
+    check('die Push-Meldung reicht die Steckdose weiter',
+          'ch_name, ch_state, actual_uuid, channel_name_for_callback,\n'
+          '                    outlet)' in meross_src)
+    check('die Chronik schreibt unter dem Schluessel der Steckdose',
+          'f"{device_uuid}_ch{channel_index}"' in cd_src)
+    import threading as _threading
+    cls_node = next(n for n in ast.parse(hist).body
+                    if isinstance(n, ast.ClassDef) and any(
+                        isinstance(m, ast.FunctionDef)
+                        and m.name == 'migrate_device_keys' for m in n.body))
+    method = next(m for m in cls_node.body if isinstance(m, ast.FunctionDef)
+                  and m.name == 'migrate_device_keys')
+    envm = {'log': type('L', (), {'info': staticmethod(lambda *a: None)})}
+    exec(compile(ast.Module([method], []), 'history.py', 'exec'), envm)
+
+    class _Store:
+        def __init__(self, entries):
+            self.entries = entries
+
+        def mark_dirty(self):
+            pass
+
+        def save(self):
+            pass
+
+    class _Outlet:
+        uuid = unique_id = 'S_ch1'
+        name = 'Garten: Pumpe'
+
+    class _Strip:
+        uuid = unique_id = 'S'
+        name = 'Garten'
+
+        def get_channels(self):
+            return [_Outlet()]
+
+    old_external = {'device_uuid': 'S', 'device_name': 'Garten: Pumpe'}
+    whole_strip = {'device_uuid': 'S', 'device_name': 'Garten'}
+    fake = types.SimpleNamespace(
+        _lock=_threading.Lock(), _events=_Store([old_external, whole_strip]),
+        _measurements=_Store([]), _seed_last_written=lambda: None)
+    envm['migrate_device_keys'](fake, [_Strip()])
+    check('alte fremde Schaltungen kommen unter die Steckdose',
+          old_external['device_uuid'] == 'S_ch1', old_external['device_uuid'])
+    check('was der ganzen Leiste galt, bleibt bei ihr',
+          whole_strip['device_uuid'] == 'S', whole_strip['device_uuid'])
+
     print('== CSV-Export: vollstaendig und lesbar ==')
     # Die Kopfzeilen werden aus Label + Einheit erzeugt, nicht mehr
     # einzeln hingeschrieben - geprueft wird also die Erzeugung.
@@ -231,6 +315,10 @@ def test_measurements():
           qh('pm25') == 'Particulate matter PM2.5 (µg/m³)', qh('pm25'))
     check('Kopfzeile Lautstaerke mit Einheit', qh('noise') == 'Noise (dB)', qh('noise'))
     for q in envh['MEASUREMENT_ORDER']:
+        if q in envh['STATE_QUANTITIES']:
+            # Ein Zustand hat keine Einheit; seine Spalte traegt 1 und 0.
+            check(f'Kopfzeile fuer {q} ohne leere Klammer', '(' not in qh(q), qh(q))
+            continue
         check(f'Kopfzeile fuer {q} traegt eine Einheit', '(' in qh(q), qh(q))
     check('alle Groessen werden geschrieben',
           "sensor.get(q, '')" in hist and 'for q in quantities' in hist)
@@ -273,12 +361,39 @@ def test_measurements():
     check('Messwert-Export nur mit vorkommenden Groessen',
           present2 == {'temperature'})
 
-    print('== CSV folgt dem Gebietsschema ==')
-    check('Dezimaltrennzeichen aus dem Gebietsschema',
-          "locale.localeconv().get('decimal_point')" in hist)
-    check('Listentrennzeichen passend dazu',
-          "delimiter = ';' if decimal_point == ',' else ','" in hist)
+    print('== CSV folgt der Windows-Region, nicht der NVDA-Sprache ==')
+    # NVDA stellt die Python-Locale auf seine Oberflaechensprache; Excel
+    # liest die Region. NVDA auf Englisch mit deutscher Region ergab Punkt
+    # und Komma - in deutschem Excel stand jede Zeile in einer Zelle.
+    export = hist[hist.index('    def export_csv'):]
+    export = export[:export.index('\n    def ', 10)]
+    check('der Export holt beide Zeichen aus der Region',
+          'decimal_point, delimiter = _region_separators()' in export)
+    check('nicht mehr aus der Python-Locale',
+          'localeconv' not in export)
+    check('die Region fragt Windows (GetLocaleInfoEx, SDECIMAL und SLIST)',
+          'GetLocaleInfoEx' in hist and '_LOCALE_SDECIMAL = 0x0E' in hist
+          and '_LOCALE_SLIST = 0x0C' in hist)
     check('kein hartkodiertes Semikolon mehr', "delimiter=';'" not in hist)
+    dlg = io.open(os.path.join(BASE, 'dialog_history.py'),
+                  encoding='utf-8').read()
+    check('nach dem Export eine Bestaetigung, nicht zwei',
+          'History exported to {filename}' not in dlg
+          and 'History exported successfully' in dlg)
+    if sys.platform == 'win32':
+        env_r = {'log': type('L', (), {'debug': staticmethod(print)})()}
+        import locale as _locale
+        env_r['locale'] = _locale
+        for node in ast.parse(hist).body:
+            if (isinstance(node, ast.Assign) and any(
+                    getattr(t, 'id', '').startswith('_LOCALE_')
+                    for t in node.targets)) or (
+                    isinstance(node, ast.FunctionDef)
+                    and node.name == '_region_separators'):
+                exec(compile(ast.Module([node], []), 'h', 'exec'), env_r)
+        dec, lst = env_r['_region_separators']()
+        check('die Region liefert zwei verschiedene Zeichen, Liste einstellig',
+              dec and len(lst) == 1 and dec != lst, f'{dec!r} {lst!r}')
     check('Zahlen laufen durch die Aufbereitung',
           "_csv_number(sensor.get(q, ''), decimal_point)" in hist)
     env2 = {}
@@ -415,20 +530,22 @@ def test_external_changes():
                   encoding='utf-8').read()
     tree = ast.parse(src)
 
-    # Die Tabelle und die Methode aus der echten Quelle holen.
+    # Die Tabelle und die Methoden aus der echten Quelle holen.
     table_src = None
-    method_src = None
+    methods = {}
     for node in ast.walk(tree):
         if (isinstance(node, ast.Assign) and node.targets
                 and isinstance(node.targets[0], ast.Name)
                 and node.targets[0].id == '_EXTERNAL_ACTIONS'):
             table_src = ast.get_source_segment(src, node)
         if (isinstance(node, ast.FunctionDef)
-                and node.name == '_log_external_state_changes'):
-            method_src = textwrap.dedent(ast.get_source_segment(src, node))
+                and node.name in ('_log_external_state_changes',
+                                  '_write_history_rows')):
+            methods[node.name] = textwrap.dedent(
+                ast.get_source_segment(src, node))
     check('die Tabelle ist da', table_src is not None)
-    check('die Methode ist da', method_src is not None)
-    if not (table_src and method_src):
+    check('die Methoden sind da', len(methods) == 2, str(sorted(methods)))
+    if not (table_src and len(methods) == 2):
         return
 
     written = []
@@ -436,6 +553,9 @@ def test_external_changes():
     class History:
         def log_external_action(self, uuid, name, platform, action, detail=""):
             written.append((platform, action, detail))
+
+        def log_action(self, device, action, detail="", source=None):
+            written.append((source, action, detail))
 
     class Device:
         uuid = 'ct-1'
@@ -459,18 +579,21 @@ def test_external_changes():
     addon.__path__ = []
     stub = types.ModuleType('globalPlugins.SmartHomeControl.history')
     stub.get_history = lambda: History()
+    stub.SOURCE_SYSTEM = 'system'
     sys.modules['globalPlugins.SmartHomeControl.history'] = stub
 
     env = {'log': Log(),
            '__name__': 'globalPlugins.SmartHomeControl.change_detection',
            '__package__': 'globalPlugins.SmartHomeControl'}
     exec(compile(ast.parse(table_src), 'table', 'exec'), env)
-    exec(compile(ast.parse(method_src), 'method', 'exec'), env)
+    for method_src in methods.values():
+        exec(compile(ast.parse(method_src), 'method', 'exec'), env)
 
     class Mixin:
         pass
 
     Mixin._log_external_state_changes = env['_log_external_state_changes']
+    Mixin._write_history_rows = env['_write_history_rows']
     mixin = Mixin()
 
     def run(platform, prev, new):
@@ -516,28 +639,35 @@ def test_external_changes():
     check('VeSync: Aus, stumm und Stufe',
           actions == ['mute_on', 'set_fan_speed', 'toggle_off'], str(actions))
 
-    got = run('netatmo',
-              {'setpoint': 20.0, 'mode': 'schedule', 'zone_name': 'Tag'},
-              {'setpoint': 21.5, 'mode': 'manual', 'zone_name': 'Tag'})
-    actions = sorted(a for _p, a, _d in got)
-    check('Netatmo: Solltemperatur und Modus',
-          actions == ['set_temp', 'therm_mode'], str(actions))
-
-    # Und die Verdrahtung: alle drei Schleifen rufen es auch wirklich auf.
-    for platform in ('netatmo', 'vesync', 'cozytouch'):
+    # Und die Verdrahtung: alle Schleifen rufen es auch wirklich auf. Netatmo
+    # schreibt seine eigenen Zeilen (_netatmo_history_rows).
+    for platform in ('vesync', 'cozytouch', 'petlibro'):
         check(f'die {platform}-Schleife ruft es auf',
               f"_log_external_state_changes('{platform}'" in src
               or f"_log_external_state_changes(\n                        '{platform}'" in src
               or f"'{platform}', dev," in src)
+    check('die netatmo-Schleife schreibt ihre Zeilen',
+          "self._write_history_rows('netatmo', dev, rows)" in src)
 
-    # Jede Aktion der Tabelle muss die Anzeige auch benennen koennen.
+    # Jede Aktion, die geschrieben wird, muss die Anzeige auch benennen
+    # koennen - die der Tabelle und die, die an Ort und Stelle entstehen.
+    import re
     hist = io.open(os.path.join(BASE, 'history.py'), encoding='utf-8').read()
-    unknown = []
+    keys = set()
     for entries in env['_EXTERNAL_ACTIONS'].values():
-        for _field, keys, with_value in entries:
-            for key in ((keys,) if with_value else keys):
-                if f"'{key}':" not in hist:
-                    unknown.append(key)
+        for _field, pair, with_value in entries:
+            keys.update((pair,) if with_value else pair)
+    keys.update(re.findall(r"rows\.append\(\('(\w+)'", src))
+    for pair in re.findall(r"rows\.append\(\('(\w+)' if \w+ else '(\w+)'", src):
+        keys.update(pair)
+    for tup in re.findall(r"for key in \(([^)]*)\)\s+if new\.get\(key\)", src):
+        keys.update(re.findall(r"'(\w+)'", tup))
+    check('die neuen Zeilen sind dabei',
+          {'set_temp', 'therm_mode', 'schedule_zone', 'window_open',
+           'window_closed', 'heating_on', 'heating_off', 'filter_due',
+           'cook_finished', 'desiccant_due', 'cleaning_due',
+           'battery_low'} <= keys, str(sorted(keys)))
+    unknown = [key for key in keys if f"'{key}':" not in hist]
     check('jede Aktion hat eine Beschriftung in der Anzeige',
           not unknown, ', '.join(sorted(set(unknown))))
 
@@ -629,6 +759,7 @@ def _detection_mixin(names, clock, extra=None):
     for node in tree.body:
         if (isinstance(node, ast.Assign) and isinstance(node.targets[0], ast.Name)
                 and node.targets[0].id in ('_EXTERNAL_ACTIONS',
+                                           '_NETATMO_OWN_ACTIONS',
                                            'BOOST_END_TOLERANCE')):
             module_parts.append(ast.get_source_segment(src, node))
         if isinstance(node, ast.ClassDef) and node.name == '_ChangeDetectionMixin':
@@ -670,16 +801,20 @@ def test_automatic_origin():
     der echten Erkennung.
     """
     print('== "automatisch": Boost-Ende und Heizplan ==')
+    import time as _time
     import types
 
     class Clock:
         now = 0.0
+        strftime = staticmethod(_time.strftime)
+        localtime = staticmethod(_time.localtime)
 
         def time(self):
             return self.now
 
     clock = Clock()
-    names = ('_log_external_state_changes', '_cozytouch_boost_runs',
+    names = ('_log_external_state_changes', '_write_history_rows',
+             '_netatmo_history_rows', '_cozytouch_boost_runs',
              '_note_cozytouch_boost', '_note_local_cozytouch_boost',
              '_cozytouch_boost_from_history',
              '_cozytouch_boost_ran_out', '_record_local_cozytouch_action',
@@ -1003,6 +1138,32 @@ def test_automatic_origin():
     check('VeSync: eine Stufe von anderswo bleibt extern',
           written == [('extern', 'set_fan_speed', '3')], str(written))
 
+    # Angesagt wurde beides, geschrieben nichts.
+    written.clear()
+    purifier.filter_life = 9
+    vesync(m, purifier, 182)
+    check('VeSync: Filter faellig, automatisch, mit Restlaufzeit',
+          written == [('system', 'filter_due', '9')], str(written))
+    written.clear()
+    purifier.filter_life = 8
+    vesync(m, purifier, 242)
+    check('VeSync: weiter unter der Schwelle schreibt nicht noch einmal',
+          written == [], str(written))
+
+    class Fryer(VeSyncPurifier):
+        uuid = unique_id = 'vs-2'
+        name = 'Fritteuse'
+        filter_life = None
+
+    fryer = Fryer()
+    fryer.cook_status = 'cooking'
+    vesync(m, fryer, 300)
+    written.clear()
+    fryer.cook_status = 'cookEnd'
+    vesync(m, fryer, 360)
+    check('VeSync: Garprogramm zu Ende, automatisch',
+          written == [('system', 'cook_finished', '')], str(written))
+
     # Netatmo um 22:00: der Wochenplan wechselt in die Nachtzone - an
     # einem Abend in einer Abfrage, am 01.10. auf zwei verteilt.
     class Thermostat:
@@ -1040,13 +1201,85 @@ def test_automatic_origin():
           written == [('system', 'schedule_zone', 'Night'),
                       ('system', 'set_temp', '18.0')], str(written))
 
+    def therm(setpoint, mode, zone, end=None, window=None, boiler=None):
+        t = Thermostat(setpoint, mode, zone)
+        t._therm_setpoint_end_time = end
+        t._open_window = window
+        t._boiler_status = boiler
+        return t
+
+    def hhmm(at):
+        return _time.strftime('%H:%M', _time.localtime(at))
+
+    # 23.10. 21:49: in der App 22,5 Grad bis 00:45 gestellt. Im Verlauf
+    # standen "Temperatur gesetzt: 22,5" und "Modus geaendert: Manuell" -
+    # zwei Zeilen, und die Endzeit fehlte. Hier gestellt ist es eine Zeile
+    # "22.5|00:45".
     m = plugin()
     netatmo(m, Thermostat(20.0, 'schedule', 'Comfort'), 0)
     written.clear()
-    netatmo(m, Thermostat(21.5, 'manual', 'Comfort'), 30)
-    check('in der App von Hand gestellt bleibt extern',
-          sorted(written) == [('extern', 'set_temp', '21.5'),
-                              ('extern', 'therm_mode', 'manual')], str(written))
+    netatmo(m, therm(22.5, 'manual', 'Comfort', end=30 + 3 * 3600), 30)
+    check('in der App von Hand gestellt: eine Zeile mit Endzeit, extern',
+          written == [('extern', 'set_temp', f'22.5|{hhmm(30 + 3 * 3600)}')],
+          str(written))
+
+    written.clear()
+    netatmo(m, therm(22.5, 'manual', 'Comfort', end=30 + 4 * 3600), 60)
+    check('in der App verlaengert: eine Zeile mit der neuen Endzeit',
+          written == [('extern', 'set_temp', f'22.5|{hhmm(30 + 4 * 3600)}')],
+          str(written))
+
+    written.clear()
+    netatmo(m, therm(22.5, 'manual', 'Night', end=30 + 4 * 3600), 90)
+    check('Zonenwechsel waehrend der Handeinstellung schreibt nichts',
+          written == [], str(written))
+
+    m = plugin()
+    netatmo(m, therm(22.0, 'manual', 'Comfort', end=100), 0)
+    written.clear()
+    netatmo(m, Thermostat(21.0, 'schedule', 'Comfort'), 130)
+    check('abgelaufen, zurueck zum Zeitplan: automatisch',
+          sorted(written) == [('system', 'set_temp', '21.0'),
+                              ('system', 'therm_mode', 'schedule')],
+          str(written))
+
+    m = plugin()
+    netatmo(m, therm(20.0, 'schedule', 'Comfort', window=False), 0)
+    written.clear()
+    netatmo(m, therm(20.0, 'schedule', 'Comfort', window=True), 30)
+    netatmo(m, therm(20.0, 'schedule', 'Comfort', window=False), 600)
+    check('offenes Fenster und wieder zu: automatisch, zwei Zeilen',
+          written == [('system', 'window_open', ''),
+                      ('system', 'window_closed', '')], str(written))
+
+    m = plugin()
+    netatmo(m, therm(20.0, 'schedule', 'Comfort', window=False), 0)
+    clock.now = 10
+    m._record_local_netatmo_action('na-1')
+    written.clear()
+    netatmo(m, therm(23.0, 'manual', 'Comfort', window=True), 20)
+    check('gleich nach einer eigenen Aenderung: nur das Fenster',
+          written == [('system', 'window_open', '')], str(written))
+
+    # 26.10.2026, 15:56 bis 19:35: zwoelfmal "Heizung aktiv/aus" angesagt,
+    # fuenfmal von der Pause zurueckgehalten - im Ereignisverlauf keinmal.
+    m = plugin()
+    netatmo(m, therm(20.0, 'schedule', 'Comfort', boiler=False), 0)
+    written.clear()
+    netatmo(m, therm(20.0, 'schedule', 'Comfort', boiler=True), 30)
+    netatmo(m, therm(20.0, 'schedule', 'Comfort', boiler=False), 60)
+    netatmo(m, therm(20.0, 'schedule', 'Comfort', boiler=False), 90)
+    check('Heizung an und aus: zwei Ereignisse, automatisch',
+          written == [('system', 'heating_on', ''),
+                      ('system', 'heating_off', '')], str(written))
+    check('auch der Wechsel, dessen Ansage die Pause zurueckhaelt',
+          len(written) == 2, str(written))
+    clock.now = 100
+    m._record_local_netatmo_action('na-1')
+    written.clear()
+    netatmo(m, therm(22.0, 'manual', 'Comfort', boiler=True), 110)
+    check('die Heizung antwortet auf eine eigene Aenderung: nur sie',
+          written == [('system', 'heating_on', '')], str(written))
 
     # Die Verdrahtung: der Dialog meldet Start und Dauer, und F5 laesst die
     # Buchfuehrung nicht aus.
@@ -1136,6 +1369,87 @@ def test_saved_without_a_next_entry():
           'save_due_pending()' in sched)
 
 
+def test_frequent_quota():
+    """Die Heizung schreibt hundert Ereignisse am Tag - und darf damit kein
+    anderes verdraengen.
+
+    Der Ereignisverlauf fasst 2000 Eintraege; seit Juni waren es 265. Mit
+    jedem Schaltvorgang des Kessels darin waere er nach drei Wochen voll, und
+    jede Schaltung von Hand faellt hinten heraus.
+    """
+    print('== Eigenes Kontingent fuer die Heizung ==')
+    import ast
+
+    src = io.open(os.path.join(BASE, 'history.py'), encoding='utf-8').read()
+    parts = [n for n in ast.parse(src).body
+             if (isinstance(n, ast.ClassDef) and n.name == '_EntryStore')
+             or (isinstance(n, ast.Assign) and isinstance(n.targets[0], ast.Name)
+                 and n.targets[0].id in ('FREQUENT_EVENT_ACTIONS',
+                                         'MAX_FREQUENT_EVENTS',
+                                         'FREQUENT_EVENT_RETENTION_SECONDS'))]
+
+    class Clock:
+        now = 100 * 86400.0
+
+        def time(self):
+            return self.now
+
+    class Log:
+        def _noop(self, *a, **k):
+            pass
+        debug = info = warning = error = _noop
+
+    clock = Clock()
+    env = {'time': clock, 'log': Log(), 'os': os, 'json': None}
+    exec(compile(ast.Module(parts, []), 'history.py', 'exec'), env)
+    check('die Heizung hat ein eigenes Kontingent',
+          set(env.get('FREQUENT_EVENT_ACTIONS', ())) == {'heating_on', 'heating_off'})
+    check('das Ereignis-Lager benutzt es',
+          'frequent=(FREQUENT_EVENT_ACTIONS, MAX_FREQUENT_EVENTS,' in src)
+
+    store = env['_EntryStore']('x.json', 5, 365 * 86400, 'Events',
+                               frequent=(('heating_on', 'heating_off'), 4,
+                                         30 * 86400))
+    day = 86400
+    store.entries = (
+        [{'timestamp': clock.now - 60 * day + i, 'action': 'toggle_on'}
+         for i in range(3)]
+        + [{'timestamp': clock.now - 40 * day, 'action': 'heating_on'}]
+        + [{'timestamp': clock.now - day + i,
+            'action': 'heating_on' if i % 2 else 'heating_off'}
+           for i in range(10)]
+        + [{'timestamp': clock.now - 10, 'action': 'set_temp'}])
+    store._trim()
+    actions = [e['action'] for e in store.entries]
+    check('alle vier Schaltungen von Hand bleiben',
+          actions.count('toggle_on') == 3 and 'set_temp' in actions, str(actions))
+    check('von der Heizung die vier neuesten',
+          sum(a.startswith('heating') for a in actions) == 4, str(actions))
+    check('die Heizung von vor 40 Tagen ist weg',
+          all(e['timestamp'] > clock.now - 30 * day for e in store.entries
+              if e['action'].startswith('heating')))
+    check('die Reihenfolge bleibt', [e['timestamp'] for e in store.entries]
+          == sorted(e['timestamp'] for e in store.entries))
+    store.entries += [{'timestamp': clock.now + i, 'action': 'toggle_off'}
+                      for i in range(3)]
+    store._trim()
+    actions = [e['action'] for e in store.entries]
+    check('das Kontingent der uebrigen: die aeltesten gehen zuerst',
+          actions.count('toggle_on') == 1 and actions.count('toggle_off') == 3
+          and sum(a.startswith('heating') for a in actions) == 4, str(actions))
+    plain = env['_EntryStore']('y.json', 3, 0, 'Readings')
+    plain.entries = [{'timestamp': i, 'action': ''} for i in range(5)]
+    plain._trim()
+    check('ohne Kontingent wie bisher: die neuesten drei',
+          [e['timestamp'] for e in plain.entries] == [2, 3, 4])
+
+    dlg = io.open(os.path.join(BASE, 'dialog_history.py'), encoding='utf-8').read()
+    check('die Ereignisliste zeigt alle, nicht nur 500',
+          'max_entries=500' not in dlg and "event_type='action',\n"
+          "                max_entries=None," in dlg)
+    check('und baut sie ohne Neuzeichnen je Zeile', 'self.list_ctrl.Freeze()' in dlg)
+
+
 def main():
     env = load_history_funcs()
     fmt = env['_format_action_text']
@@ -1198,6 +1512,7 @@ def main():
     test_external_changes()
     test_automatic_origin()
     test_saved_without_a_next_entry()
+    test_frequent_quota()
     test_schedule_detail()
 
     print()

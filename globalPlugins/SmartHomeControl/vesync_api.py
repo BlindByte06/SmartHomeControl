@@ -157,6 +157,9 @@ class VeSyncAPI:
         # the first one triggers the reauth, the others wait on the lock and
         # retry afterwards with the fresh token.
         self._reauth_lock = threading.Lock()
+        # The thread running the re-login while it holds the lock (see the
+        # ``reauth`` argument of _post).
+        self._reauth_owner = None
         # In-memory cache of the device list response (for
         # ``_refresh_devicelist_state``). Prevents double calls when the
         # background loop and the fast poll trigger one after the other within
@@ -248,7 +251,7 @@ class VeSyncAPI:
     _AUTH_EXPIRED_CODES = {-11201022, -11201021, -11201001, -11000086}
 
     def _post(self, endpoint, body, headers=None, timeout=API_TIMEOUT,
-              _is_retry=False, fast=False, repeat=True):
+              _is_retry=False, fast=False, repeat=True, reauth=True):
         """Authenticated POST request against the VeSync API.
 
         Args:
@@ -258,6 +261,13 @@ class VeSyncAPI:
             repeat: False for a command that sets something going - see
                 ``call_bypass_v2``. It is then sent once, network error or
                 not.
+            reauth: False for the two requests of the login itself. The
+                re-login after an expired token runs the login on the thread
+                that holds ``_reauth_lock``; a login answer carrying one of
+                ``_AUTH_EXPIRED_CODES`` - the -11201xxx family is the one
+                pyvesync files under a wrong password - then waited on that
+                lock for itself, for good. It was usually the scheduler
+                thread, so every platform stopped polling.
 
         Retry strategy:
           - In normal mode: 1 retry on ConnectionError/timeout (1 s pause).
@@ -301,6 +311,11 @@ class VeSyncAPI:
         code = data.get("code") if isinstance(data, dict) else None
         if (code in self._AUTH_EXPIRED_CODES
                 and not _is_retry
+                and reauth
+                # The same guard once more for any other request the login
+                # callback might send: never wait on the lock this thread
+                # holds itself.
+                and self._reauth_owner != threading.get_ident()
                 and self._reauth_callback):
             # acquire (blocking=False) reveals whether another thread is
             # already doing the reauth. If so, we wait on the lock and retry
@@ -313,6 +328,7 @@ class VeSyncAPI:
                     pass
                 log.debug("VeSync: reauth happened in parallel - retrying with the new token")
             else:
+                self._reauth_owner = threading.get_ident()
                 try:
                     log.info(f"VeSync: token expired (code={code}), trying re-auth...")
                     try:
@@ -323,6 +339,7 @@ class VeSyncAPI:
                     if not ok:
                         return data
                 finally:
+                    self._reauth_owner = None
                     self._reauth_lock.release()
             # Replace the token fields in the body with fresh ones (best
             # effort). IMPORTANT: work on a copy - the caller may hold a
@@ -420,6 +437,7 @@ class VeSyncAPI:
             auth_resp = self._post(
                 "/globalPlatform/api/accountAuth/v1/authByPWDOrOTM",
                 auth_body,
+                reauth=False,
             )
         finally:
             password = None
@@ -482,6 +500,7 @@ class VeSyncAPI:
         login_resp = self._post(
             "/user/api/accountManage/v1/loginByAuthorizeCode4Vesync",
             login_body,
+            reauth=False,
         )
 
         code = login_resp.get("code")

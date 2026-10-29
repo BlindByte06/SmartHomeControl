@@ -573,14 +573,22 @@ came from: "you" for an action through this add-on, "external" for the
 manufacturer app, a voice assistant or the button on the device, and
 "automatic" for entries the add-on records by itself, such as a water
 alarm, and for what a device does on its own: a Netatmo heating schedule
-moving to its night zone at 22:00 ("Schedule zone changed"), or a boost of
-the heat pump running out after its duration ("Boost ended").</p>
+moving to its night zone at 22:00 ("Schedule zone changed"), the heating of
+a Netatmo thermostat starting or stopping ("Heating active", "Heating off"),
+an open window the thermostat detects, a boost of the heat pump running out
+after its
+duration ("Boost ended"), a filter or a cleaning falling due, a low battery,
+or a cooking programme of the air fryer running to its end. A temperature set
+by hand in the Netatmo app is one row with its end time, as one set
+here.</p>
 <p><strong>Measurements</strong> – one row per device and quantity instead of
 thousands of single values: device, quantity, latest value and time of the
 latest reading. Enter on a row opens the details – lowest and highest value,
 the time-weighted average, the period covered, the number of stored readings
 and the most recent changes. The detail window is a read-only text field, so it
-can be read line by line and copied with Ctrl+C.</p>
+can be read line by line and copied with Ctrl+C. For the heating of a Netatmo
+thermostat the details give the share of time it was active instead of lowest,
+highest and average, and the changes are its switchings.</p>
 <p>The filters above the list narrow it down by device, platform and period
 (all time, last hour, last 24 hours, last 7 days, last 30 days); the "Filter"
 button applies them.</p>
@@ -592,10 +600,15 @@ pressure, 3 µg/m³ for particulates and 5 dB for noise. Regardless of that, one
 value per hour is kept, so an unchanged reading does not look like a gap and
 the averages stay correct. Recorded are temperature, humidity, CO2, air
 pressure, PM2.5 and PM10 of the Levoit air purifiers, the noise level of the
-Netatmo indoor module and the temperature measured by the Levoit tower
-fans.</p>
+Netatmo indoor module, the temperature measured by the Levoit tower fans and
+the heating of the Netatmo thermostat, active or off, at every switching. The
+heating is thus in two places: each switching as an event, and as a series
+that tells how long it ran.</p>
 <p>Events are kept for one year or 2000 entries, readings for 90 days or 20000
-change points – whichever limit is reached first. Both files live in the NVDA
+change points – whichever limit is reached first. The switchings of the
+Netatmo heating have a limit of their own, 30 days or 3000 entries: it
+switches some ten times an hour while it runs and would otherwise push the
+other events out within weeks. Both files live in the NVDA
 configuration folder next to the add-on, as
 <code>SmartHomeControl_history.json</code> and
 <code>SmartHomeControl_measurements.json</code>. "Delete history" empties both
@@ -643,8 +656,9 @@ faults of a device, feedings started elsewhere (the app, the button on the
 feeder), food running low, water running low, desiccant, filter or cleaning
 due, a low battery, a device going offline or coming back, and settings
 changed elsewhere (feeding plan, water mode, light). Off by default: every
-planned meal, since that would be several announcements a day. Feedings and
-failed feedings are recorded in the history either way.</p>
+planned meal, since that would be several announcements a day. Feedings,
+failed feedings, faults, food or water running low, maintenance falling due
+and a low battery are recorded in the history either way.</p>
 <hr />
 <h2 id="cloud-limits">Notes on cloud limits</h2>
 <p>Meross limits its cloud to <strong>200 messages per hour and device</strong> –
@@ -711,9 +725,11 @@ temporarily fail when the manufacturers change their servers.</p>
   starts. If an NVDA log or <code>nvda.ini</code> from such a machine was ever
   passed on, the Netatmo password should be changed.</li>
 <li>Netatmo, VeSync, Cozytouch and Petlibro connect through the network
-  libraries NVDA ships itself (requests, urllib3, certifi); their security
-  updates come with NVDA updates. Meross uses a bundled library (aiohttp).
-  Which versions run is written to the NVDA log after every sign-in.</li>
+  libraries NVDA ships itself (requests, urllib3); their security updates
+  come with NVDA updates. Meross uses a bundled library (aiohttp). The
+  certificates of every platform are checked against the root certificates
+  bundled with the add-on (certifi), not against NVDA's copy. Which versions
+  run is written to the NVDA log after every sign-in.</li>
 </ul>
 <hr />
 <h2 id="troubleshooting">Troubleshooting</h2>

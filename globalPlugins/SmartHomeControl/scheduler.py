@@ -484,6 +484,10 @@ class _SchedulerMixin:
             # into one purifier's history before anyone noticed.
             ('pm25', ('get_pm25',)),
             ('pm10', ('pm10',)),
+            # The Netatmo boiler: a state, written at every switching (see
+            # history.STATE_QUANTITIES). The relay carries a copy and is
+            # skipped below.
+            ('heating', ('get_boiler_status',)),
         )
         # One-time repair of the entries written under the old key. Needs
         # the device list, which is why it happens here and not on load.

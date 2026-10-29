@@ -24,6 +24,8 @@ import ast
 import io
 import os
 import sys
+import threading
+import types
 
 BASE = os.environ.get(
     'SHC',
@@ -68,6 +70,9 @@ class Dev:
     def unique_id(self):
         return f"{self.uuid}_{self._subdevice_id}" if self._subdevice_id \
             else self.uuid
+
+    def get_channels(self):
+        return []
 
     def __repr__(self):
         return f"<{self.name}>"
@@ -159,6 +164,53 @@ def main():
     check('und reicht die Liste an die Push-Zustellung weiter - sonst kaeme '
           'der Sensor zwar in den Baum, seine Meldungen aber nirgends an',
           'set_wrapped_devices' in adopt)
+
+    print('== Ein uebernommener Sensor kommt zurueck ==')
+    # Gegen die echte Bibliothek geprueft in merosslibtest.py; hier, dass
+    # die Stelle da ist.
+    check('der Hub-Abruf holt einen offline uebernommenen Sensor zurueck',
+          'known.is_offline = False' in body and 'known._device = subdev' in body)
+
+    print('== Ein Hub als Favorit ==')
+    # Alle Sensoren tragen die uuid des Hubs. Die Suche nahm sie im selben
+    # Durchgang wie die genaue Identitaet, also fand der Favorit des Hubs
+    # den ersten Sensor, der vor ihm in der Liste stand.
+    tree = ast.parse(init)
+    method = next(n for n in ast.walk(tree) if isinstance(n, ast.FunctionDef)
+                  and n.name == '_get_favorite_device')
+    pkg = types.ModuleType('hubfav')
+    pkg.__path__ = []
+    favmod = types.ModuleType('hubfav.favorites')
+    wanted = {}
+    favmod.get_favorites = lambda: types.SimpleNamespace(
+        get_by_slot=lambda n: wanted.get('fav'))
+    sys.modules['hubfav'] = pkg
+    sys.modules['hubfav.favorites'] = favmod
+    env = {'__package__': 'hubfav', '__name__': 'hubfav.probe'}
+    exec(compile(ast.Module([method], []), '__init__', 'exec'), env)
+    find = env['_get_favorite_device']
+    plugin = types.SimpleNamespace(devices=[sensor_a, hub, sensor_b],
+                                   _devices_lock=threading.Lock())
+    wanted['fav'] = {'uuid': 'hub-1', 'name': 'Hub'}
+    _fav, found = find(plugin, 1)
+    check('der Favorit des Hubs findet den Hub, nicht den Sensor davor',
+          found is hub, repr(found))
+    wanted['fav'] = {'uuid': sensor_b.unique_id, 'name': 'Keller'}
+    _fav, found = find(plugin, 2)
+    check('ein Sensor-Favorit findet seinen Sensor', found is sensor_b,
+          repr(found))
+    toggle = init.partition('    def _favorite_toggle')[2].partition(
+        '\n    def ')[0]
+    refused = toggle.partition('def task():')[0]
+    check('zweimal die Ziffer auf einem Hub schaltet nichts',
+          "getattr(device, 'is_hub', False)" in refused)
+    switch = init.partition('    def toggle_device')[2].partition(
+        '\n    def ')[0]
+    check('toggle_device nimmt keinen Sensor fuer seinen Hub',
+          "not getattr(d, '_subdevice_id', None)" in switch)
+    hub_check = switch.find("getattr(device, 'is_hub', False)")
+    check('und lehnt einen Hub selbst ab, bevor die Cloud gefragt wird',
+          0 <= hub_check < switch.index('self.api.set_device_state('))
 
     print('== Der Favorit sagt, warum er fehlt ==')
     favs = source('dialog_favorites')
